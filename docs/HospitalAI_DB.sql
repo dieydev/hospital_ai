@@ -1,7 +1,11 @@
-﻿CREATE DATABASE HospitalAI_DB;
+CREATE DATABASE HospitalAI_DB;
 GO
 USE HospitalAI_DB;
 GO
+
+-- ============================================================================
+-- PHÂN HỆ 1: TÀI KHOẢN, PHÂN QUYỀN VÀ TỔ CHỨC
+-- ============================================================================
 
 CREATE TABLE dbo.TaiKhoan (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
@@ -54,7 +58,7 @@ CREATE TABLE dbo.HoSoNhanVien (
 GO
 
 -- ============================================================================
--- PHÂN HỆ 2: QUẢN LÝ BỆNH NHÂN
+-- PHÂN HỆ 2: QUẢN LÝ BỆNH NHÂN & DANH MỤC Y TẾ
 -- ============================================================================
 
 CREATE TABLE dbo.BenhNhan (
@@ -66,6 +70,8 @@ CREATE TABLE dbo.BenhNhan (
     NgaySinh DATE NOT NULL,
     SoCCCD VARCHAR(20) NOT NULL,         -- Phục vụ quét mã QR thẻ căn cước
     MaTheBHYT VARCHAR(20) NULL,
+    SoDienThoai VARCHAR(20) NULL,
+    Email VARCHAR(100) NULL,
     DiaChi NVARCHAR(255) NOT NULL,
     NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_BenhNhan PRIMARY KEY (Id),
@@ -88,7 +94,7 @@ CREATE TABLE dbo.DiUngBenhNhan (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     BenhNhanId UNIQUEIDENTIFIER NOT NULL,
     LoaiDiUng VARCHAR(20) NOT NULL,      -- 'Drug', 'Food', 'Chemical'
-    TenTenChatDiUng NVARCHAR(100) NOT NULL, -- Ví dụ: Penicillin
+    TenChatDiUng NVARCHAR(100) NOT NULL, -- Ví dụ: Penicillin
     MucDoDiUng VARCHAR(20) NOT NULL,     -- 'Mild' (Nhe), 'Moderate' (Vua), 'Severe' (Nang)
     CONSTRAINT PK_DiUngBenhNhan PRIMARY KEY (Id),
     CONSTRAINT FK_DiUngBenhNhan_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id) ON DELETE CASCADE
@@ -103,22 +109,46 @@ CREATE TABLE dbo.TienSuBenhLy (
     CONSTRAINT PK_TienSuBenhLy PRIMARY KEY (Id),
     CONSTRAINT FK_TienSuBenhLy_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id) ON DELETE CASCADE
 );
+
+-- DANH MỤC THUỐC & DỊCH VỤ Y TẾ (Phục vụ kê đơn & tính tiền tự động)
+CREATE TABLE dbo.DanhMucThuoc (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    MaThuoc VARCHAR(20) NOT NULL,
+    TenThuoc NVARCHAR(150) NOT NULL,
+    DonViTinh NVARCHAR(30) NOT NULL,      -- Viên, Vỉ, Hộp, Chai...
+    DonGia DECIMAL(18,2) NOT NULL DEFAULT 0,
+    HoatChat NVARCHAR(255) NULL,
+    CachDungMacDinh NVARCHAR(255) NULL,
+    CONSTRAINT PK_DanhMucThuoc PRIMARY KEY (Id),
+    CONSTRAINT UQ_DanhMucThuoc_MaThuoc UNIQUE (MaThuoc)
+);
+
+CREATE TABLE dbo.DanhMucDichVuYTe (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    MaDichVu VARCHAR(20) NOT NULL,
+    TenDichVu NVARCHAR(150) NOT NULL,
+    LoaiDichVu VARCHAR(30) NOT NULL,      -- 'KhamLamSang', 'XetNghiem', 'ChananHinhAnh'
+    DonGia DECIMAL(18,2) NOT NULL DEFAULT 0,
+    MoTa NVARCHAR(255) NULL,
+    CONSTRAINT PK_DanhMucDichVuYTe PRIMARY KEY (Id),
+    CONSTRAINT UQ_DanhMucDichVuYTe_MaDichVu UNIQUE (MaDichVu)
+);
 GO
 
 -- ============================================================================
--- PHÂN HỆ 3: ĐẶT LỊCH HẸN & HÀNG CHỜ KHÁM REATIME
+-- PHÂN HỆ 3: ĐẶT LỊCH HẸN & HÀNG CHỜ KHÁM REALTIME
 -- ============================================================================
 
-CREATE TABLE dbo.LichLamViecBaoSi (
+CREATE TABLE dbo.LichLamViecBacSi (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     NhanVienId UNIQUEIDENTIFIER NOT NULL, -- Mã bác sĩ
     KhoaPhongId UNIQUEIDENTIFIER NOT NULL, -- Phòng khám được phân công
     NgayLamViec DATE NOT NULL,
     KhungGioKham VARCHAR(50) NOT NULL,    -- Ví dụ: '08:00 - 09:00'
     SoCaToiDa INT NOT NULL DEFAULT 20,
-    CONSTRAINT PK_LichLamViecBaoSi PRIMARY KEY (Id),
-    CONSTRAINT FK_LichLamViecBaoSi_NhanVien FOREIGN KEY (NhanVienId) REFERENCES dbo.HoSoNhanVien(Id),
-    CONSTRAINT FK_LichLamViecBaoSi_KhoaPhong FOREIGN KEY (KhoaPhongId) REFERENCES dbo.KhoaPhong(Id)
+    CONSTRAINT PK_LichLamViecBacSi PRIMARY KEY (Id),
+    CONSTRAINT FK_LichLamViecBacSi_NhanVien FOREIGN KEY (NhanVienId) REFERENCES dbo.HoSoNhanVien(Id),
+    CONSTRAINT FK_LichLamViecBacSi_KhoaPhong FOREIGN KEY (KhoaPhongId) REFERENCES dbo.KhoaPhong(Id)
 );
 
 CREATE TABLE dbo.LichHenKham (
@@ -130,7 +160,7 @@ CREATE TABLE dbo.LichHenKham (
     TrangThaiLichHen VARCHAR(20) NOT NULL DEFAULT 'Pending', -- 'Pending', 'Confirmed', 'Completed', 'Cancelled'
     CONSTRAINT PK_LichHenKham PRIMARY KEY (Id),
     CONSTRAINT FK_LichHenKham_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id),
-    CONSTRAINT FK_LichHenKham_LichLamViec FOREIGN KEY (LichLamViecId) REFERENCES dbo.LichLamViecBaoSi(Id)
+    CONSTRAINT FK_LichHenKham_LichLamViec FOREIGN KEY (LichLamViecId) REFERENCES dbo.LichLamViecBacSi(Id)
 );
 
 CREATE TABLE dbo.PhieuHangCho (
@@ -185,8 +215,8 @@ CREATE TABLE dbo.GhiChuSOAP (
     LuotKhamId UNIQUEIDENTIFIER NOT NULL,
     TrieuChungChuQuan NVARCHAR(MAX) NULL,  -- S (Subjective)
     KhamKhachQuan NVARCHAR(MAX) NULL,      -- O (Objective)
-    DanhGiaLamSang NVARCHAR(MAX) NULL,     -- A (Assessment)
-    KeHoachXuTri NVARCHAR(MAX) NULL,       -- P (Plan)
+    DanhGiaLamSang NVARCHAR(MAX) NULL,      -- A (Assessment)
+    KeHoachXuTri NVARCHAR(MAX) NULL,        -- P (Plan)
     CONSTRAINT PK_GhiChuSOAP PRIMARY KEY (Id),
     CONSTRAINT FK_GhiChuSOAP_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE
 );
@@ -217,12 +247,16 @@ CREATE TABLE dbo.DonThuoc (
 CREATE TABLE dbo.ChiTietDonThuoc (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     DonThuocId UNIQUEIDENTIFIER NOT NULL,
+    ThuocId UNIQUEIDENTIFIER NULL,        -- Liên kết DanhMucThuoc
     TenThuoc NVARCHAR(150) NOT NULL,
     SoLuong INT NOT NULL,
+    DonGia DECIMAL(18,2) NOT NULL DEFAULT 0,
+    ThanhTien DECIMAL(18,2) NOT NULL DEFAULT 0,
     LieuLuongDung NVARCHAR(100) NOT NULL,  -- Ví dụ: Ngay 2 vien
     HuongDanCachUong NVARCHAR(255) NOT NULL, -- Ví dụ: Sang 1, Toi 1 sau an
     CONSTRAINT PK_ChiTietDonThuoc PRIMARY KEY (Id),
-    CONSTRAINT FK_ChiTietDonThuoc_DonThuoc FOREIGN KEY (DonThuocId) REFERENCES dbo.DonThuoc(Id) ON DELETE CASCADE
+    CONSTRAINT FK_ChiTietDonThuoc_DonThuoc FOREIGN KEY (DonThuocId) REFERENCES dbo.DonThuoc(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_ChiTietDonThuoc_DanhMucThuoc FOREIGN KEY (ThuocId) REFERENCES dbo.DanhMucThuoc(Id)
 );
 
 CREATE TABLE dbo.HoSoBenhAn (
@@ -256,20 +290,23 @@ CREATE TABLE dbo.ChiDinhCanLamSang (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     LuotKhamId UNIQUEIDENTIFIER NOT NULL,
     BacSiChiDinhId UNIQUEIDENTIFIER NOT NULL,
-    MaDichVu VARCHAR(20) NOT NULL,       -- Ví dụ: XN01, XQ02
+    DichVuId UNIQUEIDENTIFIER NULL,      -- Liên kết DanhMucDichVuYTe
+    MaDichVu VARCHAR(20) NOT NULL,        -- Ví dụ: XN01, XQ02
     TenDichVu NVARCHAR(150) NOT NULL,    -- Ví dụ: Xet nghiem mau, Chup X-Quang
+    DonGia DECIMAL(18,2) NOT NULL DEFAULT 0,
     TrangThaiChiDinh VARCHAR(20) NOT NULL DEFAULT 'Ordered', -- 'Ordered', 'Processing', 'Completed'
     ThoiGianChiDinh DATETIME NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_ChiDinhCanLamSang PRIMARY KEY (Id),
     CONSTRAINT FK_ChiDinhCanLamSang_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_ChiDinhCanLamSang_BacSi FOREIGN KEY (BacSiChiDinhId) REFERENCES dbo.HoSoNhanVien(Id)
+    CONSTRAINT FK_ChiDinhCanLamSang_BacSi FOREIGN KEY (BacSiChiDinhId) REFERENCES dbo.HoSoNhanVien(Id),
+    CONSTRAINT FK_ChiDinhCanLamSang_DanhMucDichVu FOREIGN KEY (DichVuId) REFERENCES dbo.DanhMucDichVuYTe(Id)
 );
 
 CREATE TABLE dbo.KetQuaCanLamSang (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     ChiDinhId UNIQUEIDENTIFIER NOT NULL,
     KyThuatVienId UNIQUEIDENTIFIER NOT NULL, -- Người thực hiện duyệt
-    TenTenChiSo NVARCHAR(100) NULL,      -- Tên chỉ số (Dùng cho Xét nghiệm như Glucose, WBC...)
+    TenChiSo NVARCHAR(100) NULL,      -- Tên chỉ số (Dùng cho Xét nghiệm như Glucose, WBC...)
     GiaTriDo VARCHAR(50) NULL,           -- Trị số kết quả
     KhoangThamChieu VARCHAR(50) NULL,    -- Chỉ số bình thường để đối chiếu
     CoBatThuong BIT NOT NULL DEFAULT 0,  -- 1: Bất thường (báo đỏ), 0: Bình thường
@@ -282,7 +319,46 @@ CREATE TABLE dbo.KetQuaCanLamSang (
 GO
 
 -- ============================================================================
--- PHÂN HỆ 6: TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI ASSISTANT & RAG KNOWLEDGE)
+-- PHÂN HỆ 6: HÓA ĐƠN, VIỆN PHÍ & VNPAY QR CODE
+-- ============================================================================
+
+CREATE TABLE dbo.HoaDonVienPhi (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    BenhNhanId UNIQUEIDENTIFIER NOT NULL,
+    LuotKhamId UNIQUEIDENTIFIER NOT NULL,
+    MaHoaDon VARCHAR(30) NOT NULL,        -- Ví dụ: HD20260730001
+    TienKham DECIMAL(18,2) NOT NULL DEFAULT 0,
+    TienThuoc DECIMAL(18,2) NOT NULL DEFAULT 0,
+    TienDichVuCLS DECIMAL(18,2) NOT NULL DEFAULT 0,
+    TongTien DECIMAL(18,2) NOT NULL DEFAULT 0,
+    TrangThaiThanhToan VARCHAR(20) NOT NULL DEFAULT 'Pending', -- 'Pending', 'Paid', 'Cancelled'
+    NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT PK_HoaDonVienPhi PRIMARY KEY (Id),
+    CONSTRAINT UQ_HoaDonVienPhi_MaHoaDon UNIQUE (MaHoaDon),
+    CONSTRAINT FK_HoaDonVienPhi_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id),
+    CONSTRAINT FK_HoaDonVienPhi_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id)
+);
+
+CREATE TABLE dbo.GiaoDichVNPay (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    HoaDonId UNIQUEIDENTIFIER NOT NULL,
+    MaGiaoDichVNP VARCHAR(50) NULL,      -- vnp_TransactionNo từ VNPay
+    MaThamChieuTxnRef VARCHAR(50) NOT NULL, -- vnp_TxnRef
+    SoTien DECIMAL(18,2) NOT NULL,
+    MaNganHang VARCHAR(20) NULL,          -- NCB, VNPAYQR, VISA...
+    NoiDungThanhToan NVARCHAR(255) NULL,
+    MaLoiVNP VARCHAR(10) NULL,            -- '00' là thành công
+    TrangThaiGiaoDich VARCHAR(20) NOT NULL DEFAULT 'Pending', -- 'Pending', 'Success', 'Failed'
+    ThoiGianTao DATETIME NOT NULL DEFAULT GETDATE(),
+    ThoiGianThanhToan DATETIME NULL,
+    CONSTRAINT PK_GiaoDichVNPay PRIMARY KEY (Id),
+    CONSTRAINT UQ_GiaoDichVNPay_TxnRef UNIQUE (MaThamChieuTxnRef),
+    CONSTRAINT FK_GiaoDichVNPay_HoaDon FOREIGN KEY (HoaDonId) REFERENCES dbo.HoaDonVienPhi(Id) ON DELETE CASCADE
+);
+GO
+
+-- ============================================================================
+-- PHÂN HỆ 7: TRỢ LÝ TRÍ TUỆ NHÂN TẠO (AI ASSISTANT & RAG KNOWLEDGE)
 -- ============================================================================
 
 CREATE TABLE dbo.TaiLieuPhacDo (
@@ -298,7 +374,7 @@ CREATE TABLE dbo.VectorPhacDo (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     TaiLieuId UNIQUEIDENTIFIER NOT NULL,
     DoanVanBanNho NVARCHAR(MAX) NOT NULL, -- Đoạn text ngắn sau khi chia nhỏ (Chunking)
-    ChuoiDuLieuVector NVARCHAR(MAX) NOT NULL, -- Mảng số thực lưu dạng chuỗi JSON để tính toán Cosine từ Python gửi qua
+    ChuoiDuLieuVector NVARCHAR(MAX) NOT NULL, -- Mảng số thực lưu dạng chuỗi JSON để tính toán Cosine
     CONSTRAINT PK_VectorPhacDo PRIMARY KEY (Id),
     CONSTRAINT FK_VectorPhacDo_TaiLieu FOREIGN KEY (TaiLieuId) REFERENCES dbo.TaiLieuPhacDo(Id) ON DELETE CASCADE
 );
@@ -314,4 +390,55 @@ CREATE TABLE dbo.NhatKyGoiYAI (
     CONSTRAINT PK_NhatKyGoiYAI PRIMARY KEY (Id),
     CONSTRAINT FK_NhatKyGoiYAI_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE
 );
+GO
+
+-- ============================================================================
+-- PHÂN HỆ 8: THÔNG BÁO CHO BỆNH NHÂN (FLUTTER APP)
+-- ============================================================================
+
+CREATE TABLE dbo.ThongBaoBenhNhan (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    BenhNhanId UNIQUEIDENTIFIER NOT NULL,
+    TieuDe NVARCHAR(150) NOT NULL,
+    NoiDung NVARCHAR(500) NOT NULL,
+    LoaiThongBao VARCHAR(30) NOT NULL DEFAULT 'Appointment', -- 'Appointment', 'Result', 'Payment', 'System'
+    DaDoc BIT NOT NULL DEFAULT 0,
+    NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT PK_ThongBaoBenhNhan PRIMARY KEY (Id),
+    CONSTRAINT FK_ThongBaoBenhNhan_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id) ON DELETE CASCADE
+);
+GO
+
+-- ============================================================================
+-- TỐI ƯU TRUY VẤN: INDEXING (CHỈ MỤC NON-CLUSTERED)
+-- ============================================================================
+
+-- 1. Tra cứu thông tin Bệnh nhân (Thường xuyên tìm kiếm khi Lễ tân tiếp nhận)
+CREATE NONCLUSTERED INDEX IX_BenhNhan_MaBenhNhan ON dbo.BenhNhan (MaBenhNhan);
+CREATE NONCLUSTERED INDEX IX_BenhNhan_SoCCCD ON dbo.BenhNhan (SoCCCD);
+
+-- 2. Tải danh sách Hàng chờ Khám Realtime theo từng Phòng và Ngày
+CREATE NONCLUSTERED INDEX IX_PhieuHangCho_KhoaPhong_NgayTao 
+ON dbo.PhieuHangCho (KhoaPhongId, NgayTao, TrangThaiHangCho)
+INCLUDE (SoThuTu, MucDoUuTien, BenhNhanId);
+
+-- 3. Kiểm tra Lịch làm việc & Đặt lịch khám của Bác sĩ
+CREATE NONCLUSTERED INDEX IX_LichLamViecBacSi_NhanVien_Ngay 
+ON dbo.LichLamViecBacSi (NhanVienId, NgayLamViec);
+
+-- 4. Tra cứu Lịch sử Lượt khám / Hồ sơ EMR theo Bệnh nhân
+CREATE NONCLUSTERED INDEX IX_LuotKhamBenh_BenhNhan_NgayKham 
+ON dbo.LuotKhamBenh (BenhNhanId, NgayKham DESC);
+
+CREATE NONCLUSTERED INDEX IX_HoSoBenhAn_BenhNhan 
+ON dbo.HoSoBenhAn (BenhNhanId, ThoiGianDongGoi DESC);
+
+-- 5. Tra cứu Chẩn đoán ICD-10 theo Lượt khám
+CREATE NONCLUSTERED INDEX IX_ChanDoanBenh_LuotKham 
+ON dbo.ChanDoanBenh (LuotKhamId);
+
+-- 6. Tra cứu Hóa đơn viện phí & Giao dịch VNPay
+CREATE NONCLUSTERED INDEX IX_HoaDonVienPhi_BenhNhan ON dbo.HoaDonVienPhi (BenhNhanId, NgayTao DESC);
+CREATE NONCLUSTERED INDEX IX_GiaoDichVNPay_TxnRef ON dbo.GiaoDichVNPay (MaThamChieuTxnRef);
+
 GO
