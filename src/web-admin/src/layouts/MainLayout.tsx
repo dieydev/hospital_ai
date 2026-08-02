@@ -17,6 +17,7 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   ScheduleOutlined,
+  CheckCircleFilled,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -37,56 +38,59 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const menuItems = [
     {
       key: '/dashboard',
-      icon: <DashboardOutlined />,
+      icon: <DashboardOutlined style={{ fontSize: 18 }} />,
       label: 'Tổng quan (Dashboard)',
     },
     {
       key: '/reception',
-      icon: <ScheduleOutlined />,
+      icon: <ScheduleOutlined style={{ fontSize: 18 }} />,
       label: 'Tiếp nhận & Cấp số',
     },
     {
       key: '/patients',
-      icon: <UserOutlined />,
+      icon: <UserOutlined style={{ fontSize: 18 }} />,
       label: 'Quản lý Bệnh nhân',
     },
     {
       key: '/examinations',
-      icon: <MedicineBoxOutlined />,
+      icon: <MedicineBoxOutlined style={{ fontSize: 18 }} />,
       label: 'Khám bệnh (SOAP)',
     },
     {
       key: '/emr',
-      icon: <FileTextOutlined />,
+      icon: <FileTextOutlined style={{ fontSize: 18 }} />,
       label: 'Hồ sơ bệnh án (EMR)',
     },
     {
       key: '/billing',
-      icon: <DollarOutlined />,
+      icon: <DollarOutlined style={{ fontSize: 18 }} />,
       label: 'Quản lý Viện phí',
     },
     {
       key: '/ai-assistant',
-      icon: <RobotOutlined style={{ color: '#1677ff' }} />,
+      icon: <RobotOutlined style={{ fontSize: 18, color: '#38bdf8' }} />,
       label: (
-        <span>
-          Trợ lý AI Y tế <Tag color="blue" style={{ marginLeft: 6, fontSize: 10 }}>GEMINI</Tag>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Trợ lý AI Y tế</span>
+          <Tag color="cyan" style={{ fontSize: 10, margin: 0, padding: '0 6px', borderRadius: 4 }}>
+            GEMINI
+          </Tag>
         </span>
       ),
     },
     {
       key: '/catalogs',
-      icon: <AppstoreOutlined />,
+      icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
       label: 'Danh mục Hệ thống',
     },
     {
       key: '/audit-logs',
-      icon: <AuditOutlined />,
+      icon: <AuditOutlined style={{ fontSize: 18 }} />,
       label: 'Nhật ký & Kiểm toán',
     },
     {
       key: '/reports',
-      icon: <BarChartOutlined />,
+      icon: <BarChartOutlined style={{ fontSize: 18 }} />,
       label: 'Thống kê & Báo cáo',
     },
   ];
@@ -94,7 +98,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const userMenuItems = [
     {
       key: 'profile',
-      label: 'Hồ sơ tài khoản',
+      label: 'Hồ sơ cá nhân & Ca trực',
       icon: <SolutionOutlined />,
     },
     {
@@ -102,7 +106,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     },
     {
       key: 'logout',
-      label: 'Đăng xuất',
+      label: 'Đăng xuất hệ thống',
       icon: <LogoutOutlined />,
       danger: true,
       onClick: () => {
@@ -113,108 +117,159 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f5f7fa' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
       <Sider
         trigger={null}
         collapsible
         collapsed={collapsed}
-        width={250}
+        width={260}
         style={{
-          background: '#001529',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+          background: '#0f172a',
+          boxShadow: '4px 0 20px rgba(15, 23, 42, 0.15)',
           zIndex: 10,
         }}
       >
+        {/* Brand Header */}
         <div
           style={{
-            height: 64,
+            height: 70,
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
             padding: collapsed ? '0' : '0 20px',
-            background: '#002140',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #1677ff 0%, #0958d9 100%)',
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#fff',
-                fontWeight: 'bold',
-                fontSize: 18,
+                fontWeight: 800,
+                fontSize: 20,
+                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)',
               }}
             >
               H
             </div>
             {!collapsed && (
               <div>
-                <Title level={5} style={{ color: '#fff', margin: 0, lineHeight: 1.2, fontSize: 16 }}>
-                  HOSPITAL <span style={{ color: '#69b1ff' }}>AI</span>
+                <Title level={4} style={{ color: '#fff', margin: 0, lineHeight: 1.2, fontWeight: 700, fontSize: 17 }}>
+                  HOSPITAL <span style={{ color: '#38bdf8' }}>AI</span>
                 </Title>
-                <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>Bệnh viện Đa khoa</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 11, letterSpacing: '0.5px' }}>BỆNH VIỆN ĐA KHOA</Text>
               </div>
             )}
           </div>
         </div>
 
+        {/* Menu */}
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ marginTop: 8 }}
+          style={{
+            marginTop: 12,
+            background: 'transparent',
+            padding: '0 8px',
+            fontSize: 14,
+            fontWeight: 500,
+          }}
         />
+
+        {/* System Active Badge at Bottom */}
+        {!collapsed && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              left: 16,
+              right: 16,
+              padding: '12px 16px',
+              borderRadius: 12,
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <CheckCircleFilled style={{ color: '#10b981', fontSize: 16 }} />
+            <div>
+              <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: 600, display: 'block' }}>Hệ thống sẵn sàng</Text>
+              <Text style={{ color: '#94a3b8', fontSize: 11 }}>Phiên bản 2026.1.0</Text>
+            </div>
+          </div>
+        )}
       </Sider>
 
       <Layout>
+        {/* Top Header */}
         <Header
           style={{
-            padding: '0 24px',
-            background: '#fff',
+            padding: '0 28px',
+            background: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 1px 4px rgba(0,21,41,0.08)',
+            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)',
             zIndex: 9,
-            height: 64,
+            height: 70,
+            borderBottom: '1px solid #f1f5f9',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <Button
               type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 18 }} /> : <MenuFoldOutlined style={{ fontSize: 18 }} />}
               onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 16 }}
+              style={{ color: '#475569' }}
             />
             <Input
-              placeholder="Tìm nhanh Bệnh nhân, CCCD, Mã EMR hoặc ICD-10..."
-              prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-              style={{ width: 340, borderRadius: 20 }}
+              placeholder="Tìm nhanh Bệnh nhân, Mã BN, CCCD, Mã EMR hoặc ICD-10..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              style={{
+                width: 380,
+                borderRadius: 20,
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                padding: '6px 16px',
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Badge count={3} offset={[-2, 4]}>
-              <Button type="text" shape="circle" icon={<BellOutlined style={{ fontSize: 18 }} />} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <Badge count={3} offset={[-2, 4]} color="#0284c7">
+              <Button
+                type="text"
+                shape="circle"
+                icon={<BellOutlined style={{ fontSize: 20, color: '#475569' }} />}
+                style={{ background: '#f8fafc' }}
+              />
             </Badge>
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-              <Space style={{ cursor: 'pointer' }}>
-                <Avatar src={user?.avatarUrl} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
+              <Space style={{ cursor: 'pointer', padding: '4px 10px', borderRadius: 12, background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                <Avatar
+                  src={user?.avatarUrl}
+                  icon={<UserOutlined />}
+                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
+                />
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                  <Text strong style={{ fontSize: 14 }}>
-                    {user?.hoTen || 'Nguyễn Thanh Duy'}
+                  <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
+                    {user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}
                   </Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    {user?.chucDanh || 'Bác sĩ điều trị'} • {user?.chuyenKhoa || 'Khoa Nội'}
+                  <Text style={{ fontSize: 11, color: '#64748b' }}>
+                    {user?.chucDanh || 'Bác sĩ Điều trị'} • {user?.chuyenKhoa || 'Khoa Nội'}
                   </Text>
                 </div>
               </Space>
@@ -222,9 +277,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         </Header>
 
+        {/* Main Content View Container */}
         <Content
           style={{
-            margin: '20px 24px',
+            margin: '24px 28px',
             minHeight: 280,
           }}
         >
