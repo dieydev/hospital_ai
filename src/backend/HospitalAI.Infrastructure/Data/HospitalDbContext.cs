@@ -21,27 +21,49 @@ public class HospitalDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configuration for User
+        // Map to SSMS Table: dbo.TaiKhoan
         modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("Users");
+            entity.ToTable("TaiKhoan", "dbo");
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.Username).HasColumnName("TenDangNhap").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.PasswordHash).HasColumnName("MatKhauMaHoa").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Email).HasColumnName("Email").HasMaxLength(100);
+            entity.Property(e => e.PhoneNumber).HasColumnName("SoDienThoai").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.IsActive).HasColumnName("TrangThaiKichHoat");
+            entity.Property(e => e.TwoFactorEnabled).HasColumnName("BaoMatHaiLop");
+            entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
+
+            // Ignore properties not in TaiKhoan table
+            entity.Ignore(e => e.FullName);
+            entity.Ignore(e => e.Specialty);
+            entity.Ignore(e => e.Title);
+            entity.Ignore(e => e.AvatarUrl);
+
             entity.HasIndex(e => e.Username).IsUnique();
         });
 
-        // Configuration for Role
+        // Map to SSMS Table: dbo.VaiTro
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.ToTable("Roles");
+            entity.ToTable("VaiTro", "dbo");
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.Name).HasColumnName("TenVaiTro").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("MoTa").HasMaxLength(255);
+
             entity.HasIndex(e => e.Name).IsUnique();
         });
 
-        // Configuration for UserRole (Many-To-Many)
+        // Map to SSMS Table: dbo.QuyenTaiKhoan (Many-To-Many)
         modelBuilder.Entity<UserRole>(entity =>
         {
-            entity.ToTable("UserRoles");
+            entity.ToTable("QuyenTaiKhoan", "dbo");
             entity.HasKey(e => new { e.UserId, e.RoleId });
+
+            entity.Property(e => e.UserId).HasColumnName("TaiKhoanId");
+            entity.Property(e => e.RoleId).HasColumnName("VaiTroId");
 
             entity.HasOne(ur => ur.User)
                   .WithMany(u => u.UserRoles)
@@ -52,21 +74,25 @@ public class HospitalDbContext : DbContext
                   .HasForeignKey(ur => ur.RoleId);
         });
 
-        // Configuration for Patient
+        // Map to SSMS Table: dbo.BenhNhan
         modelBuilder.Entity<Patient>(entity =>
         {
-            entity.ToTable("Patients");
+            entity.ToTable("BenhNhan", "dbo");
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.PatientCode).IsUnique();
-            entity.HasIndex(e => e.IdentityCardNumber);
+            entity.Property(e => e.PatientCode).HasColumnName("MaBenhNhan");
+            entity.Property(e => e.FullName).HasColumnName("HoTen");
+            entity.Property(e => e.Gender).HasColumnName("GioiTinh");
+            entity.Property(e => e.DateOfBirth).HasColumnName("NgaySinh");
+            entity.Property(e => e.IdentityCardNumber).HasColumnName("SoCCCD");
         });
 
-        // Configuration for Examination
+        // Map to SSMS Table: dbo.LuotKhamBenh
         modelBuilder.Entity<Examination>(entity =>
         {
-            entity.ToTable("Examinations");
+            entity.ToTable("LuotKhamBenh", "dbo");
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.ExaminationCode).IsUnique();
+            entity.Property(e => e.ExaminationCode).HasColumnName("MaLuotKham");
+            entity.Property(e => e.ExaminationDate).HasColumnName("ThoiGianTiepNhan");
 
             entity.HasOne(e => e.Patient)
                   .WithMany(p => p.Examinations)
@@ -82,7 +108,7 @@ public class HospitalDbContext : DbContext
         // Configuration for PrescriptionDetail
         modelBuilder.Entity<PrescriptionDetail>(entity =>
         {
-            entity.ToTable("PrescriptionDetails");
+            entity.ToTable("ChiTietDonThuoc", "dbo");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
         });
@@ -90,7 +116,7 @@ public class HospitalDbContext : DbContext
         // Configuration for ServiceOrderDetail
         modelBuilder.Entity<ServiceOrderDetail>(entity =>
         {
-            entity.ToTable("ServiceOrderDetails");
+            entity.ToTable("ChiTietChiDinhDV", "dbo");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Price).HasPrecision(18, 2);
         });
