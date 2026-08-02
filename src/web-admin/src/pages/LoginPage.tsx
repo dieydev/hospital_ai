@@ -18,7 +18,7 @@ export const LoginPage: React.FC = () => {
     setErrorMsg('');
 
     try {
-      // 1. Gửi request đến Backend API ASP.NET Core
+      // 1. Gọi API Đăng nhập Backend C# ASP.NET Core
       const response = await api.post('/auth/login', {
         username: values.username,
         password: values.password,
@@ -45,9 +45,7 @@ export const LoginPage: React.FC = () => {
       setLoading(false);
       navigate('/dashboard');
     } catch (err: any) {
-      console.warn('API connection offline or invalid credentials, checking auth validation...');
-      
-      // 2. Nếu Backend API trả lỗi hoặc không đúng mật khẩu
+      // 2. Lấy thông báo lỗi chuẩn từ Backend API
       const apiError = err.response?.data?.message;
 
       if (apiError) {
@@ -56,8 +54,12 @@ export const LoginPage: React.FC = () => {
         return;
       }
 
-      // Fallback kiểm tra mật khẩu chuẩn nếu chạy chế độ offline test
-      if (values.password === '123456' || values.password === '123') {
+      // Fallback kiểm tra credentials chuẩn nếu chưa khởi chạy API Backend
+      if (
+        (values.username === 'dr.duy' && values.password === '123456') ||
+        (values.username === 'admin' && values.password === '123456') ||
+        (values.username === 'receptionist' && values.password === '123456')
+      ) {
         let fullName = 'BS. CKII. Nguyễn Thanh Duy';
         let role = ['Doctor', 'Admin'];
         if (values.username === 'admin') {
@@ -88,7 +90,7 @@ export const LoginPage: React.FC = () => {
         navigate('/dashboard');
       } else {
         setLoading(false);
-        setErrorMsg('Sai tên đăng nhập hoặc mật khẩu! Mật khẩu mặc định là: 123456');
+        setErrorMsg('Tên đăng nhập hoặc mật khẩu không chính xác.');
       }
     }
   };
@@ -147,7 +149,7 @@ export const LoginPage: React.FC = () => {
             label="Tên đăng nhập / Email"
             rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
           >
-            <Input prefix={<UserOutlined style={{ color: '#94a3b8' }} />} placeholder="Nhập tài khoản (vd: dr.duy, admin)" size="large" />
+            <Input prefix={<UserOutlined style={{ color: '#94a3b8' }} />} placeholder="Nhập tên đăng nhập..." size="large" />
           </Form.Item>
 
           <Form.Item
@@ -155,7 +157,7 @@ export const LoginPage: React.FC = () => {
             label="Mật khẩu"
             rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
           >
-            <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Nhập mật khẩu (vd: 123456)" size="large" />
+            <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Nhập mật khẩu..." size="large" />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 12 }}>
@@ -173,12 +175,6 @@ export const LoginPage: React.FC = () => {
             </Button>
           </Form.Item>
         </Form>
-
-        <div style={{ textAlign: 'center', marginTop: 12, borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Tài khoản mẫu: <strong>dr.duy</strong> | Mật khẩu: <strong>123456</strong>
-          </Text>
-        </div>
       </Card>
     </div>
   );
