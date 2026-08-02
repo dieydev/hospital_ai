@@ -3,15 +3,6 @@ using System.Collections.Generic;
 
 namespace HospitalAI.Domain.Entities;
 
-public enum UserRoleEnum
-{
-    Admin,
-    Doctor,
-    Nurse,
-    Receptionist,
-    Patient
-}
-
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -21,8 +12,10 @@ public class User
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
-    public string? Specialty { get; set; }
-    public string? Title { get; set; }
-    public string Role { get; set; } = nameof(UserRoleEnum.Doctor);
+    public string? Specialty { get; set; } // Khoa/Chuyên môn (nếu là Bác sĩ)
+    public string? Title { get; set; } // Chức danh (ThS.BS, BS.CKII...)
+    public string AvatarUrl { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

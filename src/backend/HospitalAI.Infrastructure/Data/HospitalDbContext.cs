@@ -10,6 +10,8 @@ public class HospitalDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<Examination> Examinations => Set<Examination>();
     public DbSet<PrescriptionDetail> PrescriptionDetails => Set<PrescriptionDetail>();
@@ -25,6 +27,29 @@ public class HospitalDbContext : DbContext
             entity.ToTable("Users");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Username).IsUnique();
+        });
+
+        // Configuration for Role
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("Roles");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        // Configuration for UserRole (Many-To-Many)
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.ToTable("UserRoles");
+            entity.HasKey(e => new { e.UserId, e.RoleId });
+
+            entity.HasOne(ur => ur.User)
+                  .WithMany(u => u.UserRoles)
+                  .HasForeignKey(ur => ur.UserId);
+
+            entity.HasOne(ur => ur.Role)
+                  .WithMany(r => r.UserRoles)
+                  .HasForeignKey(ur => ur.RoleId);
         });
 
         // Configuration for Patient
