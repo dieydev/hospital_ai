@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
-import 'views/home/home_view.dart';
 import 'views/auth/login_view.dart';
+import 'views/home/home_view.dart';
 
 void main() {
   runApp(
@@ -11,13 +11,13 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      child: const HospitalAIPatientApp(),
+      child: const HospitalAiPatientApp(),
     ),
   );
 }
 
-class HospitalAIPatientApp extends StatelessWidget {
-  const HospitalAIPatientApp({super.key});
+class HospitalAiPatientApp extends StatelessWidget {
+  const HospitalAiPatientApp({super.key});
 
   @override
   Widget build(BuildContext context) {
