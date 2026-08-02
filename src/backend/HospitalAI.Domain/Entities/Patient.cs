@@ -20,7 +20,5 @@ public class Patient
     public string? BloodType { get; set; } // O+, A+, B+, AB+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     public ICollection<Examination> Examinations { get; set; } = new List<Examination>();
-    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
 }
