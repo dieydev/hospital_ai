@@ -335,9 +335,6 @@ export const PatientsPage: React.FC = () => {
             <UserOutlined style={{ marginRight: 10, color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
             Quản lý Hồ sơ Bệnh nhân (Patient Management)
           </Title>
-          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-            Quản lý thông tin hành chính y tế, mã CCCD, bảo hiểm BHYT, nhóm máu & tiền sử dị ứng thuốc theo chuẩn EMR
-          </Text>
         </div>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchPatients} loading={loading}>

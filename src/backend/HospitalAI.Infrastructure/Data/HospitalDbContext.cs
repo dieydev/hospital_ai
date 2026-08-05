@@ -86,6 +86,9 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.IdentityCardNumber).HasColumnName("SoCCCD").HasMaxLength(20).IsRequired();
             entity.Property(e => e.HealthInsuranceNumber).HasColumnName("MaTheBHYT").HasMaxLength(20);
             entity.Property(e => e.Address).HasColumnName("DiaChi").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.EmergencyContactName).HasColumnName("TenNguoiThan").HasMaxLength(100);
+            entity.Property(e => e.EmergencyContactRelation).HasColumnName("QuanHeNguoiThan").HasMaxLength(50);
+            entity.Property(e => e.EmergencyContactPhone).HasColumnName("SoDienThoaiNguoiThan").HasMaxLength(20);
             entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
 
             entity.HasIndex(e => e.PatientCode).IsUnique();
