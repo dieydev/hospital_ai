@@ -34,6 +34,7 @@ builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IQueueService, QueueService>();
+builder.Services.AddScoped<IExaminationService, ExaminationService>();
 
 // 4. Configure JWT Authentication
 var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT";

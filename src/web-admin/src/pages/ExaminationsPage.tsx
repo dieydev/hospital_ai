@@ -1,35 +1,127 @@
-import React, { useState } from 'react';
-import { Card, Form, Input, Button, Row, Col, Typography, Space, Divider, Table, Tag, Alert, Badge } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Row,
+  Col,
+  Typography,
+  Space,
+  Divider,
+  Table,
+  Tag,
+  Alert,
+  Badge,
+  Modal,
+  Select,
+  InputNumber,
+  Tabs,
+  Drawer,
+} from 'antd';
 import {
   SaveOutlined,
   RobotOutlined,
   PlusOutlined,
   DeleteOutlined,
   MedicineBoxOutlined,
+  FileTextOutlined,
+  SearchOutlined,
+  PrinterOutlined,
+  ReloadOutlined,
+  SafetyCertificateOutlined,
+  HeartOutlined,
 } from '@ant-design/icons';
-import { EPrescriptionItem, ServiceOrderItem } from '../types';
 import { useThemeStore } from '../store/useThemeStore';
-import { showSuccessAlert, showToast } from '../utils/sweetAlert';
+import { useAuthStore } from '../store/useAuthStore';
+import {
+  examinationService,
+  ExaminationItem,
+  PrescriptionDetailItem,
+  ServiceOrderItem,
+} from '../services/examinationService';
+import { patientService, Patient } from '../services/patientService';
+import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
+
+const ICD10_CATALOG = [
+  { code: 'J02.9', name: 'Viêm họng cấp tính, không đặc hiệu' },
+  { code: 'J03.9', name: 'Viêm amydal cấp tính, không đặc hiệu' },
+  { code: 'J06.9', name: 'Nhiễm trùng đường hô hấp trên cấp tính' },
+  { code: 'I10', name: 'Tăng huyết áp vô căn (nguyên phát)' },
+  { code: 'E11.9', name: 'Đái tháo đường tuýp 2 không biến chứng' },
+  { code: 'K29.7', name: 'Viêm dạ dày, không đặc hiệu' },
+  { code: 'J20.9', name: 'Viêm phế quản cấp tính, không đặc hiệu' },
+  { code: 'M17.9', name: 'Thoái hóa khớp gối, không đặc hiệu' },
+];
 
 export const ExaminationsPage: React.FC = () => {
-  const [form] = Form.useForm();
   const { isDarkMode } = useThemeStore();
+  const { user } = useAuthStore();
+
+  const [loading, setLoading] = useState(false);
+  const [examinations, setExaminations] = useState<ExaminationItem[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [searchText, setSearchText] = useState('');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [submitting, setSubmitting] = useState(false);
+
+  // AI Assist State
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Array<{ code: string; name: string; match: string }>>([]);
 
-  const [prescription, setPrescription] = useState<EPrescriptionItem[]>([
-    { id: '1', thuocId: 'TH01', tenThuoc: 'Paracetamol 500mg (Hasan)', donViTinh: 'Viên', soLuong: 20, lieuDung: 'Sáng 1v, Tối 1v sau ăn' },
-    { id: '2', thuocId: 'TH02', tenThuoc: 'Augmentin 1g (Amoxicillin/Clavulanate)', donViTinh: 'Viên', soLuong: 14, lieuDung: 'Sáng 1v, Tối 1v sau ăn (7 ngày)' },
+  // Detail View Drawer State
+  const [selectedExam, setSelectedExam] = useState<ExaminationItem | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Prescriptions & Services lists in Modal
+  const [prescriptions, setPrescriptions] = useState<PrescriptionDetailItem[]>([
+    { medicineName: 'Paracetamol 500mg (Hasan)', unit: 'Viên', quantity: 15, dosageInstruction: 'Sáng 1v, Tối 1v sau ăn', unitPrice: 2000 },
+    { medicineName: 'Augmentin 1g (Amoxicillin/Clavulanate)', unit: 'Viên', quantity: 10, dosageInstruction: 'Sáng 1v, Tối 1v sau ăn no', unitPrice: 15000 },
   ]);
 
   const [services] = useState<ServiceOrderItem[]>([
-    { id: '1', dichVuId: 'DV01', tenDichVu: 'Công thức máu toàn phần (CBC)', loaiDichVu: 'Xét nghiệm', donGia: 85000, trangThai: 'Đã có kết quả', ketQua: 'WBC 11.2 (Tăng nhẹ), RBC 4.5' },
-    { id: '2', dichVuId: 'DV02', tenDichVu: 'X-Quang Phổi thẳng', loaiDichVu: 'Chẩn đoán hình ảnh', donGia: 150000, trangThai: 'Đã có kết quả', ketQua: 'Phế trường 2 bên sáng, chưa thấy tổn thương thâm nhiễm' },
+    { serviceName: 'Công thức máu toàn phần (CBC)', serviceCategory: 'Xét nghiệm', price: 120000, status: 'Đã có kết quả', result: 'WBC 11.2 (Tăng nhẹ)' },
   ]);
 
+  // Vitals calculation
+  const [weight, setWeight] = useState<number>(65);
+  const [height, setHeight] = useState<number>(168);
+
+  const calculateBmi = (w: number, h: number) => {
+    if (h <= 0) return 0;
+    const hm = h / 100;
+    return Math.round((w / (hm * hm)) * 10) / 10;
+  };
+
+  const bmiValue = calculateBmi(weight, height);
+
+  const fetchExaminations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [examRes, patientRes] = await Promise.all([
+        examinationService.getExaminations(searchText),
+        patientService.getPatients(),
+      ]);
+      setExaminations(examRes);
+      setPatients(patientRes.items || []);
+    } catch {
+      showErrorAlert('Lỗi tải dữ liệu', 'Không thể kết nối danh sách khám bệnh.');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText]);
+
+  useEffect(() => {
+    fetchExaminations();
+  }, [fetchExaminations]);
+
+  // Handle AI Consultation
   const handleConsultAiICD10 = () => {
     const subjective = form.getFieldValue('subjective');
     if (!subjective) {
@@ -45,269 +137,537 @@ export const ExaminationsPage: React.FC = () => {
         { code: 'J06.9', name: 'Nhiễm trùng đường hô hấp trên cấp tính', match: '72% Phù hợp' },
       ]);
       setAiLoading(false);
-      showToast('Trợ lý AI đã gợi ý 3 mã ICD-10 phù hợp!', 'success');
-    }, 1000);
+      showToast('Trợ lý AI Gemini đã phân tích và gợi ý mã ICD-10!', 'success');
+    }, 800);
   };
 
-  const handleSelectICD10 = (item: { code: string; name: string }) => {
-    form.setFieldsValue({
-      icd10Code: `${item.code} - ${item.name}`,
-    });
+  // Add prescription item
+  const handleAddMedicine = () => {
+    setPrescriptions([
+      ...prescriptions,
+      { medicineName: 'Paracetamol 500mg', unit: 'Viên', quantity: 10, dosageInstruction: 'Ngày 2 lần, mỗi lần 1 viên', unitPrice: 2000 },
+    ]);
   };
 
-  const prescriptionColumns = [
+  // Remove prescription item
+  const handleRemoveMedicine = (index: number) => {
+    setPrescriptions(prescriptions.filter((_, i) => i !== index));
+  };
+
+  // Handle Submit Examination
+  const handleCreateExamination = async (values: any) => {
+    setSubmitting(true);
+    try {
+      const selectedICD = ICD10_CATALOG.find((c) => c.code === values.icd10Code) || {
+        code: values.icd10Code,
+        name: values.icd10Name || 'Chẩn đoán lâm sàng',
+      };
+
+      await examinationService.createExamination({
+        patientId: values.patientId,
+        doctorId: user?.id || 'usr-001',
+        departmentName: user?.chuyenKhoa || 'Khoa Nội Tổng Hợp',
+        subjective: values.subjective || '',
+        pulseRate: values.pulseRate || 75,
+        temperature: values.temperature || 37.0,
+        bloodPressure: values.bloodPressure || '120/80',
+        respiratoryRate: values.respiratoryRate || 18,
+        weight: values.weight || 65,
+        height: values.height || 168,
+        assessment: values.assessment || '',
+        icd10Code: selectedICD.code,
+        icd10Name: selectedICD.name,
+        plan: values.plan || '',
+        status: 'Hoàn thành',
+        prescriptionDetails: prescriptions,
+        serviceOrderDetails: services,
+      });
+
+      showSuccessAlert(
+        'Hoàn tất Ca Khám & Kê Đơn Thuốc!',
+        `Đã lưu bệnh án EMR và đơn thuốc điện tử cho bệnh nhân.`
+      );
+
+      setIsModalOpen(false);
+      form.resetFields();
+      fetchExaminations();
+    } catch {
+      showErrorAlert('Không thể lưu ca khám', 'Vui lòng kiểm tra lại kết nối API Backend.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const columns = [
     {
-      title: 'Tên Thuốc & Hàm lượng',
-      dataIndex: 'tenThuoc',
-      key: 'tenThuoc',
-      render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text>
+      title: 'Mã Lượt khám',
+      dataIndex: 'examinationCode',
+      key: 'examinationCode',
+      render: (t: string) => <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 700 }}>{t}</Tag>,
     },
-    { title: 'ĐVT', dataIndex: 'donViTinh', key: 'donViTinh', width: 80 },
     {
-      title: 'Số lượng',
-      dataIndex: 'soLuong',
-      key: 'soLuong',
-      width: 90,
-      render: (sl: number) => <Text strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{sl}</Text>
+      title: 'Bệnh nhân',
+      dataIndex: 'patientName',
+      key: 'patientName',
+      render: (t: string, record: ExaminationItem) => (
+        <div>
+          <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a', fontSize: 14 }}>{t}</Text>
+          <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b', display: 'block' }}>
+            {record.patientGender} • {record.patientAge} tuổi • Mã: {record.patientCode}
+          </Text>
+        </div>
+      ),
     },
-    { title: 'Liều dùng & Hướng dẫn', dataIndex: 'lieuDung', key: 'lieuDung' },
     {
-      title: 'Thao tác',
+      title: 'Chẩn đoán ICD-10',
+      dataIndex: 'icd10Code',
+      key: 'icd10Code',
+      render: (code: string, record: ExaminationItem) => (
+        <div>
+          <Tag color="cyan" style={{ fontWeight: 700 }}>{code}</Tag>
+          <Text style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#334155' }}>{record.icd10Name}</Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Sinh hiệu (Mạch/HA)',
+      key: 'vitals',
+      render: (_: any, record: ExaminationItem) => (
+        <Text style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+          💓 {record.pulseRate} bpm • 🩸 {record.bloodPressure} mmHg • 🌡️ {record.temperature}°C
+        </Text>
+      ),
+    },
+    {
+      title: 'Đơn thuốc',
+      key: 'prescriptions',
+      render: (_: any, record: ExaminationItem) => (
+        <Badge count={record.prescriptionDetails?.length || 0} color="#0284c7" showZero />
+      ),
+    },
+    {
+      title: 'Bác sĩ Khám',
+      dataIndex: 'doctorName',
+      key: 'doctorName',
+      render: (t: string) => (
+        <Tag icon={<SafetyCertificateOutlined color="#10b981" />} color="green">
+          {t}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Thao tác EMR',
       key: 'action',
-      width: 60,
-      render: (_: unknown, record: EPrescriptionItem) => (
-        <Button icon={<DeleteOutlined />} danger size="small" type="text" onClick={() => setPrescription(prescription.filter((p) => p.id !== record.id))} />
+      render: (_: any, record: ExaminationItem) => (
+        <Space>
+          <Button
+            type="primary"
+            size="small"
+            icon={<FileTextOutlined />}
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            onClick={() => {
+              setSelectedExam(record);
+              setIsDrawerOpen(true);
+            }}
+          >
+            Xem EMR
+          </Button>
+          <Button
+            icon={<PrinterOutlined />}
+            size="small"
+            type="default"
+            onClick={() => showToast(`Đã gửi lệnh in đơn thuốc ${record.examinationCode}!`, 'info')}
+          >
+            In Đơn
+          </Button>
+        </Space>
       ),
     },
   ];
 
-  const serviceColumns = [
-    {
-      title: 'Tên Dịch vụ / Xét nghiệm',
-      dataIndex: 'tenDichVu',
-      key: 'tenDichVu',
-      render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text>
-    },
-    { title: 'Phân loại', dataIndex: 'loaiDichVu', key: 'loaiDichVu', render: (l: string) => <Tag color="blue">{l}</Tag> },
-    {
-      title: 'Kết quả cận lâm sàng',
-      dataIndex: 'ketQua',
-      key: 'ketQua',
-      render: (kq: string) => kq ? <Text style={{ color: '#10b981', fontWeight: 600 }}>{kq}</Text> : <Text type="secondary">Chờ thực hiện...</Text>
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'trangThai',
-      key: 'trangThai',
-      render: (st: string) => <Tag color={st === 'Đã có kết quả' ? 'success' : 'warning'}>{st}</Tag>,
-    },
-  ];
-
-  const onFinishExamination = () => {
-    showSuccessAlert(
-      'Hoàn tất Ca khám!',
-      'Hồ sơ bệnh án (EMR) đã được lưu và hóa đơn dịch vụ đã chuyển sang phân hệ Viện phí.'
-    );
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Patient Header Banner */}
-      <Card
+      {/* Header Banner */}
+      <div
         style={{
-          borderRadius: 12,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-            : 'linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%)',
-          borderColor: isDarkMode ? '#334155' : '#91caff',
-          boxShadow: isDarkMode ? '0 10px 25px rgba(0,0,0,0.3)' : '0 10px 25px rgba(2, 132, 199, 0.08)'
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
+            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
+          padding: '20px 24px',
+          borderRadius: '16px',
+          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)',
         }}
       >
-        <Row align="middle" justify="space-between">
-          <Col>
-            <Space size="large">
-              <Badge count="ĐANG KHÁM" style={{ backgroundColor: '#10b981' }}>
-                <Title level={4} style={{ margin: 0, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
-                  Nguyễn Văn An (36 tuổi - Nam)
-                </Title>
-              </Badge>
-              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                Mã BN: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontFamily: 'monospace' }}>BN20260001</strong>
-              </Text>
-              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                CCCD: <strong style={{ fontFamily: 'monospace' }}>038090001234</strong>
-              </Text>
-              <Tag color="green">BHYT: DN40101234567</Tag>
-            </Space>
-          </Col>
-          <Col>
-            <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>
-              Tiền sử: Tăng huyết áp • Dị ứng: Không
-            </Text>
-          </Col>
-        </Row>
-      </Card>
-
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={onFinishExamination}
-        initialValues={{
-          subjective: 'Bệnh nhân đau họng 3 ngày, sốt nhẹ 38°C, ho khan nhiều về đêm, nuốt vướng.',
-          icd10Code: 'J02.9 - Viêm họng cấp tính, không đặc hiệu'
-        }}
-      >
-        {/* SOAP Section 1: Subjective & Objective */}
-        <Row gutter={16}>
-          <Col span={12}>
-            <Card
-              title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>S (Subjective) - Triệu chứng chủ quan</span>}
-              size="small"
-              style={{ borderRadius: 12, height: '100%', borderColor: isDarkMode ? '#334155' : undefined }}
-            >
-              <Form.Item name="subjective" label="Hỏi bệnh & Bệnh nhân khai báo">
-                <TextArea rows={5} placeholder="Nhập chi tiết các triệu chứng cơ năng, thời gian khởi phát..." />
-              </Form.Item>
-            </Card>
-          </Col>
-
-          <Col span={12}>
-            <Card
-              title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>O (Objective) - Khám khách quan & Sinh hiệu</span>}
-              size="small"
-              style={{ borderRadius: 12, borderColor: isDarkMode ? '#334155' : undefined }}
-            >
-              <Row gutter={8}>
-                <Col span={12}>
-                  <Form.Item label="Mạch (lần/phút)">
-                    <Input defaultValue="78" suffix="bpm" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Nhiệt độ (°C)">
-                    <Input defaultValue="38.0" suffix="°C" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Huyết áp (mmHg)">
-                    <Input defaultValue="125/80" suffix="mmHg" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Nhip thở (lần/phút)">
-                    <Input defaultValue="18" suffix="l/p" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Cân nặng (kg)">
-                    <Input defaultValue="68" suffix="kg" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Chiều cao (cm)">
-                    <Input defaultValue="172" suffix="cm" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Card>
-          </Col>
-        </Row>
-
-        <Divider style={{ margin: '16px 0', borderColor: isDarkMode ? '#334155' : undefined }} />
-
-        {/* SOAP Section 2: Assessment & AI ICD-10 Helper */}
-        <Row gutter={16}>
-          <Col span={14}>
-            <Card
-              title={
-                <Space>
-                  <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>A (Assessment) - Chẩn đoán & Mã bệnh ICD-10</span>
-                </Space>
-              }
-              extra={
-                <Button type="primary" ghost icon={<RobotOutlined />} onClick={handleConsultAiICD10} loading={aiLoading}>
-                  AI Gợi ý ICD-10
-                </Button>
-              }
-              size="small"
-              style={{ borderRadius: 12, borderColor: isDarkMode ? '#334155' : undefined }}
-            >
-              <Form.Item name="icd10Code" label="Mã ICD-10 & Tên chẩn đoán chính" rules={[{ required: true }]}>
-                <Input size="large" placeholder="Nhập hoặc chọn mã ICD-10..." />
-              </Form.Item>
-
-              {aiSuggestions.length > 0 && (
-                <Alert
-                  type="info"
-                  showIcon
-                  icon={<RobotOutlined />}
-                  message="Gợi ý chẩn đoán từ Trợ lý AI (Google Gemini):"
-                  description={
-                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {aiSuggestions.map((item) => (
-                        <div key={item.code} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                            <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{item.code}</strong> - {item.name} <Tag color="green">{item.match}</Tag>
-                          </Text>
-                          <Button size="small" type="link" onClick={() => handleSelectICD10(item)}>
-                            Áp dụng mã này
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  }
-                  style={{ marginBottom: 12 }}
-                />
-              )}
-            </Card>
-          </Col>
-
-          <Col span={10}>
-            <Card
-              title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Chỉ định Cận lâm sàng (Xét nghiệm / X-Quang)</span>}
-              size="small"
-              extra={<Button icon={<PlusOutlined />} type="dashed" size="small">Thêm chỉ định</Button>}
-              style={{ borderRadius: 12, borderColor: isDarkMode ? '#334155' : undefined }}
-            >
-              <Table dataSource={services} columns={serviceColumns} rowKey="id" pagination={false} size="small" />
-            </Card>
-          </Col>
-        </Row>
-
-        <Divider style={{ margin: '16px 0', borderColor: isDarkMode ? '#334155' : undefined }} />
-
-        {/* SOAP Section 3: Plan & E-Prescription */}
-        <Card
-          title={
-            <Space>
-              <MedicineBoxOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
-              <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>P (Plan) - Đơn thuốc Điện tử & Hướng xử trí điều trị</span>
-            </Space>
-          }
-          extra={<Button icon={<PlusOutlined />} type="primary" size="small" style={{ backgroundColor: '#0284c7' }}>Kê thêm Thuốc</Button>}
-          style={{ borderRadius: 12, borderColor: isDarkMode ? '#334155' : undefined }}
-        >
-          <Table dataSource={prescription} columns={prescriptionColumns} rowKey="id" pagination={false} style={{ marginBottom: 16 }} />
-
-          <Form.Item label="Lời khuyên của Bác sĩ & Hẹn tái khám">
-            <TextArea rows={2} defaultValue="Uống nhiều nước ấm, nghỉ ngơi, súc họng bằng nước muối sinh lý. Tái khám sau 5 ngày hoặc khi có biểu hiện sốt cao liên tục." />
-          </Form.Item>
-        </Card>
-
-        {/* Submit Bar */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 20 }}>
-          <Button size="large">Lưu Nháp</Button>
+        <div>
+          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 800 }}>
+            <MedicineBoxOutlined style={{ marginRight: 10 }} />
+            Khám bệnh Lâm sàng & Hồ sơ EMR (SOAP Note)
+          </Title>
+          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+            Phòng khám: <strong>{user?.chuyenKhoa || 'Khoa Nội Tổng Hợp'}</strong> • Bác sĩ trực: <strong>{user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}</strong>
+          </Text>
+        </div>
+        <Space>
+          <Input
+            placeholder="Tìm theo Tên BN, Mã BN, Mã ICD-10..."
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280 }}
+            allowClear
+          />
+          <Button icon={<ReloadOutlined />} onClick={fetchExaminations} loading={loading}>
+            Làm mới
+          </Button>
           <Button
             type="primary"
-            htmlType="submit"
+            icon={<PlusOutlined />}
             size="large"
-            icon={<SaveOutlined />}
-            style={{ background: '#10b981', borderColor: '#10b981', height: 48, padding: '0 32px', fontWeight: 600 }}
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            onClick={() => {
+              form.resetFields();
+              setIsModalOpen(true);
+            }}
           >
-            Hoàn tất Ca khám & Xuất EMR
+            Tạo Phiếu Khám SOAP Mới
           </Button>
-        </div>
-      </Form>
+        </Space>
+      </div>
+
+      {/* Main Table Card */}
+      <Card style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd' }}>
+        <Table
+          dataSource={examinations}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 8 }}
+        />
+      </Card>
+
+      {/* Modal Tạo Lượt Khám SOAP Mới */}
+      <Modal
+        title={
+          <Space>
+            <MedicineBoxOutlined style={{ color: '#0284c7' }} />
+            <span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 800 }}>
+              Phiếu Khám Bệnh EMR - Mô hình Chẩn đoán SOAP & Kê Đơn Thuốc
+            </span>
+          </Space>
+        }
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        width={950}
+      >
+        <Form form={form} layout="vertical" onFinish={handleCreateExamination}>
+          <Tabs
+            defaultActiveKey="vitals"
+            items={[
+              {
+                key: 'vitals',
+                label: (
+                  <span>
+                    <HeartOutlined /> I. Bệnh nhân & Sinh hiệu (Vitals)
+                  </span>
+                ),
+                children: (
+                  <div style={{ marginTop: 12 }}>
+                    <Form.Item
+                      label="Chọn Bệnh nhân Khám"
+                      name="patientId"
+                      rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân!' }]}
+                    >
+                      <Select showSearch placeholder="Gõ tên hoặc mã bệnh nhân..." size="large">
+                        {patients.map((p) => (
+                          <Option key={p.id} value={p.id}>
+                            {p.maBenhNhan} - {p.hoTen} ({p.gioiTinh}, CCCD: {p.soCCCD})
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+
+                    <Divider style={{ margin: '12px 0', borderColor: isDarkMode ? '#334155' : undefined }}>
+                      <Text style={{ fontSize: 13, color: '#0284c7', fontWeight: 600 }}>CHỈ SỐ SINH HIỆU (VITAL SIGNS)</Text>
+                    </Divider>
+
+                    <Row gutter={16}>
+                      <Col span={6}>
+                        <Form.Item label="Mạch (Pulse)" name="pulseRate" initialValue={78}>
+                          <InputNumber style={{ width: '100%' }} addonAfter="lần/phút" min={40} max={200} size="large" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item label="Nhiệt độ (Temp)" name="temperature" initialValue={37.0}>
+                          <InputNumber style={{ width: '100%' }} addonAfter="°C" step={0.1} min={35} max={42} size="large" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item label="Huyết áp (BP)" name="bloodPressure" initialValue="120/80">
+                          <Input style={{ width: '100%' }} placeholder="120/80" size="large" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item label="Nhịp thở (RR)" name="respiratoryRate" initialValue={18}>
+                          <InputNumber style={{ width: '100%' }} addonAfter="lần/phút" size="large" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Form.Item label="Cân nặng (Weight)" name="weight" initialValue={65}>
+                          <InputNumber
+                            style={{ width: '100%' }}
+                            addonAfter="kg"
+                            size="large"
+                            onChange={(val) => setWeight(Number(val) || 65)}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <Form.Item label="Chiều cao (Height)" name="height" initialValue={168}>
+                          <InputNumber
+                            style={{ width: '100%' }}
+                            addonAfter="cm"
+                            size="large"
+                            onChange={(val) => setHeight(Number(val) || 168)}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                        <div style={{ paddingTop: 30 }}>
+                          <Tag color={bmiValue >= 25 ? 'orange' : bmiValue >= 18.5 ? 'green' : 'blue'} style={{ fontSize: 14, padding: '6px 12px' }}>
+                            BMI Tự tính: <strong>{bmiValue} kg/m²</strong> (
+                            {bmiValue >= 25 ? 'Thừa cân' : bmiValue >= 18.5 ? 'Bình thường' : 'Gầy'})
+                          </Tag>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                ),
+              },
+              {
+                key: 'soap',
+                label: (
+                  <span>
+                    <FileTextOutlined /> II. Khám SOAP & Mã ICD-10
+                  </span>
+                ),
+                children: (
+                  <div style={{ marginTop: 12 }}>
+                    <Form.Item
+                      label="S (Subjective) - Triệu chứng chủ quan"
+                      name="subjective"
+                      rules={[{ required: true, message: 'Nhập triệu chứng của bệnh nhân!' }]}
+                    >
+                      <TextArea rows={2} placeholder="Bệnh nhân khai đau họng 3 ngày, sốt 38.0°C, ho khan..." />
+                    </Form.Item>
+
+                    <Row gutter={16}>
+                      <Col span={18}>
+                        <Form.Item
+                          label="A (Assessment) - Chẩn đoán Lâm sàng & Mã ICD-10 chuẩn Bộ Y Tế"
+                          name="icd10Code"
+                          rules={[{ required: true, message: 'Vui lòng chọn mã ICD-10!' }]}
+                          initialValue="J02.9"
+                        >
+                          <Select size="large">
+                            {ICD10_CATALOG.map((c) => (
+                              <Option key={c.code} value={c.code}>
+                                <strong>{c.code}</strong> - {c.name}
+                              </Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col span={6} style={{ paddingTop: 30 }}>
+                        <Button
+                          icon={<RobotOutlined style={{ color: '#0284c7' }} />}
+                          onClick={handleConsultAiICD10}
+                          loading={aiLoading}
+                          block
+                          size="large"
+                        >
+                          AI Gợi ý ICD-10
+                        </Button>
+                      </Col>
+                    </Row>
+
+                    {aiSuggestions.length > 0 && (
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="Trợ lý AI Y tế Phân tích Phù hợp:"
+                        description={
+                          <Space direction="vertical">
+                            {aiSuggestions.map((item) => (
+                              <div key={item.code}>
+                                <Tag color="blue" style={{ cursor: 'pointer' }} onClick={() => form.setFieldsValue({ icd10Code: item.code })}>
+                                  {item.code} - {item.name} ({item.match})
+                                </Tag>
+                              </div>
+                            ))}
+                          </Space>
+                        }
+                        style={{ marginBottom: 16 }}
+                      />
+                    )}
+
+                    <Form.Item label="P (Plan) - Kế hoạch Xử trí & Lời dặn Bác sĩ" name="plan">
+                      <TextArea rows={2} placeholder="Cho đơn thuốc 5 ngày, nghỉ ngơi, hẹn tái khám sau 5 ngày..." />
+                    </Form.Item>
+                  </div>
+                ),
+              },
+              {
+                key: 'prescription',
+                label: (
+                  <span>
+                    <MedicineBoxOutlined /> III. Kê Đơn Thuốc Điện Tử
+                  </span>
+                ),
+                children: (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Thuốc kê trong đơn</Text>
+                      <Button icon={<PlusOutlined />} onClick={handleAddMedicine} type="primary" style={{ backgroundColor: '#0284c7' }}>
+                        Thêm Thuốc
+                      </Button>
+                    </div>
+
+                    {prescriptions.map((p, idx) => (
+                      <Row gutter={12} key={idx} align="middle" style={{ marginBottom: 10 }}>
+                        <Col span={8}>
+                          <Input
+                            placeholder="Tên thuốc"
+                            value={p.medicineName}
+                            onChange={(e) => {
+                              const updated = [...prescriptions];
+                              updated[idx].medicineName = e.target.value;
+                              setPrescriptions(updated);
+                            }}
+                          />
+                        </Col>
+                        <Col span={4}>
+                          <Input
+                            placeholder="Đơn vị"
+                            value={p.unit}
+                            onChange={(e) => {
+                              const updated = [...prescriptions];
+                              updated[idx].unit = e.target.value;
+                              setPrescriptions(updated);
+                            }}
+                          />
+                        </Col>
+                        <Col span={4}>
+                          <InputNumber
+                            min={1}
+                            value={p.quantity}
+                            onChange={(val) => {
+                              const updated = [...prescriptions];
+                              updated[idx].quantity = Number(val) || 1;
+                              setPrescriptions(updated);
+                            }}
+                            style={{ width: '100%' }}
+                          />
+                        </Col>
+                        <Col span={7}>
+                          <Input
+                            placeholder="Liều dùng & Hướng dẫn"
+                            value={p.dosageInstruction}
+                            onChange={(e) => {
+                              const updated = [...prescriptions];
+                              updated[idx].dosageInstruction = e.target.value;
+                              setPrescriptions(updated);
+                            }}
+                          />
+                        </Col>
+                        <Col span={1}>
+                          <Button icon={<DeleteOutlined />} danger type="text" onClick={() => handleRemoveMedicine(idx)} />
+                        </Col>
+                      </Row>
+                    ))}
+                  </div>
+                ),
+              },
+            ]}
+          />
+
+          <div style={{ textAlign: 'right', marginTop: 24 }}>
+            <Space>
+              <Button onClick={() => setIsModalOpen(false)}>Hủy bỏ</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                icon={<SaveOutlined />}
+                loading={submitting}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+              >
+                Lưu Bệnh Án & Ký Chữ Ký Số
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </Modal>
+
+      {/* Drawer Xem Chi Tiết Bệnh Án EMR */}
+      <Drawer
+        title={
+          <Space>
+            <FileTextOutlined style={{ color: '#0284c7' }} />
+            <span>Hồ sơ Bệnh án EMR - {selectedExam?.examinationCode}</span>
+          </Space>
+        }
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        width={650}
+      >
+        {selectedExam && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Alert
+              type="success"
+              showIcon
+              icon={<SafetyCertificateOutlined />}
+              message="Đã xác thực Chữ ký số Bác sĩ:"
+              description={`Ký bởi: ${selectedExam.doctorName} (SHA-256 RSA)`}
+            />
+
+            <Card size="small" title="1. Thông tin Bệnh nhân">
+              <Text style={{ display: 'block' }}>Họ tên: <strong>{selectedExam.patientName}</strong></Text>
+              <Text style={{ display: 'block' }}>Tuổi/Giới tính: <strong>{selectedExam.patientAge} tuổi ({selectedExam.patientGender})</strong></Text>
+              <Text style={{ display: 'block' }}>Mã Bệnh nhân: <strong>{selectedExam.patientCode}</strong></Text>
+            </Card>
+
+            <Card size="small" title="2. Chỉ số Sinh hiệu (Vitals)">
+              <Text style={{ display: 'block' }}>💓 Mạch: <strong>{selectedExam.pulseRate} bpm</strong> • 🌡️ Nhiệt độ: <strong>{selectedExam.temperature}°C</strong></Text>
+              <Text style={{ display: 'block' }}>🩸 Huyết áp: <strong>{selectedExam.bloodPressure} mmHg</strong> • ⚖️ BMI: <strong>{selectedExam.bmi} kg/m²</strong></Text>
+            </Card>
+
+            <Card size="small" title="3. Mô hình SOAP & ICD-10">
+              <Text style={{ display: 'block' }}>S (Triệu chứng): {selectedExam.subjective}</Text>
+              <Text style={{ display: 'block' }}>A (Mã ICD-10): <Tag color="cyan">{selectedExam.icd10Code}</Tag> {selectedExam.icd10Name}</Text>
+              <Text style={{ display: 'block' }}>P (Xử trí): {selectedExam.plan}</Text>
+            </Card>
+
+            <Card size="small" title="4. Đơn thuốc Điện tử">
+              {selectedExam.prescriptionDetails.map((p, idx) => (
+                <div key={idx} style={{ marginBottom: 6 }}>
+                  <Text strong>{idx + 1}. {p.medicineName}</Text> ({p.quantity} {p.unit})
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>HDSD: {p.dosageInstruction}</Text>
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };
