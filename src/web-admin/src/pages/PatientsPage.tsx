@@ -50,7 +50,7 @@ export const PatientsPage: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [pageIndex, setPageIndex] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
+  const [pageSize, setPageSize] = useState<number>(5);
   const [searchText, setSearchText] = useState<string>('');
 
   // Modal State
@@ -208,7 +208,7 @@ export const PatientsPage: React.FC = () => {
       dataIndex: 'maBenhNhan',
       key: 'maBenhNhan',
       render: (text: string) => (
-        <Text strong style={{ color: '#0284c7', fontFamily: 'monospace', fontSize: '14px' }}>
+        <Text strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontFamily: 'monospace', fontSize: '14px' }}>
           {text}
         </Text>
       ),
@@ -219,7 +219,7 @@ export const PatientsPage: React.FC = () => {
       key: 'hoTen',
       render: (text: string, record: Patient) => (
         <div>
-          <Text strong style={{ color: '#0f172a' }}>{text}</Text>
+          <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{text}</Text>
           {record.tuoi !== undefined && (
             <Tag color="cyan" style={{ marginLeft: 6 }}>{record.tuoi} tuổi</Tag>
           )}
@@ -237,7 +237,7 @@ export const PatientsPage: React.FC = () => {
       title: 'Số CCCD',
       dataIndex: 'soCCCD',
       key: 'soCCCD',
-      render: (text: string) => <Text style={{ fontFamily: 'monospace' }}>{text}</Text>,
+      render: (text: string) => <Text style={{ fontFamily: 'monospace', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{text}</Text>,
     },
     {
       title: 'Thẻ BHYT',
@@ -252,7 +252,7 @@ export const PatientsPage: React.FC = () => {
           <Text type="secondary" style={{ fontSize: '12px' }}>Không có</Text>
         ),
     },
-    { title: 'Số điện thoại', dataIndex: 'soDienThoai', key: 'soDienThoai' },
+    { title: 'Số điện thoại', dataIndex: 'soDienThoai', key: 'soDienThoai', render: (t: string) => <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>{t}</Text> },
     {
       title: 'Cảnh báo Dị ứng',
       dataIndex: 'diUngThuoc',
@@ -397,7 +397,7 @@ export const PatientsPage: React.FC = () => {
               setPageSize(pSize);
             },
             showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
+            pageSizeOptions: ['5', '10', '20', '50'],
           }}
         />
       </Card>
