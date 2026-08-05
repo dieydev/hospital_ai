@@ -5,6 +5,7 @@ interface AuthState {
   user: UserAccount | null;
   token: string | null;
   setAuth: (user: UserAccount, token: string) => void;
+  updateUser: (partialUser: Partial<UserAccount>) => void;
   logout: () => void;
 }
 
@@ -16,7 +17,7 @@ const defaultMockUser: UserAccount = {
   soDienThoai: '0336022526',
   vaiTro: ['Doctor', 'Admin'],
   chuyenKhoa: 'Khoa Nội Tổng hợp',
-  chucDanh: 'Bác sĩ Điều trị',
+  chucDanh: 'Trưởng Khoa Nội',
   trangThaiKichHoat: true,
   avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor',
 };
@@ -27,6 +28,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuth: (user, token) => {
     localStorage.setItem('token', token);
     set({ user, token });
+  },
+  updateUser: (partialUser) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...partialUser } : null,
+    }));
   },
   logout: () => {
     localStorage.removeItem('token');

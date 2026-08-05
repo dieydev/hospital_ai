@@ -11,7 +11,6 @@ import {
   RightOutlined,
   CheckCircleFilled,
   ClockCircleOutlined,
-  ThunderboltFilled,
 } from '@ant-design/icons';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
@@ -264,24 +263,22 @@ export const DashboardPage: React.FC = () => {
           <Card
             title={
               <Space>
-                <RobotOutlined style={{ color: '#10b981' }} />
-                <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Trợ lý AI Y tế (Google Gemini)</span>
+                <RobotOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
+                <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Trợ lý AI Y tế (Hỗ trợ Lâm sàng)</span>
               </Space>
             }
             extra={<Button type="link" onClick={() => navigate('/ai-assistant')}>Mở AI <RightOutlined /></Button>}
             bordered={false}
             style={{
               borderRadius: 16,
-              background: isDarkMode
-                ? 'linear-gradient(180deg, #064e3b 0%, #1e293b 100%)'
-                : 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)',
-              borderColor: isDarkMode ? '#065f46' : '#bbf7d0'
+              background: isDarkMode ? '#1e293b' : '#ffffff',
+              border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-              <Avatar size={48} icon={<ThunderboltFilled />} style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }} />
+              <Avatar size={48} icon={<RobotOutlined />} style={{ background: '#0284c7' }} />
               <div>
-                <Text strong style={{ fontSize: 16, display: 'block', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Gemini Pro Health Engine</Text>
+                <Text strong style={{ fontSize: 16, display: 'block', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Hệ thống Trợ lý AI Y tế</Text>
                 <Text type="secondary" style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : undefined }}>Tra cứu tri thức & Tóm tắt EMR tự động</Text>
               </div>
             </div>

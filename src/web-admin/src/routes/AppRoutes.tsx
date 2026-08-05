@@ -12,6 +12,7 @@ import { AIAssistantPage } from '../pages/AIAssistantPage';
 import { CatalogsPage } from '../pages/CatalogsPage';
 import { AuditLogPage } from '../pages/AuditLogPage';
 import { ReportsPage } from '../pages/ReportsPage';
+import { ProfilePage } from '../pages/ProfilePage';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const AppRoutes: React.FC = () => {
@@ -39,6 +40,7 @@ export const AppRoutes: React.FC = () => {
                 <Route path="/catalogs" element={<CatalogsPage />} />
                 <Route path="/audit-logs" element={<AuditLogPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </MainLayout>

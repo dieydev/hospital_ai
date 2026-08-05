@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Tag, Badge, Button, Input } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Button, Input } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -72,15 +72,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     },
     {
       key: '/ai-assistant',
-      icon: <RobotOutlined style={{ fontSize: 18, color: '#38bdf8' }} />,
-      label: (
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>Trợ lý AI Y tế</span>
-          <Tag color="cyan" style={{ fontSize: 10, margin: 0, padding: '0 6px', borderRadius: 4 }}>
-            GEMINI
-          </Tag>
-        </span>
-      ),
+      icon: <RobotOutlined style={{ fontSize: 18 }} />,
+      label: 'Trợ lý AI Y tế',
     },
     {
       key: '/catalogs',
@@ -104,6 +97,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: 'profile',
       label: 'Hồ sơ cá nhân & Ca trực',
       icon: <SolutionOutlined />,
+      onClick: () => navigate('/profile'),
     },
     {
       type: 'divider' as const,
