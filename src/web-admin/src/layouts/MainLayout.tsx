@@ -18,9 +18,12 @@ import {
   MenuFoldOutlined,
   ScheduleOutlined,
   CheckCircleFilled,
+  SunOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useThemeStore } from '../store/useThemeStore';
 
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
@@ -34,6 +37,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const { isDarkMode, toggleTheme } = useThemeStore();
 
   const menuItems = [
     {
@@ -117,7 +121,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <Layout style={{ minHeight: '100vh', background: isDarkMode ? '#0f172a' : '#f8fafc' }}>
       <Sider
         trigger={null}
         collapsible
@@ -217,14 +221,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Header
           style={{
             padding: '0 28px',
-            background: '#ffffff',
+            background: isDarkMode ? '#1e293b' : '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)',
+            boxShadow: isDarkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 3px rgba(15, 23, 42, 0.08)',
             zIndex: 9,
             height: 70,
-            borderBottom: '1px solid #f1f5f9',
+            borderBottom: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -232,7 +236,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 18 }} /> : <MenuFoldOutlined style={{ fontSize: 18 }} />}
               onClick={() => setCollapsed(!collapsed)}
-              style={{ color: '#475569' }}
+              style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}
             />
             <Input
               placeholder="Tìm nhanh Bệnh nhân, Mã BN, CCCD, Mã EMR hoặc ICD-10..."
@@ -240,35 +244,46 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               style={{
                 width: 380,
                 borderRadius: 20,
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                background: isDarkMode ? '#0f172a' : '#f8fafc',
+                border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                color: isDarkMode ? '#f8fafc' : '#0f172a',
                 padding: '6px 16px',
               }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Theme Toggle Button */}
+            <Button
+              type="text"
+              shape="circle"
+              icon={isDarkMode ? <SunOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: 20, color: '#0284c7' }} />}
+              onClick={toggleTheme}
+              style={{ background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0' }}
+              title={isDarkMode ? 'Chuyển sang Chế độ Sáng' : 'Chuyển sang Chế độ Tối'}
+            />
+
             <Badge count={3} offset={[-2, 4]} color="#0284c7">
               <Button
                 type="text"
                 shape="circle"
-                icon={<BellOutlined style={{ fontSize: 20, color: '#475569' }} />}
-                style={{ background: '#f8fafc' }}
+                icon={<BellOutlined style={{ fontSize: 20, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
+                style={{ background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0' }}
               />
             </Badge>
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-              <Space style={{ cursor: 'pointer', padding: '4px 10px', borderRadius: 12, background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+              <Space style={{ cursor: 'pointer', padding: '4px 10px', borderRadius: 12, background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9' }}>
                 <Avatar
                   src={user?.avatarUrl}
                   icon={<UserOutlined />}
                   style={{ background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                  <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
+                  <Text strong style={{ fontSize: 14, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
                     {user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}
                   </Text>
-                  <Text style={{ fontSize: 11, color: '#64748b' }}>
+                  <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
                     {user?.chucDanh || 'Bác sĩ Điều trị'} • {user?.chuyenKhoa || 'Khoa Nội'}
                   </Text>
                 </div>

@@ -7,12 +7,15 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { useThemeStore } from '../store/useThemeStore';
+import { showToast } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
 
 export const MedicalRecordsPage: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const { isDarkMode } = useThemeStore();
 
   const historyItems = [
     {
@@ -62,14 +65,24 @@ export const MedicalRecordsPage: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Patient Banner */}
-      <Card style={{ borderRadius: 12, background: 'linear-gradient(135deg, #001529 0%, #002140 100%)', color: '#fff' }}>
+      <Card
+        style={{
+          borderRadius: 12,
+          background: isDarkMode
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+            : 'linear-gradient(135deg, #001529 0%, #002140 100%)',
+          color: '#fff',
+          borderColor: isDarkMode ? '#334155' : undefined,
+          boxShadow: isDarkMode ? '0 10px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
+        }}
+      >
         <Row align="middle" justify="space-between">
           <Col>
             <Space size="large">
               <Title level={3} style={{ color: '#fff', margin: 0 }}>
                 HỒ SƠ BỆNH ÁN ĐIỆN TỬ (EMR) - NGUYỄN VĂN AN
               </Title>
-              <Tag color="blue">BN20260001</Tag>
+              <Tag color="blue" style={{ fontSize: 13, padding: '2px 10px' }}>BN20260001</Tag>
             </Space>
             <div style={{ marginTop: 8 }}>
               <Text style={{ color: 'rgba(255,255,255,0.75)' }}>
@@ -78,7 +91,13 @@ export const MedicalRecordsPage: React.FC = () => {
             </div>
           </Col>
           <Col>
-            <Button type="primary" icon={<FilePdfOutlined />} size="large" onClick={() => handleOpenPdf(historyItems[0])}>
+            <Button
+              type="primary"
+              icon={<FilePdfOutlined />}
+              size="large"
+              style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+              onClick={() => handleOpenPdf(historyItems[0])}
+            >
               Xuất Bệnh án EMR (PDF)
             </Button>
           </Col>
@@ -88,28 +107,53 @@ export const MedicalRecordsPage: React.FC = () => {
       {/* Timeline view */}
       <Row gutter={16}>
         <Col span={16}>
-          <Card title={<Space><HistoryOutlined style={{ color: '#1677ff' }} /><span>Dòng thời gian Diễn biến Lịch sử Khám bệnh</span></Space>} style={{ borderRadius: 12 }}>
+          <Card
+            title={
+              <Space>
+                <HistoryOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
+                <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Dòng thời gian Diễn biến Lịch sử Khám bệnh</span>
+              </Space>
+            }
+            style={{ borderRadius: 12, borderColor: isDarkMode ? '#334155' : undefined }}
+          >
             <Timeline
               mode="left"
               items={historyItems.map((item) => ({
                 color: item.id === 'emr-001' ? 'green' : 'blue',
                 children: (
-                  <Card size="small" style={{ marginBottom: 16, borderRadius: 8, borderColor: '#e8e8e8' }}>
+                  <Card
+                    size="small"
+                    style={{
+                      marginBottom: 16,
+                      borderRadius: 8,
+                      borderColor: isDarkMode ? '#334155' : '#e8e8e8',
+                      background: isDarkMode ? '#0f172a' : '#ffffff'
+                    }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <Text strong style={{ fontSize: 16, color: '#1677ff' }}>
+                      <Text strong style={{ fontSize: 16, color: isDarkMode ? '#38bdf8' : '#0284c7' }}>
                         {formatDate(item.ngayKham)} - {item.khoaKham}
                       </Text>
                       <Tag color="purple">Mã ICD-10: {item.maICD10}</Tag>
                     </div>
 
-                    <p><strong>Bác sĩ khám:</strong> {item.bacSiKham}</p>
-                    <p><strong>Triệu chứng:</strong> {item.trieuChung}</p>
-                    <p><strong>Chẩn đoán:</strong> <Text strong style={{ color: '#d4b106' }}>{item.chanDoanChinh}</Text></p>
+                    <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+                      <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Bác sĩ khám:</strong> {item.bacSiKham}
+                    </p>
+                    <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+                      <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Triệu chứng:</strong> {item.trieuChung}
+                    </p>
+                    <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+                      <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Chẩn đoán:</strong>{' '}
+                      <Text strong style={{ color: isDarkMode ? '#f59e0b' : '#d97706' }}>{item.chanDoanChinh}</Text>
+                    </p>
 
-                    <Divider style={{ margin: '8px 0' }} />
+                    <Divider style={{ margin: '8px 0', borderColor: isDarkMode ? '#334155' : undefined }} />
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text type="secondary">Tổng chi phí lượt khám: <strong>{formatCurrency(item.chiPhi)}</strong></Text>
+                      <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : undefined }}>
+                        Tổng chi phí lượt khám: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{formatCurrency(item.chiPhi)}</strong>
+                      </Text>
                       <Button type="link" icon={<FilePdfOutlined />} onClick={() => handleOpenPdf(item)}>
                         Xem PDF Chi tiết
                       </Button>
@@ -122,11 +166,22 @@ export const MedicalRecordsPage: React.FC = () => {
         </Col>
 
         <Col span={8}>
-          <Card title="Tóm tắt Tiền sử & Dị ứng" style={{ borderRadius: 12 }}>
-            <p><strong>Nhóm máu:</strong> <Tag color="red">O+</Tag></p>
-            <p><strong>Tiền sử bệnh nội khoa:</strong> Tăng huyết áp độ 1</p>
-            <p><strong>Tiền sử dị ứng thuốc:</strong> Không ghi nhận</p>
-            <p><strong>Tổng số lượt khám đã thực hiện:</strong> 12 lượt</p>
+          <Card
+            title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Tóm tắt Tiền sử & Dị ứng</span>}
+            style={{ borderRadius: 12, borderColor: isDarkMode ? '#334155' : undefined }}
+          >
+            <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+              <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Nhóm máu:</strong> <Tag color="red">O+</Tag>
+            </p>
+            <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+              <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Tiền sử bệnh nội khoa:</strong> Tăng huyết áp độ 1
+            </p>
+            <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+              <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Tiền sử dị ứng thuốc:</strong> Không ghi nhận
+            </p>
+            <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+              <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Tổng số lượt khám đã thực hiện:</strong> 12 lượt
+            </p>
           </Card>
         </Col>
       </Row>
@@ -135,8 +190,8 @@ export const MedicalRecordsPage: React.FC = () => {
       <Modal
         title={
           <Space>
-            <SafetyCertificateOutlined style={{ color: '#1677ff' }} />
-            <span>HỒ SƠ BỆNH ÁN ĐIỆN TỬ - ELECTRONIC MEDICAL RECORD (PDF PREVIEW)</span>
+            <SafetyCertificateOutlined style={{ color: '#0284c7' }} />
+            <span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>HỒ SƠ BỆNH ÁN ĐIỆN TỬ - ELECTRONIC MEDICAL RECORD (PDF PREVIEW)</span>
           </Space>
         }
         open={isPdfModalOpen}
@@ -144,34 +199,42 @@ export const MedicalRecordsPage: React.FC = () => {
         width={800}
         footer={[
           <Button key="close" onClick={() => setIsPdfModalOpen(false)}>Đóng</Button>,
-          <Button key="print" type="primary" icon={<PrinterOutlined />}>In File PDF</Button>,
+          <Button key="print" type="primary" icon={<PrinterOutlined />} style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }} onClick={() => showToast('Đã gửi lệnh in Hồ sơ EMR!', 'info')}>In File PDF</Button>,
         ]}
       >
         {selectedRecord && (
-          <div style={{ padding: 20, border: '1px solid #d9d9d9', borderRadius: 8, background: '#fff' }}>
-            <div style={{ textAlign: 'center', borderBottom: '2px solid #001529', paddingBottom: 12, marginBottom: 16 }}>
-              <Title level={4} style={{ margin: 0 }}>BỆNH VIỆN ĐA KHOA HOSPITAL AI</Title>
-              <Text type="secondary">Địa chỉ: Đường Lê Hồng Phong, TP. Thủ Dầu Một, Bình Dương</Text>
-              <Title level={3} style={{ color: '#001529', marginTop: 12, marginBottom: 0 }}>PHIẾU KHÁM BỆNH & HỒ SƠ EMR</Title>
-              <Text type="secondary">Mã lượt khám: {selectedRecord.maLuotKham}</Text>
+          <div
+            style={{
+              padding: 20,
+              border: isDarkMode ? '1px solid #334155' : '1px solid #d9d9d9',
+              borderRadius: 8,
+              background: isDarkMode ? '#1e293b' : '#ffffff',
+              color: isDarkMode ? '#f8fafc' : '#0f172a'
+            }}
+          >
+            <div style={{ textAlign: 'center', borderBottom: isDarkMode ? '2px solid #38bdf8' : '2px solid #001529', paddingBottom: 12, marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>BỆNH VIỆN ĐA KHOA HOSPITAL AI</Title>
+              <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Địa chỉ: Đường Lê Hồng Phong, TP. Thủ Dầu Một, Bình Dương</Text>
+              <Title level={3} style={{ color: isDarkMode ? '#f8fafc' : '#001529', marginTop: 12, marginBottom: 0 }}>PHIẾU KHÁM BỆNH & HỒ SƠ EMR</Title>
+              <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã lượt khám: {selectedRecord.maLuotKham}</Text>
             </div>
 
             <Row gutter={[16, 8]}>
-              <Col span={12}><Text>Họ tên: <strong>NGUYỄN VĂN AN</strong></Text></Col>
-              <Col span={12}><Text>Ngày sinh: <strong>1990-05-15 (Nam)</strong></Text></Col>
-              <Col span={12}><Text>Mã BN: <strong>BN20260001</strong></Text></Col>
-              <Col span={12}><Text>Mã thẻ BHYT: <strong>DN40101234567</strong></Text></Col>
-              <Col span={24}><Text>Địa chỉ: <strong>TP. Thủ Dầu Một, Bình Dương</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Họ tên: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>NGUYỄN VĂN AN</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Ngày sinh: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>1990-05-15 (Nam)</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã BN: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>BN20260001</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã thẻ BHYT: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>DN40101234567</strong></Text></Col>
+              <Col span={24}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Địa chỉ: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>TP. Thủ Dầu Một, Bình Dương</strong></Text></Col>
             </Row>
 
-            <Divider style={{ margin: '12px 0' }} />
+            <Divider style={{ margin: '12px 0', borderColor: isDarkMode ? '#334155' : undefined }} />
 
-            <Title level={5}>I. KẾT QUẢ KHÁM LÂM SÀNG (SOAP)</Title>
+            <Title level={5} style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>I. KẾT QUẢ KHÁM LÂM SÀNG (SOAP)</Title>
             <p><strong>1. Triệu chứng cơ năng (Subjective):</strong> {selectedRecord.trieuChung}</p>
             <p><strong>2. Sinh hiệu (Objective):</strong> {selectedRecord.sinhHieu}</p>
-            <p><strong>3. Chẩn đoán xác định (Assessment):</strong> {selectedRecord.chanDoanChinh} (Mã ICD-10: <strong>{selectedRecord.maICD10}</strong>)</p>
+            <p><strong>3. Chẩn đoán xác định (Assessment):</strong> {selectedRecord.chanDoanChinh} (Mã ICD-10: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{selectedRecord.maICD10}</strong>)</p>
 
-            <Title level={5} style={{ marginTop: 16 }}>II. ĐƠN THUỐC ĐIỆN TỬ (PLAN)</Title>
+            <Title level={5} style={{ marginTop: 16, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>II. ĐƠN THUỐC ĐIỆN TỬ (PLAN)</Title>
             <Table
               dataSource={selectedRecord.donThuoc}
               columns={[
@@ -186,15 +249,15 @@ export const MedicalRecordsPage: React.FC = () => {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
               <div style={{ textAlign: 'center' }}>
-                <Text type="secondary">Bệnh nhân ký tên</Text>
+                <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : undefined }}>Bệnh nhân ký tên</Text>
                 <div style={{ height: 60 }} />
-                <Text strong>Nguyễn Văn An</Text>
+                <Text strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>Nguyễn Văn An</Text>
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <Text type="secondary">Bác sĩ khám bệnh</Text>
+                <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : undefined }}>Bác sĩ khám bệnh</Text>
                 <div style={{ height: 60 }} />
-                <Text strong>{selectedRecord.bacSiKham}</Text>
+                <Text strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>{selectedRecord.bacSiKham}</Text>
               </div>
             </div>
           </div>

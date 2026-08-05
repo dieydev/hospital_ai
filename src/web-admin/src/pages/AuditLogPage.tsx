@@ -2,10 +2,13 @@ import React from 'react';
 import { Card, Table, Tag, Typography, Space, Input } from 'antd';
 import { SearchOutlined, UserOutlined } from '@ant-design/icons';
 import { AuditLog } from '../types';
+import { useThemeStore } from '../store/useThemeStore';
 
 const { Title, Text } = Typography;
 
 export const AuditLogPage: React.FC = () => {
+  const { isDarkMode } = useThemeStore();
+
   const auditLogs: AuditLog[] = [
     {
       id: 'log-001',
@@ -54,25 +57,54 @@ export const AuditLogPage: React.FC = () => {
   ];
 
   const columns = [
-    { title: 'Thời gian', dataIndex: 'thoiGian', key: 'thoiGian', width: 170, render: (t: string) => <Text style={{ fontSize: 13 }}>{t}</Text> },
-    { title: 'Người thực hiện', dataIndex: 'nguoiThucHien', key: 'nguoiThucHien', render: (n: string, r: AuditLog) => <Space><UserOutlined /><Text strong>{n}</Text><Tag color="blue">{r.vaiTro}</Tag></Space> },
+    { title: 'Thời gian', dataIndex: 'thoiGian', key: 'thoiGian', width: 170, render: (t: string) => <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : undefined }}>{t}</Text> },
+    {
+      title: 'Người thực hiện',
+      dataIndex: 'nguoiThucHien',
+      key: 'nguoiThucHien',
+      render: (n: string, r: AuditLog) => (
+        <Space>
+          <UserOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
+          <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{n}</Text>
+          <Tag color="blue">{r.vaiTro}</Tag>
+        </Space>
+      )
+    },
     { title: 'Hành động', dataIndex: 'hanhDong', key: 'hanhDong', render: (h: string, r: AuditLog) => <Tag color={r.isAiAction ? 'purple' : 'green'}>{h}</Tag> },
     { title: 'Phân hệ', dataIndex: 'module', key: 'module' },
-    { title: 'Chi tiết thao tác', dataIndex: 'chiTiet', key: 'chiTiet' },
-    { title: 'IP Address', dataIndex: 'ipAddress', key: 'ipAddress', width: 120, render: (ip: string) => <Text type="secondary">{ip}</Text> },
+    { title: 'Chi tiết thao tác', dataIndex: 'chiTiet', key: 'chiTiet', render: (c: string) => <Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>{c}</Text> },
+    { title: 'IP Address', dataIndex: 'ipAddress', key: 'ipAddress', width: 120, render: (ip: string) => <Text type="secondary" style={{ fontFamily: 'monospace' }}>{ip}</Text> },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Page Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: isDarkMode
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
+            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
+          padding: '20px 24px',
+          borderRadius: '12px',
+          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
+        }}
+      >
         <div>
-          <Title level={3} style={{ margin: 0 }}>Nhật ký & Kiểm toán Hệ thống (Audit Log)</Title>
-          <Text type="secondary">Ghi nhận toàn bộ lịch sử thao tác người dùng, truy vết dữ liệu y tế & Nhật ký AI Gemini</Text>
+          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+            Nhật ký & Kiểm toán Hệ thống (Audit Log)
+          </Title>
+          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+            Ghi nhận toàn bộ lịch sử thao tác người dùng, truy vết dữ liệu y tế & Nhật ký AI Gemini
+          </Text>
         </div>
         <Input placeholder="Tìm kiếm nhật ký theo Tên / Thao tác / IP..." prefix={<SearchOutlined />} style={{ width: 340 }} />
       </div>
 
-      <Card style={{ borderRadius: 12 }}>
+      <Card style={{ borderRadius: 12, border: isDarkMode ? '1px solid #334155' : undefined }}>
         <Table dataSource={auditLogs} columns={columns} rowKey="id" />
       </Card>
     </div>

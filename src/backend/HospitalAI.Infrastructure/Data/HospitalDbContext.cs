@@ -79,11 +79,17 @@ public class HospitalDbContext : DbContext
         {
             entity.ToTable("BenhNhan", "dbo");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.PatientCode).HasColumnName("MaBenhNhan");
-            entity.Property(e => e.FullName).HasColumnName("HoTen");
-            entity.Property(e => e.Gender).HasColumnName("GioiTinh");
-            entity.Property(e => e.DateOfBirth).HasColumnName("NgaySinh");
-            entity.Property(e => e.IdentityCardNumber).HasColumnName("SoCCCD");
+            entity.Property(e => e.PatientCode).HasColumnName("MaBenhNhan").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.FullName).HasColumnName("HoTen").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Gender).HasColumnName("GioiTinh").HasMaxLength(10).IsRequired();
+            entity.Property(e => e.DateOfBirth).HasColumnName("NgaySinh").IsRequired();
+            entity.Property(e => e.IdentityCardNumber).HasColumnName("SoCCCD").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.HealthInsuranceNumber).HasColumnName("MaTheBHYT").HasMaxLength(20);
+            entity.Property(e => e.Address).HasColumnName("DiaChi").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
+
+            entity.HasIndex(e => e.PatientCode).IsUnique();
+            entity.HasIndex(e => e.IdentityCardNumber).IsUnique();
         });
 
         // Map to SSMS Table: dbo.LuotKhamBenh

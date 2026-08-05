@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Table, Button, Space, Input, Tag, Card, Row, Col, Typography, Modal, Form, Select, Switch, message, Badge } from 'antd';
+import { Table, Button, Space, Input, Tag, Card, Row, Col, Typography, Modal, Form, Select, Switch, Badge } from 'antd';
 import { PlusOutlined, SearchOutlined, QrcodeOutlined, PrinterOutlined, UserAddOutlined } from '@ant-design/icons';
 import { QueueTicket } from '../types';
 import { getStatusTagColor } from '../utils/formatters';
+import { useThemeStore } from '../store/useThemeStore';
+import { showSuccessAlert, showToast } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -10,6 +12,7 @@ const { Option } = Select;
 export const ReceptionPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const { isDarkMode } = useThemeStore();
 
   const [queueList, setQueueList] = useState<QueueTicket[]>([
     { id: '1', stt: 101, maBenhNhan: 'BN20260001', tenBenhNhan: 'Nguyễn Văn An', soCCCD: '038090001234', phongKham: 'Phòng 102 - Khoa Nội', bacSiKham: 'BS. CKII. Nguyễn Thanh Duy', trangThai: 'Đang khám', thoiGianCap: '08:15', uuTien: false },
@@ -34,7 +37,7 @@ export const ReceptionPage: React.FC = () => {
     };
 
     setQueueList([newTicket, ...queueList]);
-    message.success(`Đã cấp thành công số khám STT #${nextStt} cho bệnh nhân ${values.hoTen}`);
+    showSuccessAlert(`Cấp số #${nextStt} thành công!`, `Đã cấp số khám cho bệnh nhân ${values.hoTen}`);
     setIsModalOpen(false);
     form.resetFields();
   };
@@ -46,16 +49,16 @@ export const ReceptionPage: React.FC = () => {
       key: 'stt',
       render: (stt: number, record: QueueTicket) => (
         <Space>
-          <Badge count={record.uuTien ? 'Ưu tiên' : 0} style={{ backgroundColor: '#ff4d4f' }}>
-            <Text strong style={{ fontSize: 20, color: record.uuTien ? '#ff4d4f' : '#1677ff' }}>
+          <Badge count={record.uuTien ? 'Ưu tiên' : 0} style={{ backgroundColor: '#ef4444' }}>
+            <Text strong style={{ fontSize: 20, color: record.uuTien ? '#ef4444' : isDarkMode ? '#38bdf8' : '#0284c7' }}>
               #{stt}
             </Text>
           </Badge>
         </Space>
       ),
     },
-    { title: 'Mã BN', dataIndex: 'maBenhNhan', key: 'maBenhNhan' },
-    { title: 'Họ và Tên', dataIndex: 'tenBenhNhan', key: 'tenBenhNhan', render: (t: string) => <Text strong>{t}</Text> },
+    { title: 'Mã BN', dataIndex: 'maBenhNhan', key: 'maBenhNhan', render: (t: string) => <Tag color="blue">{t}</Tag> },
+    { title: 'Họ và Tên', dataIndex: 'tenBenhNhan', key: 'tenBenhNhan', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
     { title: 'Số CCCD', dataIndex: 'soCCCD', key: 'soCCCD' },
     { title: 'Phòng khám', dataIndex: 'phongKham', key: 'phongKham' },
     { title: 'Bác sĩ phân công', dataIndex: 'bacSiKham', key: 'bacSiKham' },
@@ -71,7 +74,7 @@ export const ReceptionPage: React.FC = () => {
       key: 'action',
       render: () => (
         <Space>
-          <Button icon={<PrinterOutlined />} size="small" type="dashed">In phiếu</Button>
+          <Button icon={<PrinterOutlined />} size="small" type="dashed" onClick={() => showToast('Đã gửi lệnh in phiếu khám!', 'info')}>In phiếu</Button>
           <Button icon={<QrcodeOutlined />} size="small" type="link">Quét QR</Button>
         </Space>
       ),
@@ -80,14 +83,38 @@ export const ReceptionPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Page Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: isDarkMode
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
+            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
+          padding: '20px 24px',
+          borderRadius: '12px',
+          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
+        }}
+      >
         <div>
-          <Title level={3} style={{ margin: 0 }}>Tiếp nhận Bệnh nhân & Cấp số thứ tự</Title>
-          <Text type="secondary">Quản lý luồng tiếp nhận bệnh nhân tại quầy lễ tân bệnh viện</Text>
+          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+            Tiếp nhận Bệnh nhân & Cấp số thứ tự
+          </Title>
+          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+            Quản lý luồng tiếp nhận bệnh nhân tại quầy lễ tân bệnh viện
+          </Text>
         </div>
         <Space>
           <Input placeholder="Quét CCCD/Mã QR BHYT..." prefix={<SearchOutlined />} style={{ width: 280 }} />
-          <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsModalOpen(true)}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="large"
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            onClick={() => setIsModalOpen(true)}
+          >
             Đăng ký & Cấp số mới
           </Button>
         </Space>
@@ -95,39 +122,70 @@ export const ReceptionPage: React.FC = () => {
 
       <Row gutter={16}>
         <Col span={6}>
-          <Card style={{ borderRadius: 12, textAlign: 'center', background: '#e6f7ff', borderColor: '#91caff' }}>
+          <Card
+            style={{
+              borderRadius: 12,
+              textAlign: 'center',
+              background: isDarkMode ? '#0f172a' : '#f0f9ff',
+              borderColor: isDarkMode ? '#0284c7' : '#bae6fd'
+            }}
+          >
             <Text type="secondary">Số STT Đang gọi khám</Text>
-            <Title level={1} style={{ color: '#1677ff', margin: '8px 0' }}>#101</Title>
-            <Text strong>Phòng 102 - Khoa Nội</Text>
+            <Title level={1} style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', margin: '8px 0' }}>#101</Title>
+            <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Phòng 102 - Khoa Nội</Text>
           </Card>
         </Col>
 
         <Col span={6}>
-          <Card style={{ borderRadius: 12, textAlign: 'center', background: '#fff7e6', borderColor: '#ffd591' }}>
+          <Card
+            style={{
+              borderRadius: 12,
+              textAlign: 'center',
+              background: isDarkMode ? '#0f172a' : '#fffbeb',
+              borderColor: isDarkMode ? '#f59e0b' : '#fef3c7'
+            }}
+          >
             <Text type="secondary">Bệnh nhân Đang chờ</Text>
-            <Title level={1} style={{ color: '#fa8c16', margin: '8px 0' }}>14</Title>
-            <Text>Thời gian chờ TB: ~12 phút</Text>
+            <Title level={1} style={{ color: '#f59e0b', margin: '8px 0' }}>14</Title>
+            <Text style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>Thời gian chờ TB: ~12 phút</Text>
           </Card>
         </Col>
 
         <Col span={6}>
-          <Card style={{ borderRadius: 12, textAlign: 'center', background: '#f6ffed', borderColor: '#b7eb8f' }}>
+          <Card
+            style={{
+              borderRadius: 12,
+              textAlign: 'center',
+              background: isDarkMode ? '#0f172a' : '#ecfdf5',
+              borderColor: isDarkMode ? '#10b981' : '#a7f3d0'
+            }}
+          >
             <Text type="secondary">Đã khám Hoàn thành</Text>
-            <Title level={1} style={{ color: '#52c41a', margin: '8px 0' }}>85</Title>
-            <Text>Hôm nay (2026-08-02)</Text>
+            <Title level={1} style={{ color: '#10b981', margin: '8px 0' }}>85</Title>
+            <Text style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>Hôm nay (2026-08-02)</Text>
           </Card>
         </Col>
 
         <Col span={6}>
-          <Card style={{ borderRadius: 12, textAlign: 'center', background: '#fff2f0', borderColor: '#ffccc7' }}>
+          <Card
+            style={{
+              borderRadius: 12,
+              textAlign: 'center',
+              background: isDarkMode ? '#0f172a' : '#fef2f2',
+              borderColor: isDarkMode ? '#ef4444' : '#fecaca'
+            }}
+          >
             <Text type="secondary">Ưu tiên (Cấp cứu/Người già)</Text>
-            <Title level={1} style={{ color: '#ff4d4f', margin: '8px 0' }}>2</Title>
-            <Text style={{ color: '#ff4d4f' }}>Đang sắp xếp luồng nhanh</Text>
+            <Title level={1} style={{ color: '#ef4444', margin: '8px 0' }}>2</Title>
+            <Text style={{ color: '#ef4444', fontWeight: 600 }}>Đang sắp xếp luồng nhanh</Text>
           </Card>
         </Col>
       </Row>
 
-      <Card title="Danh sách Cấp số Hàng chờ Khám bệnh" style={{ borderRadius: 12 }}>
+      <Card
+        title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh sách Cấp số Hàng chờ Khám bệnh</span>}
+        style={{ borderRadius: 12, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd' }}
+      >
         <Table dataSource={queueList} columns={columns} rowKey="id" />
       </Card>
 
@@ -135,8 +193,8 @@ export const ReceptionPage: React.FC = () => {
       <Modal
         title={
           <Space>
-            <UserAddOutlined style={{ color: '#1677ff' }} />
-            <span>Tiếp nhận & Cấp số Khám Mới</span>
+            <UserAddOutlined style={{ color: '#0284c7' }} />
+            <span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>Tiếp nhận & Cấp số Khám Mới</span>
           </Space>
         }
         open={isModalOpen}
@@ -169,7 +227,7 @@ export const ReceptionPage: React.FC = () => {
           <div style={{ textAlign: 'right', marginTop: 24 }}>
             <Space>
               <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-              <Button type="primary" htmlType="submit" size="large" icon={<PrinterOutlined />}>
+              <Button type="primary" htmlType="submit" size="large" icon={<PrinterOutlined />} style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}>
                 Cấp số & In phiếu
               </Button>
             </Space>

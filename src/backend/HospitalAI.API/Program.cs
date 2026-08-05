@@ -32,6 +32,7 @@ builder.Services.AddDbContext<HospitalDbContext>(options =>
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPatientService, PatientService>();
 
 // 4. Configure JWT Authentication
 var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT";

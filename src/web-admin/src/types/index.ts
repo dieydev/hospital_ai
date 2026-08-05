@@ -21,6 +21,7 @@ export interface Patient {
   hoTen: string;
   gioiTinh: 'Nam' | 'Nữ' | 'Khác';
   ngaySinh: string;
+  tuoi?: number;
   soCCCD: string;
   maTheBHYT?: string;
   soDienThoai: string;
@@ -29,7 +30,11 @@ export interface Patient {
   tienSuBenh?: string;
   diUngThuoc?: string;
   nhomMau?: string;
+  tenNguoiThan?: string;
+  soDienThoaiNguoiThan?: string;
+  quanHeNguoiThan?: string;
   ngayTao?: string;
+  ngayCapNhat?: string;
 }
 
 export interface Appointment {

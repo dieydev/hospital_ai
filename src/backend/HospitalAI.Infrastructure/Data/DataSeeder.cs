@@ -100,6 +100,92 @@ public static class DataSeeder
             context.Users.Add(patientUser);
         }
 
+        // 3. Seed Default Patients
+        if (!await context.Patients.AnyAsync())
+        {
+            var initialPatients = new[]
+            {
+                new Patient
+                {
+                    PatientCode = "BN2026000001",
+                    FullName = "Nguyễn Văn An",
+                    Gender = "Nam",
+                    DateOfBirth = new DateTime(1990, 5, 15),
+                    IdentityCardNumber = "038090001234",
+                    HealthInsuranceNumber = "DN40101234567",
+                    PhoneNumber = "0912345678",
+                    Email = "an.nguyen@gmail.com",
+                    Address = "123 Đường Bác Bác, TP. Thủ Dầu Một, Bình Dương",
+                    MedicalHistory = "Tăng huyết áp nhẹ (chuẩn đoán 2024)",
+                    DrugAllergies = "Không ghi nhận",
+                    BloodType = "O+",
+                    EmergencyContactName = "Nguyễn Văn Bình",
+                    EmergencyContactPhone = "0903112233",
+                    EmergencyContactRelation = "Cha ruột",
+                    CreatedAt = DateTime.UtcNow.AddDays(-30)
+                },
+                new Patient
+                {
+                    PatientCode = "BN2026000002",
+                    FullName = "Trần Thị Bình",
+                    Gender = "Nữ",
+                    DateOfBirth = new DateTime(1985, 11, 20),
+                    IdentityCardNumber = "038185005678",
+                    HealthInsuranceNumber = "GD40109876543",
+                    PhoneNumber = "0987654321",
+                    Email = "binh.tran@yahoo.com",
+                    Address = "45 Lê Duẩn, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+                    MedicalHistory = "Đái tháo đường Tuýp 2 (Đang điều trị bằng Insulin)",
+                    DrugAllergies = "Penicillin (Gây dị ứng mẩn ngứa nghiêm trọng)",
+                    BloodType = "A+",
+                    EmergencyContactName = "Trần Văn Cường",
+                    EmergencyContactPhone = "0908887766",
+                    EmergencyContactRelation = "Chồng",
+                    CreatedAt = DateTime.UtcNow.AddDays(-20)
+                },
+                new Patient
+                {
+                    PatientCode = "BN2026000003",
+                    FullName = "Lê Hoàng Nam",
+                    Gender = "Nam",
+                    DateOfBirth = new DateTime(2012, 8, 4),
+                    IdentityCardNumber = "038212009876",
+                    HealthInsuranceNumber = "TE40105554433",
+                    PhoneNumber = "0933445566",
+                    Email = "hoangnam.parent@gmail.com",
+                    Address = "88 Nguyễn Huệ, TP. Bến Cát, Bình Dương",
+                    MedicalHistory = "Viêm phế quản co thắt tái phát",
+                    DrugAllergies = "Không ghi nhận",
+                    BloodType = "B+",
+                    EmergencyContactName = "Lê Văn Hoàng",
+                    EmergencyContactPhone = "0933445566",
+                    EmergencyContactRelation = "Cha ruột",
+                    CreatedAt = DateTime.UtcNow.AddDays(-10)
+                },
+                new Patient
+                {
+                    PatientCode = "BN2026000004",
+                    FullName = "Phạm Thu Cúc",
+                    Gender = "Nữ",
+                    DateOfBirth = new DateTime(1995, 2, 18),
+                    IdentityCardNumber = "038195003456",
+                    HealthInsuranceNumber = "DN40107778899",
+                    PhoneNumber = "0908112233",
+                    Email = "cuc.pham@gmail.com",
+                    Address = "12 Lý Thường Kiệt, TP. Dĩ An, Bình Dương",
+                    MedicalHistory = "Tiền sử khỏe mạnh, không bệnh nền",
+                    DrugAllergies = "Aspirin (Đau dạ dày, mẩn đỏ)",
+                    BloodType = "AB+",
+                    EmergencyContactName = "Phạm Văn Hùng",
+                    EmergencyContactPhone = "0909998877",
+                    EmergencyContactRelation = "Anh ruột",
+                    CreatedAt = DateTime.UtcNow.AddDays(-2)
+                }
+            };
+
+            await context.Patients.AddRangeAsync(initialPatients);
+        }
+
         await context.SaveChangesAsync();
     }
 }

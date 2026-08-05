@@ -16,11 +16,13 @@ import {
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
+import { useThemeStore } from '../store/useThemeStore';
 
 const { Title, Text } = Typography;
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isDarkMode } = useThemeStore();
 
   const chartData = [
     { name: 'Khoa Nội', lutKham: 142, revenue: 28500000 },
@@ -45,7 +47,7 @@ export const DashboardPage: React.FC = () => {
       dataIndex: 'stt',
       key: 'stt',
       render: (val: number) => (
-        <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 18, color: '#0284c7' }}>
+        <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 18, color: isDarkMode ? '#38bdf8' : '#0284c7' }}>
           #{val}
         </span>
       ),
@@ -56,7 +58,12 @@ export const DashboardPage: React.FC = () => {
       key: 'maBN',
       render: (code: string) => <Tag color="blue" style={{ fontSize: 12 }}>{code}</Tag>,
     },
-    { title: 'Bệnh nhân', dataIndex: 'hoTen', key: 'hoTen', render: (text: string) => <Text strong style={{ color: '#0f172a' }}>{text}</Text> },
+    {
+      title: 'Bệnh nhân',
+      dataIndex: 'hoTen',
+      key: 'hoTen',
+      render: (text: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{text}</Text>
+    },
     { title: 'Phòng khám', dataIndex: 'phong', key: 'phong' },
     { title: 'Bác sĩ phụ trách', dataIndex: 'bacSi', key: 'bacSi' },
     { title: 'Thời gian cấp', dataIndex: 'time', key: 'time', render: (t: string) => <Text type="secondary">{t}</Text> },
@@ -80,7 +87,9 @@ export const DashboardPage: React.FC = () => {
       {/* High-End Hero Welcome Banner */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #0369a1 60%, #0284c7 100%)',
+          background: isDarkMode
+            ? 'linear-gradient(135deg, #0f172a 0%, #0369a1 60%, #0284c7 100%)'
+            : 'linear-gradient(135deg, #0f172a 0%, #0369a1 60%, #0284c7 100%)',
           borderRadius: 20,
           padding: '28px 36px',
           color: '#fff',
@@ -148,31 +157,33 @@ export const DashboardPage: React.FC = () => {
       {/* Metric Cards Grid */}
       <Row gutter={[20, 20]}>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #0284c7' }}>
+          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #0284c7', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>TỔNG TIẾP NHẬN HÔM NAY</Text>
-                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: '#0f172a' }}>158</Title>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>TỔNG TIẾP NHẬN HÔM NAY</Text>
+                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>158</Title>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#f0f9ff', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#f0f9ff', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                 <UserOutlined />
               </div>
             </div>
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Tag color="green" icon={<ArrowUpOutlined />}>+12.5%</Tag>
-              <Text type="secondary" style={{ fontSize: 12 }}>So với hôm qua</Text>
+              <Text type="secondary" style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : undefined }}>So với hôm qua</Text>
             </div>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #f59e0b' }}>
+          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #f59e0b', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>ĐẶT LỊCH TRỰC TUYẾN APP</Text>
-                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: '#0f172a' }}>45 <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>/ 50 slots</span></Title>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>ĐẶT LỊCH TRỰC TUYẾN APP</Text>
+                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                  45 <span style={{ fontSize: 14, color: isDarkMode ? '#94a3b8' : '#94a3b8', fontWeight: 500 }}>/ 50 slots</span>
+                </Title>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fffbeb', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#fffbeb', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                 <ScheduleOutlined />
               </div>
             </div>
@@ -181,32 +192,32 @@ export const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #10b981' }}>
+          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #10b981', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>CA KHÁM HOÀN THÀNH</Text>
-                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: '#0f172a' }}>92</Title>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>CA KHÁM HOÀN THÀNH</Text>
+                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>92</Title>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                 <CheckCircleFilled />
               </div>
             </div>
-            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12 }}>66 ca đang khám & chờ kết quả CLS</Text>
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12, color: isDarkMode ? '#94a3b8' : undefined }}>66 ca đang khám & chờ kết quả CLS</Text>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #8b5cf6' }}>
+          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #8b5cf6', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>DOANH THU VIỆN PHÍ TẠM TÍNH</Text>
-                <Title level={3} style={{ margin: '8px 0 0', fontWeight: 800, color: '#8b5cf6' }}>{formatCurrency(158800000)}</Title>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>DOANH THU VIỆN PHÍ TẠM TÍNH</Text>
+                <Title level={3} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#a78bfa' : '#8b5cf6' }}>{formatCurrency(158800000)}</Title>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                 <DollarOutlined />
               </div>
             </div>
-            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12 }}>BHYT: 62% • VietQR: 38%</Text>
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12, color: isDarkMode ? '#94a3b8' : undefined }}>BHYT: 62% • VietQR: 38%</Text>
           </Card>
         </Col>
       </Row>
@@ -214,19 +225,32 @@ export const DashboardPage: React.FC = () => {
       {/* Main Charts & AI Helper Side Panel */}
       <Row gutter={[20, 20]}>
         <Col xs={24} lg={16}>
-          <Card title="Thống kê Lượt khám theo Chuyên khoa" bordered={false} style={{ borderRadius: 16 }}>
+          <Card
+            title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Thống kê Lượt khám theo Chuyên khoa</span>}
+            bordered={false}
+            style={{ borderRadius: 16, background: isDarkMode ? '#1e293b' : '#ffffff' }}
+          >
             <div style={{ width: '100%', height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(value: number) => [`${value} lượt`, 'Số lượt khám']} contentStyle={{ borderRadius: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#334155' : '#f1f5f9'} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={isDarkMode ? '#94a3b8' : '#64748b'} />
+                  <YAxis axisLine={false} tickLine={false} stroke={isDarkMode ? '#94a3b8' : '#64748b'} />
+                  <Tooltip
+                    formatter={(value: number) => [`${value} lượt`, 'Số lượt khám']}
+                    contentStyle={{
+                      borderRadius: 12,
+                      background: isDarkMode ? '#0f172a' : '#ffffff',
+                      borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+                      color: isDarkMode ? '#f8fafc' : '#0f172a',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+                    }}
+                  />
                   <Bar dataKey="lutKham" fill="url(#colorUv)" radius={[8, 8, 0, 0]}>
                     <defs>
                       <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#0284c7" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.8} />
+                        <stop offset="0%" stopColor={isDarkMode ? '#38bdf8' : '#0284c7'} stopOpacity={1} />
+                        <stop offset="100%" stopColor={isDarkMode ? '#0284c7' : '#38bdf8'} stopOpacity={0.8} />
                       </linearGradient>
                     </defs>
                   </Bar>
@@ -241,18 +265,24 @@ export const DashboardPage: React.FC = () => {
             title={
               <Space>
                 <RobotOutlined style={{ color: '#10b981' }} />
-                <span>Trợ lý AI Y tế (Google Gemini)</span>
+                <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Trợ lý AI Y tế (Google Gemini)</span>
               </Space>
             }
             extra={<Button type="link" onClick={() => navigate('/ai-assistant')}>Mở AI <RightOutlined /></Button>}
             bordered={false}
-            style={{ borderRadius: 16, background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)', borderColor: '#bbf7d0' }}
+            style={{
+              borderRadius: 16,
+              background: isDarkMode
+                ? 'linear-gradient(180deg, #064e3b 0%, #1e293b 100%)'
+                : 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)',
+              borderColor: isDarkMode ? '#065f46' : '#bbf7d0'
+            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
               <Avatar size={48} icon={<ThunderboltFilled />} style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }} />
               <div>
-                <Text strong style={{ fontSize: 16, display: 'block', color: '#0f172a' }}>Gemini Pro Health Engine</Text>
-                <Text type="secondary" style={{ fontSize: 12 }}>Tra cứu tri thức & Tóm tắt EMR tự động</Text>
+                <Text strong style={{ fontSize: 16, display: 'block', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Gemini Pro Health Engine</Text>
+                <Text type="secondary" style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : undefined }}>Tra cứu tri thức & Tóm tắt EMR tự động</Text>
               </div>
             </div>
 
@@ -275,13 +305,13 @@ export const DashboardPage: React.FC = () => {
       <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ClockCircleOutlined style={{ color: '#0284c7', fontSize: 18 }} />
-            <span>Hàng chờ Gọi Khám Bệnh Trực tiếp</span>
+            <ClockCircleOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontSize: 18 }} />
+            <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Hàng chờ Gọi Khám Bệnh Trực tiếp</span>
           </div>
         }
         extra={<Button type="primary" ghost onClick={() => navigate('/reception')}>Quản lý Tiếp nhận</Button>}
         bordered={false}
-        style={{ borderRadius: 16 }}
+        style={{ borderRadius: 16, background: isDarkMode ? '#1e293b' : '#ffffff' }}
       >
         <Table dataSource={recentQueue} columns={columns} rowKey="stt" pagination={false} />
       </Card>

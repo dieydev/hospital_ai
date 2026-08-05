@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Card, Table, Tabs, Button, Tag, Typography } from 'antd';
 import { PlusOutlined, AppstoreOutlined, MedicineBoxOutlined, TeamOutlined, ReadOutlined } from '@ant-design/icons';
 import { formatCurrency } from '../utils/formatters';
+import { useThemeStore } from '../store/useThemeStore';
+import { showToast } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
 
 export const CatalogsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('doctors');
+  const { isDarkMode } = useThemeStore();
 
   const doctorsData = [
     { id: '1', maNV: 'NV001', hoTen: 'BS. CKII. Nguyễn Thanh Duy', chuyenKhoa: 'Khoa Nội Tổng Hợp', chucVu: 'Trưởng Khoa', soDienThoai: '0336022526', trangThai: 'Hoạt động' },
@@ -36,17 +39,41 @@ export const CatalogsPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Page Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: isDarkMode
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
+            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
+          padding: '20px 24px',
+          borderRadius: '12px',
+          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
+        }}
+      >
         <div>
-          <Title level={3} style={{ margin: 0 }}>Quản trị Danh mục Hệ thống</Title>
-          <Text type="secondary">Quản lý Bác sĩ/Nhân viên, Thuốc, Dịch vụ y tế & Bộ mã chuẩn ICD-10</Text>
+          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+            Quản trị Danh mục Hệ thống
+          </Title>
+          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+            Quản lý Bác sĩ/Nhân viên, Thuốc, Dịch vụ y tế & Bộ mã chuẩn ICD-10
+          </Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} size="large">
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
+          style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+          onClick={() => showToast('Chức năng thêm mới danh mục đang được cập nhật!', 'info')}
+        >
           Thêm Mục mới
         </Button>
       </div>
 
-      <Card style={{ borderRadius: 12 }}>
+      <Card style={{ borderRadius: 12, border: isDarkMode ? '1px solid #334155' : undefined }}>
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -58,8 +85,8 @@ export const CatalogsPage: React.FC = () => {
                 <Table
                   dataSource={doctorsData}
                   columns={[
-                    { title: 'Mã NV', dataIndex: 'maNV', key: 'maNV' },
-                    { title: 'Họ và Tên', dataIndex: 'hoTen', key: 'hoTen', render: (t: string) => <Text strong>{t}</Text> },
+                    { title: 'Mã NV', dataIndex: 'maNV', key: 'maNV', render: (c: string) => <Tag color="blue">{c}</Tag> },
+                    { title: 'Họ và Tên', dataIndex: 'hoTen', key: 'hoTen', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
                     { title: 'Chuyên Khoa', dataIndex: 'chuyenKhoa', key: 'chuyenKhoa' },
                     { title: 'Chức vụ', dataIndex: 'chucVu', key: 'chucVu' },
                     { title: 'Số điện thoại', dataIndex: 'soDienThoai', key: 'soDienThoai' },
@@ -76,8 +103,8 @@ export const CatalogsPage: React.FC = () => {
                 <Table
                   dataSource={medicinesData}
                   columns={[
-                    { title: 'Mã Thuốc', dataIndex: 'maThuoc', key: 'maThuoc' },
-                    { title: 'Tên Thuốc', dataIndex: 'tenThuoc', key: 'tenThuoc', render: (t: string) => <Text strong>{t}</Text> },
+                    { title: 'Mã Thuốc', dataIndex: 'maThuoc', key: 'maThuoc', render: (c: string) => <Tag color="cyan">{c}</Tag> },
+                    { title: 'Tên Thuốc', dataIndex: 'tenThuoc', key: 'tenThuoc', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
                     { title: 'Hoạt chất', dataIndex: 'hoatChat', key: 'hoatChat' },
                     { title: 'ĐVT', dataIndex: 'donViTinh', key: 'donViTinh' },
                     { title: 'Đơn giá', dataIndex: 'donGia', key: 'donGia', render: (v: number) => formatCurrency(v) },
@@ -94,11 +121,11 @@ export const CatalogsPage: React.FC = () => {
                 <Table
                   dataSource={servicesData}
                   columns={[
-                    { title: 'Mã DV', dataIndex: 'maDV', key: 'maDV' },
-                    { title: 'Tên Dịch vụ', dataIndex: 'tenDichVu', key: 'tenDichVu', render: (t: string) => <Text strong>{t}</Text> },
+                    { title: 'Mã DV', dataIndex: 'maDV', key: 'maDV', render: (c: string) => <Tag color="geekblue">{c}</Tag> },
+                    { title: 'Tên Dịch vụ', dataIndex: 'tenDichVu', key: 'tenDichVu', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
                     { title: 'Phân loại', dataIndex: 'loai', key: 'loai', render: (l: string) => <Tag color="blue">{l}</Tag> },
                     { title: 'Đơn giá Viện phí', dataIndex: 'donGia', key: 'donGia', render: (v: number) => formatCurrency(v) },
-                    { title: 'BHYT Thanh toán', dataIndex: 'donGiaBHYT', key: 'donGiaBHYT', render: (v: number) => <Text type="success">{formatCurrency(v)}</Text> },
+                    { title: 'BHYT Thanh toán', dataIndex: 'donGiaBHYT', key: 'donGiaBHYT', render: (v: number) => <Text style={{ color: '#10b981', fontWeight: 600 }}>{formatCurrency(v)}</Text> },
                   ]}
                   rowKey="id"
                 />
@@ -111,8 +138,8 @@ export const CatalogsPage: React.FC = () => {
                 <Table
                   dataSource={icd10Data}
                   columns={[
-                    { title: 'Mã ICD-10', dataIndex: 'code', key: 'code', render: (c: string) => <Tag color="purple">{c}</Tag> },
-                    { title: 'Tên Bệnh lý Tiêu chuẩn', dataIndex: 'name', key: 'name', render: (t: string) => <Text strong>{t}</Text> },
+                    { title: 'Mã ICD-10', dataIndex: 'code', key: 'code', render: (c: string) => <Tag color="purple" style={{ fontFamily: 'monospace', fontWeight: 700 }}>{c}</Tag> },
+                    { title: 'Tên Bệnh lý Tiêu chuẩn', dataIndex: 'name', key: 'name', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
                     { title: 'Chương / Nhóm bệnh', dataIndex: 'category', key: 'category' },
                   ]}
                   rowKey="code"

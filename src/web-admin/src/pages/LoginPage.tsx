@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Checkbox, Typography, Alert, message, Select, Divider } from 'antd';
+import { Card, Form, Input, Button, Checkbox, Typography, Alert, Select, Divider } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../services/api';
+import { showToast, showErrorAlert, showSuccessAlert } from '../utils/sweetAlert';
+import { useThemeStore } from '../store/useThemeStore';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -37,6 +39,7 @@ export const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const { isDarkMode } = useThemeStore();
 
   const [registerForm] = Form.useForm();
 
@@ -68,7 +71,7 @@ export const LoginPage: React.FC = () => {
         token
       );
 
-      message.success(`Đăng nhập thành công! Chào mừng ${user.fullName}`);
+      showToast(`Đăng nhập thành công! Chào mừng ${user.fullName}`, 'success');
       setLoginLoading(false);
       navigate('/dashboard');
     } catch (err: any) {
@@ -76,6 +79,7 @@ export const LoginPage: React.FC = () => {
 
       if (apiError) {
         setErrorMsg(apiError);
+        showErrorAlert('Đăng nhập thất bại', apiError);
         setLoginLoading(false);
         return;
       }
@@ -110,7 +114,7 @@ export const LoginPage: React.FC = () => {
           },
           'jwt-bearer-token-2026'
         );
-        message.success(`Đăng nhập thành công! Chào mừng ${fullName}`);
+        showToast(`Đăng nhập thành công! Chào mừng ${fullName}`, 'success');
         setLoginLoading(false);
         navigate('/dashboard');
       } else {
@@ -140,7 +144,7 @@ export const LoginPage: React.FC = () => {
         'google-oauth-token-2026'
       );
       setGoogleLoading(false);
-      message.success('Đăng nhập bằng tài khoản Google thành công!');
+      showToast('Đăng nhập bằng tài khoản Google thành công!', 'success');
       navigate('/dashboard');
     }, 800);
   };
@@ -157,17 +161,18 @@ export const LoginPage: React.FC = () => {
         fullName: values.fullName,
         email: values.email,
         phoneNumber: values.phoneNumber,
-        role: values.role || 'Doctor',
+        roleName: values.roleName || 'Patient',
       });
 
-      message.success('Đăng ký tài khoản thành công! Vui lòng đăng nhập.');
+      showSuccessAlert('Đăng ký thành công!', 'Tài khoản của bạn đã được khởi tạo. Vui lòng đăng nhập.');
       setRegisterLoading(false);
-      registerForm.resetFields();
       setIsRegisterMode(false);
+      registerForm.resetFields();
     } catch (err: any) {
       setRegisterLoading(false);
-      const apiError = err.response?.data?.message || 'Đăng ký không thành công. Tên đăng nhập đã tồn tại.';
+      const apiError = err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
       setErrorMsg(apiError);
+      showErrorAlert('Đăng ký thất bại', apiError);
     }
   };
 
@@ -178,7 +183,9 @@ export const LoginPage: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
+        background: isDarkMode
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
+          : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
         padding: 20,
       }}
     >
@@ -186,18 +193,18 @@ export const LoginPage: React.FC = () => {
         style={{
           width: 460,
           borderRadius: 16,
-          boxShadow: '0 10px 30px rgba(2, 132, 199, 0.1)',
-          border: '1px solid #bae6fd',
+          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(2, 132, 199, 0.1)',
+          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
           padding: '16px 16px',
-          background: '#ffffff',
+          background: isDarkMode ? '#1e293b' : '#ffffff',
         }}
       >
         {/* Header Logo & Title */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={3} style={{ margin: '0 0 4px', fontWeight: 800, color: '#0369a1' }}>
-            HOSPITAL <span style={{ color: '#0284c7' }}>AI</span>
+          <Title level={3} style={{ margin: '0 0 4px', fontWeight: 800, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+            HOSPITAL <span style={{ color: isDarkMode ? '#0284c7' : '#0284c7' }}>AI</span>
           </Title>
-          <Text type="secondary" style={{ fontSize: 13, color: '#64748b' }}>
+          <Text type="secondary" style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#64748b' }}>
             {isRegisterMode ? 'Đăng ký tài khoản hệ thống mới' : 'Hệ thống Quản lý Khám chữa bệnh & Bệnh án Điện tử EMR'}
           </Text>
         </div>
@@ -215,27 +222,25 @@ export const LoginPage: React.FC = () => {
             >
               <Form.Item
                 name="username"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Tên đăng nhập / Email</span>}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Tên đăng nhập / Email</span>}
                 rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
               >
-                <Input placeholder="Nhập tên đăng nhập hoặc email..." size="large" style={{ borderRadius: 8 }} />
+                <Input placeholder="Nhập tên đăng nhập..." size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item
                 name="password"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Mật khẩu</span>}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu</span>}
                 rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
               >
                 <Input.Password placeholder="Nhập mật khẩu..." size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
                 <Form.Item name="remember" valuePropName="checked" noStyle>
-                  <Checkbox style={{ color: '#475569' }}>Ghi nhớ đăng nhập</Checkbox>
+                  <Checkbox style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Ghi nhớ đăng nhập</Checkbox>
                 </Form.Item>
-                <a style={{ fontSize: 13, color: '#0284c7', fontWeight: 600 }} href="#forgot">
-                  Quên mật khẩu?
-                </a>
+                <a style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontSize: 13, fontWeight: 500 }}>Quên mật khẩu?</a>
               </div>
 
               <Form.Item style={{ marginBottom: 12 }}>
@@ -254,42 +259,39 @@ export const LoginPage: React.FC = () => {
                     borderColor: '#0284c7',
                   }}
                 >
-                  Đăng nhập
+                  Đăng nhập Hệ thống
                 </Button>
               </Form.Item>
             </Form>
 
-            <Divider style={{ margin: '16px 0', fontSize: 13, color: '#94a3b8' }}>HOẶC</Divider>
+            <Divider style={{ margin: '16px 0', fontSize: 13, color: isDarkMode ? '#94a3b8' : undefined }}>Hoặc</Divider>
 
-            {/* Google Login Button */}
             <Button
               size="large"
               block
+              icon={<GoogleIcon />}
               loading={googleLoading}
               onClick={handleGoogleLogin}
               style={{
-                height: 46,
+                height: 44,
                 borderRadius: 8,
                 fontWeight: 600,
-                fontSize: 14,
+                color: isDarkMode ? '#f8fafc' : '#334155',
+                borderColor: isDarkMode ? '#334155' : '#cbd5e1',
+                background: isDarkMode ? '#0f172a' : '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderColor: '#cbd5e1',
-                color: '#334155',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                marginBottom: 16,
               }}
             >
-              <GoogleIcon /> Đăng nhập bằng Google
+              Đăng nhập nhanh với Google
             </Button>
 
-            {/* Dòng chuyển hướng Đăng ký bên dưới */}
             <div style={{ textAlign: 'center', marginTop: 20 }}>
-              <Text style={{ color: '#64748b', fontSize: 14 }}>
+              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#64748b', fontSize: 14 }}>
                 Chưa có tài khoản?{' '}
                 <a
-                  style={{ color: '#0284c7', fontWeight: 700 }}
+                  style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontWeight: 700 }}
                   onClick={() => {
                     setErrorMsg('');
                     setIsRegisterMode(true);
@@ -301,78 +303,77 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          /* FORM ĐĂNG KÝ TÀI KHOẢN */
+          /* FORM ĐĂNG KÝ */
           <div>
-            <Form
-              form={registerForm}
-              name="register"
-              onFinish={onRegisterFinish}
-              layout="vertical"
-            >
+            <Form form={registerForm} name="register" onFinish={onRegisterFinish} layout="vertical">
               <Form.Item
                 name="fullName"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Họ và tên</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Họ và Tên</span>}
+                rules={[{ required: true, message: 'Nhập họ tên!' }]}
               >
-                <Input placeholder="Nguyễn Văn A" size="large" style={{ borderRadius: 8 }} />
+                <Input placeholder="Ví dụ: Nguyễn Văn An" size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item
                 name="username"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Tên đăng nhập</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Tên đăng nhập</span>}
+                rules={[{ required: true, message: 'Nhập tên đăng nhập!' }]}
               >
                 <Input placeholder="Tên đăng nhập mới..." size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item
                 name="email"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Địa chỉ Email</span>}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Địa chỉ Email</span>}
                 rules={[
-                  { required: true, message: 'Vui lòng nhập email!' },
+                  { required: true, message: 'Nhập email!' },
                   { type: 'email', message: 'Email không hợp lệ!' },
                 ]}
               >
-                <Input placeholder="email@example.com" size="large" style={{ borderRadius: 8 }} />
+                <Input placeholder="email@domain.com" size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item
                 name="phoneNumber"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Số điện thoại</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Số điện thoại</span>}
+                rules={[{ required: true, message: 'Nhập SĐT!' }]}
               >
-                <Input placeholder="0901234567" size="large" style={{ borderRadius: 8 }} />
+                <Input placeholder="09xxxxxxxx" size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
-              <Form.Item name="role" label={<span style={{ fontWeight: 600, color: '#334155' }}>Vai trò công tác</span>} initialValue="Doctor">
-                <Select size="large" style={{ borderRadius: 8 }}>
-                  <Option value="Doctor">Bác sĩ / Y bác sĩ</Option>
-                  <Option value="Receptionist">Lễ tân quầy tiếp nhận</Option>
-                  <Option value="Nurse">Điều dưỡng</Option>
-                  <Option value="Patient">Bệnh nhân</Option>
+              <Form.Item
+                name="roleName"
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Vai trò hệ thống</span>}
+                initialValue="Patient"
+              >
+                <Select size="large">
+                  <Option value="Patient">Bệnh nhân (Patient)</Option>
+                  <Option value="Doctor">Bác sĩ (Doctor)</Option>
+                  <Option value="Nurse">Y tá / Điều dưỡng (Nurse)</Option>
+                  <Option value="Receptionist">Lễ tân (Receptionist)</Option>
                 </Select>
               </Form.Item>
 
               <Form.Item
                 name="password"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Mật khẩu</span>}
-                rules={[{ required: true, message: 'Vui lòng tạo mật khẩu!' }]}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu</span>}
+                rules={[{ required: true, message: 'Nhập mật khẩu!' }]}
               >
-                <Input.Password placeholder="Nhập mật khẩu..." size="large" style={{ borderRadius: 8 }} />
+                <Input.Password placeholder="Tối thiểu 6 ký tự..." size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item
                 name="confirmPassword"
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Xác nhận mật khẩu</span>}
+                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Xác nhận Mật khẩu</span>}
                 dependencies={['password']}
                 rules={[
-                  { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                  { required: true, message: 'Xác nhận mật khẩu!' },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
                       if (!value || getFieldValue('password') === value) {
                         return Promise.resolve();
                       }
-                      return Promise.reject(new Error('Mật khẩu xác nhận không trùng khớp!'));
+                      return Promise.reject(new Error('Mật khẩu nhập lại không khớp!'));
                     },
                   }),
                 ]}
@@ -401,12 +402,11 @@ export const LoginPage: React.FC = () => {
               </Form.Item>
             </Form>
 
-            {/* Dòng chuyển hướng Đăng nhập lại bên dưới */}
             <div style={{ textAlign: 'center', marginTop: 16 }}>
-              <Text style={{ color: '#64748b', fontSize: 14 }}>
+              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#64748b', fontSize: 14 }}>
                 Đã có tài khoản?{' '}
                 <a
-                  style={{ color: '#0284c7', fontWeight: 700 }}
+                  style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontWeight: 700 }}
                   onClick={() => {
                     setErrorMsg('');
                     setIsRegisterMode(false);
@@ -420,8 +420,8 @@ export const LoginPage: React.FC = () => {
         )}
 
         {/* Footer */}
-        <div style={{ textAlign: 'center', marginTop: 20, borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
-          <Text type="secondary" style={{ fontSize: 12, color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, borderTop: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9', paddingTop: 14 }}>
+          <Text type="secondary" style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : '#94a3b8' }}>
             © 2026 Bệnh viện Đa khoa Hospital AI
           </Text>
         </div>
