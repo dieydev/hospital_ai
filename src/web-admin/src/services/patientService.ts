@@ -1,6 +1,8 @@
 import api from './api';
 import { Patient } from '../types';
 
+export type { Patient };
+
 export interface PatientListResult {
   items: Patient[];
   totalCount: number;

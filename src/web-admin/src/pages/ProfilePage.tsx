@@ -16,6 +16,9 @@ import {
   Alert,
   List,
   Badge,
+  Modal,
+  Upload,
+  Tooltip,
 } from 'antd';
 import {
   UserOutlined,
@@ -30,12 +33,23 @@ import {
   IdcardOutlined,
   MedicineBoxOutlined,
   AuditOutlined,
+  CameraOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
+
+const PRESET_AVATARS = [
+  { id: 'av-1', label: 'Bác sĩ Nam (Trưởng Khoa)', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor' },
+  { id: 'av-2', label: 'Bác sĩ Nam (Nội khoa)', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' },
+  { id: 'av-3', label: 'Bác sĩ Nữ (Nhi khoa)', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka' },
+  { id: 'av-4', label: 'Bác sĩ Nữ (Sản khoa)', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria' },
+  { id: 'av-5', label: 'Bác sĩ Ngoại khoa', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Christopher' },
+  { id: 'av-6', label: 'Avatar Lâm sàng 3D', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=HospitalDoctor' },
+];
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuthStore();
@@ -48,6 +62,11 @@ export const ProfilePage: React.FC = () => {
   const [is2FAActive, setIs2FAActive] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  // Avatar Modal State
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(user?.avatarUrl || PRESET_AVATARS[0].url);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
 
   // Handle Profile Update
   const handleUpdateProfile = (values: any) => {
@@ -79,6 +98,31 @@ export const ProfilePage: React.FC = () => {
         'Mật khẩu truy cập hệ thống Bệnh viện đã được cập nhật an toàn.'
       );
     }, 800);
+  };
+
+  // Handle Save Avatar
+  const handleSaveAvatar = () => {
+    const finalUrl = customAvatarUrl.trim() || selectedAvatarUrl;
+    updateUser({ avatarUrl: finalUrl });
+    setIsAvatarModalOpen(false);
+    showSuccessAlert(
+      'Cập nhật Ảnh đại diện thành công!',
+      'Ảnh đại diện Y bác sĩ đã được thay đổi trên toàn hệ thống.'
+    );
+  };
+
+  // Handle Image File Upload
+  const handleCustomFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        const base64Url = e.target.result as string;
+        setSelectedAvatarUrl(base64Url);
+        setCustomAvatarUrl(base64Url);
+      }
+    };
+    reader.readAsDataURL(file);
+    return false; // Prevent automatic upload
   };
 
   const workShifts = [
@@ -123,15 +167,36 @@ export const ProfilePage: React.FC = () => {
       >
         <Row align="middle" gutter={[24, 16]}>
           <Col>
-            <Avatar
-              size={96}
-              src={user?.avatarUrl}
-              icon={<UserOutlined />}
-              style={{
-                border: '4px solid #0284c7',
-                boxShadow: '0 6px 16px rgba(2, 132, 199, 0.25)',
-              }}
-            />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <Avatar
+                size={104}
+                src={user?.avatarUrl}
+                icon={<UserOutlined />}
+                style={{
+                  border: '4px solid #0284c7',
+                  boxShadow: '0 6px 16px rgba(2, 132, 199, 0.25)',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setIsAvatarModalOpen(true)}
+              />
+              <Tooltip title="Đổi Ảnh đại diện Y bác sĩ">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<CameraOutlined />}
+                  size="small"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  style={{
+                    position: 'absolute',
+                    bottom: 4,
+                    right: 4,
+                    backgroundColor: '#0284c7',
+                    borderColor: '#ffffff',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                  }}
+                />
+              </Tooltip>
+            </div>
           </Col>
           <Col style={{ flex: 1 }}>
             <Space align="center" size="middle" style={{ flexWrap: 'wrap' }}>
@@ -144,6 +209,15 @@ export const ProfilePage: React.FC = () => {
               <Tag color="green" icon={<CheckCircleOutlined />} style={{ fontSize: 13, padding: '3px 12px' }}>
                 Tài khoản Đã xác thực Y tế
               </Tag>
+              <Button
+                type="dashed"
+                size="small"
+                icon={<CameraOutlined />}
+                onClick={() => setIsAvatarModalOpen(true)}
+                style={{ color: '#0284c7', borderColor: '#0284c7' }}
+              >
+                Đổi Ảnh đại diện
+              </Button>
             </Space>
 
             <div style={{ marginTop: 10, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
@@ -476,6 +550,90 @@ export const ProfilePage: React.FC = () => {
           ]}
         />
       </Card>
+
+      {/* Avatar Change Modal */}
+      <Modal
+        title={
+          <Space>
+            <CameraOutlined style={{ color: '#0284c7' }} />
+            <span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 700 }}>
+              Cập nhật Ảnh đại diện Y bác sĩ
+            </span>
+          </Space>
+        }
+        open={isAvatarModalOpen}
+        onCancel={() => setIsAvatarModalOpen(false)}
+        onOk={handleSaveAvatar}
+        okText="Lưu Ảnh Đại Diện"
+        cancelText="Hủy"
+        okButtonProps={{ style: { backgroundColor: '#0284c7', borderColor: '#0284c7' } }}
+        width={650}
+      >
+        <div style={{ textAlign: 'center', marginBottom: 20, marginTop: 12 }}>
+          <Avatar
+            size={120}
+            src={customAvatarUrl.trim() || selectedAvatarUrl}
+            style={{
+              border: '4px solid #0284c7',
+              boxShadow: '0 6px 20px rgba(2, 132, 199, 0.3)',
+            }}
+          />
+          <Text style={{ display: 'block', marginTop: 10, color: isDarkMode ? '#cbd5e1' : '#475569', fontSize: 13 }}>
+            Xem trước ảnh đại diện được áp dụng cho trang cá nhân và thẻ tên hệ thống Bệnh viện.
+          </Text>
+        </div>
+
+        <Divider style={{ margin: '16px 0', borderColor: isDarkMode ? '#334155' : undefined }}>
+          <Text style={{ fontSize: 13, color: isDarkMode ? '#94a3b8' : '#64748b' }}>Chọn Avatar Mẫu Y Khoa</Text>
+        </Divider>
+
+        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+          {PRESET_AVATARS.map((av) => (
+            <Col span={8} key={av.id}>
+              <Card
+                hoverable
+                size="small"
+                style={{
+                  textAlign: 'center',
+                  borderRadius: 12,
+                  borderColor: selectedAvatarUrl === av.url && !customAvatarUrl ? '#0284c7' : isDarkMode ? '#334155' : '#e2e8f0',
+                  background: selectedAvatarUrl === av.url && !customAvatarUrl ? (isDarkMode ? '#0369a133' : '#e0f2fe') : undefined,
+                }}
+                onClick={() => {
+                  setSelectedAvatarUrl(av.url);
+                  setCustomAvatarUrl('');
+                }}
+              >
+                <Avatar size={54} src={av.url} />
+                <Text strong style={{ display: 'block', fontSize: 12, marginTop: 6, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                  {av.label}
+                </Text>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+
+        <Divider style={{ margin: '16px 0', borderColor: isDarkMode ? '#334155' : undefined }}>
+          <Text style={{ fontSize: 13, color: isDarkMode ? '#94a3b8' : '#64748b' }}>Hoặc Tải ảnh từ Máy tính / Nhập Đường dẫn (URL)</Text>
+        </Divider>
+
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Upload beforeUpload={handleCustomFileUpload} showUploadList={false} accept="image/*">
+            <Button icon={<UploadOutlined />} block size="large">
+              Tải tệp ảnh từ Máy tính (.jpg, .png, .webp)
+            </Button>
+          </Upload>
+
+          <Input
+            placeholder="Hoặc dán URL đường dẫn hình ảnh (https://...)"
+            value={customAvatarUrl}
+            onChange={(e) => setCustomAvatarUrl(e.target.value)}
+            prefix={<UserOutlined style={{ color: '#94a3b8' }} />}
+            size="large"
+            allowClear
+          />
+        </Space>
+      </Modal>
     </div>
   );
 };

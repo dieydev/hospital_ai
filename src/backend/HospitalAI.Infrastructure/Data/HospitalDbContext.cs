@@ -13,6 +13,8 @@ public class HospitalDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<Department> Departments => Set<Department>();
+    public DbSet<QueueTicket> QueueTickets => Set<QueueTicket>();
     public DbSet<Examination> Examinations => Set<Examination>();
     public DbSet<PrescriptionDetail> PrescriptionDetails => Set<PrescriptionDetail>();
     public DbSet<ServiceOrderDetail> ServiceOrderDetails => Set<ServiceOrderDetail>();
@@ -20,6 +22,40 @@ public class HospitalDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Map to SSMS Table: dbo.KhoaPhong
+        modelBuilder.Entity<Department>(entity =>
+        {
+            entity.ToTable("KhoaPhong", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DepartmentName).HasColumnName("TenKhoaPhong").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Location).HasColumnName("ViTri").HasMaxLength(150).IsRequired();
+            entity.Property(e => e.RoomType).HasColumnName("LoaiPhong").HasMaxLength(20).IsRequired();
+        });
+
+        // Map to SSMS Table: dbo.PhieuHangCho
+        modelBuilder.Entity<QueueTicket>(entity =>
+        {
+            entity.ToTable("PhieuHangCho", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PatientId).HasColumnName("BenhNhanId").IsRequired();
+            entity.Property(e => e.DepartmentId).HasColumnName("KhoaPhongId").IsRequired();
+            entity.Property(e => e.AppointmentId).HasColumnName("LichHenId");
+            entity.Property(e => e.SequenceNumber).HasColumnName("SoThuTu").IsRequired();
+            entity.Property(e => e.Status).HasColumnName("TrangThaiHangCho").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Priority).HasColumnName("MucDoUuTien").HasMaxLength(20).IsRequired();
+            entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
+
+            entity.HasOne(q => q.Patient)
+                  .WithMany()
+                  .HasForeignKey(q => q.PatientId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(q => q.Department)
+                  .WithMany()
+                  .HasForeignKey(q => q.DepartmentId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
 
         // Map to SSMS Table: dbo.TaiKhoan
         modelBuilder.Entity<User>(entity =>

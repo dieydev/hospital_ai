@@ -100,7 +100,22 @@ public static class DataSeeder
             context.Users.Add(patientUser);
         }
 
-        // 3. Seed Default Patients
+        // 3. Seed Default Departments
+        if (!await context.Departments.AnyAsync())
+        {
+            var initialDepts = new[]
+            {
+                new Department { DepartmentName = "Khoa Nội Tổng Hợp", Location = "Phòng 102 - Tầng 1", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Nhi", Location = "Phòng 105 - Tầng 1", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Mắt", Location = "Phòng 201 - Tầng 2", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Cấp Cứu & Hồi Sức", Location = "Tầng Trệt - Khu A", RoomType = "Emergency" },
+                new Department { DepartmentName = "Phòng Chẩn Đoán Hình Ảnh (X-Quang)", Location = "Tầng 1 - Khu B", RoomType = "Lab" },
+            };
+            await context.Departments.AddRangeAsync(initialDepts);
+            await context.SaveChangesAsync();
+        }
+
+        // 4. Seed Default Patients
         if (!await context.Patients.AnyAsync())
         {
             var initialPatients = new[]

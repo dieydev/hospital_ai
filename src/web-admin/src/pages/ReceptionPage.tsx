@@ -1,81 +1,290 @@
-import React, { useState } from 'react';
-import { Table, Button, Space, Input, Tag, Card, Row, Col, Typography, Modal, Form, Select, Switch, Badge } from 'antd';
-import { PlusOutlined, SearchOutlined, QrcodeOutlined, PrinterOutlined, UserAddOutlined } from '@ant-design/icons';
-import { QueueTicket } from '../types';
-import { getStatusTagColor } from '../utils/formatters';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  Table,
+  Button,
+  Space,
+  Input,
+  Tag,
+  Card,
+  Row,
+  Col,
+  Typography,
+  Modal,
+  Form,
+  Select,
+  Switch,
+  Badge,
+  Tooltip,
+} from 'antd';
+import {
+  PlusOutlined,
+  PrinterOutlined,
+  UserAddOutlined,
+  SoundOutlined,
+  ReloadOutlined,
+  ForwardOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
-import { showSuccessAlert, showToast } from '../utils/sweetAlert';
+import { queueService, DepartmentItem, QueueTicketItem } from '../services/queueService';
+import { patientService, Patient } from '../services/patientService';
+import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 export const ReceptionPage: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form] = Form.useForm();
   const { isDarkMode } = useThemeStore();
 
-  const [queueList, setQueueList] = useState<QueueTicket[]>([
-    { id: '1', stt: 101, maBenhNhan: 'BN20260001', tenBenhNhan: 'Nguyễn Văn An', soCCCD: '038090001234', phongKham: 'Phòng 102 - Khoa Nội', bacSiKham: 'BS. CKII. Nguyễn Thanh Duy', trangThai: 'Đang khám', thoiGianCap: '08:15', uuTien: false },
-    { id: '2', stt: 102, maBenhNhan: 'BN20260002', tenBenhNhan: 'Trần Thị Bình', soCCCD: '038185005678', phongKham: 'Phòng 102 - Khoa Nội', bacSiKham: 'BS. CKII. Nguyễn Thanh Duy', trangThai: 'Chờ cận lâm sàng', thoiGianCap: '08:30', uuTien: false },
-    { id: '3', stt: 103, maBenhNhan: 'BN20260003', tenBenhNhan: 'Lê Hoàng Nam', soCCCD: '038192009876', phongKham: 'Phòng 105 - Khoa Nhi', bacSiKham: 'BS. CKI. Phạm Minh Đức', trangThai: 'Đang chờ', thoiGianCap: '08:45', uuTien: true },
-    { id: '4', stt: 104, maBenhNhan: 'BN20260004', tenBenhNhan: 'Phạm Thu Cúc', soCCCD: '038177003456', phongKham: 'Phòng 102 - Khoa Nội', bacSiKham: 'BS. CKII. Nguyễn Thanh Duy', trangThai: 'Đang chờ', thoiGianCap: '09:00', uuTien: false },
-  ]);
+  const [loading, setLoading] = useState(false);
+  const [queueList, setQueueList] = useState<QueueTicketItem[]>([]);
+  const [departments, setDepartments] = useState<DepartmentItem[]>([]);
+  const [selectedDeptId, setSelectedDeptId] = useState<string | undefined>(undefined);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
-  const handleAddTicket = (values: { hoTen: string; soCCCD: string; phongKham: string; uuTien?: boolean }) => {
-    const nextStt = queueList.length > 0 ? Math.max(...queueList.map((q) => q.stt)) + 1 : 101;
-    const newTicket: QueueTicket = {
-      id: Date.now().toString(),
-      stt: nextStt,
-      maBenhNhan: `BN202600${queueList.length + 5}`,
-      tenBenhNhan: values.hoTen,
-      soCCCD: values.soCCCD,
-      phongKham: values.phongKham,
-      bacSiKham: 'BS. CKII. Nguyễn Thanh Duy',
-      trangThai: 'Đang chờ',
-      thoiGianCap: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      uuTien: !!values.uuTien,
-    };
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [submitting, setSubmitting] = useState(false);
 
-    setQueueList([newTicket, ...queueList]);
-    showSuccessAlert(`Cấp số #${nextStt} thành công!`, `Đã cấp số khám cho bệnh nhân ${values.hoTen}`);
-    setIsModalOpen(false);
-    form.resetFields();
+  // Fetch queue and departments
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [deptRes, queueRes, patientRes] = await Promise.all([
+        queueService.getDepartments(),
+        queueService.getTodayQueue(selectedDeptId),
+        patientService.getPatients(),
+      ]);
+      setDepartments(deptRes);
+      setQueueList(queueRes);
+      setPatients(patientRes.items || []);
+    } catch {
+      showErrorAlert('Lỗi tải dữ liệu', 'Không thể kết nối danh sách hàng chờ từ hệ thống.');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDeptId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Handle Issue Ticket
+  const handleIssueTicket = async (values: any) => {
+    setSubmitting(true);
+    try {
+      let targetPatientId = values.patientId;
+
+      // If typed new patient name instead of selecting existing patient
+      if (!targetPatientId && values.hoTen) {
+        const newPatient = await patientService.createPatient({
+          fullName: values.hoTen,
+          identityCardNumber: values.soCCCD || `038090${Date.now().toString().slice(-6)}`,
+          gender: values.gioiTinh || 'Nam',
+          dateOfBirth: values.ngaySinh || '1990-01-01',
+          phoneNumber: values.soDienThoai || '0900000000',
+          address: values.diaChi || 'TP.HCM',
+        });
+        targetPatientId = newPatient.id;
+      }
+
+      if (!targetPatientId) {
+        showErrorAlert('Thiếu thông tin', 'Vui lòng chọn bệnh nhân hoặc nhập tên bệnh nhân mới.');
+        setSubmitting(false);
+        return;
+      }
+
+      const ticket = await queueService.issueQueueTicket({
+        patientId: targetPatientId,
+        departmentId: values.departmentId || departments[0]?.id || 'dept-01',
+        priority: values.uuTien ? 'Emergency' : 'Normal',
+      });
+
+      showSuccessAlert(
+        `Cấp số #${ticket.sequenceNumber} thành công!`,
+        `Đã phát phiếu khám số #${ticket.sequenceNumber} cho bệnh nhân ${ticket.patientName} tại ${ticket.departmentName}.`
+      );
+
+      setIsModalOpen(false);
+      form.resetFields();
+      fetchData();
+    } catch {
+      showErrorAlert('Không thể cấp số', 'Có lỗi xảy ra trong quá trình tạo phiếu khám.');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  // Speaker Call Audio Simulation
+  const handleCallSpeaker = async (ticket: QueueTicketItem) => {
+    const speechMsg = `Xin mời bệnh nhân ${ticket.patientName}, số thứ tự ${ticket.sequenceNumber}, vào ${ticket.departmentName}, ${ticket.location}.`;
+    
+    // Web Speech API browser simulation
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(speechMsg);
+      utterance.lang = 'vi-VN';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    try {
+      await queueService.updateQueueTicketStatus(ticket.id, 'Calling');
+      showToast(`📢 Đang gọi phát loa: Bệnh nhân ${ticket.patientName} (#${ticket.sequenceNumber})`, 'info');
+      fetchData();
+    } catch {
+      showToast('Đã phát loa gọi số!', 'info');
+    }
+  };
+
+  // Call Next Patient in queue
+  const handleCallNext = async () => {
+    const deptId = selectedDeptId || (departments.length > 0 ? departments[0].id : '');
+    const nextTicket = await queueService.callNextPatient(deptId);
+    if (nextTicket) {
+      handleCallSpeaker(nextTicket);
+    } else {
+      showToast('Không có bệnh nhân nào đang chờ trong hàng chờ này!', 'warning');
+    }
+  };
+
+  // Change Status Action
+  const handleStatusChange = async (ticketId: string, newStatus: string) => {
+    try {
+      await queueService.updateQueueTicketStatus(ticketId, newStatus);
+      showToast(`Đã chuyển trạng thái phiếu sang ${newStatus}!`, 'success');
+      fetchData();
+    } catch {
+      showErrorAlert('Lỗi', 'Không thể cập nhật trạng thái phiếu.');
+    }
+  };
+
+  // Stats calculation
+  const callingTicket = queueList.find((q) => q.status === 'Calling');
+  const waitingCount = queueList.filter((q) => q.status === 'Waiting').length;
+  const finishedCount = queueList.filter((q) => q.status === 'Finished').length;
+  const emergencyCount = queueList.filter((q) => q.priority === 'Emergency' || q.priority === 'Priority').length;
 
   const columns = [
     {
       title: 'Số STT',
-      dataIndex: 'stt',
-      key: 'stt',
-      render: (stt: number, record: QueueTicket) => (
+      dataIndex: 'sequenceNumber',
+      key: 'sequenceNumber',
+      render: (stt: number, record: QueueTicketItem) => (
         <Space>
-          <Badge count={record.uuTien ? 'Ưu tiên' : 0} style={{ backgroundColor: '#ef4444' }}>
-            <Text strong style={{ fontSize: 20, color: record.uuTien ? '#ef4444' : isDarkMode ? '#38bdf8' : '#0284c7' }}>
+          <Badge count={record.priority === 'Emergency' ? 'Cấp cứu' : record.priority === 'Priority' ? 'Ưu tiên' : 0} style={{ backgroundColor: '#ef4444' }}>
+            <Text strong style={{ fontSize: 22, color: record.priority !== 'Normal' ? '#ef4444' : isDarkMode ? '#38bdf8' : '#0284c7' }}>
               #{stt}
             </Text>
           </Badge>
         </Space>
       ),
     },
-    { title: 'Mã BN', dataIndex: 'maBenhNhan', key: 'maBenhNhan', render: (t: string) => <Tag color="blue">{t}</Tag> },
-    { title: 'Họ và Tên', dataIndex: 'tenBenhNhan', key: 'tenBenhNhan', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
-    { title: 'Số CCCD', dataIndex: 'soCCCD', key: 'soCCCD' },
-    { title: 'Phòng khám', dataIndex: 'phongKham', key: 'phongKham' },
-    { title: 'Bác sĩ phân công', dataIndex: 'bacSiKham', key: 'bacSiKham' },
-    { title: 'Thời gian cấp', dataIndex: 'thoiGianCap', key: 'thoiGianCap' },
     {
-      title: 'Trạng thái',
-      dataIndex: 'trangThai',
-      key: 'trangThai',
-      render: (st: string) => <Tag color={getStatusTagColor(st)}>{st}</Tag>,
+      title: 'Mã BN',
+      dataIndex: 'patientCode',
+      key: 'patientCode',
+      render: (t: string) => <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 600 }}>{t}</Tag>,
     },
     {
-      title: 'Thao tác',
+      title: 'Họ và Tên Bệnh nhân',
+      dataIndex: 'patientName',
+      key: 'patientName',
+      render: (t: string, record: QueueTicketItem) => (
+        <div>
+          <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a', fontSize: 14 }}>
+            {t}
+          </Text>
+          <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b', display: 'block' }}>
+            {record.patientGender} • {record.patientAge} tuổi • CCCD: {record.identityCardNumber}
+          </Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Phòng khám nhận',
+      dataIndex: 'departmentName',
+      key: 'departmentName',
+      render: (t: string, record: QueueTicketItem) => (
+        <div>
+          <Text style={{ fontWeight: 600, color: isDarkMode ? '#cbd5e1' : '#334155' }}>{t}</Text>
+          <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b', display: 'block' }}>{record.location}</Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Thời gian cấp',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (dateStr: string) => new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    },
+    {
+      title: 'Trạng thái Hàng chờ',
+      dataIndex: 'status',
+      key: 'status',
+      render: (st: string) => {
+        const colors: Record<string, string> = {
+          Waiting: 'gold',
+          Calling: 'cyan',
+          Processing: 'processing',
+          Skipped: 'default',
+          Finished: 'green',
+        };
+        const labels: Record<string, string> = {
+          Waiting: 'Đang chờ',
+          Calling: 'Đang gọi loa',
+          Processing: 'Đang khám',
+          Skipped: 'Qua lượt',
+          Finished: 'Hoàn thành',
+        };
+        return <Tag color={colors[st] || 'default'}>{labels[st] || st}</Tag>;
+      },
+    },
+    {
+      title: 'Thao tác Tiếp nhận',
       key: 'action',
-      render: () => (
+      render: (_: any, record: QueueTicketItem) => (
         <Space>
-          <Button icon={<PrinterOutlined />} size="small" type="dashed" onClick={() => showToast('Đã gửi lệnh in phiếu khám!', 'info')}>In phiếu</Button>
-          <Button icon={<QrcodeOutlined />} size="small" type="link">Quét QR</Button>
+          <Tooltip title="Phát loa phát thanh gọi bệnh nhân vào phòng khám">
+            <Button
+              icon={<SoundOutlined />}
+              size="small"
+              type="primary"
+              style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+              onClick={() => handleCallSpeaker(record)}
+            >
+              Gọi loa
+            </Button>
+          </Tooltip>
+          {record.status === 'Calling' && (
+            <Button
+              size="small"
+              type="dashed"
+              style={{ color: '#10b981', borderColor: '#10b981' }}
+              onClick={() => handleStatusChange(record.id, 'Processing')}
+            >
+              Vào khám
+            </Button>
+          )}
+          {record.status === 'Processing' && (
+            <Button
+              size="small"
+              type="dashed"
+              icon={<CheckCircleOutlined />}
+              style={{ color: '#059669' }}
+              onClick={() => handleStatusChange(record.id, 'Finished')}
+            >
+              Xong
+            </Button>
+          )}
+          <Button
+            icon={<PrinterOutlined />}
+            size="small"
+            type="text"
+            onClick={() => showToast(`Đã gửi lệnh in phiếu số #${record.sequenceNumber} tới máy in nhiệt!`, 'info')}
+          >
+            In phiếu
+          </Button>
         </Space>
       ),
     },
@@ -83,7 +292,7 @@ export const ReceptionPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Page Header */}
+      {/* Header Banner */}
       <div
         style={{
           display: 'flex',
@@ -93,21 +302,32 @@ export const ReceptionPage: React.FC = () => {
             ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
             : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
           padding: '20px 24px',
-          borderRadius: '12px',
+          borderRadius: '16px',
           border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
+          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)',
         }}
       >
         <div>
-          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-            Tiếp nhận Bệnh nhân & Cấp số thứ tự
+          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 800 }}>
+            Tiếp nhận Bệnh nhân & Cấp số Hàng chờ Realtime
           </Title>
           <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-            Quản lý luồng tiếp nhận bệnh nhân tại quầy lễ tân bệnh viện
+            Quản lý điều phối luồng tiếp đón, cấp số tự động và gọi loa thông minh tại quầy lễ tân
           </Text>
         </div>
         <Space>
-          <Input placeholder="Quét CCCD/Mã QR BHYT..." prefix={<SearchOutlined />} style={{ width: 280 }} />
+          <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
+            Làm mới
+          </Button>
+          <Button
+            type="primary"
+            icon={<ForwardOutlined />}
+            size="large"
+            style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
+            onClick={handleCallNext}
+          >
+            Gọi loa Số tiếp theo
+          </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -120,115 +340,215 @@ export const ReceptionPage: React.FC = () => {
         </Space>
       </div>
 
+      {/* Realtime Stats Cards */}
       <Row gutter={16}>
         <Col span={6}>
           <Card
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               textAlign: 'center',
               background: isDarkMode ? '#0f172a' : '#f0f9ff',
-              borderColor: isDarkMode ? '#0284c7' : '#bae6fd'
+              borderColor: isDarkMode ? '#0284c7' : '#bae6fd',
             }}
           >
-            <Text type="secondary">Số STT Đang gọi khám</Text>
-            <Title level={1} style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', margin: '8px 0' }}>#101</Title>
-            <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Phòng 102 - Khoa Nội</Text>
+            <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>Số STT Đang gọi phát loa</Text>
+            <Title level={1} style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', margin: '6px 0', fontSize: 36, fontWeight: 900 }}>
+              #{callingTicket ? callingTicket.sequenceNumber : '---'}
+            </Title>
+            <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+              {callingTicket ? callingTicket.patientName : 'Chưa có bệnh nhân'}
+            </Text>
           </Card>
         </Col>
 
         <Col span={6}>
           <Card
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               textAlign: 'center',
               background: isDarkMode ? '#0f172a' : '#fffbeb',
-              borderColor: isDarkMode ? '#f59e0b' : '#fef3c7'
+              borderColor: isDarkMode ? '#f59e0b' : '#fef3c7',
             }}
           >
-            <Text type="secondary">Bệnh nhân Đang chờ</Text>
-            <Title level={1} style={{ color: '#f59e0b', margin: '8px 0' }}>14</Title>
-            <Text style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>Thời gian chờ TB: ~12 phút</Text>
+            <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>Bệnh nhân Đang chờ</Text>
+            <Title level={1} style={{ color: '#f59e0b', margin: '6px 0', fontSize: 36, fontWeight: 900 }}>
+              {waitingCount}
+            </Title>
+            <Text style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>Thời gian chờ trung bình: ~8 phút</Text>
           </Card>
         </Col>
 
         <Col span={6}>
           <Card
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               textAlign: 'center',
               background: isDarkMode ? '#0f172a' : '#ecfdf5',
-              borderColor: isDarkMode ? '#10b981' : '#a7f3d0'
+              borderColor: isDarkMode ? '#10b981' : '#a7f3d0',
             }}
           >
-            <Text type="secondary">Đã khám Hoàn thành</Text>
-            <Title level={1} style={{ color: '#10b981', margin: '8px 0' }}>85</Title>
-            <Text style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>Hôm nay (2026-08-02)</Text>
+            <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>Đã khám Hoàn thành</Text>
+            <Title level={1} style={{ color: '#10b981', margin: '6px 0', fontSize: 36, fontWeight: 900 }}>
+              {finishedCount}
+            </Title>
+            <Text style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>Hôm nay ({new Date().toLocaleDateString('vi-VN')})</Text>
           </Card>
         </Col>
 
         <Col span={6}>
           <Card
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               textAlign: 'center',
               background: isDarkMode ? '#0f172a' : '#fef2f2',
-              borderColor: isDarkMode ? '#ef4444' : '#fecaca'
+              borderColor: isDarkMode ? '#ef4444' : '#fecaca',
             }}
           >
-            <Text type="secondary">Ưu tiên (Cấp cứu/Người già)</Text>
-            <Title level={1} style={{ color: '#ef4444', margin: '8px 0' }}>2</Title>
-            <Text style={{ color: '#ef4444', fontWeight: 600 }}>Đang sắp xếp luồng nhanh</Text>
+            <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>Đối tượng Ưu tiên / Cấp cứu</Text>
+            <Title level={1} style={{ color: '#ef4444', margin: '6px 0', fontSize: 36, fontWeight: 900 }}>
+              {emergencyCount}
+            </Title>
+            <Text style={{ color: '#ef4444', fontWeight: 600 }}>Tự động đưa lên đầu hàng chờ</Text>
           </Card>
         </Col>
       </Row>
 
+      {/* Main Table Card */}
       <Card
-        title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh sách Cấp số Hàng chờ Khám bệnh</span>}
-        style={{ borderRadius: 12, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd' }}
+        title={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a', fontWeight: 700 }}>
+              Danh sách Cấp số Hàng chờ Khám Realtime
+            </span>
+            <Space>
+              <Select
+                placeholder="Lọc theo Khoa / Phòng khám"
+                allowClear
+                style={{ width: 260 }}
+                onChange={(val) => setSelectedDeptId(val)}
+              >
+                {departments.map((d) => (
+                  <Option key={d.id} value={d.id}>
+                    {d.departmentName} ({d.location})
+                  </Option>
+                ))}
+              </Select>
+            </Space>
+          </div>
+        }
+        style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd' }}
       >
-        <Table dataSource={queueList} columns={columns} rowKey="id" />
+        <Table
+          dataSource={queueList}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 8, showSizeChanger: false }}
+        />
       </Card>
 
-      {/* Modal Đăng ký tiếp nhận mới */}
+      {/* Modal Đăng ký Tiếp nhận & Cấp số Mới */}
       <Modal
         title={
           <Space>
             <UserAddOutlined style={{ color: '#0284c7' }} />
-            <span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>Tiếp nhận & Cấp số Khám Mới</span>
+            <span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 700 }}>
+              Đăng ký Tiếp nhận & Phát phiếu Cấp số mới
+            </span>
           </Space>
         }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
         destroyOnClose
+        width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleAddTicket} initialValues={{ phongKham: 'Phòng 102 - Khoa Nội' }}>
-          <Form.Item label="Họ và Tên Bệnh nhân" name="hoTen" rules={[{ required: true, message: 'Nhập họ tên!' }]}>
-            <Input placeholder="Ví dụ: Nguyễn Văn An" size="large" />
-          </Form.Item>
-
-          <Form.Item label="Số CCCD / Thẻ BHYT" name="soCCCD" rules={[{ required: true, message: 'Nhập số CCCD!' }]}>
-            <Input placeholder="03809000xxxx" size="large" />
-          </Form.Item>
-
-          <Form.Item label="Chọn Phòng khám & Chuyên khoa" name="phongKham" rules={[{ required: true }]}>
-            <Select size="large">
-              <Option value="Phòng 102 - Khoa Nội">Phòng 102 - Khoa Nội Tổng Hợp</Option>
-              <Option value="Phòng 105 - Khoa Nhi">Phòng 105 - Khoa Nhi</Option>
-              <Option value="Phòng 201 - Khoa Mắt">Phòng 201 - Khoa Mắt</Option>
-              <Option value="Phòng 204 - Khoa Sản">Phòng 204 - Khoa Sản</Option>
+        <Form form={form} layout="vertical" onFinish={handleIssueTicket}>
+          <Form.Item label="Chọn Bệnh nhân Đã đăng ký hệ thống" name="patientId">
+            <Select
+              showSearch
+              placeholder="Gõ tên, số CCCD hoặc Mã bệnh nhân để chọn..."
+              optionFilterProp="children"
+              allowClear
+              size="large"
+            >
+              {patients.map((p) => (
+                <Option key={p.id} value={p.id}>
+                  {p.maBenhNhan} - {p.hoTen} (CCCD: {p.soCCCD})
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
-          <Form.Item label="Đối tượng Ưu tiên (Người cao tuổi / Phụ nữ thai sản / Cấp cứu)" name="uuTien" valuePropName="checked">
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 12 }}>
+            * Hoặc nhập thông tin bệnh nhân mới nếu chưa có hồ sơ:
+          </Text>
+
+          <Row gutter={16}>
+            <Col span={14}>
+              <Form.Item label="Họ và Tên Bệnh nhân Mới" name="hoTen">
+                <Input placeholder="Ví dụ: Nguyễn Văn An" size="large" />
+              </Form.Item>
+            </Col>
+            <Col span={10}>
+              <Form.Item label="Giới tính" name="gioiTinh" initialValue="Nam">
+                <Select size="large">
+                  <Option value="Nam">Nam</Option>
+                  <Option value="Nữ">Nữ</Option>
+                  <Option value="Khác">Khác</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="Số CCCD (12 số)" name="soCCCD">
+                <Input placeholder="03809000xxxx" size="large" style={{ fontFamily: 'monospace' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Số Điện thoại" name="soDienThoai">
+                <Input placeholder="0901234567" size="large" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            label="Chọn Phòng khám & Chuyên khoa Nhận khám"
+            name="departmentId"
+            rules={[{ required: true, message: 'Vui lòng chọn phòng khám!' }]}
+            initialValue={departments[0]?.id}
+          >
+            <Select size="large">
+              {departments.map((d) => (
+                <Option key={d.id} value={d.id}>
+                  {d.departmentName} - {d.location}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Chế độ Ưu tiên (Người cao tuổi >75 tuổi / Cấp cứu / Phụ nữ mang thai)"
+            name="uuTien"
+            valuePropName="checked"
+          >
             <Switch />
           </Form.Item>
 
           <div style={{ textAlign: 'right', marginTop: 24 }}>
             <Space>
-              <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-              <Button type="primary" htmlType="submit" size="large" icon={<PrinterOutlined />} style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}>
-                Cấp số & In phiếu
+              <Button onClick={() => setIsModalOpen(false)}>Hủy bỏ</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                icon={<PrinterOutlined />}
+                loading={submitting}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+              >
+                Cấp số & In phiếu Nhiệt
               </Button>
             </Space>
           </div>
