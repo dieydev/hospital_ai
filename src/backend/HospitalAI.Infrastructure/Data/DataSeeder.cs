@@ -2,6 +2,7 @@ using HospitalAI.Application.Interfaces;
 using HospitalAI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -26,7 +27,6 @@ public static class DataSeeder
 
         var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
         var doctorRole = await context.Roles.FirstAsync(r => r.Name == "Doctor");
-        var nurseRole = await context.Roles.FirstAsync(r => r.Name == "Nurse");
         var receptionistRole = await context.Roles.FirstAsync(r => r.Name == "Receptionist");
         var patientRole = await context.Roles.FirstAsync(r => r.Name == "Patient");
 
@@ -99,6 +99,7 @@ public static class DataSeeder
             patientUser.UserRoles.Add(new UserRole { UserId = patientUser.Id, RoleId = patientRole.Id });
             context.Users.Add(patientUser);
         }
+        await context.SaveChangesAsync();
 
         // 3. Seed Default Departments
         if (!await context.Departments.AnyAsync())
@@ -199,8 +200,76 @@ public static class DataSeeder
             };
 
             await context.Patients.AddRangeAsync(initialPatients);
+            await context.SaveChangesAsync();
         }
 
-        await context.SaveChangesAsync();
+        // 5. Seed Default Queue Tickets
+        if (!await context.QueueTickets.AnyAsync())
+        {
+            var firstDept = await context.Departments.FirstOrDefaultAsync();
+            var firstPatient = await context.Patients.FirstOrDefaultAsync();
+
+            if (firstDept != null && firstPatient != null)
+            {
+                var sampleQueue = new[]
+                {
+                    new QueueTicket
+                    {
+                        PatientId = firstPatient.Id,
+                        DepartmentId = firstDept.Id,
+                        SequenceNumber = 101,
+                        Status = "Examining",
+                        Priority = "Normal",
+                        CreatedAt = DateTime.UtcNow
+                    }
+                };
+
+                await context.QueueTickets.AddRangeAsync(sampleQueue);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 6. Seed Default Examinations
+        if (!await context.Examinations.AnyAsync())
+        {
+            var doctor = await context.Users.FirstOrDefaultAsync(u => u.Username == "dr.duy");
+            var patient = await context.Patients.FirstOrDefaultAsync();
+
+            if (doctor != null && patient != null)
+            {
+                var sampleExam = new Examination
+                {
+                    ExaminationCode = "LK20260802-01",
+                    PatientId = patient.Id,
+                    DoctorId = doctor.Id,
+                    DepartmentName = "Khoa Nội Tổng Hợp",
+                    ExaminationDate = DateTime.UtcNow.AddDays(-1),
+                    Subjective = "Bệnh nhân sốt nhẹ 38.0°C, ho khan 3 ngày nay, đau họng khi nuốt.",
+                    PulseRate = 82,
+                    Temperature = 38.0m,
+                    BloodPressure = "120/80",
+                    RespiratoryRate = 18,
+                    Weight = 65.5m,
+                    Height = 170.0m,
+                    Assessment = "Viêm họng cấp tính",
+                    ICD10Code = "J02.9",
+                    ICD10Name = "Viêm họng cấp tính, không đặc hiệu",
+                    Plan = "Nghỉ ngơi, uống nhiều nước ấm, duy trì uống thuốc đúng liều 7 ngày.",
+                    Status = "Hoàn thành",
+                    PrescriptionDetails = new List<PrescriptionDetail>
+                    {
+                        new PrescriptionDetail { MedicineName = "Paracetamol 500mg", Unit = "Viên", Quantity = 20, DosageInstruction = "Uống 1 viên khi sốt > 38.5°C, mỗi 6-8h", UnitPrice = 1200 },
+                        new PrescriptionDetail { MedicineName = "Augmentin 1g", Unit = "Viên", Quantity = 14, DosageInstruction = "Uống 1 viên sau ăn sáng và tối", UnitPrice = 18500 }
+                    },
+                    ServiceOrderDetails = new List<ServiceOrderDetail>
+                    {
+                        new ServiceOrderDetail { ServiceName = "Công thức máu toàn phần (CBC)", ServiceCategory = "Xét nghiệm", Price = 85000, Result = "Bạch cầu WBC 11.2 G/L (Tăng nhẹ)", Status = "Đã có kết quả" }
+                    }
+                };
+
+                await context.Examinations.AddAsync(sampleExam);
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }
