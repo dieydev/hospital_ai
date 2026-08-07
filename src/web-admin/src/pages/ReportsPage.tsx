@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Row, Col, Typography, Statistic, DatePicker, Button, Space } from 'antd';
 import { DownloadOutlined, UserOutlined, DollarOutlined, MedicineBoxOutlined } from '@ant-design/icons';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
-import { showToast } from '../utils/sweetAlert';
+import { showSuccessAlert } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -12,14 +12,14 @@ const { RangePicker } = DatePicker;
 export const ReportsPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
 
-  const patientData = [
+  const [patientData] = useState([
     { month: 'Tháng 3', luotKham: 1250, doanhThu: 320000000 },
     { month: 'Tháng 4', luotKham: 1420, doanhThu: 380000000 },
     { month: 'Tháng 5', luotKham: 1680, doanhThu: 450000000 },
     { month: 'Tháng 6', luotKham: 1550, doanhThu: 410000000 },
     { month: 'Tháng 7', luotKham: 1890, doanhThu: 520000000 },
     { month: 'Tháng 8', luotKham: 1980, doanhThu: 560000000 },
-  ];
+  ]);
 
   const diseaseCategoryData = [
     { name: 'Viêm đường hô hấp trên', value: 40, color: '#0284c7' },
@@ -27,6 +27,22 @@ export const ReportsPage: React.FC = () => {
     { name: 'Bệnh Tăng huyết áp & Tim mạch', value: 20, color: '#f59e0b' },
     { name: 'Bệnh Cơ Xương Khớp', value: 15, color: '#8b5cf6' },
   ];
+
+  const handleExportExcel = () => {
+    const csvRows = [
+      ['Thang', 'SoLuotKham', 'DoanhThuVienPhi_VND'].join(','),
+      ...patientData.map((d) => [d.month, d.luotKham, d.doanhThu].join(',')),
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csvRows.join('\n'));
+    const link = document.createElement('a');
+    link.setAttribute('href', csvContent);
+    link.setAttribute('download', `Bao_Cao_Doanh_Thu_HospitalAI_${new Date().toISOString().substring(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showSuccessAlert('Kết xuất Báo cáo thành công!', 'Tệp Báo cáo Excel (CSV) đã được tải về máy tính của bạn.');
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -60,7 +76,7 @@ export const ReportsPage: React.FC = () => {
             icon={<DownloadOutlined />}
             size="large"
             style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
-            onClick={() => showToast('Đang kết xuất tệp Báo cáo Excel...', 'info')}
+            onClick={handleExportExcel}
           >
             Xuất Báo cáo Excel
           </Button>

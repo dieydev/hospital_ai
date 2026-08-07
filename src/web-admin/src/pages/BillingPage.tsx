@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Space, Input, Tag, Typography, Row, Col, Modal, Statistic, Image } from 'antd';
+import { Card, Table, Button, Space, Input, Tag, Typography, Row, Col, Modal, Statistic, Image, Select } from 'antd';
 import {
   DollarOutlined,
   SearchOutlined,
@@ -14,10 +14,14 @@ import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert, showToast } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 export const BillingPage: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const { isDarkMode } = useThemeStore();
 
   const [invoices, setInvoices] = useState<Invoice[]>([
@@ -52,11 +56,43 @@ export const BillingPage: React.FC = () => {
       phuongThucThanhToan: 'Tiền mặt',
       trangThai: 'Đã thanh toán',
     },
+    {
+      id: 'inv-003',
+      maHoaDon: 'HD20260802-003',
+      maBenhNhan: 'BN20260003',
+      tenBenhNhan: 'Lê Hoàng Minh',
+      maLuotKham: 'LK20260802-03',
+      ngayLap: '2026-08-02 10:05',
+      tienKham: 150000,
+      tienThuoc: 120000,
+      tienDichVu: 150000,
+      bhytChiTra: 180000,
+      benhNhanThanhToan: 240000,
+      phuongThucThanhToan: 'Chuyển khoản VietQR',
+      trangThai: 'Chưa thanh toán',
+      qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=VIETQR_HOSPITAL_AI_240000_HD20260802-003',
+    },
   ]);
+
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchKw =
+      !searchKeyword ||
+      inv.maHoaDon.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+      inv.tenBenhNhan.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+      inv.maBenhNhan.toLowerCase().includes(searchKeyword.toLowerCase());
+
+    const matchStatus = statusFilter === 'ALL' || inv.trangThai === statusFilter;
+    return matchKw && matchStatus;
+  });
 
   const handleOpenQrModal = (inv: Invoice) => {
     setSelectedInvoice(inv);
     setIsQrModalOpen(true);
+  };
+
+  const handleOpenPrintModal = (inv: Invoice) => {
+    setSelectedInvoice(inv);
+    setIsPrintModalOpen(true);
   };
 
   const handleConfirmPayment = (id: string) => {
@@ -113,7 +149,7 @@ export const BillingPage: React.FC = () => {
               </Button>
             </>
           ) : (
-            <Button icon={<PrinterOutlined />} size="small" type="dashed" onClick={() => showToast('Đã gửi lệnh in hóa đơn nội bộ!', 'info')}>In Hóa Đơn Nội Bộ</Button>
+            <Button icon={<PrinterOutlined />} size="small" type="dashed" onClick={() => handleOpenPrintModal(record)}>In Hóa Đơn</Button>
           )}
         </Space>
       ),
@@ -146,7 +182,18 @@ export const BillingPage: React.FC = () => {
           </Text>
         </div>
         <Space>
-          <Input placeholder="Tìm kiếm theo Mã HĐ / Tên BN / CCCD..." prefix={<SearchOutlined />} style={{ width: 320 }} />
+          <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 160 }}>
+            <Option value="ALL">Tất cả trạng thái</Option>
+            <Option value="Chưa thanh toán">Chưa thanh toán</Option>
+            <Option value="Đã thanh toán">Đã thanh toán</Option>
+          </Select>
+          <Input
+            placeholder="Tìm kiếm Mã HĐ / Tên BN / Mã BN..."
+            prefix={<SearchOutlined />}
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            style={{ width: 280 }}
+          />
         </Space>
       </div>
 
@@ -191,12 +238,12 @@ export const BillingPage: React.FC = () => {
         title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh sách Hóa đơn Chi phí Khám chữa bệnh</span>}
         style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : undefined }}
       >
-        <Table dataSource={invoices} columns={columns} rowKey="id" />
+        <Table dataSource={filteredInvoices} columns={columns} rowKey="id" />
       </Card>
 
       {/* Modal QR Chuyển khoản nội bộ */}
       <Modal
-        title={<span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>Thông tin Chuyển khoản Viện phí Nội bộ (Mã QR Tham khảo)</span>}
+        title={<span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>Thông tin Chuyển khoản Viện phí Nội bộ (Mã QR VietQR)</span>}
         open={isQrModalOpen}
         onCancel={() => setIsQrModalOpen(false)}
         footer={null}
@@ -233,6 +280,63 @@ export const BillingPage: React.FC = () => {
               >
                 Xác nhận Đã thu đủ tiền
               </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal In Hóa Đơn Xem trước */}
+      <Modal
+        title={<span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>Xem trước Hóa đơn Thu tiền Viện phí</span>}
+        open={isPrintModalOpen}
+        onCancel={() => setIsPrintModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsPrintModalOpen(false)}>Đóng</Button>,
+          <Button
+            key="print"
+            type="primary"
+            icon={<PrinterOutlined />}
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            onClick={() => {
+              showToast('Đã gửi lệnh tới máy in hóa đơn y tế!', 'success');
+              setIsPrintModalOpen(false);
+            }}
+          >
+            In Hóa Đơn (A5/A4)
+          </Button>,
+        ]}
+      >
+        {selectedInvoice && (
+          <div style={{ padding: 16, border: '1px dashed #cbd5e1', borderRadius: 8, background: isDarkMode ? '#0f172a' : '#f8fafc' }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0, color: '#0284c7' }}>BỆNH VIỆN ĐA KHOA HOSPITAL AI</Title>
+              <Text type="secondary" style={{ fontSize: 12 }}>HÓA ĐƠN THU TIỀN VIỆN PHÍ & THUỐC</Text>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text>Số HĐ: <strong>{selectedInvoice.maHoaDon}</strong></Text>
+              <Text>Ngày: {selectedInvoice.ngayLap}</Text>
+            </div>
+            <Text style={{ display: 'block', marginBottom: 4 }}>Bệnh nhân: <strong>{selectedInvoice.tenBenhNhan}</strong> ({selectedInvoice.maBenhNhan})</Text>
+            <Text style={{ display: 'block', marginBottom: 12 }}>Mã lượt khám: {selectedInvoice.maLuotKham}</Text>
+
+            <div style={{ borderTop: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', padding: '8px 0', marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Text>Tiền khám & Dịch vụ CLS:</Text>
+                <Text>{formatCurrency(selectedInvoice.tienKham + selectedInvoice.tienDichVu)}</Text>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Text>Tiền thuốc kê đơn:</Text>
+                <Text>{formatCurrency(selectedInvoice.tienThuoc)}</Text>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
+                <Text>BHYT chi trả (80%):</Text>
+                <Text>-{formatCurrency(selectedInvoice.bhytChiTra)}</Text>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#f43f5e' }}>
+              <span>BỆNH NHÂN THANH TOÁN:</span>
+              <span>{formatCurrency(selectedInvoice.benhNhanThanhToan)}</span>
             </div>
           </div>
         )}

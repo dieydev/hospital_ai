@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Table, Tag, Typography, Space, Input } from 'antd';
 import { SearchOutlined, UserOutlined } from '@ant-design/icons';
 import { AuditLog } from '../types';
@@ -8,8 +8,9 @@ const { Title, Text } = Typography;
 
 export const AuditLogPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
+  const [searchKeyword, setSearchKeyword] = useState('');
 
-  const auditLogs: AuditLog[] = [
+  const [auditLogs] = useState<AuditLog[]>([
     {
       id: 'log-001',
       thoiGian: '2026-08-02 09:30:15',
@@ -54,7 +55,19 @@ export const AuditLogPage: React.FC = () => {
       ipAddress: '14.226.12.89',
       isAiAction: false,
     },
-  ];
+  ]);
+
+  const filteredLogs = auditLogs.filter((log) => {
+    if (!searchKeyword) return true;
+    const q = searchKeyword.toLowerCase();
+    return (
+      log.nguoiThucHien.toLowerCase().includes(q) ||
+      log.hanhDong.toLowerCase().includes(q) ||
+      log.module.toLowerCase().includes(q) ||
+      log.chiTiet.toLowerCase().includes(q) ||
+      log.ipAddress.includes(q)
+    );
+  });
 
   const columns = [
     { title: 'Thời gian', dataIndex: 'thoiGian', key: 'thoiGian', width: 170, render: (t: string) => <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : undefined }}>{t}</Text> },
@@ -101,11 +114,17 @@ export const AuditLogPage: React.FC = () => {
             Ghi nhận toàn bộ lịch sử thao tác người dùng, truy vết dữ liệu y tế & Nhật ký AI Gemini
           </Text>
         </div>
-        <Input placeholder="Tìm kiếm nhật ký theo Tên / Thao tác / IP..." prefix={<SearchOutlined />} style={{ width: 340 }} />
+        <Input
+          placeholder="Tìm kiếm nhật ký theo Tên / Thao tác / IP..."
+          prefix={<SearchOutlined />}
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          style={{ width: 340 }}
+        />
       </div>
 
       <Card style={{ borderRadius: 12, border: isDarkMode ? '1px solid #334155' : undefined }}>
-        <Table dataSource={auditLogs} columns={columns} rowKey="id" />
+        <Table dataSource={filteredLogs} columns={columns} rowKey="id" />
       </Card>
     </div>
   );
