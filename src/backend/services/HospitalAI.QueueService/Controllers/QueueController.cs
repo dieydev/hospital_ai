@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
-namespace HospitalAI.API.Controllers;
+namespace HospitalAI.QueueService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/queue")]
 public class QueueController : ControllerBase
 {
     private readonly IQueueService _queueService;

@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
-namespace HospitalAI.API.Controllers;
+namespace HospitalAI.ExaminationService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/examinations")]
 public class ExaminationsController : ControllerBase
 {
     private readonly IExaminationService _examinationService;

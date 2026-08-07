@@ -9,7 +9,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add Controllers & CORS Policy
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
@@ -21,22 +20,14 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 2. Configure SQL Server Connection
 builder.Services.AddDbContext<HospitalDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("HospitalAI.Infrastructure")
     ));
 
-// 3. Register Dependency Injections
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IPatientService, PatientService>();
-builder.Services.AddScoped<IQueueService, QueueService>();
 builder.Services.AddScoped<IExaminationService, ExaminationService>();
 
-// 4. Configure JWT Authentication
 var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT";
 var issuer = builder.Configuration["JwtSettings:Issuer"] ?? "HospitalAI.Backend";
 var audience = builder.Configuration["JwtSettings:Audience"] ?? "HospitalAI.Clients";
@@ -61,32 +52,24 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-
-// 5. Configure Swagger UI with JWT Bearer Security
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Hospital AI Backend API", Version = "v1" });
-
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Hospital AI Examination Service", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Nhập Token JWT theo dạng: Bearer {your_token}",
+        Description = "Bearer {token}",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
@@ -95,32 +78,9 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 6. Data Seeder Execution at Application Startup
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var dbContext = services.GetRequiredService<HospitalDbContext>();
-        var passwordHasher = services.GetRequiredService<IPasswordHasher>();
-        await DataSeeder.SeedAsync(dbContext, passwordHasher);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Lỗi xảy ra trong quá trình Seed Data tài khoản ban đầu.");
-    }
-}
-
-// 7. Configure Request Pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+app.UseSwagger();
+app.UseSwaggerUI();
 app.UseCors("AllowAll");
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

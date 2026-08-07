@@ -3,12 +3,13 @@ using HospitalAI.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace HospitalAI.API.Controllers;
+namespace HospitalAI.PatientService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/patients")]
 public class PatientsController : ControllerBase
 {
     private readonly IPatientService _patientService;

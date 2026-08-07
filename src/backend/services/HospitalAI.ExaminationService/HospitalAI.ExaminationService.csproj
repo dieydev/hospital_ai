@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -16,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HospitalAI.Application\HospitalAI.Application.csproj" />
-    <ProjectReference Include="..\HospitalAI.Infrastructure\HospitalAI.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\HospitalAI.Application\HospitalAI.Application.csproj" />
+    <ProjectReference Include="..\..\HospitalAI.Infrastructure\HospitalAI.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,105 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hospitalai-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=HospitalAI@2026!Secret
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    restart: always
+
+  identity-service:
+    container_name: hospitalai-identity-service
+    build:
+      context: ./src/backend
+      dockerfile: services/HospitalAI.IdentityService/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - JwtSettings__Issuer=HospitalAI.Backend
+      - JwtSettings__Audience=HospitalAI.Clients
+    ports:
+      - "5001:5001"
+    depends_on:
+      - sqlserver
+    restart: on-failure
+
+  patient-service:
+    container_name: hospitalai-patient-service
+    build:
+      context: ./src/backend
+      dockerfile: services/HospitalAI.PatientService/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - JwtSettings__Issuer=HospitalAI.Backend
+      - JwtSettings__Audience=HospitalAI.Clients
+    ports:
+      - "5002:5002"
+    depends_on:
+      - sqlserver
+    restart: on-failure
+
+  queue-service:
+    container_name: hospitalai-queue-service
+    build:
+      context: ./src/backend
+      dockerfile: services/HospitalAI.QueueService/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - JwtSettings__Issuer=HospitalAI.Backend
+      - JwtSettings__Audience=HospitalAI.Clients
+    ports:
+      - "5003:5003"
+    depends_on:
+      - sqlserver
+    restart: on-failure
+
+  examination-service:
+    container_name: hospitalai-examination-service
+    build:
+      context: ./src/backend
+      dockerfile: services/HospitalAI.ExaminationService/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - JwtSettings__Issuer=HospitalAI.Backend
+      - JwtSettings__Audience=HospitalAI.Clients
+    ports:
+      - "5004:5004"
+    depends_on:
+      - sqlserver
+    restart: on-failure
+
+  api-gateway:
+    container_name: hospitalai-api-gateway
+    build:
+      context: ./src/backend
+      dockerfile: services/HospitalAI.Gateway/Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - identity-service
+      - patient-service
+      - queue-service
+      - examination-service
+    restart: always
+
+  web-admin:
+    container_name: hospitalai-web-admin
+    build:
+      context: ./src/web-admin
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    restart: always
+
+volumes:
+  mssql_data:
