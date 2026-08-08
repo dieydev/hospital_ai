@@ -1,0 +1,63 @@
+=== Sheet1 ===
+BẢNG PHẠM VI CHỨC NĂNG CỦA ĐỀ TÀI
+BÁO CÁO TỐT NGHIỆP ĐẠI HỌC
+(Dựa trên kết quả khảo sát và phân tích yêu cầu của người dùng) |  |  |  |  |  |  |  | 
+Tên đề tài: |  | Xây dựng Hệ thống quản lý quá trình khám chữa bệnh và hồ sơ bệnh án cho bệnh viện đa khoa có tích hợp AI hỗ trợ đội ngũ y tế. |  |  |  |  |  | 
+Họ tên SV thực hiện: |  | Nguyễn Thanh Duy |  |  |  |  |  | 
+STT | Tên chức năng chính | Phân rã chức năng chi tiết | Ghi chú |  |  |  |  | 
+1 | Quản lý xác thực và phân quyền người dùng | Đăng nhập, đăng xuất tài khoản hệ thống | Đảm bảo người dùng được xác thực trước khi truy cập hệ thống |  |  |  |  | 
+ |  | Quản lý quyền truy cập theo vai trò (Quản trị viên, Bác sĩ, Điều dưỡng, Lễ tân) | Kiểm soát chức năng và dữ liệu mà từng nhóm người dùng được phép sử dụng |  |  |  |  | 
+ |  | Quản lý tài khoản nhân viên y tế | Lưu trữ thông tin người dùng phục vụ quá trình quản lý và vận hành hệ thống |  |  |  |  | 
+ |  | Đổi mật khẩu và khôi phục mật khẩu | Hỗ trợ bảo mật tài khoản và duy trì khả năng truy cập hệ thống |  |  |  |  | 
+2 | Quản lý hồ sơ bệnh nhân | Tiếp nhận và tạo mới hồ sơ bệnh nhân | Số hóa thông tin bệnh nhân thay thế phương pháp lưu trữ thủ công |  |  |  |  | 
+ |  | Quản lý thông tin cá nhân, CCCD, BHYT, tiền sử bệnh và dị ứng | Cung cấp dữ liệu cần thiết phục vụ quá trình khám chữa bệnh | Role cụ thể ai đc quyền xem đủ thông tin |  |  |  | 
+ |  | Tìm kiếm và tra cứu thông tin bệnh nhân | Giúp nhân viên y tế nhanh chóng truy xuất thông tin khi cần thiết |  |  |  |  | 
+ |  | Theo dõi lịch sử khám bệnh theo thời gian | Hỗ trợ bác sĩ nắm bắt quá trình điều trị trước đó của bệnh nhân |  |  |  |  | 
+3 | Quản lý lịch khám và tiếp nhận bệnh nhân | Tiếp nhận bệnh nhân tại quầy khám | Quản lý quá trình tiếp nhận bệnh nhân khi đến bệnh viện |  |  |  |  | 
+ |  | Cấp số thứ tự khám tự động | Giúp quản lý thứ tự khám và nâng cao hiệu quả tiếp nhận |  |  |  |  | 
+ |  | Theo dõi trạng thái khám bệnh | Hỗ trợ điều phối bệnh nhân trong quá trình khám |  |  |  |  | 
+4 | Quản lý quá trình khám bệnh ngoại trú | Ghi nhận triệu chứng và chỉ số sinh hiệu | Hỗ trợ bác sĩ nhập và quản lý thông tin trong quá trình khám |  |  |  |  | 
+ |  | Ghi nhận nội dung khám theo mô hình SOAP | Hỗ trợ lưu trữ thông tin khám bệnh có cấu trúc |  |  |  |  | 
+ |  | Lưu thông tin chẩn đoán bệnh | Quản lý kết quả khám và tình trạng bệnh nhân |  |  |  |  | 
+ |  | Gắn mã bệnh ICD-10 | Chuẩn hóa dữ liệu bệnh lý theo tiêu chuẩn y tế |  |  |  |  | 
+ |  | Kê đơn thuốc điện tử và chỉ định xét nghiệm | Quản lý các hoạt động sau khi bác sĩ thực hiện khám |  |  |  |  | 
+5 | Quản lý hồ sơ bệnh án điện tử (EMR) | Lưu trữ hồ sơ khám chữa bệnh của bệnh nhân | Tập trung hóa dữ liệu y tế, thay thế hồ sơ giấy truyền thống |  |  |  |  | 
+ |  | Quản lý kết quả xét nghiệm, đơn thuốc và tài liệu liên quan | Đảm bảo thông tin điều trị được lưu trữ đầy đủ |  |  |  |  | 
+ |  | Hiển thị lịch sử bệnh án theo dòng thời gian | Giúp bác sĩ theo dõi diễn biến bệnh của bệnh nhân |  |  |  |  | 
+ |  | Xuất hồ sơ bệnh án PDF | Hỗ trợ sao lưu và chia sẻ dữ liệu khi cần thiết |  |  |  |  | 
+6 | Trợ lý AI hỗ trợ đội ngũ y tế | AI hỗ trợ tìm kiếm thông tin hồ sơ bệnh án bằng ngôn ngữ tự nhiên | Giúp khai thác dữ liệu bệnh án hiệu quả hơn |  |  |  |  | 
+ |  | AI hỗ trợ tóm tắt nội dung hồ sơ bệnh án | Giúp bác sĩ giảm thời gian đọc hồ sơ dài |  |  |  |  | 
+ |  | AI hỗ trợ gợi ý mã bệnh ICD-10 dựa trên triệu chứng | Hỗ trợ bác sĩ tham khảo trong quá trình chẩn đoán |  |  |  |  | 
+7 | Quản lý viện phí cơ bản | Tính toán chi phí khám bệnh, thuốc và dịch vụ y tế | Hỗ trợ theo dõi chi phí phát sinh trong quá trình khám chữa bệnh |  |  |  |  | 
+ |  | Tạo hóa đơn thanh toán | Quản lý thông tin hóa đơn |  |  |  |  | 
+ |  | Theo dõi trạng thái thanh toán | Giúp minh bạch quá trình thu phí |  |  |  |  | 
+ |  | Tạo mã QR thanh toán trực tuyến | Hỗ trợ bệnh nhân thanh toán nhanh chóng |  |  |  |  | 
+8 | Quản trị danh mục hệ thống | Quản lý khoa/phòng | Cung cấp dữ liệu nền cho hệ thống |  |  |  |  | 
+ |  | Quản lý bác sĩ và nhân viên y tế | Hỗ trợ quản lý nguồn nhân lực |  |  |  |  | 
+ |  | Quản lý danh mục thuốc | Phục vụ quá trình kê đơn và thanh toán |  |  |  |  | 
+ |  | Quản lý dịch vụ khám chữa bệnh và bảng giá | Quản lý thông tin dịch vụ y tế |  |  |  |  | 
+ |  | Quản lý danh mục ICD-10 | Chuẩn hóa dữ liệu bệnh lý |  |  |  |  | 
+9 | Nhật ký và kiểm toán hệ thống | Lưu thông tin thời gian tạo và cập nhật dữ liệu | Hỗ trợ truy vết hoạt động trên hệ thống |  |  |  |  | 
+ |  | Ghi nhận người thực hiện thao tác | Đảm bảo tính minh bạch dữ liệu |  |  |  |  | 
+ |  | Lưu lịch sử truy vấn và phản hồi của AI | Theo dõi quá trình sử dụng AI |  |  |  |  | 
+10 | Báo cáo và thống kê | Thống kê số lượng bệnh nhân theo thời gian | Cung cấp dữ liệu tổng quan cho quản lý |  |  |  |  | 
+HỆ THỐNG MOBILE APP (Flutter - Dành cho bệnh nhân) |  |  |  |  |  |  |  | 
+STT | Tên chức năng chính | Phân rã chức năng chi tiết | Ghi chú |  |  |  |  | 
+11 | Quản lý tài khoản bệnh nhân | Đăng ký tài khoản bằng Email hoặc số điện thoại | Quản lý tài khoản bệnh nhân trên ứng dụng |  |  |  |  | 
+ |  | Đăng nhập bằng tài khoản và mật khẩu | Xác thực người dùng |  |  |  |  | 
+ |  | Quên mật khẩu | Hỗ trợ khôi phục tài khoản |  |  |  |  | 
+ |  | Cập nhật thông tin cá nhân, CCCD, BHYT, địa chỉ | Quản lý hồ sơ cá nhân |  |  |  |  | 
+12 | Đặt lịch khám trực tuyến | Chọn chuyên khoa khám | Quản lý nhu cầu khám bệnh |  |  |  |  | 
+ |  | Chọn bác sĩ khám | Hỗ trợ lựa chọn bác sĩ phù hợp | Phân tích kỹ phần này |  |  |  | 
+ |  | Chọn ngày và khung giờ khám | Quản lý lịch hẹn |  |  |  |  | 
+ |  | Xác nhận tạo phiếu đặt lịch khám | Lưu thông tin lịch hẹn |  |  |  |  | 
+ |  | Xem lịch sử đặt lịch khám | Theo dõi lịch sử đăng ký |  |  |  |  | 
+ |  | Hủy lịch khám đã đặt | Quản lý thay đổi lịch |  |  |  |  | 
+13 | Tra cứu hồ sơ bệnh án cá nhân | Xem lịch sử khám bệnh | Theo dõi quá trình khám chữa bệnh |  |  |  |  | 
+ |  | Xem thông tin chẩn đoán của bác sĩ | Cung cấp kết quả khám |  |  |  |  | 
+ |  | Xem kết quả xét nghiệm | Tra cứu kết quả cận lâm sàng |  |  |  |  | 
+ |  | Xem đơn thuốc  | Quản lý thuốc được kê |  |  |  |  | 
+ |  | Xuất hồ sơ bệnh án dạng PDF | Hỗ trợ lưu trữ dữ liệu |  |  |  |  | 
+15 | Thông báo và nhắc lịch khám | Gửi thông báo lịch khám sắp tới | Nhắc lịch bệnh nhân |  |  |  |  | 
+ |  | Thông báo thay đổi lịch khám | Cập nhật thông tin kịp thời |  |  |  |  | 
+ |  | Thông báo trạng thái khám bệnh và kết quả xử lý | Cải thiện tương tác giữa bệnh viện và bệnh nhân |  |  |  |  | 

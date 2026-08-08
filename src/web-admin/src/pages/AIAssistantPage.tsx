@@ -3,6 +3,8 @@ import { Card, Input, Button, Typography, Tag, Avatar, Spin, Divider, Row, Col, 
 import { RobotOutlined, SendOutlined, FileTextOutlined, SafetyCertificateOutlined, BulbOutlined } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 
+import { geminiService } from '../services/geminiService';
+
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
@@ -11,14 +13,14 @@ export const AIAssistantPage: React.FC = () => {
   const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string; time: string; sources?: string[]; icd10?: Array<{ code: string; name: string }> }>>([
     {
       sender: 'ai',
-      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế (tích hợp Google Gemini API). Tôi có thể hỗ trợ Bác sĩ tra cứu thông tin bệnh án bằng ngôn ngữ tự nhiên, tóm tắt diễn biến EMR phức tạp và gợi ý mã bệnh ICD-10 chuẩn.',
+      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế (tích hợp Google Gemini 3.6 Flash Engine). Tôi có thể hỗ trợ Bác sĩ tra cứu thông tin bệnh án bằng ngôn ngữ tự nhiên, tóm tắt diễn biến EMR phức tạp, tư vấn tương tác thuốc và gợi ý mã bệnh ICD-10 chuẩn.',
       time: '08:00',
     },
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const query = textToSend || inputText;
     if (!query.trim()) return;
 
@@ -32,39 +34,30 @@ export const AIAssistantPage: React.FC = () => {
     if (!textToSend) setInputText('');
     setLoading(true);
 
-    setTimeout(() => {
-      let aiResponseText = '';
-      let sources: string[] | undefined;
-      let icd10: Array<{ code: string; name: string }> | undefined;
-
-      if (query.toLowerCase().includes('tóm tắt') || query.toLowerCase().includes('nguyễn văn an')) {
-        aiResponseText = `**Tóm tắt diễn biến Hồ sơ Bệnh án EMR (Bệnh nhân Nguyễn Văn An - Mã BN20260001):**\n\n- **Tiền sử:** Tăng huyết áp độ 1 (đang dùng Amlodipine 5mg).\n- **Khám ngày 02/08/2026:** Đau họng 3 ngày, sốt 38.0°C, ho khan nhiều về đêm. Sinh hiệu ổn định ngoại trừ sốt nhẹ.\n- **Kết quả cận lâm sàng:** Xét nghiệm CBC cho thấy Bạch cầu (WBC) tăng nhẹ (11.2 G/L), X-quang phổi thẳng chưa phát hiện tổn thương thâm nhiễm.\n- **Chẩn đoán:** Viêm họng cấp tính (ICD-10: J02.9).\n- **Đơn thuốc kê khai:** Paracetamol 500mg, Augmentin 1g trong 7 ngày.`;
-        sources = ['EMR_LK20260802-01.pdf', 'KetQuaXetNghiem_CBC_02082026.pdf'];
-      } else if (query.toLowerCase().includes('icd') || query.toLowerCase().includes('triệu chứng')) {
-        aiResponseText = `Dựa trên triệu chứng ho kéo dài 2 tuần, sốt về chiều và sút cân nhẹ, hệ thống gợi ý các mã chuẩn đoán ICD-10 tham khảo cho Bác sĩ:`;
-        icd10 = [
-          { code: 'A15.0', name: 'Lao phổi xác định bằng vi khuẩn học và sinh học' },
-          { code: 'J40', name: 'Viêm phế quản không xác định cấp hay mãn' },
-          { code: 'J44.9', name: 'Bệnh phổi tắc nghẽn mãn tính (COPD), không đặc hiệu' },
-        ];
-        sources = ['Bộ Y Tế - Danh mục ICD-10 Tiêu chuẩn Quốc gia'];
-      } else {
-        aiResponseText = `Theo khuyến cáo của Bộ Y tế và Dược thư Quốc gia, khi sử dụng phối hợp Paracetamol và Warfarin liều kéo dài (>2g/ngày trong trên 3 ngày) có thể làm tăng nhẹ chỉ số INR, cần theo dõi thời gian prothrombin của bệnh nhân.`;
-        sources = ['Dược thư Quốc gia Việt Nam 2024'];
-      }
-
+    try {
+      const res = await geminiService.askGemini(query);
       setMessages((prev) => [
         ...prev,
         {
           sender: 'ai',
-          text: aiResponseText,
+          text: res.text,
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          sources,
-          icd10,
+          sources: res.sources,
+          icd10: res.icd10Suggestions,
         },
       ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: 'Xin lỗi Bác sĩ, có lỗi kết nối đến Gemini AI API. Vui lòng kiểm tra lại mạng hoặc thử lại.',
+          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (

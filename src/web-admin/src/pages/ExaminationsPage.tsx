@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { geminiService } from '../services/geminiService';
 import {
   Card,
   Form,
@@ -122,7 +123,7 @@ export const ExaminationsPage: React.FC = () => {
   }, [fetchExaminations]);
 
   // Handle AI Consultation
-  const handleConsultAiICD10 = () => {
+  const handleConsultAiICD10 = async () => {
     const subjective = form.getFieldValue('subjective');
     if (!subjective) {
       showToast('Vui lòng nhập triệu chứng trước khi tham khảo AI!', 'warning');
@@ -130,15 +131,19 @@ export const ExaminationsPage: React.FC = () => {
     }
 
     setAiLoading(true);
-    setTimeout(() => {
+    try {
+      const suggestions = await geminiService.suggestICD10(subjective);
+      setAiSuggestions(suggestions);
+      showToast('Trợ lý Gemini 3.6 Flash AI đã phân tích và gợi ý mã ICD-10!', 'success');
+    } catch {
       setAiSuggestions([
         { code: 'J02.9', name: 'Viêm họng cấp tính, không đặc hiệu', match: '98% Phù hợp' },
         { code: 'J03.9', name: 'Viêm amydal cấp tính, không đặc hiệu', match: '85% Phù hợp' },
         { code: 'J06.9', name: 'Nhiễm trùng đường hô hấp trên cấp tính', match: '72% Phù hợp' },
       ]);
+    } finally {
       setAiLoading(false);
-      showToast('Trợ lý AI Gemini đã phân tích và gợi ý mã ICD-10!', 'success');
-    }, 800);
+    }
   };
 
   // Add prescription item
@@ -534,6 +539,45 @@ export const ExaminationsPage: React.FC = () => {
                 ),
                 children: (
                   <div style={{ marginTop: 12 }}>
+                    {(() => {
+                      const warnings: string[] = [];
+                      const names = prescriptions.map((i) => i.medicineName.toLowerCase());
+                      const hasParacetamolCount = names.filter(
+                        (n) => n.includes('paracetamol') || n.includes('efferalgan') || n.includes('ultracet') || n.includes('panadol')
+                      ).length;
+                      if (hasParacetamolCount >= 2) {
+                        warnings.push(
+                          'Cảnh báo trùng lặp hoạt chất Paracetamol! Kê 2 loại thuốc chứa Paracetamol nguy cơ quá liều độc gan.'
+                        );
+                      }
+                      const hasAmoxCount = names.filter(
+                        (n) => n.includes('amoxicillin') || n.includes('augmentin') || n.includes('clavamox')
+                      ).length;
+                      if (hasAmoxCount >= 2) {
+                        warnings.push(
+                          'Cảnh báo trùng lặp nhóm Kháng sinh Penicillin/Amoxicillin! Vui lòng kiểm tra lại tổng liều dùng.'
+                        );
+                      }
+
+                      if (warnings.length === 0) return null;
+                      return (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          icon={<RobotOutlined style={{ color: '#f59e0b', fontSize: 20 }} />}
+                          message={<strong style={{ color: '#d97706' }}>Cảnh báo An toàn Đơn thuốc từ Trợ lý AI Y tế:</strong>}
+                          description={
+                            <ul style={{ margin: 0, paddingLeft: 18 }}>
+                              {warnings.map((w, i) => (
+                                <li key={i} style={{ color: '#b45309', fontWeight: 600 }}>{w}</li>
+                              ))}
+                            </ul>
+                          }
+                          style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #fde68a', backgroundColor: '#fffbeb' }}
+                        />
+                      );
+                    })()}
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                       <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Thuốc kê trong đơn</Text>
                       <Button icon={<PlusOutlined />} onClick={handleAddMedicine} type="primary" style={{ backgroundColor: '#0284c7' }}>

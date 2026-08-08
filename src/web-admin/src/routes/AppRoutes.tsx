@@ -13,6 +13,7 @@ import { CatalogsPage } from '../pages/CatalogsPage';
 import { AuditLogPage } from '../pages/AuditLogPage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { AppointmentsPage } from '../pages/AppointmentsPage';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const AppRoutes: React.FC = () => {
@@ -32,6 +33,7 @@ export const AppRoutes: React.FC = () => {
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/reception" element={<ReceptionPage />} />
+                <Route path="/appointments" element={<AppointmentsPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/examinations" element={<ExaminationsPage />} />
                 <Route path="/emr" element={<MedicalRecordsPage />} />

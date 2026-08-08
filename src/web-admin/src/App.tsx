@@ -30,7 +30,7 @@ export const App: React.FC = () => {
           colorError: '#f43f5e',
           colorInfo: '#38bdf8',
           borderRadius: 12,
-          fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          fontFamily: "'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           colorBgContainer: isDarkMode ? '#1e293b' : '#ffffff',
           colorBgLayout: isDarkMode ? '#0f172a' : '#f8fafc',
           colorTextBase: isDarkMode ? '#f8fafc' : '#0f172a',

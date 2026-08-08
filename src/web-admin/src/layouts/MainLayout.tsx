@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Button, Input } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Button, Input, Popover, List, Tag } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -17,9 +17,11 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   ScheduleOutlined,
+  CalendarOutlined,
   CheckCircleFilled,
   SunOutlined,
   MoonOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -39,6 +41,89 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { user, logout } = useAuthStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
 
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: 'Lịch hẹn đặt mới từ Mobile App',
+      description: 'Bệnh nhân Trần Văn Nam vừa đăng ký hẹn khám Khoa Nội lúc 08:30 ngày 09/08',
+      time: '5 phút trước',
+      type: 'appointment',
+      read: false,
+    },
+    {
+      id: 2,
+      title: 'Đã có kết quả Xét nghiệm CBC',
+      description: 'Bệnh nhân BN20260001 (Nguyễn Văn An) đã có kết quả công thức máu',
+      time: '18 phút trước',
+      type: 'lab',
+      read: false,
+    },
+    {
+      id: 3,
+      title: 'Bệnh nhân Cấp cứu Ưu tiên',
+      description: 'Tiếp nhận bệnh nhân ưu tiên cao tại Phòng 102 - Khoa Nội',
+      time: '45 phút trước',
+      type: 'emergency',
+      read: false,
+    },
+  ]);
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const notificationContent = (
+    <div style={{ width: 340 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <Text strong style={{ fontSize: 14 }}>Thông báo mới nhất ({notifications.filter((n) => !n.read).length})</Text>
+        <Button type="link" size="small" onClick={markAllAsRead} style={{ padding: 0 }}>
+          Đánh dấu đã đọc
+        </Button>
+      </div>
+      <List
+        dataSource={notifications}
+        renderItem={(item) => (
+          <List.Item
+            style={{
+              padding: '8px 4px',
+              cursor: 'pointer',
+              opacity: item.read ? 0.6 : 1,
+              borderRadius: 8,
+              marginBottom: 4,
+            }}
+            onClick={() => {
+              if (item.type === 'appointment') navigate('/appointments');
+              setNotifications((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)));
+            }}
+          >
+            <List.Item.Meta
+              avatar={
+                <Avatar
+                  style={{
+                    backgroundColor:
+                      item.type === 'emergency'
+                        ? '#f43f5e'
+                        : item.type === 'appointment'
+                        ? '#0284c7'
+                        : '#10b981',
+                  }}
+                  icon={item.type === 'emergency' ? <InfoCircleOutlined /> : item.type === 'appointment' ? <CalendarOutlined /> : <MedicineBoxOutlined />}
+                />
+              }
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Text strong style={{ fontSize: 13 }}>{item.title}</Text>
+                  <Text type="secondary" style={{ fontSize: 10 }}>{item.time}</Text>
+                </div>
+              }
+              description={<Text style={{ fontSize: 12, display: 'block' }}>{item.description}</Text>}
+            />
+          </List.Item>
+        )}
+      />
+    </div>
+  );
+
   const menuItems = [
     {
       key: '/dashboard',
@@ -49,6 +134,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: '/reception',
       icon: <ScheduleOutlined style={{ fontSize: 18 }} />,
       label: 'Tiếp nhận & Cấp số',
+    },
+    {
+      key: '/appointments',
+      icon: <CalendarOutlined style={{ fontSize: 18 }} />,
+      label: (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Lịch hẹn Online</span>
+          <Tag color="processing" style={{ margin: 0, fontSize: 10, padding: '0 6px' }}>App</Tag>
+        </div>
+      ),
     },
     {
       key: '/patients',
@@ -257,14 +352,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               title={isDarkMode ? 'Chuyển sang Chế độ Sáng' : 'Chuyển sang Chế độ Tối'}
             />
 
-            <Badge count={3} offset={[-2, 4]} color="#0284c7">
-              <Button
-                type="text"
-                shape="circle"
-                icon={<BellOutlined style={{ fontSize: 20, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
-                style={{ background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0' }}
-              />
-            </Badge>
+            <Popover content={notificationContent} title="Thông báo Y tế" trigger="click" placement="bottomRight">
+              <Badge count={notifications.filter((n) => !n.read).length} offset={[-2, 4]} color="#0284c7">
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={<BellOutlined style={{ fontSize: 20, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
+                  style={{ background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0' }}
+                />
+              </Badge>
+            </Popover>
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
               <Space style={{ cursor: 'pointer', padding: '4px 10px', borderRadius: 12, background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9' }}>
@@ -293,7 +390,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             minHeight: 280,
           }}
         >
-          {children}
+          <div key={location.pathname} className="page-transition">
+            {children}
+          </div>
         </Content>
       </Layout>
     </Layout>

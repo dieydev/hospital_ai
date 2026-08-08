@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
+import '../appointment/book_appointment_view.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -91,8 +92,9 @@ class HomeView extends StatelessWidget {
                   color: Colors.blue,
                   label: 'Đặt lịch khám',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chức năng Đặt lịch khám trực tuyến đã sẵn sàng!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BookAppointmentView()),
                     );
                   },
                 ),

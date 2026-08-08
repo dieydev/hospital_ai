@@ -1,31 +1,38 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-primary: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Outfit', 'Be Vietnam Pro', sans-serif;
 
-  /* Color Palette - Light Mode */
+  /* Color Palette - Light Mode (Strict Medical Theme) */
   --bg-app: #f8fafc;
   --bg-surface: #ffffff;
   --bg-subtle: #f0f9ff;
-  --border-color: #e2e8f0;
+  --border-color: #bae6fd;
+  --border-light: #e0f2fe;
   --text-main: #0f172a;
   --text-sub: #334155;
   --text-muted: #64748b;
   --primary-500: #0284c7;
   --primary-600: #0369a1;
+  --primary-light: #e0f2fe;
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
   --accent-rose: #f43f5e;
 
-  --table-header-bg: #f8fafc;
-  --table-header-color: #475569;
-  --table-border: #e2e8f0;
+  --table-header-bg: #f0f9ff;
+  --table-header-color: #0369a1;
+  --table-border: #e0f2fe;
   --table-hover-bg: #f0f9ff;
 
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.1), 0 4px 10px -4px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 2px 4px rgba(2, 132, 199, 0.04);
+  --shadow-md: 0 8px 24px -4px rgba(2, 132, 199, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 16px 32px -6px rgba(2, 132, 199, 0.12), 0 8px 16px -4px rgba(15, 23, 42, 0.06);
+  --shadow-glow: 0 0 20px rgba(2, 132, 199, 0.25);
 }
 
 /* Medical Dark Mode Tokens */
@@ -34,20 +41,23 @@ html.dark-mode, body.dark-mode {
   --bg-surface: #1e293b;
   --bg-subtle: #0f172a;
   --border-color: #334155;
+  --border-light: #1e293b;
   --text-main: #f8fafc;
   --text-sub: #cbd5e1;
   --text-muted: #94a3b8;
   --primary-500: #38bdf8;
   --primary-600: #0284c7;
+  --primary-light: #1e293b;
 
   --table-header-bg: #0f172a;
-  --table-header-color: #cbd5e1;
+  --table-header-color: #38bdf8;
   --table-border: #334155;
   --table-hover-bg: #334155;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 25px rgba(56, 189, 248, 0.2);
 }
 
 * {
@@ -56,10 +66,12 @@ html.dark-mode, body.dark-mode {
   padding: 0;
 }
 
-body {
+html, body {
   font-family: var(--font-primary);
   background-color: var(--bg-app);
   color: var(--text-main);
+  line-height: 1.65;
+  letter-spacing: 0.012em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -67,24 +79,31 @@ body {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-app);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
+  background: var(--border-color);
   border-radius: 999px;
-  opacity: 0.5;
+  transition: all 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-500);
 }
 
-/* Typography Enhancements */
+/* Typography Spacing & Enhancements */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
+  letter-spacing: 0.015em;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+p, span, div, label, input, button, td, th {
+  letter-spacing: 0.01em;
 }
 
 /* AntD Component Overrides for Ultra Modern Aesthetic */
@@ -92,9 +111,14 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 16px !important;
   border: 1px solid var(--border-color) !important;
   box-shadow: var(--shadow-md) !important;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   background: var(--bg-surface) !important;
   color: var(--text-main) !important;
+}
+
+.ant-card:hover {
+  box-shadow: var(--shadow-lg) !important;
+  transform: translateY(-2px);
 }
 
 .ant-card-head {
@@ -103,38 +127,48 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700 !important;
   padding: 16px 24px !important;
   color: var(--text-main) !important;
+  letter-spacing: 0.02em !important;
 }
 
 .ant-card-head-title {
   color: var(--text-main) !important;
+  font-size: 16px !important;
 }
 
+/* Buttons with Press Effects & Gradients */
 .ant-btn {
   border-radius: 10px !important;
   font-family: var(--font-primary) !important;
   font-weight: 600 !important;
-  transition: all 0.2s ease-in-out !important;
+  letter-spacing: 0.02em !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
   box-shadow: var(--shadow-sm);
+}
+
+.ant-btn:active {
+  transform: scale(0.97) !important;
 }
 
 .ant-btn-primary {
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
   border: none !important;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
   color: #ffffff !important;
 }
 
 .ant-btn-primary:hover {
   background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
-  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4) !important;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45) !important;
   transform: translateY(-1px);
 }
 
+/* Table Enhancements */
 .ant-table-wrapper .ant-table {
   border-radius: 14px !important;
   overflow: hidden;
   background: var(--bg-surface) !important;
   color: var(--text-main) !important;
+  border: 1px solid var(--table-border) !important;
 }
 
 .ant-table-thead > tr > th {
@@ -143,33 +177,44 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700 !important;
   font-size: 13px !important;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em !important;
   border-bottom: 1px solid var(--table-border) !important;
+  padding: 14px 16px !important;
 }
 
 .ant-table-tbody > tr > td {
   border-bottom: 1px solid var(--table-border) !important;
   font-size: 14px;
+  line-height: 1.6 !important;
   color: var(--text-main) !important;
   background: var(--bg-surface) !important;
+  padding: 14px 16px !important;
+  transition: background-color 0.2s ease;
 }
 
 .ant-table-tbody > tr:hover > td {
   background-color: var(--table-hover-bg) !important;
 }
 
+/* Tag Pill Styling */
 .ant-tag {
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   font-weight: 600 !important;
-  padding: 2px 10px !important;
+  padding: 3px 12px !important;
+  letter-spacing: 0.02em !important;
   border: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Form Control Polish */
 .ant-input, .ant-select-selector, .ant-input-number, .ant-picker {
   border-radius: 10px !important;
   border-color: var(--border-color) !important;
   background-color: var(--bg-surface) !important;
   color: var(--text-main) !important;
+  line-height: 1.6 !important;
+  letter-spacing: 0.01em !important;
+  transition: all 0.2s ease !important;
 }
 
 .ant-input::placeholder, .ant-select-selection-placeholder {
@@ -178,14 +223,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .ant-input:focus, .ant-input-focused, .ant-select-focused .ant-select-selector {
   border-color: var(--primary-500) !important;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18) !important;
 }
 
 .ant-modal-content {
   background-color: var(--bg-surface) !important;
   color: var(--text-main) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 16px !important;
+  border-radius: 20px !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .ant-modal-header {
@@ -195,23 +241,45 @@ h1, h2, h3, h4, h5, h6 {
 
 .ant-modal-title {
   color: var(--text-main) !important;
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
 }
 
-/* Glassmorphism Card Utility */
+/* Glassmorphism & Modern Card Utility */
 .glass-panel {
-  background: var(--bg-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   box-shadow: var(--shadow-md);
 }
 
+html.dark-mode .glass-panel {
+  background: rgba(30, 41, 59, 0.85);
+}
+
 /* Gradient Text Effect */
 .gradient-text {
-  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #38bdf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Page Transition Animation */
+.page-transition {
+  animation: pageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Pulse Glow Animation */
@@ -235,3 +303,20 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-block;
   animation: pulseGlow 2s infinite;
 }
+
+/* Subtle Shimmer for Loading State */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--border-light) 50%, var(--bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+

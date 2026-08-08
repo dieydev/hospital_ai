@@ -7,7 +7,7 @@ services:
       - MSSQL_SA_PASSWORD=HospitalAI@2026!Secret
       - MSSQL_PID=Developer
     ports:
-      - "1433:1433"
+      - "14333:1433"
     volumes:
       - mssql_data:/var/opt/mssql
     restart: always
@@ -26,7 +26,7 @@ services:
       - "5001:5001"
     depends_on:
       - sqlserver
-    restart: on-failure
+    restart: always
 
   patient-service:
     container_name: hospitalai-patient-service
@@ -42,7 +42,7 @@ services:
       - "5002:5002"
     depends_on:
       - sqlserver
-    restart: on-failure
+    restart: always
 
   queue-service:
     container_name: hospitalai-queue-service
@@ -58,7 +58,7 @@ services:
       - "5003:5003"
     depends_on:
       - sqlserver
-    restart: on-failure
+    restart: always
 
   examination-service:
     container_name: hospitalai-examination-service
@@ -74,7 +74,7 @@ services:
       - "5004:5004"
     depends_on:
       - sqlserver
-    restart: on-failure
+    restart: always
 
   api-gateway:
     container_name: hospitalai-api-gateway
@@ -101,5 +101,17 @@ services:
       - api-gateway
     restart: always
 
+  mongodb:
+    image: mongo:7.0
+    container_name: hospitalai-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=HospitalAI_AI_Logs
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
 volumes:
   mssql_data:
+  mongo_data:

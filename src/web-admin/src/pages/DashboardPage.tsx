@@ -11,13 +11,14 @@ import {
   RightOutlined,
   CheckCircleFilled,
   ClockCircleOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/useThemeStore';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export const DashboardPage: React.FC = () => {
       dataIndex: 'stt',
       key: 'stt',
       render: (val: number) => (
-        <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 18, color: isDarkMode ? '#38bdf8' : '#0284c7' }}>
+        <span className="font-extrabold text-xl text-sky-600 dark:text-sky-400 font-mono">
           #{val}
         </span>
       ),
@@ -55,13 +56,13 @@ export const DashboardPage: React.FC = () => {
       title: 'Mã Bệnh nhân',
       dataIndex: 'maBN',
       key: 'maBN',
-      render: (code: string) => <Tag color="blue" style={{ fontSize: 12 }}>{code}</Tag>,
+      render: (code: string) => <Tag color="blue" className="font-mono text-xs px-2 py-0.5 rounded-md">{code}</Tag>,
     },
     {
       title: 'Bệnh nhân',
       dataIndex: 'hoTen',
       key: 'hoTen',
-      render: (text: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{text}</Text>
+      render: (text: string) => <Text strong className="text-slate-900 dark:text-slate-100 font-semibold">{text}</Text>
     },
     { title: 'Phòng khám', dataIndex: 'phong', key: 'phong' },
     { title: 'Bác sĩ phụ trách', dataIndex: 'bacSi', key: 'bacSi' },
@@ -76,147 +77,121 @@ export const DashboardPage: React.FC = () => {
         if (st === 'Chờ cận lâm sàng') color = 'purple';
         if (st === 'Đang chờ') color = 'warning';
         if (st === 'Hoàn thành') color = 'success';
-        return <Tag color={color}>{st}</Tag>;
+        return <Tag color={color} className="font-medium">{st}</Tag>;
       },
     },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* High-End Hero Welcome Banner */}
-      <div
-        style={{
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #0369a1 60%, #0284c7 100%)'
-            : 'linear-gradient(135deg, #0f172a 0%, #0369a1 60%, #0284c7 100%)',
-          borderRadius: 20,
-          padding: '28px 36px',
-          color: '#fff',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 12px 30px rgba(3, 105, 161, 0.25)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 680 }}>
-          <Space align="center" style={{ marginBottom: 8 }}>
-            <Tag color="#10b981" style={{ fontSize: 12, padding: '2px 10px', borderRadius: 20 }}>
-              <span className="status-dot-active" style={{ marginRight: 6 }} /> Ca trực Sáng
-            </Tag>
-            <Text style={{ color: '#93c5fd', fontSize: 13 }}>02 Tháng 08, 2026</Text>
-          </Space>
-          <Title level={2} style={{ color: '#fff', margin: '4px 0 8px', fontWeight: 800, fontSize: 26 }}>
-            Bảng điều khiển Quản lý Bệnh viện & Hồ sơ EMR
-          </Title>
-          <Text style={{ color: '#e0f2fe', fontSize: 15, lineHeight: 1.5 }}>
-            Chào mừng trở lại, <strong style={{ color: '#fef08a' }}>BS. CKII. Nguyễn Thanh Duy</strong>! Hôm nay có <strong>42 ca khám bệnh</strong> phân công tại Khoa Nội.
-          </Text>
+    <div className="flex flex-col gap-6">
+      {/* High-End Hero Banner with Tailwind CSS */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-sky-900 p-8 text-white shadow-xl border border-sky-800/40">
+        <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+          <ThunderboltOutlined style={{ fontSize: 240, color: '#38bdf8' }} />
         </div>
 
-        <Space size="middle" style={{ position: 'relative', zIndex: 2 }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            size="large"
-            style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderColor: '#10b981',
-              height: 48,
-              padding: '0 24px',
-              borderRadius: 12,
-              fontWeight: 700,
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
-            }}
-            onClick={() => navigate('/reception')}
-          >
-            Tiếp nhận Mới
-          </Button>
-          <Button
-            size="large"
-            icon={<MedicineBoxOutlined />}
-            style={{
-              height: 48,
-              padding: '0 24px',
-              borderRadius: 12,
-              fontWeight: 700,
-              background: 'rgba(255, 255, 255, 0.15)',
-              borderColor: 'rgba(255, 255, 255, 0.3)',
-              color: '#fff',
-              backdropFilter: 'blur(10px)',
-            }}
-            onClick={() => navigate('/examinations')}
-          >
-            Màn hình Khám (SOAP)
-          </Button>
-        </Space>
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="status-dot-active" /> Ca trực Sáng
+              </span>
+              <span className="text-xs text-sky-200">02 Tháng 08, 2026</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight mb-2">
+              Bảng điều khiển Quản lý Bệnh viện & Hồ sơ EMR
+            </h1>
+            <p className="text-sky-100 text-sm md:text-base leading-relaxed">
+              Chào mừng trở lại, <strong className="text-yellow-300">BS. CKII. Nguyễn Thanh Duy</strong>! Hôm nay có <strong className="text-white">42 ca khám bệnh</strong> phân công tại Khoa Nội.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              size="large"
+              className="bg-emerald-600 hover:bg-emerald-700 border-none h-12 px-6 rounded-xl font-bold shadow-lg shadow-emerald-600/30 flex items-center gap-2"
+              onClick={() => navigate('/reception')}
+            >
+              Tiếp nhận Mới
+            </Button>
+            <Button
+              size="large"
+              icon={<MedicineBoxOutlined />}
+              className="h-12 px-6 rounded-xl font-bold bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md flex items-center gap-2"
+              onClick={() => navigate('/examinations')}
+            >
+              Màn hình Khám (SOAP)
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Metric Cards Grid */}
       <Row gutter={[20, 20]}>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #0284c7', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Card bordered={false} className="rounded-2xl border-l-4 border-l-sky-600 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
+            <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>TỔNG TIẾP NHẬN HÔM NAY</Text>
-                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>158</Title>
+                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">TỔNG TIẾP NHẬN HÔM NAY</Text>
+                <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">158</h2>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#f0f9ff', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-slate-900 text-sky-600 flex items-center justify-center text-xl shadow-sm">
                 <UserOutlined />
               </div>
             </div>
-            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Tag color="green" icon={<ArrowUpOutlined />}>+12.5%</Tag>
-              <Text type="secondary" style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : undefined }}>So với hôm qua</Text>
+            <div className="mt-3 flex items-center gap-2">
+              <Tag color="green" icon={<ArrowUpOutlined />} className="m-0 font-bold">+12.5%</Tag>
+              <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400">So với hôm qua</Text>
             </div>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #f59e0b', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Card bordered={false} className="rounded-2xl border-l-4 border-l-amber-500 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
+            <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>ĐẶT LỊCH TRỰC TUYẾN APP</Text>
-                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
-                  45 <span style={{ fontSize: 14, color: isDarkMode ? '#94a3b8' : '#94a3b8', fontWeight: 500 }}>/ 50 slots</span>
-                </Title>
+                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">ĐẶT LỊCH TRỰC TUYẾN APP</Text>
+                <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">
+                  45 <span className="text-sm font-medium text-slate-400">/ 50 slots</span>
+                </h2>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#fffbeb', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-slate-900 text-amber-500 flex items-center justify-center text-xl shadow-sm">
                 <ScheduleOutlined />
               </div>
             </div>
-            <Progress percent={90} showInfo={false} strokeColor="#f59e0b" style={{ marginTop: 16 }} />
+            <Progress percent={90} showInfo={false} strokeColor="#f59e0b" className="mt-4" />
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #10b981', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Card bordered={false} className="rounded-2xl border-l-4 border-l-emerald-500 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
+            <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>CA KHÁM HOÀN THÀNH</Text>
-                <Title level={2} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>92</Title>
+                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">CA KHÁM HOÀN THÀNH</Text>
+                <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">92</h2>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-slate-900 text-emerald-500 flex items-center justify-center text-xl shadow-sm">
                 <CheckCircleFilled />
               </div>
             </div>
-            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12, color: isDarkMode ? '#94a3b8' : undefined }}>66 ca đang khám & chờ kết quả CLS</Text>
+            <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400 block mt-3">66 ca đang khám & chờ kết quả CLS</Text>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ borderRadius: 16, borderLeft: '4px solid #8b5cf6', background: isDarkMode ? '#1e293b' : '#ffffff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Card bordered={false} className="rounded-2xl border-l-4 border-l-indigo-500 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
+            <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#94a3b8' : undefined }}>DOANH THU VIỆN PHÍ TẠM TÍNH</Text>
-                <Title level={3} style={{ margin: '8px 0 0', fontWeight: 800, color: isDarkMode ? '#a78bfa' : '#8b5cf6' }}>{formatCurrency(158800000)}</Title>
+                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">DOANH THU VIỆN PHÍ TẠM TÍNH</Text>
+                <h2 className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2">{formatCurrency(158800000)}</h2>
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: isDarkMode ? '#0f172a' : '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-slate-900 text-indigo-500 flex items-center justify-center text-xl shadow-sm">
                 <DollarOutlined />
               </div>
             </div>
-            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12, color: isDarkMode ? '#94a3b8' : undefined }}>BHYT: 62% • VietQR: 38%</Text>
+            <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400 block mt-3">BHYT: 62% • VietQR: 38%</Text>
           </Card>
         </Col>
       </Row>
@@ -225,11 +200,11 @@ export const DashboardPage: React.FC = () => {
       <Row gutter={[20, 20]}>
         <Col xs={24} lg={16}>
           <Card
-            title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Thống kê Lượt khám theo Chuyên khoa</span>}
+            title={<span className="font-bold text-slate-800 dark:text-slate-100 text-lg">Thống kê Lượt khám theo Chuyên khoa</span>}
             bordered={false}
-            style={{ borderRadius: 16, background: isDarkMode ? '#1e293b' : '#ffffff' }}
+            className="rounded-2xl shadow-md bg-white dark:bg-slate-800"
           >
-            <div style={{ width: '100%', height: 320 }}>
+            <div className="w-full h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#334155' : '#f1f5f9'} />
@@ -263,34 +238,30 @@ export const DashboardPage: React.FC = () => {
           <Card
             title={
               <Space>
-                <RobotOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
-                <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Trợ lý AI Y tế (Hỗ trợ Lâm sàng)</span>
+                <RobotOutlined className="text-sky-600 dark:text-sky-400" />
+                <span className="font-bold text-slate-800 dark:text-slate-100 text-lg">Trợ lý AI Y tế (Hỗ trợ Lâm sàng)</span>
               </Space>
             }
-            extra={<Button type="link" onClick={() => navigate('/ai-assistant')}>Mở AI <RightOutlined /></Button>}
+            extra={<Button type="link" className="text-sky-600 font-bold" onClick={() => navigate('/ai-assistant')}>Mở AI <RightOutlined /></Button>}
             bordered={false}
-            style={{
-              borderRadius: 16,
-              background: isDarkMode ? '#1e293b' : '#ffffff',
-              border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd'
-            }}
+            className="rounded-2xl shadow-md border border-sky-100 dark:border-slate-700 bg-white dark:bg-slate-800"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-              <Avatar size={48} icon={<RobotOutlined />} style={{ background: '#0284c7' }} />
+            <div className="flex items-center gap-3.5 mb-5">
+              <Avatar size={48} icon={<RobotOutlined />} className="bg-sky-600 shadow-md shadow-sky-600/30" />
               <div>
-                <Text strong style={{ fontSize: 16, display: 'block', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Hệ thống Trợ lý AI Y tế</Text>
-                <Text type="secondary" style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : undefined }}>Tra cứu tri thức & Tóm tắt EMR tự động</Text>
+                <Text strong className="text-base block text-slate-900 dark:text-slate-100 font-bold">Hệ thống Trợ lý AI Y tế</Text>
+                <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400">Tra cứu tri thức & Tóm tắt EMR tự động</Text>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Button block style={{ textAlign: 'left', height: 'auto', padding: 12, borderRadius: 10 }} onClick={() => navigate('/ai-assistant')}>
+            <div className="flex flex-col gap-2.5">
+              <Button block className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200" onClick={() => navigate('/ai-assistant')}>
                 💡 <strong>Tóm tắt bệnh án:</strong> BN20260001 (Đau họng, sốt 38°C)
               </Button>
-              <Button block style={{ textAlign: 'left', height: 'auto', padding: 12, borderRadius: 10 }} onClick={() => navigate('/ai-assistant')}>
+              <Button block className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200" onClick={() => navigate('/ai-assistant')}>
                 🔍 <strong>Gợi ý mã ICD-10:</strong> Ho khan, tức ngực về đêm
               </Button>
-              <Button block style={{ textAlign: 'left', height: 'auto', padding: 12, borderRadius: 10 }} onClick={() => navigate('/ai-assistant')}>
+              <Button block className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200" onClick={() => navigate('/ai-assistant')}>
                 📚 <strong>Tra cứu Dược lý:</strong> Tương tác Paracetamol & Warfarin
               </Button>
             </div>
@@ -301,14 +272,14 @@ export const DashboardPage: React.FC = () => {
       {/* Live Queue Table */}
       <Card
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ClockCircleOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontSize: 18 }} />
-            <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Hàng chờ Gọi Khám Bệnh Trực tiếp</span>
+          <div className="flex items-center gap-2.5">
+            <ClockCircleOutlined className="text-sky-600 dark:text-sky-400 text-lg" />
+            <span className="font-bold text-slate-800 dark:text-slate-100 text-lg">Hàng chờ Gọi Khám Bệnh Trực tiếp</span>
           </div>
         }
-        extra={<Button type="primary" ghost onClick={() => navigate('/reception')}>Quản lý Tiếp nhận</Button>}
+        extra={<Button type="primary" ghost className="rounded-lg font-semibold" onClick={() => navigate('/reception')}>Quản lý Tiếp nhận</Button>}
         bordered={false}
-        style={{ borderRadius: 16, background: isDarkMode ? '#1e293b' : '#ffffff' }}
+        className="rounded-2xl shadow-md bg-white dark:bg-slate-800"
       >
         <Table dataSource={recentQueue} columns={columns} rowKey="stt" pagination={false} />
       </Card>
