@@ -129,15 +129,15 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Metric Cards Grid */}
-      <Row gutter={[20, 20]}>
-        <Col xs={24} sm={12} lg={6}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} xl={6}>
           <Card bordered={false} className="rounded-2xl border-l-4 border-l-sky-600 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
             <div className="flex justify-between items-start">
               <div>
                 <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">TỔNG TIẾP NHẬN HÔM NAY</Text>
                 <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">158</h2>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-slate-900 text-sky-600 flex items-center justify-center text-xl shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-slate-900 text-sky-600 flex items-center justify-center text-xl shadow-sm shrink-0">
                 <UserOutlined />
               </div>
             </div>
@@ -148,16 +148,16 @@ export const DashboardPage: React.FC = () => {
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} xl={6}>
           <Card bordered={false} className="rounded-2xl border-l-4 border-l-amber-500 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
             <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">ĐẶT LỊCH TRỰC TUYẾN APP</Text>
+                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">ĐẶT LỊCH APP TRỰC TUYẾN</Text>
                 <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">
                   45 <span className="text-sm font-medium text-slate-400">/ 50 slots</span>
                 </h2>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-slate-900 text-amber-500 flex items-center justify-center text-xl shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-slate-900 text-amber-500 flex items-center justify-center text-xl shadow-sm shrink-0">
                 <ScheduleOutlined />
               </div>
             </div>
@@ -165,29 +165,29 @@ export const DashboardPage: React.FC = () => {
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} xl={6}>
           <Card bordered={false} className="rounded-2xl border-l-4 border-l-emerald-500 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
             <div className="flex justify-between items-start">
               <div>
                 <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">CA KHÁM HOÀN THÀNH</Text>
                 <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">92</h2>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-slate-900 text-emerald-500 flex items-center justify-center text-xl shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-slate-900 text-emerald-500 flex items-center justify-center text-xl shadow-sm shrink-0">
                 <CheckCircleFilled />
               </div>
             </div>
-            <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400 block mt-3">66 ca đang khám & chờ kết quả CLS</Text>
+            <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400 block mt-3">66 ca đang khám & chờ kết quả</Text>
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} xl={6}>
           <Card bordered={false} className="rounded-2xl border-l-4 border-l-indigo-500 shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
             <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">DOANH THU VIỆN PHÍ TẠM TÍNH</Text>
+                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">DOANH THU TẠM TÍNH</Text>
                 <h2 className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2">{formatCurrency(158800000)}</h2>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-slate-900 text-indigo-500 flex items-center justify-center text-xl shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-slate-900 text-indigo-500 flex items-center justify-center text-xl shadow-sm shrink-0">
                 <DollarOutlined />
               </div>
             </div>
@@ -198,7 +198,7 @@ export const DashboardPage: React.FC = () => {
 
       {/* Main Charts & AI Helper Side Panel */}
       <Row gutter={[20, 20]}>
-        <Col xs={24} lg={16}>
+        <Col xs={24} xl={15} xxl={16}>
           <Card
             title={<span className="font-bold text-slate-800 dark:text-slate-100 text-lg">Thống kê Lượt khám theo Chuyên khoa</span>}
             bordered={false}
@@ -207,6 +207,12 @@ export const DashboardPage: React.FC = () => {
             <div className="w-full h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={isDarkMode ? '#38bdf8' : '#0284c7'} stopOpacity={1} />
+                      <stop offset="100%" stopColor={isDarkMode ? '#0284c7' : '#38bdf8'} stopOpacity={0.8} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#334155' : '#f1f5f9'} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={isDarkMode ? '#94a3b8' : '#64748b'} />
                   <YAxis axisLine={false} tickLine={false} stroke={isDarkMode ? '#94a3b8' : '#64748b'} />
@@ -220,48 +226,53 @@ export const DashboardPage: React.FC = () => {
                       boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
                     }}
                   />
-                  <Bar dataKey="lutKham" fill="url(#colorUv)" radius={[8, 8, 0, 0]}>
-                    <defs>
-                      <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={isDarkMode ? '#38bdf8' : '#0284c7'} stopOpacity={1} />
-                        <stop offset="100%" stopColor={isDarkMode ? '#0284c7' : '#38bdf8'} stopOpacity={0.8} />
-                      </linearGradient>
-                    </defs>
-                  </Bar>
+                  <Bar dataKey="lutKham" fill="url(#colorUv)" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </Card>
         </Col>
 
-        <Col xs={24} lg={8}>
+        <Col xs={24} xl={9} xxl={8}>
           <Card
             title={
               <Space>
                 <RobotOutlined className="text-sky-600 dark:text-sky-400" />
-                <span className="font-bold text-slate-800 dark:text-slate-100 text-lg">Trợ lý AI Y tế (Hỗ trợ Lâm sàng)</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100 text-base">Trợ lý AI Y tế</span>
               </Space>
             }
-            extra={<Button type="link" className="text-sky-600 font-bold" onClick={() => navigate('/ai-assistant')}>Mở AI <RightOutlined /></Button>}
+            extra={<Button type="link" className="text-sky-600 font-bold p-0" onClick={() => navigate('/ai-assistant')}>Mở AI <RightOutlined /></Button>}
             bordered={false}
             className="rounded-2xl shadow-md border border-sky-100 dark:border-slate-700 bg-white dark:bg-slate-800"
           >
             <div className="flex items-center gap-3.5 mb-5">
-              <Avatar size={48} icon={<RobotOutlined />} className="bg-sky-600 shadow-md shadow-sky-600/30" />
-              <div>
-                <Text strong className="text-base block text-slate-900 dark:text-slate-100 font-bold">Hệ thống Trợ lý AI Y tế</Text>
-                <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400">Tra cứu tri thức & Tóm tắt EMR tự động</Text>
+              <Avatar size={44} icon={<RobotOutlined />} className="bg-sky-600 shadow-md shadow-sky-600/30 shrink-0" />
+              <div className="min-w-0">
+                <Text strong className="text-sm block text-slate-900 dark:text-slate-100 font-bold truncate">Hệ thống Trợ lý AI Y tế</Text>
+                <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400 block truncate">Tra cứu tri thức & Tóm tắt EMR</Text>
               </div>
             </div>
 
             <div className="flex flex-col gap-2.5">
-              <Button block className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200" onClick={() => navigate('/ai-assistant')}>
+              <Button
+                block
+                className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200 whitespace-normal break-words leading-snug"
+                onClick={() => navigate('/ai-assistant')}
+              >
                 💡 <strong>Tóm tắt bệnh án:</strong> BN20260001 (Đau họng, sốt 38°C)
               </Button>
-              <Button block className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200" onClick={() => navigate('/ai-assistant')}>
+              <Button
+                block
+                className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200 whitespace-normal break-words leading-snug"
+                onClick={() => navigate('/ai-assistant')}
+              >
                 🔍 <strong>Gợi ý mã ICD-10:</strong> Ho khan, tức ngực về đêm
               </Button>
-              <Button block className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200" onClick={() => navigate('/ai-assistant')}>
+              <Button
+                block
+                className="text-left h-auto p-3 rounded-xl hover:border-sky-500 hover:text-sky-600 transition-all duration-200 whitespace-normal break-words leading-snug"
+                onClick={() => navigate('/ai-assistant')}
+              >
                 📚 <strong>Tra cứu Dược lý:</strong> Tương tác Paracetamol & Warfarin
               </Button>
             </div>
