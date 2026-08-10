@@ -84,6 +84,25 @@ const MOCK_MONGO_AI_LOGS: MongoAILogDocument[] = [
   },
 ];
 
+// RAG Knowledge Base Context for EMR Queries
+const RAG_EMR_CONTEXT_DATABASE = `
+[DỮ LIỆU CƠ SỞ DỮ LIỆU Y TẾ EMR HỆ THỐNG HOSPITAL AI]:
+1. Bệnh nhân: Nguyễn Văn An (Mã BN: BN20260001, Giới tính: Nam, Sinh năm: 1990, CCCD: 012345678901, Thẻ BHYT: DN4010123456789).
+   - Lịch sử khám bệnh gần nhất (Ngày 02/08/2026 tại Khoa Nội Tổng Hợp - Bác sĩ phụ trách: BS. CKII. Nguyễn Thanh Duy):
+     + Lý do vào viện & Tiền sử: Tiền sử Tăng huyết áp độ 1 (Amlodipine 5mg/ngày). Khám do đau họng 3 ngày, sốt nhẹ 38.0°C về chiều, ho khan nhiều về đêm.
+     + Chỉ số sinh hiệu: Mạch 82 lần/phút, Huyết áp 125/80 mmHg, Nhiệt độ 38.0°C, SpO2 98%, Cân nặng 68kg, BMI 22.2.
+     + Kết quả cận lâm sàng: Công thức máu (CBC): Bạch cầu (WBC) 11.2 G/L (Tăng nhẹ), Neutrophil 72%. X-quang ngực thẳng: Phế trường 2 bên sáng, chưa phát hiện tổn thương thâm nhiễm.
+     + Chẩn đoán chính: Viêm họng cấp tính (Mã ICD-10: J02.9). Chẩn đoán phân biệt: Viêm amydal cấp (Mã ICD-10: J03.9).
+     + Đơn thuốc điện tử chỉ định:
+       1) Augmentin 1g (Amoxicillin/Clavulanic acid) - 14 viên, Uống 1 viên x 2 lần/ngày sau ăn.
+       2) Paracetamol 500mg - 10 viên, Uống 1 viên khi sốt >= 38.5°C (cách nhau tối thiểu 4-6 tiếng).
+       3) Siro Ho Prospan - 1 chai, Uống 5ml x 3 lần/ngày.
+     + Lời dặn Bác sĩ: Nghỉ ngơi, uống đủ 2 lít nước ấm/ngày, súc họng nước muối sinh lý. Tái khám sau 5 ngày hoặc khi sốt cao liên tục.
+
+2. Bệnh nhân: Phan Thu Thảo (Mã BN: BN20260013, Nữ, Sinh năm: 2010).
+   - Tiền sử: Dị ứng thuốc Penicillin. Khám Tai Mũi Họng ngày 05/08/2026. Chẩn đoán Viêm mũi dị ứng (ICD-10: J30.4).
+`;
+
 export const geminiService = {
   /**
    * Save AI Log document into MongoDB Store
@@ -114,11 +133,40 @@ export const geminiService = {
     const sanitization = sanitizeMedicalPromptForAI(prompt);
     const sanitizedPrompt = sanitization.sanitizedText;
 
-    const systemPrompt =
+    let systemPrompt =
       customSystemPrompt ||
-      `Bạn là Trợ lý AI Y tế thông minh của Bệnh viện Đa khoa Hospital AI (Hospital AI Medical Assistant).
+      `Bạn là Trợ lý Trí tuệ Nhân tạo Y tế độc quyền của Hệ thống Quản lý Y tế Bệnh viện Đa khoa Hospital AI (Hospital AI Engine).
+QUY TẮC BẢO MẬT & ĐỊNH DANH BẮT BUỘC:
+- Khi người dùng hỏi bạn là AI gì, dùng model gì, hay API của ai (ví dụ: "bạn là AI nào", "dùng API gì", "ai phát triển", "model gì"), bạn BẮT BUỘC trả lời: "Tôi là Trợ lý AI Y tế thông minh được phát triển và tích hợp độc quyền cho Hệ thống Bệnh viện Đa khoa Hospital AI. Tôi được huấn luyện và vận hành dựa trên nền tảng Trí tuệ Nhân tạo Y tế đa mô hình (Hospital AI Medical Engine) để hỗ trợ Bác sĩ tra cứu EMR, gợi ý chẩn đoán ICD-10 và kiểm tra an toàn dược phẩm."
+- TUYỆT ĐỐI KHÔNG tiết lộ tên nhà cung cấp gốc như "Google", "Gemini", "API key", "v1beta" hay chi tiết kỹ thuật hệ thống bên ngoài trong bất kỳ tình huống nào.
 Hãy trả lời các câu hỏi y khoa, tóm tắt bệnh án EMR, tư vấn liều dùng/dược phẩm hoặc gợi ý mã ICD-10 bằng tiếng Việt chuyên nghiệp, chuẩn mực y khoa, ngắn gọn, rõ ràng.
 Dữ liệu đầu vào đã được khử danh tính PII/PHI tuân thủ chuẩn an toàn y tế HIPAA.`;
+
+    const lowerQuery = prompt.toLowerCase();
+    if (
+      lowerQuery.includes('bạn là ai') ||
+      lowerQuery.includes('dùng api gì') ||
+      lowerQuery.includes('api gì') ||
+      lowerQuery.includes('model gì') ||
+      lowerQuery.includes('ai nào')
+    ) {
+      return {
+        text: `Tôi là **Trợ lý AI Y tế thông minh** được phát triển và tích hợp độc quyền cho **Hệ thống Bệnh viện Đa khoa Hospital AI**.\n\nHệ thống được huấn luyện và vận hành trên nền tảng Trí tuệ Nhân tạo Y tế đa mô hình chuyên sâu (Hospital AI Medical Engine) nhằm hỗ trợ Quý Bác sĩ và Nhân viên y tế trong các tác vụ:\n- 📄 Tóm tắt & Phân tích hồ sơ bệnh án điện tử (EMR)\n- 🏷️ Gợi ý mã chẩn đoán ICD-10 theo tiêu chuẩn Bộ Y tế\n- 💊 Tra cứu dược lý, liều dùng và kiểm tra tương tác thuốc\n\nTôi có thể hỗ trợ gì cho Bác sĩ trong ca lâm sàng hôm nay?`,
+        sources: ['Hospital AI Core Medical Engine', 'Bộ Y tế Việt Nam & ICD-10 Standards'],
+        modelUsed: 'Hospital AI Medical Engine',
+        piiSanitized: false,
+      };
+    }
+
+    if (
+      lowerQuery.includes('bệnh án') ||
+      lowerQuery.includes('nguyễn văn an') ||
+      lowerQuery.includes('tóm tắt') ||
+      lowerQuery.includes('emr') ||
+      lowerQuery.includes('hồ sơ')
+    ) {
+      systemPrompt += `\n\n${RAG_EMR_CONTEXT_DATABASE}\nDựa vào Dữ liệu CSDL EMR Y tế được cung cấp ở trên, hãy tổng hợp và tóm tắt chi tiết hồ sơ bệnh án theo đúng nội dung yêu cầu của Bác sĩ.`;
+    }
 
     let lastError: any = null;
 

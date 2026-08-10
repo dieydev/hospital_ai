@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, Input, Button, Typography, Tag, Avatar, Spin, Divider, Row, Col, Alert, Space } from 'antd';
 import { RobotOutlined, SendOutlined, FileTextOutlined, SafetyCertificateOutlined, BulbOutlined } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
@@ -10,15 +10,21 @@ const { TextArea } = Input;
 
 export const AIAssistantPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string; time: string; sources?: string[]; icd10?: Array<{ code: string; name: string }> }>>([
     {
       sender: 'ai',
-      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế (tích hợp Google Gemini 3.6 Flash Engine). Tôi có thể hỗ trợ Bác sĩ tra cứu thông tin bệnh án bằng ngôn ngữ tự nhiên, tóm tắt diễn biến EMR phức tạp, tư vấn tương tác thuốc và gợi ý mã bệnh ICD-10 chuẩn.',
+      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế (tích hợp nền tảng Hospital AI Medical Engine). Tôi có thể hỗ trợ Bác sĩ tra cứu thông tin bệnh án bằng ngôn ngữ tự nhiên, tóm tắt diễn biến EMR phức tạp, tư vấn tương tác thuốc và gợi ý mã bệnh ICD-10 chuẩn.',
       time: '08:00',
     },
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   const handleSend = async (textToSend?: string) => {
     const query = textToSend || inputText;
@@ -79,14 +85,14 @@ export const AIAssistantPage: React.FC = () => {
       >
         <div>
           <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-            Trợ lý AI Y tế (Google Gemini Pro Engine)
+            Trợ lý Trí tuệ Nhân tạo Y tế (Hospital AI Medical Engine)
           </Title>
           <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
             Hỗ trợ tra cứu EMR bằng ngôn ngữ tự nhiên, tóm tắt bệnh án và gợi ý chẩn đoán ICD-10
           </Text>
         </div>
         <Tag color="cyan" icon={<SafetyCertificateOutlined />} style={{ padding: '6px 16px', fontSize: 14 }}>
-          Gemini Health API Ready
+          Hospital AI Engine Ready
         </Tag>
       </div>
 
@@ -100,12 +106,22 @@ export const AIAssistantPage: React.FC = () => {
               flexDirection: 'column',
               borderRadius: 12,
               overflow: 'hidden',
+              height: '100%',
               border: isDarkMode ? '1px solid #334155' : undefined
             }}
-            bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 16 }}
+            styles={{
+              body: {
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                padding: 16,
+                overflow: 'hidden',
+                height: '100%',
+              },
+            }}
           >
             {/* Chat Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: 8, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ flex: 1, overflowY: 'auto', paddingRight: 8, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}>
               {messages.map((m, idx) => (
                 <div key={idx} style={{ display: 'flex', justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start', gap: 12 }}>
                   {m.sender === 'ai' && <Avatar icon={<RobotOutlined />} style={{ backgroundColor: '#10b981' }} />}
@@ -162,6 +178,7 @@ export const AIAssistantPage: React.FC = () => {
                   <Spin tip="Gemini đang phân tích và tổng hợp dữ liệu..." />
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             <Divider style={{ margin: '12px 0', borderColor: isDarkMode ? '#334155' : undefined }} />
