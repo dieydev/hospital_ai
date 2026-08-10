@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF1677FF);
-  static const Color secondaryColor = Color(0xFF52C41A);
-  static const Color backgroundColor = Color(0xFFF5F7FA);
+  static const Color primaryColor = Color(0xFF0284C7); // Sky 600
+  static const Color primaryDark = Color(0xFF0369A1);  // Sky 700
+  static const Color secondaryColor = Color(0xFF0EA5E9);
+  static const Color backgroundColor = Color(0xFFF0F9FF);
   static const Color cardColor = Colors.white;
 
   static ThemeData get lightTheme {
@@ -12,7 +13,7 @@ class AppTheme {
       primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
       appBarTheme: const AppBarTheme(
-        backgroundColor: primaryColor,
+        backgroundColor: primaryDark,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -23,7 +24,7 @@ class AppTheme {
         primary: primaryColor,
         secondary: secondaryColor,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: cardColor,
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

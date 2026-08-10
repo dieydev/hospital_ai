@@ -1,5 +1,6 @@
 import api from './api';
 import { Patient } from '../types';
+import { isStrictMode } from '../utils/modeHelper';
 
 export type { Patient };
 
@@ -487,6 +488,9 @@ export const patientService = {
         pageSize: response.data.pageSize || 5,
       };
     } catch (error) {
+      if (isStrictMode()) {
+        throw new Error('⚠️ Lỗi kết nối Cổng API Gateway Microservices (Port 5000). Không thể tải dữ liệu từ CSDL SQL Server khi Docker ngắt kết nối.');
+      }
       console.warn('Backend API connection failed, using local patient database fallback:', error);
       let filtered = localPatients;
       if (search && search.trim()) {

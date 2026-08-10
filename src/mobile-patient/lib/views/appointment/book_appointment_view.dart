@@ -168,21 +168,58 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             content: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                color: const Color(0xFFF0F9FF),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('XÁC NHẬN THÔNG TIN PHIẾU ĐẶT LỊCH KHÁM', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-                  const Divider(),
-                  Text('• Bệnh nhân: Nguyễn Văn An (BN20260001)'),
-                  Text('• Chuyên khoa: $_selectedDepartment'),
-                  Text('• Bác sĩ phụ trách: $_selectedDoctor'),
-                  Text('• Thời gian: $_selectedTimeSlot ngày ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
-                  const SizedBox(height: 12),
-                  const Text('* Lưu ý: Quý khách vui lòng đến trước 15 phút để làm thủ tục tiếp nhận tại quầy.', style: TextStyle(fontSize: 12, color: Colors.red)),
+                  const Row(
+                    children: [
+                      Icon(Icons.assignment_turned_in, color: AppTheme.primaryColor, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'XÁC NHẬN PHIẾU HẸN KHÁM BỆNH',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20, color: Color(0xFFBAE6FD)),
+                  _buildDetailRow(Icons.person_outline, 'Họ và tên:', 'Nguyễn Văn An (BN20260001)'),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.phone_android_outlined, 'Số điện thoại:', '0987654321'),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.medical_services_outlined, 'Chuyên khoa:', $_selectedDepartment),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.badge_outlined, 'Bác sĩ phụ trách:', $_selectedDoctor),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(
+                    Icons.access_time_outlined,
+                    'Thời gian hẹn:',
+                    '$_selectedTimeSlot - ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.amber, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Quý khách vui lòng đến trước 15 phút để làm thủ tục xác nhận tại quầy tiếp nhận.',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -224,6 +261,24 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String? value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppTheme.primaryColor),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value ?? 'Chưa chọn',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          ),
+        ),
+      ],
     );
   }
 }

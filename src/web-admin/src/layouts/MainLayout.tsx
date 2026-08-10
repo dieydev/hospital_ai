@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Button, Input, Popover, List, Tag } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Button, Input, Popover, List, Tag, Tooltip } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -22,10 +22,15 @@ import {
   SunOutlined,
   MoonOutlined,
   InfoCircleOutlined,
+  ApiOutlined,
+  DisconnectOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useThemeStore } from '../store/useThemeStore';
+import { isStrictMode, setStrictMode } from '../utils/modeHelper';
+import { showToast } from '../utils/sweetAlert';
+import api from '../services/api';
 
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
@@ -36,10 +41,39 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [isGatewayOnline, setIsGatewayOnline] = useState<boolean | null>(null);
+  const [strictMode, setStrictModeState] = useState<boolean>(isStrictMode());
+
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
+
+  useEffect(() => {
+    const checkGatewayHealth = async () => {
+      try {
+        await api.get('/patients', { params: { pageSize: 1 }, timeout: 2500 });
+        setIsGatewayOnline(true);
+      } catch {
+        setIsGatewayOnline(false);
+      }
+    };
+
+    checkGatewayHealth();
+    const interval = setInterval(checkGatewayHealth, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleToggleStrictMode = () => {
+    const next = !strictMode;
+    setStrictMode(next);
+    setStrictModeState(next);
+    if (next) {
+      showToast('Đã bật Chế độ Kết nối Thực (Strict API). Khi tắt Docker, Web sẽ ngắt tải và hiển thị lỗi kết nối!', 'warning');
+    } else {
+      showToast('Đã bật Chế độ Dự phòng (Offline Fallback). Web dùng dữ liệu mẫu khi ngắt kết nối Docker.', 'info');
+    }
+  };
 
   const [notifications, setNotifications] = useState([
     {
@@ -341,7 +375,44 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {/* Docker Gateway Live Health Tag */}
+            <Tooltip
+              title={
+                <div>
+                  <div><b>Trạng thái Backend Microservices:</b></div>
+                  <div>Cổng Gateway Port 5000: {isGatewayOnline ? '🟢 Hoạt động (Docker Online)' : '🔴 Mất kết nối (Docker Stopped)'}</div>
+                  <div style={{ marginTop: 6, fontSize: 11, color: '#94a3b8' }}>Bấm để bật/tắt Chế độ Kiểm thử Kết nối Thực (Strict API Mode).</div>
+                </div>
+              }
+            >
+              <Tag
+                color={isGatewayOnline === true ? 'success' : isGatewayOnline === false ? 'error' : 'processing'}
+                icon={isGatewayOnline ? <ApiOutlined /> : <DisconnectOutlined />}
+                onClick={handleToggleStrictMode}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                }}
+              >
+                {isGatewayOnline === true
+                  ? 'Gateway: Online (5000)'
+                  : isGatewayOnline === false
+                  ? 'Gateway: Offline'
+                  : 'Gateway: Checking...'}
+                <Tag color={strictMode ? 'orange' : 'default'} style={{ margin: '0 0 0 6px', fontSize: 10, padding: '0 4px' }}>
+                  {strictMode ? 'Strict API' : 'Fallback'}
+                </Tag>
+              </Tag>
+            </Tooltip>
+
             {/* Theme Toggle Button */}
             <Button
               type="text"

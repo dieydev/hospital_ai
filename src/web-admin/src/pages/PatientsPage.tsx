@@ -252,7 +252,16 @@ export const PatientsPage: React.FC = () => {
           <Text type="secondary" style={{ fontSize: '12px' }}>Không có</Text>
         ),
     },
-    { title: 'Số điện thoại', dataIndex: 'soDienThoai', key: 'soDienThoai', render: (t: string) => <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>{t}</Text> },
+    {
+      title: 'Số điện thoại',
+      dataIndex: 'soDienThoai',
+      key: 'soDienThoai',
+      render: (t: string) => (
+        <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+          {t}
+        </Text>
+      ),
+    },
     {
       title: 'Cảnh báo Dị ứng',
       dataIndex: 'diUngThuoc',

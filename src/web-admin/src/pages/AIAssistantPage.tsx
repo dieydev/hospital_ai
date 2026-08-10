@@ -205,15 +205,57 @@ export const AIAssistantPage: React.FC = () => {
             style={{ borderRadius: 12, height: '100%', border: isDarkMode ? '1px solid #334155' : undefined }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Button block style={{ textAlign: 'left', height: 'auto', padding: 12, borderRadius: 10 }} onClick={() => handleSend('Tóm tắt hồ sơ bệnh án gần nhất của bệnh nhân Nguyễn Văn An')}>
+              <Button
+                block
+                style={{
+                  textAlign: 'left',
+                  height: 'auto',
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  lineHeight: '1.4',
+                  border: isDarkMode ? '1px solid #334155' : undefined,
+                  background: isDarkMode ? '#1e293b' : '#ffffff',
+                }}
+                onClick={() => handleSend('Tóm tắt hồ sơ bệnh án gần nhất của bệnh nhân Nguyễn Văn An')}
+              >
                 📄 <strong>Tóm tắt Bệnh án:</strong> Tóm tắt diễn biến lượt khám ngày 02/08/2026 của BN Nguyễn Văn An.
               </Button>
 
-              <Button block style={{ textAlign: 'left', height: 'auto', padding: 12, borderRadius: 10 }} onClick={() => handleSend('Gợi ý mã ICD-10 cho bệnh nhân ho kéo dài, sốt về chiều và sút cân')}>
+              <Button
+                block
+                style={{
+                  textAlign: 'left',
+                  height: 'auto',
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  lineHeight: '1.4',
+                  border: isDarkMode ? '1px solid #334155' : undefined,
+                  background: isDarkMode ? '#1e293b' : '#ffffff',
+                }}
+                onClick={() => handleSend('Gợi ý mã ICD-10 cho bệnh nhân ho kéo dài, sốt về chiều và sút cân')}
+              >
                 🏷️ <strong>Gợi ý mã ICD-10:</strong> Nhập các dấu hiệu lâm sàng để AI tìm kiếm mã chuẩn.
               </Button>
 
-              <Button block style={{ textAlign: 'left', height: 'auto', padding: 12, borderRadius: 10 }} onClick={() => handleSend('Tương tác thuốc giữa Paracetamol và Warfarin khi dùng kéo dài')}>
+              <Button
+                block
+                style={{
+                  textAlign: 'left',
+                  height: 'auto',
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  lineHeight: '1.4',
+                  border: isDarkMode ? '1px solid #334155' : undefined,
+                  background: isDarkMode ? '#1e293b' : '#ffffff',
+                }}
+                onClick={() => handleSend('Tương tác thuốc giữa Paracetamol và Warfarin khi dùng kéo dài')}
+              >
                 💊 <strong>Kiểm tra Tương tác thuốc:</strong> Tra cứu mức độ tương tác giữa 2 loại thuốc kê đơn.
               </Button>
             </div>

@@ -50,9 +50,12 @@ export function sanitizeMedicalPromptForAI(inputText: string): SanitizationResul
   }
 
   // 5. Redact Specific House Addresses (Street & District patterns in Vietnam)
-  const addressRegex = /\b(số\s+\d+|đường\s+[^,]+|phường\s+[^,]+|quận\s+[^,]+|tp\.\s*[^,]+)/gi;
-  // Soft replacement for explicit address strings
-  sanitized = sanitized.replace(/(địa chỉ|thường trú|chỗ ở):\s*[^,\n.]+/gi, '$1: [ADDRESS_REDACTED]');
+  const addressRegex = /(địa chỉ|thường trú|nơi ở|chỗ ở):\s*[^,\n.]+/gi;
+  if (addressRegex.test(sanitized)) {
+    count++;
+    categoriesSet.add('Địa chỉ riêng');
+    sanitized = sanitized.replace(addressRegex, '$1: [ADDRESS_REDACTED]');
+  }
 
   return {
     sanitizedText: sanitized,

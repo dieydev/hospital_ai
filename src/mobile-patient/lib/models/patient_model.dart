@@ -5,6 +5,7 @@ class PatientModel {
   final String gioiTinh;
   final String ngaySinh;
   final String soCCCD;
+  final String? maTheBHYT;
 
   PatientModel({
     required this.id,
@@ -13,6 +14,7 @@ class PatientModel {
     required this.gioiTinh,
     required this.ngaySinh,
     required this.soCCCD,
+    this.maTheBHYT,
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class PatientModel {
       gioiTinh: json['gioiTinh'] ?? 'Other',
       ngaySinh: json['ngaySinh'] ?? '',
       soCCCD: json['soCCCD'] ?? '',
+      maTheBHYT: json['maTheBHYT'],
     );
   }
 }

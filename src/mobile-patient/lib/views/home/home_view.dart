@@ -29,7 +29,7 @@ class HomeView extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossStart,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // User Greeting Card
             Container(

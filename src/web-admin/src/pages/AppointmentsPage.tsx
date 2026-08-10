@@ -25,6 +25,9 @@ import {
   ClockCircleOutlined,
   ThunderboltOutlined,
   ReloadOutlined,
+  PhoneOutlined,
+  IdcardOutlined,
+  MedicineBoxOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert, showToast } from '../utils/sweetAlert';
@@ -182,37 +185,59 @@ export const AppointmentsPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'Mã & Bệnh nhân',
-      key: 'patient',
+      title: 'Bệnh nhân',
+      key: 'patientName',
+      width: 220,
       render: (record: OnlineAppointmentItem) => (
-        <Space size="middle">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar
             style={{
               backgroundColor: record.patientGender === 'Nam' ? '#0284c7' : '#ec4899',
+              fontWeight: 'bold',
+              flexShrink: 0,
             }}
             icon={<UserOutlined />}
           >
             {record.patientName.charAt(0)}
           </Avatar>
           <div>
-            <div style={{ fontWeight: 700, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
-              {record.patientName} <Text type="secondary">({record.patientGender}, {record.patientAge}t)</Text>
+            <div style={{ fontWeight: 700, fontSize: 14, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+              {record.patientName}
             </div>
-            <Space size={6}>
-              <Tag color="blue" className="font-mono text-xs">{record.patientCode}</Tag>
-              <Text type="secondary" style={{ fontSize: 12 }}>SĐT: {record.patientPhone}</Text>
-            </Space>
+            <div style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+              {record.patientGender} • {record.patientAge} tuổi
+            </div>
           </div>
-        </Space>
+        </div>
+      ),
+    },
+    {
+      title: 'Mã BN & SĐT',
+      key: 'contactInfo',
+      width: 200,
+      render: (record: OnlineAppointmentItem) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, whiteSpace: 'nowrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IdcardOutlined style={{ color: '#0284c7', fontSize: 13 }} />
+            <Tag color="blue" style={{ margin: 0, fontFamily: 'monospace', fontWeight: 600 }}>
+              {record.patientCode}
+            </Tag>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDarkMode ? '#cbd5e1' : '#334155', fontSize: 13, fontWeight: 500 }}>
+            <PhoneOutlined style={{ color: '#10b981', fontSize: 13 }} />
+            <span style={{ fontFamily: 'monospace' }}>{record.patientPhone}</span>
+          </div>
+        </div>
       ),
     },
     {
       title: 'Chuyên khoa & Bác sĩ',
       key: 'dept',
+      width: 220,
       render: (record: OnlineAppointmentItem) => (
         <div>
-          <div style={{ fontWeight: 600, color: isDarkMode ? '#38bdf8' : '#0284c7' }}>
-            {record.departmentName}
+          <div style={{ fontWeight: 600, color: isDarkMode ? '#38bdf8' : '#0284c7', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <MedicineBoxOutlined /> {record.departmentName}
           </div>
           <Text style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#64748b' }}>
             {record.doctorName}
@@ -223,15 +248,18 @@ export const AppointmentsPage: React.FC = () => {
     {
       title: 'Ngày & Giờ hẹn',
       key: 'time',
+      width: 170,
       render: (record: OnlineAppointmentItem) => (
-        <div>
-          <Space>
+        <div style={{ whiteSpace: 'nowrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 13 }}>
             <CalendarOutlined style={{ color: '#0284c7' }} />
-            <span style={{ fontWeight: 600 }}>{record.appointmentDate}</span>
-          </Space>
-          <div>
-            <ClockCircleOutlined style={{ color: '#f59e0b', marginRight: 4 }} />
-            <Tag color="warning" className="font-mono font-bold">{record.appointmentTime}</Tag>
+            <span>{record.appointmentDate}</span>
+          </div>
+          <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <ClockCircleOutlined style={{ color: '#f59e0b' }} />
+            <Tag color="warning" style={{ margin: 0, fontFamily: 'monospace', fontWeight: 'bold' }}>
+              {record.appointmentTime}
+            </Tag>
           </div>
         </div>
       ),
@@ -251,6 +279,7 @@ export const AppointmentsPage: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      width: 160,
       render: (status: OnlineAppointmentItem['status']) => {
         let color = 'default';
         let text = 'Chờ xử lý';
@@ -267,14 +296,16 @@ export const AppointmentsPage: React.FC = () => {
           color = 'error';
           text = 'Đã hủy';
         }
-        return <Tag color={color} style={{ fontSize: 12, padding: '3px 10px' }}>{text}</Tag>;
+        return <Tag color={color} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, fontWeight: 500 }}>{text}</Tag>;
       },
     },
     {
       title: 'Thao tác',
       key: 'actions',
+      width: 180,
+      fixed: 'right' as const,
       render: (record: OnlineAppointmentItem) => (
-        <Space size={8}>
+        <Space size={6} wrap={false}>
           {record.status === 'Pending' && (
             <Button
               type="primary"
@@ -294,7 +325,7 @@ export const AppointmentsPage: React.FC = () => {
               icon={<ThunderboltOutlined />}
               onClick={() => handleIssueQueueTicket(record)}
             >
-              Cấp STT Khám
+              Cấp STT
             </Button>
           )}
 
@@ -432,6 +463,7 @@ export const AppointmentsPage: React.FC = () => {
           columns={columns}
           rowKey="id"
           pagination={{ pageSize: 6 }}
+          scroll={{ x: 1100 }}
         />
       </Card>
     </div>
