@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
 import '../appointment/book_appointment_view.dart';
+import '../appointment/medical_history_view.dart';
+import 'queue_status_view.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -100,38 +102,63 @@ class HomeView extends StatelessWidget {
                 ),
                 _buildQuickItem(
                   context,
+                  icon: Icons.confirmation_number,
+                  color: Colors.purple,
+                  label: 'Số Hàng chờ',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const QueueStatusView()),
+                    );
+                  },
+                ),
+                _buildQuickItem(
+                  context,
                   icon: Icons.folder_shared,
                   color: Colors.green,
                   label: 'Hồ sơ EMR',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MedicalHistoryView()),
+                    );
+                  },
                 ),
                 _buildQuickItem(
                   context,
                   icon: Icons.receipt_long,
                   color: Colors.orange,
                   label: 'Đơn thuốc',
-                  onTap: () {},
-                ),
-                _buildQuickItem(
-                  context,
-                  icon: Icons.biotech,
-                  color: Colors.purple,
-                  label: 'Xét nghiệm',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MedicalHistoryView()),
+                    );
+                  },
                 ),
                 _buildQuickItem(
                   context,
                   icon: Icons.qr_code,
                   color: Colors.teal,
                   label: 'Mã QR Thẻ',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MedicalHistoryView()),
+                    );
+                  },
                 ),
                 _buildQuickItem(
                   context,
-                  icon: Icons.support_agent,
-                  color: Colors.pink,
-                  label: 'Hỗ trợ AI',
-                  onTap: () {},
+                  icon: Icons.local_hospital,
+                  color: Colors.sky,
+                  label: 'Xem Phòng khám',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const QueueStatusView()),
+                    );
+                  },
                 ),
               ],
             ),

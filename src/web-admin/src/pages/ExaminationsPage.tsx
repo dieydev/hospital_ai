@@ -32,6 +32,7 @@ import {
   ReloadOutlined,
   SafetyCertificateOutlined,
   HeartOutlined,
+  SoundOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -101,6 +102,21 @@ export const ExaminationsPage: React.FC = () => {
   };
 
   const bmiValue = calculateBmi(weight, height);
+
+  const handleSpeakCallQueue = (record: ExaminationItem) => {
+    const textToSpeak = `Mời bệnh nhân ${record.patientName}, mã bệnh nhân ${record.patientCode}, vào phòng khám ${record.departmentName || 'Khoa Nội'}.`;
+    
+    showToast(`🔊 Đang phát thông báo loa: "${textToSpeak}"`, 'success');
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = 'vi-VN';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   const fetchExaminations = useCallback(async () => {
     setLoading(true);
@@ -264,7 +280,16 @@ export const ExaminationsPage: React.FC = () => {
       title: 'Thao tác EMR',
       key: 'action',
       render: (_: any, record: ExaminationItem) => (
-        <Space>
+        <Space wrap>
+          <Button
+            type="primary"
+            size="small"
+            icon={<SoundOutlined />}
+            style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
+            onClick={() => handleSpeakCallQueue(record)}
+          >
+            Gọi Loa STT
+          </Button>
           <Button
             type="primary"
             size="small"

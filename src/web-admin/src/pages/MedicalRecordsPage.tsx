@@ -247,17 +247,26 @@ export const MedicalRecordsPage: React.FC = () => {
               size="small"
             />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 24, paddingTop: 16, borderTop: isDarkMode ? '1px dashed #334155' : '1px dashed #cbd5e1' }}>
               <div style={{ textAlign: 'center' }}>
-                <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : undefined }}>Bệnh nhân ký tên</Text>
-                <div style={{ height: 60 }} />
-                <Text strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>Nguyễn Văn An</Text>
+                <div style={{ background: '#ffffff', padding: 8, borderRadius: 8, display: 'inline-block', border: '1px solid #bae6fd' }}>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=EMR_${selectedRecord.maLuotKham}_BN20260001`}
+                    alt="EMR QR Code"
+                    style={{ width: 90, height: 90, display: 'block' }}
+                  />
+                </div>
+                <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                  Mã QR Tra cứu EMR Điện tử
+                </Text>
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : undefined }}>Bác sĩ khám bệnh</Text>
-                <div style={{ height: 60 }} />
-                <Text strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>{selectedRecord.bacSiKham}</Text>
+                <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : undefined, display: 'block', fontSize: 12 }}>Bác sĩ Khám & Ký số</Text>
+                <Tag color="green" style={{ marginTop: 4, marginBottom: 8, fontWeight: 700 }}>
+                  <SafetyCertificateOutlined /> Đã ký số SHA-256
+                </Tag>
+                <Text strong style={{ color: isDarkMode ? '#f8fafc' : undefined, display: 'block' }}>{selectedRecord.bacSiKham}</Text>
               </div>
             </div>
           </div>

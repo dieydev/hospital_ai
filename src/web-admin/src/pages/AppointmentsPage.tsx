@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -31,6 +31,8 @@ import {
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert, showToast } from '../utils/sweetAlert';
+import { appointmentService } from '../services/appointmentService';
+import { queueService } from '../services/queueService';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -51,109 +53,64 @@ export interface OnlineAppointmentItem {
   createdAt: string;
 }
 
-const MOCK_APPOINTMENTS: OnlineAppointmentItem[] = [
-  {
-    id: 'apt-001',
-    patientCode: 'BN20260015',
-    patientName: 'Trần Văn Nam',
-    patientPhone: '0987654321',
-    patientGender: 'Nam',
-    patientAge: 29,
-    departmentName: 'Khoa Nội Tổng Hợp',
-    doctorName: 'BS. CKII. Nguyễn Thanh Duy',
-    appointmentDate: '2026-08-09',
-    appointmentTime: '08:30',
-    symptomsReason: 'Đau đầu âm ỉ kéo dài 2 ngày, kèm sốt nhẹ về chiều',
-    status: 'Pending',
-    createdAt: '2026-08-08 14:15',
-  },
-  {
-    id: 'apt-002',
-    patientCode: 'BN20260016',
-    patientName: 'Nguyễn Thị Mai',
-    patientPhone: '0912345678',
-    patientGender: 'Nữ',
-    patientAge: 42,
-    departmentName: 'Khoa Tiêu Hóa',
-    doctorName: 'BS. CKI. Lê Văn Tuấn',
-    appointmentDate: '2026-08-09',
-    appointmentTime: '09:15',
-    symptomsReason: 'Đau tức vùng thượng vị sau khi ăn no, có ợ chua',
-    status: 'Pending',
-    createdAt: '2026-08-08 13:40',
-  },
-  {
-    id: 'apt-003',
-    patientCode: 'BN20260017',
-    patientName: 'Phạm Hồng Sơn',
-    patientPhone: '0934567890',
-    patientGender: 'Nam',
-    patientAge: 55,
-    departmentName: 'Khoa Tim Mạch',
-    doctorName: 'BS. CKII. Võ Minh Trí',
-    appointmentDate: '2026-08-08',
-    appointmentTime: '10:00',
-    symptomsReason: 'Tái khám huyết áp định kỳ, ho nhẹ về đêm',
-    status: 'Confirmed',
-    createdAt: '2026-08-07 16:20',
-  },
-  {
-    id: 'apt-004',
-    patientCode: 'BN20260018',
-    patientName: 'Lê Thu Hà',
-    patientPhone: '0978123456',
-    patientGender: 'Nữ',
-    patientAge: 24,
-    departmentName: 'Khoa Mắt',
-    doctorName: 'BS. Trần Ngọc Mai',
-    appointmentDate: '2026-08-08',
-    appointmentTime: '14:00',
-    symptomsReason: 'Khám kiểm tra tật khúc xạ thị lực',
-    status: 'Completed',
-    createdAt: '2026-08-06 09:30',
-  },
-  {
-    id: 'apt-005',
-    patientCode: 'BN20260019',
-    patientName: 'Hoàng Văn Bách',
-    patientPhone: '0905112233',
-    patientGender: 'Nam',
-    patientAge: 36,
-    departmentName: 'Khoa Ngoại',
-    doctorName: 'BS. CKII. Nguyễn Thanh Duy',
-    appointmentDate: '2026-08-07',
-    appointmentTime: '11:00',
-    symptomsReason: 'Bệnh nhân xin hủy do bận công tác đột xuất',
-    status: 'Cancelled',
-    createdAt: '2026-08-05 15:10',
-  },
-];
+
 
 export const AppointmentsPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
-  const [appointments, setAppointments] = useState<OnlineAppointmentItem[]>(MOCK_APPOINTMENTS);
+  const [appointments, setAppointments] = useState<OnlineAppointmentItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedDept, setSelectedDept] = useState<string>('ALL');
+  const [prevLength, setPrevLength] = useState<number>(0);
+
+  const fetchAppointments = useCallback(async () => {
+    try {
+      const data = await appointmentService.getAppointments();
+      setAppointments(data);
+      if (prevLength > 0 && data.length > prevLength) {
+        const latest = data[0];
+        showToast(`🔥 Đặt lịch mới từ Flutter App: ${latest.patientName} (${latest.departmentName})`, 'success');
+      }
+      setPrevLength(data.length);
+    } catch {
+      // Fallback silent
+    }
+  }, [prevLength]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchAppointments().finally(() => setLoading(false));
+
+    // Real-time polling interval to sync app mobile to web admin
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [fetchAppointments]);
 
   // Actions
-  const handleConfirmAppointment = (item: OnlineAppointmentItem) => {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === item.id ? { ...a, status: 'Confirmed' } : a))
-    );
+  const handleConfirmAppointment = async (item: OnlineAppointmentItem) => {
+    await appointmentService.updateStatus(item.id, 'Confirmed');
+    fetchAppointments();
     showSuccessAlert(
       'Đã xác nhận Lịch hẹn!',
       `Lịch hẹn của bệnh nhân ${item.patientName} lúc ${item.appointmentTime} ngày ${item.appointmentDate} đã được xác nhận.`
     );
   };
 
-  const handleIssueQueueTicket = (item: OnlineAppointmentItem) => {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === item.id ? { ...a, status: 'Completed' } : a))
-    );
+  const handleIssueQueueTicket = async (item: OnlineAppointmentItem) => {
+    await appointmentService.updateStatus(item.id, 'Completed');
+    const newTicket = await queueService.issueQueueTicket({
+      patientId: `pt-${Date.now()}`,
+      departmentId: 'dept-01',
+      priority: 'Normal',
+    });
+    fetchAppointments();
     showSuccessAlert(
       'Cấp Số thứ tự thành công!',
-      `Đã chuyển lịch hẹn thành Số thứ tự #${Math.floor(100 + Math.random() * 900)} tại ${item.departmentName}.`
+      `Đã chuyển lịch hẹn thành Số thứ tự #${newTicket.sequenceNumber} tại ${item.departmentName}.`
     );
   };
 
@@ -164,10 +121,9 @@ export const AppointmentsPage: React.FC = () => {
       okText: 'Xác nhận Hủy',
       okType: 'danger',
       cancelText: 'Quay lại',
-      onOk: () => {
-        setAppointments((prev) =>
-          prev.map((a) => (a.id === item.id ? { ...a, status: 'Cancelled' } : a))
-        );
+      onOk: async () => {
+        await appointmentService.updateStatus(item.id, 'Cancelled');
+        fetchAppointments();
         showToast('Đã hủy lịch hẹn khám thành công!', 'info');
       },
     });
@@ -462,6 +418,7 @@ export const AppointmentsPage: React.FC = () => {
           dataSource={filteredAppointments}
           columns={columns}
           rowKey="id"
+          loading={loading}
           pagination={{ pageSize: 6 }}
           scroll={{ x: 1100 }}
         />

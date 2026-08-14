@@ -62,6 +62,59 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request)
+    {
+        var user = await _context.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
+
+        if (user == null)
+        {
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Patient")
+                ?? new Role { Name = "Patient", Description = "Bệnh nhân Google Login" };
+
+            user = new User
+            {
+                Username = request.Email.Split('@')[0] + "_" + DateTime.UtcNow.Ticks.ToString().Substring(12),
+                PasswordHash = _passwordHasher.HashPassword(Guid.NewGuid().ToString()),
+                FullName = string.IsNullOrWhiteSpace(request.FullName) ? request.Email : request.FullName,
+                Email = request.Email,
+                PhoneNumber = "0900000000",
+                IsActive = true,
+                AvatarUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? $"https://lh3.googleusercontent.com/a/default-user" : request.PhotoUrl,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+        }
+
+        var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
+        if (!roles.Any()) roles.Add("Patient");
+
+        var (token, expiresAt) = _tokenGenerator.GenerateToken(user, roles);
+
+        return new AuthResponseDto
+        {
+            Token = token,
+            ExpiresAt = expiresAt,
+            User = new UserProfileDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                FullName = user.FullName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Specialty = user.Specialty,
+                Title = user.Title,
+                Roles = roles,
+                AvatarUrl = user.AvatarUrl
+            }
+        };
+    }
+
     public async Task<UserProfileDto> RegisterAsync(RegisterRequestDto request)
     {
         var existingUser = await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());

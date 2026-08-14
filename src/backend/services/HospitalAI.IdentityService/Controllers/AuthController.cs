@@ -36,6 +36,23 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Đăng nhập bằng Google OAuth Client ID & Token
+    /// </summary>
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.GoogleLoginAsync(request);
+            return Ok(result);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Đăng ký tài khoản người dùng mới
     /// </summary>
     [HttpPost("register")]

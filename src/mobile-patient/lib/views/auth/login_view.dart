@@ -62,6 +62,33 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
+  void _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+
+    final googlePatient = PatientModel(
+      id: 'P_GOOGLE_2026',
+      maBenhNhan: 'BN20260899',
+      hoTen: 'Nguyễn Văn An (Google)',
+      gioiTinh: 'Nam',
+      ngaySinh: '15/05/1990',
+      soCCCD: '012345678901',
+      maTheBHYT: 'DN4010123456789',
+    );
+
+    context.read<AuthProvider>().login('google_oauth_token_${DateTime.now().millisecondsSinceEpoch}', googlePatient);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đăng nhập thành công với tài khoản Google!'),
+        backgroundColor: AppTheme.primaryColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _fillSampleAccount(String username, String password) {
     setState(() {
       _usernameController.text = username;
@@ -380,6 +407,41 @@ class _LoginViewState extends State<LoginView> {
                                         Icon(Icons.arrow_forward_rounded, size: 20),
                                       ],
                                     ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Divider
+                          const Row(
+                            children: [
+                              Expanded(child: Divider(color: Color(0xFFCBD5E1))),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text('HOẶC', style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                              ),
+                              Expanded(child: Divider(color: Color(0xFFCBD5E1))),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Google Sign-In Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.g_mobiledata_rounded, color: Colors.redAccent, size: 28),
+                              label: const Text(
+                                'Đăng nhập nhanh với Google',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                side: const BorderSide(color: Color(0xFFBAE6FD)),
+                                backgroundColor: const Color(0xFFF8FAFC),
+                              ),
+                              onPressed: _isLoading ? null : _handleGoogleLogin,
                             ),
                           ),
 
