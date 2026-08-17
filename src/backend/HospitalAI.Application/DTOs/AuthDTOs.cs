@@ -55,3 +55,12 @@ public class GoogleLoginRequestDto
     public string? PhotoUrl { get; set; }
 }
 
+public class DoctorDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Dept { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Avatar { get; set; } = string.Empty;
+}
+

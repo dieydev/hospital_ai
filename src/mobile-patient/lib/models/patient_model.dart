@@ -6,6 +6,8 @@ class PatientModel {
   final String ngaySinh;
   final String soCCCD;
   final String? maTheBHYT;
+  final String? soDienThoai;
+  final String? avatarUrl;
 
   PatientModel({
     required this.id,
@@ -15,6 +17,8 @@ class PatientModel {
     required this.ngaySinh,
     required this.soCCCD,
     this.maTheBHYT,
+    this.soDienThoai = '0987654321',
+    this.avatarUrl,
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,8 @@ class PatientModel {
       ngaySinh: json['ngaySinh'] ?? '',
       soCCCD: json['soCCCD'] ?? '',
       maTheBHYT: json['maTheBHYT'],
+      soDienThoai: json['soDienThoai'] ?? json['phoneNumber'] ?? '0987654321',
+      avatarUrl: json['avatarUrl'] ?? json['photoUrl'],
     );
   }
 }

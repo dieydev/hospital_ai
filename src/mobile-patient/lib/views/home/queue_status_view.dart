@@ -181,18 +181,22 @@ class _QueueStatusViewState extends State<QueueStatusView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildTicketStatusBox(
-                          title: 'Đang phục vụ',
-                          number: '#$currentCallingTicket',
-                          color: Colors.green,
-                          subtitle: 'Bệnh nhân An',
+                        Flexible(
+                          child: _buildTicketStatusBox(
+                            title: 'Đang phục vụ',
+                            number: '#$currentCallingTicket',
+                            color: Colors.green,
+                            subtitle: 'Bệnh nhân An',
+                          ),
                         ),
-                        const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
-                        _buildTicketStatusBox(
-                          title: 'Số lượt chờ trước bạn',
-                          number: '$remainingCount lượt',
-                          color: Colors.orange,
-                          subtitle: 'Ước tính 15 phút',
+                        const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                        Flexible(
+                          child: _buildTicketStatusBox(
+                            title: 'Lượt chờ trước',
+                            number: '$remainingCount lượt',
+                            color: Colors.orange,
+                            subtitle: 'Ước tính ${remainingCount * 10} phút',
+                          ),
                         ),
                       ],
                     ),
@@ -203,7 +207,7 @@ class _QueueStatusViewState extends State<QueueStatusView> {
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 10,
-                        backgroundColor: Colors.sky.shade100,
+                        backgroundColor: const Color(0xFFE0F2FE),
                         valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                       ),
                     ),

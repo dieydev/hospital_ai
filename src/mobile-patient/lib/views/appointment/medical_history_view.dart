@@ -53,8 +53,11 @@ class MedicalHistoryView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
                     children: [
                       Text(
                         visit['date'] as String,
@@ -128,22 +131,12 @@ class MedicalHistoryView extends StatelessWidget {
 
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      const Icon(Icons.payments_outlined, size: 18, color: AppTheme.primaryColor),
+                      const SizedBox(width: 8),
                       Text(
-                        'Tổng chi phí: ${visit['cost']}',
+                        'Tổng chi phí viện phí: ${visit['cost']}',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark),
-                      ),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.qr_code, size: 16),
-                        label: const Text('Thanh toán VietQR'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.primaryColor,
-                          side: const BorderSide(color: AppTheme.primaryColor),
-                        ),
-                        onPressed: () {
-                          _showQrPaymentDialog(context, visit['cost'] as String);
-                        },
                       ),
                     ],
                   ),
@@ -176,7 +169,7 @@ class MedicalHistoryView extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.sky.shade200),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
               ),
               child: Image.network(
                 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=VIETQR_HOSPITAL_AI_$amount',

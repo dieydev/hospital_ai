@@ -113,4 +113,21 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Lấy danh sách Bác sĩ từ CSDL SQL Server
+    /// </summary>
+    [HttpGet("doctors")]
+    public async Task<IActionResult> GetDoctors()
+    {
+        try
+        {
+            var doctors = await _authService.GetDoctorsAsync();
+            return Ok(doctors);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

@@ -1,249 +1,281 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
 import '../appointment/book_appointment_view.dart';
 import '../appointment/medical_history_view.dart';
 import 'queue_status_view.dart';
 
-class HomeView extends StatelessWidget {
-  const HomeView({super.key});
+class HomeView extends StatefulWidget {
+  final Function(int)? onNavigateTab;
+  const HomeView({super.key, this.onNavigateTab});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  int _bannerIndex = 0;
+
+  final List<String> _banners = [
+    'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-    final user = auth.user;
-
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Bệnh viện Đa khoa Hospital AI'),
+        backgroundColor: AppTheme.primaryColor,
+        elevation: 0,
+        title: const SizedBox.shrink(),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 28),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('🔔 Không có thông báo mới!'), duration: Duration(seconds: 1)),
+              );
+            },
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => auth.logout(),
-          ),
+          const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User Greeting Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primaryColor, Color(0xFF0958D9)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white24,
-                    child: Icon(Icons.person, size: 36, color: Colors.white),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Top Hospital Header Branding (Matching Reference Image)
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
                       children: [
-                        Text(
-                          'Xin chào, ${user?.hoTen ?? 'Nguyễn Văn An'}!',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        // Hospital Logo Emblem
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFBAE6FD), width: 2),
+                            color: const Color(0xFFF0F9FF),
                           ),
+                          child: const Icon(Icons.local_hospital_rounded, color: AppTheme.primaryColor, size: 30),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Mã BN: ${user?.maBenhNhan ?? 'BN20260001'} | BHYT: ${user?.maTheBHYT ?? 'DN40101234567'}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Bệnh viện Đa Khoa Thủ Đức',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryDark,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Chuyên Nghiệp - Tận Tâm - Vươn Tầm Chất Lượng',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
+
+                  // Hospital Banner Image Carousel with Dot Indicators
+                  Stack(
+                    alignment: Alignment.bottomLeft,
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        width: double.infinity,
+                        child: PageView.builder(
+                          itemCount: _banners.length,
+                          onPageChanged: (index) => setState(() => _bannerIndex = index),
+                          itemBuilder: (context, index) {
+                            return Image.network(
+                              _banners[index],
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            );
+                          },
+                        ),
+                      ),
+                      // Carousel Dots
+                      Positioned(
+                        bottom: 12,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: List.generate(_banners.length, (i) {
+                              return Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 3),
+                                width: _bannerIndex == i ? 16 : 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: _bannerIndex == i ? Colors.white : Colors.white54,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Quick Utility Services Grid (Matching Reference Screenshot)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildQuickServiceItem(
+                          icon: Icons.headset_mic_outlined,
+                          label: 'Hỗ trợ\nđặt khám',
+                          onTap: () {
+                            if (widget.onNavigateTab != null) {
+                              widget.onNavigateTab!(1);
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const BookAppointmentView()));
+                            }
+                          },
+                        ),
+                        _buildQuickServiceItem(
+                          icon: Icons.history_edu_outlined,
+                          label: 'Lịch sử\nthanh toán',
+                          onTap: () {
+                            if (widget.onNavigateTab != null) {
+                              widget.onNavigateTab!(3);
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
+                            }
+                          },
+                        ),
+                        _buildQuickServiceItem(
+                          icon: Icons.receipt_long_outlined,
+                          label: 'Tra cứu\nhoá đơn',
+                          onTap: () {
+                            if (widget.onNavigateTab != null) {
+                              widget.onNavigateTab!(3);
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
+                            }
+                          },
+                        ),
+                        _buildQuickServiceItem(
+                          icon: Icons.folder_shared_outlined,
+                          label: 'Hồ sơ\nsức khỏe',
+                          onTap: () {
+                            if (widget.onNavigateTab != null) {
+                              widget.onNavigateTab!(3);
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+          ),
 
-            // Quick Service Grid
-            const Text(
-              'Dịch vụ Y tế Bệnh nhân',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              children: [
-                _buildQuickItem(
-                  context,
-                  icon: Icons.calendar_month,
-                  color: Colors.blue,
-                  label: 'Đặt lịch khám',
-                  onTap: () {
+          // Prominent "Đặt khám" Action Button Fixed Above Bottom Nav Bar (Matching Reference)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  if (widget.onNavigateTab != null) {
+                    widget.onNavigateTab!(1);
+                  } else {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const BookAppointmentView()),
                     );
-                  },
-                ),
-                _buildQuickItem(
-                  context,
-                  icon: Icons.confirmation_number,
-                  color: Colors.purple,
-                  label: 'Số Hàng chờ',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const QueueStatusView()),
-                    );
-                  },
-                ),
-                _buildQuickItem(
-                  context,
-                  icon: Icons.folder_shared,
-                  color: Colors.green,
-                  label: 'Hồ sơ EMR',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MedicalHistoryView()),
-                    );
-                  },
-                ),
-                _buildQuickItem(
-                  context,
-                  icon: Icons.receipt_long,
-                  color: Colors.orange,
-                  label: 'Đơn thuốc',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MedicalHistoryView()),
-                    );
-                  },
-                ),
-                _buildQuickItem(
-                  context,
-                  icon: Icons.qr_code,
-                  color: Colors.teal,
-                  label: 'Mã QR Thẻ',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MedicalHistoryView()),
-                    );
-                  },
-                ),
-                _buildQuickItem(
-                  context,
-                  icon: Icons.local_hospital,
-                  color: Colors.sky,
-                  label: 'Xem Phòng khám',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const QueueStatusView()),
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Upcoming Appointment Card
-            const Text(
-              'Lịch hẹn Khám sắp tới',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Chip(
-                          label: Text('ĐÃ XÁC NHẬN', style: TextStyle(color: Colors.white, fontSize: 10)),
-                          backgroundColor: AppTheme.secondaryColor,
-                        ),
-                        Text('STT Khám: #101', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                      ],
-                    ),
-                    const Divider(),
-                    const Row(
-                      children: [
-                        Icon(Icons.medical_information, color: AppTheme.primaryColor),
-                        SizedBox(width: 8),
-                        Text('Khoa Nội Tổng Hợp - Phòng 102'),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    const Row(
-                      children: [
-                        Icon(Icons.person_outline, color: Colors.grey),
-                        SizedBox(width: 8),
-                        Text('Bác sĩ: BS. CKII. Nguyễn Thanh Duy'),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    const Row(
-                      children: [
-                        Icon(Icons.access_time, color: Colors.grey),
-                        SizedBox(width: 8),
-                        Text('Thời gian: 09:00 - 09:30, Ngày 02/08/2026'),
-                      ],
-                    ),
-                  ],
+                  }
+                },
+                child: const Text(
+                  'Đặt khám',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildQuickItem(BuildContext context, {required IconData icon, required Color color, required String label, required VoidCallback onTap}) {
+  Widget _buildQuickServiceItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              backgroundColor: color.withOpacity(0.1),
-              child: Icon(icon, color: color),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F9FF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFBAE6FD)),
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center,
+            child: Icon(icon, color: AppTheme.primaryColor, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF334155),
+              height: 1.2,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

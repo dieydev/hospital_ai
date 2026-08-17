@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'views/auth/login_view.dart';
-import 'views/home/home_view.dart';
+import 'views/main_layout_view.dart';
 
 void main() {
   runApp(
@@ -27,7 +27,7 @@ class HospitalAiPatientApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          return auth.isAuthenticated ? const HomeView() : const LoginView();
+          return auth.isAuthenticated ? const MainLayoutView() : const LoginView();
         },
       ),
     );

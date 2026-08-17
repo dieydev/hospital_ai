@@ -22,7 +22,6 @@ class _LoginViewState extends State<LoginView> {
   int _loginMethodTab = 0; // 0: Mật khẩu, 1: Mã OTP SĐT
   bool _otpSent = false;
   bool _obscurePassword = true;
-  bool _rememberMe = true;
   bool _agreeTerms = true;
   bool _isLoading = false;
   String _selectedLang = 'VI';
@@ -345,7 +344,7 @@ class _LoginViewState extends State<LoginView> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                          color: AppTheme.primaryColor.withOpacity(0.2),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -371,7 +370,7 @@ class _LoginViewState extends State<LoginView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      color: AppTheme.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: const Color(0xFFBAE6FD)),
                     ),
@@ -659,7 +658,7 @@ class _LoginViewState extends State<LoginView> {
                                 backgroundColor: AppTheme.primaryColor,
                                 foregroundColor: Colors.white,
                                 elevation: 4,
-                                shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
+                                shadowColor: AppTheme.primaryColor.withOpacity(0.4),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -770,9 +769,11 @@ class _LoginViewState extends State<LoginView> {
                                   children: [
                                     Icon(Icons.touch_app_outlined, size: 16, color: AppTheme.primaryDark),
                                     SizedBox(width: 6),
-                                    Text(
-                                      'Chọn nhanh tài khoản mẫu thử nghiệm:',
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                                    Expanded(
+                                      child: Text(
+                                        'Chọn nhanh tài khoản mẫu thử nghiệm:',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                                      ),
                                     ),
                                   ],
                                 ),

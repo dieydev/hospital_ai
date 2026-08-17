@@ -10,4 +10,5 @@ public interface IAuthService
     Task<UserProfileDto> RegisterAsync(RegisterRequestDto request);
     Task<UserProfileDto> GetUserProfileAsync(string username);
     Task<bool> ChangePasswordAsync(string username, ChangePasswordDto request);
+    Task<List<DoctorDto>> GetDoctorsAsync();
 }

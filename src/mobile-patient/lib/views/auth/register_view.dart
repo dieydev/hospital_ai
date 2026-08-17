@@ -99,7 +99,7 @@ class _RegisterViewState extends State<RegisterView> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          color: AppTheme.primaryColor.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

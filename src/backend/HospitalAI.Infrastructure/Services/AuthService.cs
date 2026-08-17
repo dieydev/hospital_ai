@@ -194,15 +194,33 @@ public class AuthService : IAuthService
     public async Task<bool> ChangePasswordAsync(string username, ChangePasswordDto request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
-        if (user == null) return false;
+        if (user == null) throw new Exception("Không tìm thấy người dùng.");
 
         if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
         {
-            throw new Exception("Mật khẩu hiện tại không đúng.");
+            throw new Exception("Mật khẩu hiện tại không chính xác.");
         }
 
         user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        _context.Users.Update(user);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<List<DoctorDto>> GetDoctorsAsync()
+    {
+        var doctorUsers = await _context.Users
+            .Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "Doctor") || u.Specialty != null)
+            .Select(u => new DoctorDto
+            {
+                Id = u.Id,
+                Name = u.FullName,
+                Dept = u.Specialty ?? "Khoa Nội Tổng Hợp",
+                Title = u.Title ?? "Bác sĩ Chuyên khoa",
+                Avatar = string.IsNullOrEmpty(u.AvatarUrl) ? "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80" : u.AvatarUrl
+            })
+            .ToListAsync();
+
+        return doctorUsers;
     }
 }
