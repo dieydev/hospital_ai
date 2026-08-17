@@ -241,36 +241,49 @@ export const BillingPage: React.FC = () => {
         <Table dataSource={filteredInvoices} columns={columns} rowKey="id" />
       </Card>
 
-      {/* Modal QR Chuyển khoản nội bộ */}
+      {/* Modal QR Chuyển khoản VietQR Ngân hàng */}
       <Modal
-        title={<span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>Thông tin Chuyển khoản Viện phí Nội bộ (Mã QR VietQR)</span>}
+        title={<span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 800 }}>Tạo Mã VietQR Thanh Toán Viện Phí Động</span>}
         open={isQrModalOpen}
         onCancel={() => setIsQrModalOpen(false)}
         footer={null}
+        width={480}
         style={{ textAlign: 'center' }}
       >
         {selectedInvoice && (
           <div>
-            <Title level={4} style={{ margin: '8px 0', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
-              Bệnh nhân: {selectedInvoice.tenBenhNhan}
-            </Title>
-            <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>
-              Mã Hóa đơn: {selectedInvoice.maHoaDon}
-            </Text>
-
-            <div style={{ margin: '20px auto', width: 220, padding: 12, border: '2px solid #0284c7', borderRadius: 16, background: '#fff' }}>
-              <Image src={selectedInvoice.qrCodeUrl} alt="VietQR" width={196} preview={false} />
+            <div style={{ backgroundColor: '#f0f9ff', padding: 12, borderRadius: 12, border: '1px solid #bae6fd', marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0, color: '#0369a1' }}>
+                {selectedInvoice.tenBenhNhan}
+              </Title>
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Mã BN: <strong>{selectedInvoice.maBenhNhan}</strong> • Mã HĐ: <strong>{selectedInvoice.maHoaDon}</strong>
+              </Text>
             </div>
 
-            <Title level={2} style={{ color: '#f43f5e', margin: '0 0 16px' }}>
+            <div style={{ margin: '0 auto 16px', width: 240, padding: 12, border: '2px solid #0284c7', borderRadius: 16, background: '#fff', boxShadow: '0 8px 24px rgba(2, 132, 199, 0.15)' }}>
+              <Image
+                src={`https://img.vietqr.io/image/MB-1990002026-compact2.png?amount=${selectedInvoice.benhNhanThanhToan}&addInfo=THANHTOAN%20${selectedInvoice.maHoaDon}&accountName=BV%20DA%20KHOA%20HOSPITAL%20AI`}
+                alt="VietQR Bank Payment"
+                width={216}
+                preview={false}
+                fallback="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=VIETQR_HOSPITAL_AI_350000"
+              />
+            </div>
+
+            <Title level={2} style={{ color: '#f43f5e', margin: '0 0 8px', fontWeight: 900 }}>
               {formatCurrency(selectedInvoice.benhNhanThanhToan)}
             </Title>
-            <Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>
-              Nội dung CK: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{selectedInvoice.maHoaDon}</strong>
-            </Text>
 
-            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 12 }}>
-              <Button onClick={() => setIsQrModalOpen(false)}>Đóng</Button>
+            <div style={{ textAlign: 'left', backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', padding: 12, borderRadius: 8, fontSize: 13, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div>Ngân hàng thụ hưởng: <strong style={{ color: '#0284c7' }}>MB Bank (NHTM CP Quân Đội)</strong></div>
+              <div>Số tài khoản: <strong style={{ color: '#0369a1', fontFamily: 'monospace', fontSize: 14 }}>1990 0020 26</strong></div>
+              <div>Tên tài khoản: <strong>BV DA KHOA HOSPITAL AI</strong></div>
+              <div>Nội dung chuyển khoản: <strong style={{ color: '#f43f5e', fontFamily: 'monospace' }}>THANHTOAN {selectedInvoice.maHoaDon}</strong></div>
+            </div>
+
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <Button onClick={() => setIsQrModalOpen(false)}>Hủy bỏ</Button>
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
@@ -278,7 +291,7 @@ export const BillingPage: React.FC = () => {
                 style={{ background: '#10b981', borderColor: '#10b981' }}
                 onClick={() => handleConfirmPayment(selectedInvoice.id)}
               >
-                Xác nhận Đã thu đủ tiền
+                Xác nhận Đã Nhận Đủ Tiền
               </Button>
             </div>
           </div>

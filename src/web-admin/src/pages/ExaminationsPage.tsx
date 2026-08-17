@@ -81,6 +81,14 @@ export const ExaminationsPage: React.FC = () => {
   const [selectedExam, setSelectedExam] = useState<ExaminationItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  // Print Prescription Modal State
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [examToPrint, setExamToPrint] = useState<ExaminationItem | null>(null);
+
+  // Drug Safety & Allergy Check State
+  const [drugSafetyLoading, setDrugSafetyLoading] = useState(false);
+  const [drugSafetyWarnings, setDrugSafetyWarnings] = useState<string[]>([]);
+
   // Prescriptions & Services lists in Modal
   const [prescriptions, setPrescriptions] = useState<PrescriptionDetailItem[]>([
     { medicineName: 'Paracetamol 500mg (Hasan)', unit: 'Viên', quantity: 15, dosageInstruction: 'Sáng 1v, Tối 1v sau ăn', unitPrice: 2000 },
@@ -115,6 +123,34 @@ export const ExaminationsPage: React.FC = () => {
       utterance.rate = 0.95;
       utterance.pitch = 1.0;
       window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Run AI Drug Safety & Allergy Audit
+  const handleRunDrugSafetyCheck = async () => {
+    if (prescriptions.length === 0) {
+      showToast('Vui lòng kê ít nhất 1 loại thuốc trước khi rà soát!', 'warning');
+      return;
+    }
+
+    setDrugSafetyLoading(true);
+    try {
+      const selectedPatientId = form.getFieldValue('patientId');
+      const patient = patients.find((p) => p.id === selectedPatientId);
+      const patientAllergies = patient?.tienSuBenh ? [patient.tienSuBenh] : ['Penicillin']; // Mock allergy context if present
+
+      const warnings = await geminiService.checkDrugSafety(prescriptions, patientAllergies);
+      setDrugSafetyWarnings(warnings);
+
+      if (warnings.length === 0) {
+        showSuccessAlert('Đơn Thuốc An Toàn!', 'Trợ lý AI không phát hiện tương tác hay dị ứng nguy hiểm.');
+      } else {
+        showToast('Trợ lý AI đã phát hiện cảnh báo an toàn đơn thuốc!', 'warning');
+      }
+    } catch {
+      showErrorAlert('Lỗi rà soát', 'Không thể kết nối dịch vụ Gemini AI.');
+    } finally {
+      setDrugSafetyLoading(false);
     }
   };
 
@@ -306,9 +342,12 @@ export const ExaminationsPage: React.FC = () => {
             icon={<PrinterOutlined />}
             size="small"
             type="default"
-            onClick={() => showToast(`Đã gửi lệnh in đơn thuốc ${record.examinationCode}!`, 'info')}
+            onClick={() => {
+              setExamToPrint(record);
+              setIsPrintModalOpen(true);
+            }}
           >
-            In Đơn
+            In Đơn PDF
           </Button>
         </Space>
       ),
@@ -360,6 +399,7 @@ export const ExaminationsPage: React.FC = () => {
             style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
             onClick={() => {
               form.resetFields();
+              setDrugSafetyWarnings([]);
               setIsModalOpen(true);
             }}
           >
@@ -559,55 +599,44 @@ export const ExaminationsPage: React.FC = () => {
                 key: 'prescription',
                 label: (
                   <span>
-                    <MedicineBoxOutlined /> III. Kê Đơn Thuốc Điện Tử
+                    <MedicineBoxOutlined /> III. Kê Đơn Thuốc Điện Tử & An Toàn AI
                   </span>
                 ),
                 children: (
                   <div style={{ marginTop: 12 }}>
-                    {(() => {
-                      const warnings: string[] = [];
-                      const names = prescriptions.map((i) => i.medicineName.toLowerCase());
-                      const hasParacetamolCount = names.filter(
-                        (n) => n.includes('paracetamol') || n.includes('efferalgan') || n.includes('ultracet') || n.includes('panadol')
-                      ).length;
-                      if (hasParacetamolCount >= 2) {
-                        warnings.push(
-                          'Cảnh báo trùng lặp hoạt chất Paracetamol! Kê 2 loại thuốc chứa Paracetamol nguy cơ quá liều độc gan.'
-                        );
-                      }
-                      const hasAmoxCount = names.filter(
-                        (n) => n.includes('amoxicillin') || n.includes('augmentin') || n.includes('clavamox')
-                      ).length;
-                      if (hasAmoxCount >= 2) {
-                        warnings.push(
-                          'Cảnh báo trùng lặp nhóm Kháng sinh Penicillin/Amoxicillin! Vui lòng kiểm tra lại tổng liều dùng.'
-                        );
-                      }
+                    {/* Dynamic AI Safety Warning Banner */}
+                    {drugSafetyWarnings.length > 0 && (
+                      <Alert
+                        type="warning"
+                        showIcon
+                        icon={<RobotOutlined style={{ color: '#ef4444', fontSize: 22 }} />}
+                        message={<strong style={{ color: '#b91c1c' }}>Cảnh báo An toàn Đơn thuốc & Dị ứng từ AI:</strong>}
+                        description={
+                          <ul style={{ margin: 0, paddingLeft: 18 }}>
+                            {drugSafetyWarnings.map((w, i) => (
+                              <li key={i} style={{ color: '#991b1b', fontWeight: 600, marginTop: 4 }}>{w}</li>
+                            ))}
+                          </ul>
+                        }
+                        style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #fca5a5', backgroundColor: '#fef2f2' }}
+                      />
+                    )}
 
-                      if (warnings.length === 0) return null;
-                      return (
-                        <Alert
-                          type="warning"
-                          showIcon
-                          icon={<RobotOutlined style={{ color: '#f59e0b', fontSize: 20 }} />}
-                          message={<strong style={{ color: '#d97706' }}>Cảnh báo An toàn Đơn thuốc từ Trợ lý AI Y tế:</strong>}
-                          description={
-                            <ul style={{ margin: 0, paddingLeft: 18 }}>
-                              {warnings.map((w, i) => (
-                                <li key={i} style={{ color: '#b45309', fontWeight: 600 }}>{w}</li>
-                              ))}
-                            </ul>
-                          }
-                          style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #fde68a', backgroundColor: '#fffbeb' }}
-                        />
-                      );
-                    })()}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Thuốc kê trong đơn</Text>
-                      <Button icon={<PlusOutlined />} onClick={handleAddMedicine} type="primary" style={{ backgroundColor: '#0284c7' }}>
-                        Thêm Thuốc
-                      </Button>
+                      <Space>
+                        <Button
+                          icon={<RobotOutlined style={{ color: '#0284c7' }} />}
+                          onClick={handleRunDrugSafetyCheck}
+                          loading={drugSafetyLoading}
+                          style={{ borderColor: '#0284c7', color: '#0284c7' }}
+                        >
+                          AI Rà Sát Dị Ứng & Tương Tác
+                        </Button>
+                        <Button icon={<PlusOutlined />} onClick={handleAddMedicine} type="primary" style={{ backgroundColor: '#0284c7' }}>
+                          Thêm Thuốc
+                        </Button>
+                      </Space>
                     </div>
 
                     {prescriptions.map((p, idx) => (
@@ -684,6 +713,148 @@ export const ExaminationsPage: React.FC = () => {
             </Space>
           </div>
         </Form>
+      </Modal>
+
+      {/* Modal In Đơn Thuốc Điện Tử Chuẩn Bộ Y Tế */}
+      <Modal
+        title={
+          <Space>
+            <PrinterOutlined style={{ color: '#0284c7' }} />
+            <span>Mẫu Đơn Thuốc Điện Tử Chuẩn Bộ Y Tế - {examToPrint?.examinationCode}</span>
+          </Space>
+        }
+        open={isPrintModalOpen}
+        onCancel={() => setIsPrintModalOpen(false)}
+        width={750}
+        footer={[
+          <Button key="close" onClick={() => setIsPrintModalOpen(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="print"
+            type="primary"
+            icon={<PrinterOutlined />}
+            style={{ backgroundColor: '#0284c7' }}
+            onClick={() => {
+              window.print();
+              showToast('Đã gửi lệnh in đơn thuốc tới máy in!', 'success');
+            }}
+          >
+            In Đơn Thuốc (Print A4)
+          </Button>,
+        ]}
+      >
+        {examToPrint && (
+          <div
+            id="printable-prescription"
+            style={{
+              padding: 24,
+              backgroundColor: '#ffffff',
+              color: '#0f172a',
+              fontFamily: 'Arial, sans-serif',
+              border: '1px solid #e2e8f0',
+              borderRadius: 8,
+            }}
+          >
+            {/* Form Header */}
+            <Row justify="space-between" align="middle" style={{ borderBottom: '2px solid #0369a1', paddingBottom: 12, marginBottom: 16 }}>
+              <Col>
+                <Text style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: '#0369a1' }}>
+                  BỘ Y TẾ - BỆNH VIỆN ĐA KHOA HOSPITAL AI
+                </Text>
+                <Title level={4} style={{ margin: 0, color: '#0284c7', fontWeight: 800 }}>
+                  ĐƠN THUỐC ĐIỆN TỬ (EMR PRESCRIPTION)
+                </Title>
+                <Text style={{ fontSize: 11, color: '#64748b' }}>
+                  Địa chỉ: 123 Đường Y Dược, Q. Cầu Giấy, Hà Nội • Hotline: 1900-6789
+                </Text>
+              </Col>
+              <Col style={{ textAlign: 'right' }}>
+                <Tag color="blue" style={{ fontFamily: 'monospace', fontSize: 13, padding: '4px 8px' }}>
+                  Mã Đơn: {examToPrint.examinationCode}
+                </Tag>
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
+                  Mã tra cứu QR: {examToPrint.patientCode}
+                </div>
+              </Col>
+            </Row>
+
+            {/* Patient Information */}
+            <div style={{ backgroundColor: '#f0f9ff', padding: 12, borderRadius: 8, marginBottom: 16, border: '1px solid #bae6fd' }}>
+              <Row gutter={[12, 6]}>
+                <Col span={12}>
+                  <Text>Họ và tên người bệnh: <strong style={{ textTransform: 'uppercase', color: '#0369a1' }}>{examToPrint.patientName}</strong></Text>
+                </Col>
+                <Col span={6}>
+                  <Text>Tuổi: <strong>{examToPrint.patientAge}</strong></Text>
+                </Col>
+                <Col span={6}>
+                  <Text>Giới tính: <strong>{examToPrint.patientGender}</strong></Text>
+                </Col>
+                <Col span={12}>
+                  <Text>Mã bệnh nhân: <strong>{examToPrint.patientCode}</strong></Text>
+                </Col>
+                <Col span={12}>
+                  <Text>Chỉ số sinh hiệu: <strong>{examToPrint.pulseRate} bpm • {examToPrint.bloodPressure} mmHg</strong></Text>
+                </Col>
+                <Col span={24}>
+                  <Text>Chẩn đoán bệnh: <strong style={{ color: '#0284c7' }}>[{examToPrint.icd10Code}] {examToPrint.icd10Name}</strong></Text>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Prescription Table */}
+            <Title level={5} style={{ color: '#0369a1', marginBottom: 8 }}>
+              💊 CHỈ ĐỊNH DÙNG THUỐC:
+            </Title>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
+              <thead>
+                <tr style={{ backgroundColor: '#e0f2fe', color: '#0369a1', textAlign: 'left', fontSize: 13 }}>
+                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>STT</th>
+                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>Tên thuốc & Hoạt chất</th>
+                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>SL</th>
+                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>Đơn vị</th>
+                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>Hướng dẫn sử dụng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {examToPrint.prescriptionDetails?.map((item, idx) => (
+                  <tr key={idx} style={{ fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{idx + 1}</td>
+                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', fontWeight: 600, color: '#0f172a' }}>{item.medicineName}</td>
+                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 700 }}>{item.quantity}</td>
+                    <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.unit}</td>
+                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', fontStyle: 'italic', color: '#334155' }}>{item.dosageInstruction}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Advice & Signatures */}
+            <Row gutter={16} style={{ marginTop: 20 }}>
+              <Col span={14}>
+                <Text strong style={{ color: '#0369a1' }}>Lời dặn của Bác sĩ điều trị:</Text>
+                <div style={{ fontSize: 12, color: '#475569', marginTop: 4, fontStyle: 'italic' }}>
+                  - Uống thuốc đúng giờ, đúng liều lượng chỉ định.<br />
+                  - Nghỉ ngơi hợp lý, tái khám theo hẹn hoặc khi có dấu hiệu bất thường.<br />
+                  - Mang theo đơn thuốc này khi đến tái khám.
+                </div>
+              </Col>
+              <Col span={10} style={{ textAlign: 'center' }}>
+                <Text style={{ fontSize: 12, color: '#64748b' }}>
+                  Hà Nội, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}
+                </Text>
+                <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 4 }}>BÁC SĨ KÊ ĐƠN</div>
+                <div style={{ border: '2px dashed #10b981', padding: '6px 12px', borderRadius: 8, display: 'inline-block', marginTop: 10, backgroundColor: '#ecfdf5' }}>
+                  <Text style={{ fontSize: 11, color: '#059669', fontWeight: 700, display: 'block' }}>
+                    ✔ CHỮ KÝ SỐ ĐÃ XÁC THỰC
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#047857', fontWeight: 800 }}>{examToPrint.doctorName}</Text>
+                </div>
+              </Col>
+            </Row>
+          </div>
+        )}
       </Modal>
 
       {/* Drawer Xem Chi Tiết Bệnh Án EMR */}

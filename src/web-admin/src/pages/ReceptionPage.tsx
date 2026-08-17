@@ -12,7 +12,7 @@ import {
   Modal,
   Form,
   Select,
-  Switch,
+  Divider,
   Badge,
   Tooltip,
 } from 'antd';
@@ -45,6 +45,10 @@ export const ReceptionPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+
+  // Ticket Thermal Print State
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [ticketToPrint, setTicketToPrint] = useState<QueueTicketItem | null>(null);
 
   // Fetch queue and departments
   const fetchData = useCallback(async () => {
@@ -94,10 +98,11 @@ export const ReceptionPage: React.FC = () => {
         return;
       }
 
+      const priorityVal = values.triageLevel || 'Normal';
       const ticket = await queueService.issueQueueTicket({
         patientId: targetPatientId,
         departmentId: values.departmentId || departments[0]?.id || 'dept-01',
-        priority: values.uuTien ? 'Emergency' : 'Normal',
+        priority: priorityVal === 'Emergency' || priorityVal === 'Elderly' || priorityVal === 'Pregnant' || priorityVal === 'Child' ? 'Emergency' : 'Normal',
       });
 
       showSuccessAlert(
@@ -108,6 +113,10 @@ export const ReceptionPage: React.FC = () => {
       setIsModalOpen(false);
       form.resetFields();
       fetchData();
+
+      // Open print ticket modal
+      setTicketToPrint(ticket);
+      setIsTicketModalOpen(true);
     } catch {
       showErrorAlert('Không thể cấp số', 'Có lỗi xảy ra trong quá trình tạo phiếu khám.');
     } finally {
@@ -172,7 +181,7 @@ export const ReceptionPage: React.FC = () => {
       key: 'sequenceNumber',
       render: (stt: number, record: QueueTicketItem) => (
         <Space>
-          <Badge count={record.priority === 'Emergency' ? 'Cấp cứu' : record.priority === 'Priority' ? 'Ưu tiên' : 0} style={{ backgroundColor: '#ef4444' }}>
+          <Badge count={record.priority === 'Emergency' ? 'ƯU TIÊN' : 0} style={{ backgroundColor: '#ef4444' }}>
             <Text strong style={{ fontSize: 22, color: record.priority !== 'Normal' ? '#ef4444' : isDarkMode ? '#38bdf8' : '#0284c7' }}>
               #{stt}
             </Text>
@@ -281,9 +290,12 @@ export const ReceptionPage: React.FC = () => {
             icon={<PrinterOutlined />}
             size="small"
             type="text"
-            onClick={() => showToast(`Đã gửi lệnh in phiếu số #${record.sequenceNumber} tới máy in nhiệt!`, 'info')}
+            onClick={() => {
+              setTicketToPrint(record);
+              setIsTicketModalOpen(true);
+            }}
           >
-            In phiếu
+            In phiếu STT
           </Button>
         </Space>
       ),
@@ -530,11 +542,17 @@ export const ReceptionPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            label="Chế độ Ưu tiên (Người cao tuổi >75 tuổi / Cấp cứu / Phụ nữ mang thai)"
-            name="uuTien"
-            valuePropName="checked"
+            label="Phân loại Luồng Ưu tiên (Triage Level)"
+            name="triageLevel"
+            initialValue="Normal"
           >
-            <Switch />
+            <Select size="large">
+              <Option value="Normal">🟢 Thông thường (Khám theo thứ tự)</Option>
+              <Option value="Emergency">🚨 Ưu tiên Cấp cứu / Bệnh nặng</Option>
+              <Option value="Elderly">👴 Ưu tiên Người cao tuổi (≥ 75 tuổi)</Option>
+              <Option value="Child">👶 Ưu tiên Trẻ em dưới 6 tuổi</Option>
+              <Option value="Pregnant">🤰 Ưu tiên Phụ nữ mang thai</Option>
+            </Select>
           </Form.Item>
 
           <div style={{ textAlign: 'right', marginTop: 24 }}>
@@ -553,6 +571,80 @@ export const ReceptionPage: React.FC = () => {
             </Space>
           </div>
         </Form>
+      </Modal>
+
+      {/* Modal In Phiếu STT Nhiệt K80 */}
+      <Modal
+        title={
+          <Space>
+            <PrinterOutlined style={{ color: '#0284c7' }} />
+            <span>In Phiếu Số Thứ Tự (STT Ticket K80)</span>
+          </Space>
+        }
+        open={isTicketModalOpen}
+        onCancel={() => setIsTicketModalOpen(false)}
+        width={400}
+        footer={[
+          <Button key="close" onClick={() => setIsTicketModalOpen(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="print"
+            type="primary"
+            icon={<PrinterOutlined />}
+            style={{ backgroundColor: '#0284c7' }}
+            onClick={() => {
+              window.print();
+              showToast('Đã in phiếu STT K80 nhiệt!', 'success');
+            }}
+          >
+            In Phiếu STT
+          </Button>,
+        ]}
+      >
+        {ticketToPrint && (
+          <div
+            style={{
+              padding: 20,
+              backgroundColor: '#ffffff',
+              color: '#0f172a',
+              textAlign: 'center',
+              fontFamily: 'monospace',
+              border: '2px dashed #94a3b8',
+              borderRadius: 12,
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#0369a1' }}>
+              BV ĐA KHOA HOSPITAL AI
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b' }}>PHIẾU KHÁM BỆNH TỰ ĐỘNG</div>
+            <Divider style={{ margin: '10px 0' }} />
+
+            <div style={{ fontSize: 12, color: '#475569' }}>SỐ THỨ TỰ CỦA BẠN:</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: ticketToPrint.priority === 'Emergency' ? '#ef4444' : '#0284c7', margin: '4px 0' }}>
+              #{ticketToPrint.sequenceNumber}
+            </div>
+
+            {ticketToPrint.priority === 'Emergency' && (
+              <Tag color="red" style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>
+                🚨 LUỒNG ƯU TIÊN / CẤP CỨU
+              </Tag>
+            )}
+
+            <div style={{ textAlign: 'left', marginTop: 12, fontSize: 12, backgroundColor: '#f0f9ff', padding: 10, borderRadius: 8 }}>
+              <div>Bệnh nhân: <strong>{ticketToPrint.patientName}</strong></div>
+              <div>Mã BN: <strong>{ticketToPrint.patientCode}</strong></div>
+              <div>Phòng khám: <strong>{ticketToPrint.departmentName}</strong></div>
+              <div>Vị trí: <strong>{ticketToPrint.location}</strong></div>
+              <div>Thời gian cấp: <strong>{new Date().toLocaleTimeString('vi-VN')}</strong></div>
+            </div>
+
+            <div style={{ marginTop: 14, fontSize: 10, color: '#94a3b8' }}>
+              Vui lòng theo dõi màn hình TV và loa gọi số trước cửa phòng khám.<br />
+              Xin cảm ơn Quý bệnh nhân!
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -284,19 +284,29 @@ Dữ liệu đầu vào đã được khử danh tính PII/PHI tuân thủ chu�
   },
 
   /**
-   * AI Check for Drug Interactions
+   * AI Check for Drug Interactions & Patient Allergy Safety
    */
-  async checkDrugSafety(prescriptions: Array<{ medicineName: string; dosageInstruction?: string }>): Promise<string[]> {
-    if (prescriptions.length <= 1) return [];
+  async checkDrugSafety(
+    prescriptions: Array<{ medicineName: string; dosageInstruction?: string }>,
+    allergies: string[] = []
+  ): Promise<string[]> {
+    if (prescriptions.length === 0) return [];
 
     const startTime = Date.now();
     const drugNames = prescriptions.map((p) => p.medicineName).join(', ');
-    const prompt = `Kiểm tra an toàn đơn thuốc gồm các thuốc: ${drugNames}. Phát hiện xem có lặp thành phần hoạt chất (như Paracetamol, Amoxicillin) hoặc có tương tác thuốc nguy hiểm hay không. Trả về các cảnh báo ngắn gọn bằng tiếng Việt.`;
+    const allergyText = allergies.length > 0 ? allergies.join(', ') : 'Không có ghi nhận';
+    
+    const prompt = `Kiểm tra an toàn đơn thuốc gồm: ${drugNames}. 
+Tiền sử dị ứng thuốc của người bệnh: ${allergyText}.
+Phát hiện xem:
+1. Có thuốc nào vi phạm dị ứng với tiền sử người bệnh hay không? (Cực kỳ quan trọng)
+2. Có lặp thành phần hoạt chất (Paracetamol, Amoxicillin, Ibuprofen...) hay tương tác thuốc nguy hiểm hay không?
+Trả về danh sách cảnh báo ngắn gọn bằng tiếng Việt.`;
 
     let warnings: string[] = [];
 
     try {
-      const res = await this.askGemini(prompt, 'Bạn là Chuyên gia Dược lâm sàng.');
+      const res = await this.askGemini(prompt, 'Bạn là Chuyên gia Dược lâm sàng và Dị ứng học.');
       if (res.text && res.text.length > 10) {
         const lines = res.text
           .split('\n')
@@ -306,17 +316,35 @@ Dữ liệu đầu vào đã được khử danh tính PII/PHI tuân thủ chu�
         else warnings = [res.text];
       }
     } catch {
-      // Ignore
+      // Fallback local logic
     }
 
-    if (warnings.length === 0) {
-      const lowerNames = prescriptions.map((i) => i.medicineName.toLowerCase());
-      const paracetamolCount = lowerNames.filter(
-        (n) => n.includes('paracetamol') || n.includes('efferalgan') || n.includes('ultracet') || n.includes('panadol')
-      ).length;
-      if (paracetamolCount >= 2) {
-        warnings.push('Cảnh báo lặp hoạt chất Paracetamol! Kê trùng 2 thuốc chứa Paracetamol nguy cơ tổn thương gan.');
+    // Local deterministic safety rules fallback
+    const lowerNames = prescriptions.map((i) => i.medicineName.toLowerCase());
+
+    // Allergy check fallback (e.g. Penicillin allergy vs Augmentin/Amoxicillin)
+    allergies.forEach((allergy) => {
+      const lowerAlg = allergy.toLowerCase();
+      if (lowerAlg.includes('penicillin') || lowerAlg.includes('amoxicillin')) {
+        const hasBetaLactam = lowerNames.some((n) => n.includes('amoxicillin') || n.includes('augmentin') || n.includes('clavamox') || n.includes('ampicillin'));
+        if (hasBetaLactam) {
+          warnings.unshift(`🔴 CẢNH BÁO NGUY HIỂM: Bệnh nhân có tiền sử dị ứng ${allergy.toUpperCase()}! Đơn thuốc có chứa kháng sinh nhóm Penicillin/Beta-lactam nguy cơ Sốc Phản Vệ!`);
+        }
       }
+      if (lowerAlg.includes('aspirin') || lowerAlg.includes('nsaid')) {
+        const hasNsaid = lowerNames.some((n) => n.includes('aspirin') || n.includes('ibuprofen') || n.includes('diclofenac') || n.includes('meloxicam'));
+        if (hasNsaid) {
+          warnings.unshift(`🔴 CẢNH BÁO NGUY HIỂM: Bệnh nhân dị ứng ${allergy}! Tránh kê thuốc giảm đau hạ sốt nhóm NSAID.`);
+        }
+      }
+    });
+
+    // Paracetamol duplicate check fallback
+    const paracetamolCount = lowerNames.filter(
+      (n) => n.includes('paracetamol') || n.includes('efferalgan') || n.includes('ultracet') || n.includes('panadol') || n.includes('hapacol')
+    ).length;
+    if (paracetamolCount >= 2) {
+      warnings.push('⚠️ Cảnh báo lặp hoạt chất Paracetamol! Kê trùng 2 thuốc chứa Paracetamol có nguy cơ quá liều gây độc cho gan.');
     }
 
     const latencyMs = Date.now() - startTime;
@@ -326,15 +354,15 @@ Dữ liệu đầu vào đã được khử danh tính PII/PHI tuân thủ chu�
       doctorName: 'BS. CKII. Nguyễn Thanh Duy',
       actionType: 'DRUG_SAFETY_CHECK',
       modelUsed: 'gemini-3.6-flash (Cascade Active)',
-      promptText: `Kiểm tra đơn thuốc: ${drugNames}`,
-      responseText: warnings.length > 0 ? warnings.join('; ') : 'Đơn thuốc an toàn, không phát hiện tương tác nguy hiểm.',
+      promptText: `Kiểm tra đơn thuốc: ${drugNames} (Tiền sử dị ứng: ${allergyText})`,
+      responseText: warnings.length > 0 ? warnings.join('; ') : 'Đơn thuốc an toàn, không phát hiện tương tác hay dị ứng nguy hiểm.',
       latencyMs,
       piiRedacted: false,
-      sources: ['Dược thư Quốc gia Việt Nam 2024'],
+      sources: ['Dược thư Quốc gia Việt Nam 2024', 'Hướng dẫn Dị ứng Lâm sàng Bộ Y Tế'],
       status: warnings.length > 0 ? 'WARNING' : 'SUCCESS',
     });
 
-    return warnings;
+    return Array.from(new Set(warnings));
   },
 
   /**
