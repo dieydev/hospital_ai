@@ -5,7 +5,7 @@ import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 export const CatalogsPage: React.FC = () => {
@@ -96,35 +96,26 @@ export const CatalogsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Page Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
-            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-          padding: '20px 24px',
-          borderRadius: '12px',
-          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
-        }}
-      >
+    <div className="flex flex-col gap-6">
+      {/* Modern Medical Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-            Quản trị Danh mục Hệ thống
-          </Title>
-          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-            Quản lý Bác sĩ/Nhân viên, Thuốc, Dịch vụ y tế & Bộ mã chuẩn ICD-10
-          </Text>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="status-dot-active" />
+            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Danh Mục Master Data • Bác Sĩ, Thuốc, CLS & ICD-10</Text>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
+            Quản trị Danh mục Hệ thống (System Catalogs)
+          </h1>
+          <p className="text-slate-300 text-xs md:text-sm mt-1">
+            Danh mục Bác sĩ/Nhân viên, Thuốc dược phẩm, Dịch vụ kỹ thuật y tế và Bộ mã chuẩn đoán quốc tế ICD-10
+          </p>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           size="large"
-          style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+          className="bg-sky-600 hover:bg-sky-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
           onClick={handleOpenAddModal}
         >
           {activeTab === 'doctors' && 'Thêm Bác sĩ mới'}
@@ -134,7 +125,7 @@ export const CatalogsPage: React.FC = () => {
         </Button>
       </div>
 
-      <Card style={{ borderRadius: 12, border: isDarkMode ? '1px solid #334155' : undefined }}>
+      <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}

@@ -31,6 +31,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import { isStrictMode, setStrictMode } from '../utils/modeHelper';
 import { showToast } from '../utils/sweetAlert';
 import api from '../services/api';
+import { AIChatDrawer } from '../components/AIChatDrawer';
 
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
@@ -43,6 +44,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [isGatewayOnline, setIsGatewayOnline] = useState<boolean | null>(null);
   const [strictMode, setStrictModeState] = useState<boolean>(isStrictMode());
+  const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -413,6 +415,26 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </Tag>
             </Tooltip>
 
+            {/* Quick AI Assistant Button in Top Header */}
+            <Button
+              type="primary"
+              icon={<RobotOutlined style={{ fontSize: 16 }} />}
+              onClick={() => setIsAiDrawerOpen(true)}
+              style={{
+                borderRadius: 20,
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                fontWeight: 600,
+                fontSize: 13,
+                padding: '4px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+              }}
+            >
+              Hỏi AI
+            </Button>
+
             {/* Theme Toggle Button */}
             <Button
               type="text"
@@ -465,6 +487,31 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             {children}
           </div>
         </Content>
+
+        {/* Floating Circular Action Button (FAB) for Instant AI Chat Drawer */}
+        <div style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 999 }}>
+          <Tooltip title="Trợ lý AI Y tế (Click mở khung chat)" placement="left">
+            <Button
+              type="primary"
+              shape="circle"
+              className="ai-fab-pulse"
+              icon={<RobotOutlined style={{ fontSize: 24 }} />}
+              onClick={() => setIsAiDrawerOpen(true)}
+              style={{
+                width: 56,
+                height: 56,
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+              }}
+            />
+          </Tooltip>
+        </div>
+
+        {/* Floating AI Chat Drawer */}
+        <AIChatDrawer open={isAiDrawerOpen} onClose={() => setIsAiDrawerOpen(false)} />
       </Layout>
     </Layout>
   );

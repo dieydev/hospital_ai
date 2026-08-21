@@ -31,6 +31,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+*.timestamp-*.mjs
+*.timestamp-*.js
 
 # Flutter & Mobile
 .dart_tool/

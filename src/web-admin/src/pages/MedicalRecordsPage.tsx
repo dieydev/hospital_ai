@@ -63,58 +63,47 @@ export const MedicalRecordsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Patient Banner */}
-      <Card
-        style={{
-          borderRadius: 12,
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-            : 'linear-gradient(135deg, #001529 0%, #002140 100%)',
-          color: '#fff',
-          borderColor: isDarkMode ? '#334155' : undefined,
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
-        }}
-      >
-        <Row align="middle" justify="space-between">
-          <Col>
-            <Space size="large">
-              <Title level={3} style={{ color: '#fff', margin: 0 }}>
-                HỒ SƠ BỆNH ÁN ĐIỆN TỬ (EMR) - NGUYỄN VĂN AN
-              </Title>
-              <Tag color="blue" style={{ fontSize: 13, padding: '2px 10px' }}>BN20260001</Tag>
-            </Space>
-            <div style={{ marginTop: 8 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.75)' }}>
-                CCCD: <strong>038090001234</strong> • Ngày sinh: <strong>1990-05-15 (36 tuổi)</strong> • BHYT: <strong>DN40101234567</strong>
-              </Text>
-            </div>
-          </Col>
-          <Col>
-            <Button
-              type="primary"
-              icon={<FilePdfOutlined />}
-              size="large"
-              style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
-              onClick={() => handleOpenPdf(historyItems[0])}
-            >
-              Xuất Bệnh án EMR (PDF)
-            </Button>
-          </Col>
-        </Row>
-      </Card>
+    <div className="flex flex-col gap-6">
+      {/* Modern Medical Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="status-dot-active" />
+            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Lịch Sử Khám Bệnh Toàn Diện • Hồ Sơ EMR</Text>
+            <Tag color="blue" className="m-0 font-mono text-xs">Mã BN: BN20260001</Tag>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
+            HỒ SƠ BỆNH ÁN ĐIỆN TỬ (EMR) - NGUYỄN VĂN AN
+          </h1>
+          <p className="text-slate-300 text-xs md:text-sm mt-1">
+            CCCD: <strong>038090001234</strong> • Ngày sinh: <strong>1990-05-15 (36 tuổi)</strong> • BHYT: <strong>DN40101234567</strong>
+          </p>
+        </div>
+        <Space wrap>
+          <Button
+            type="primary"
+            icon={<FilePdfOutlined />}
+            size="large"
+            className="bg-sky-600 hover:bg-sky-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
+            onClick={() => handleOpenPdf(historyItems[0])}
+          >
+            Xuất Bệnh án EMR (PDF)
+          </Button>
+        </Space>
+      </div>
 
       {/* Timeline view */}
-      <Row gutter={16}>
+      <Row gutter={[16, 16]}>
         <Col span={16}>
           <Card
+            bordered={false}
+            className="rounded-xl bg-white dark:bg-slate-800 hover-lift"
             title={
               <Space>
                 <HistoryOutlined style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
                 <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Dòng thời gian Diễn biến Lịch sử Khám bệnh</span>
               </Space>
             }
-            style={{ borderRadius: 12, borderColor: isDarkMode ? '#334155' : undefined }}
           >
             <Timeline
               mode="left"

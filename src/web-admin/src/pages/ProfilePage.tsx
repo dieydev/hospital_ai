@@ -239,7 +239,7 @@ export const ProfilePage: React.FC = () => {
       </Card>
 
       {/* Main Tabs Details */}
-      <Card style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : undefined }}>
+      <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
         <Tabs
           defaultActiveKey="info"
           items={[

@@ -157,51 +157,42 @@ export const BillingPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Page Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
-            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-          padding: '20px 24px',
-          borderRadius: '12px',
-          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
-        }}
-      >
+    <div className="flex flex-col gap-6">
+      {/* Modern Medical Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-            Quản lý Viện phí & Hóa đơn Nội bộ
-          </Title>
-          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-            Tính toán chi phí khám bệnh, tiền thuốc, chỉ định cận lâm sàng & Theo dõi trạng thái thu phí
-          </Text>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="status-dot-active" />
+            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Viện Phí & Thanh Toán • BHYT & VietQR</Text>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
+            Quản lý Viện phí & Hóa đơn Khám chữa bệnh
+          </h1>
+          <p className="text-slate-300 text-xs md:text-sm mt-1">
+            Tính toán chi phí khám, tiền thuốc, dịch vụ CLS, mức hưởng BHYT và xuất hóa đơn thanh toán
+          </p>
         </div>
-        <Space>
+        <Space wrap>
           <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 160 }}>
             <Option value="ALL">Tất cả trạng thái</Option>
             <Option value="Chưa thanh toán">Chưa thanh toán</Option>
             <Option value="Đã thanh toán">Đã thanh toán</Option>
           </Select>
           <Input
-            placeholder="Tìm kiếm Mã HĐ / Tên BN / Mã BN..."
-            prefix={<SearchOutlined />}
+            placeholder="Tìm Mã HĐ, Tên BN, Mã BN..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            style={{ width: 280 }}
+            style={{ width: 260 }}
           />
         </Space>
       </div>
 
-      <Row gutter={[20, 20]}>
-        <Col span={8}>
-          <Card style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : undefined }}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
+          <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
             <Statistic
-              title={<span style={{ color: isDarkMode ? '#94a3b8' : undefined }}>TỔNG THU VIỆN PHÍ HÔM NAY</span>}
+              title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">TỔNG THU VIỆN PHÍ HÔM NAY</span>}
               value={158800000}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontWeight: 800 }}
@@ -210,10 +201,10 @@ export const BillingPage: React.FC = () => {
           </Card>
         </Col>
 
-        <Col span={8}>
-          <Card style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : undefined }}>
+        <Col xs={24} md={8}>
+          <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
             <Statistic
-              title={<span style={{ color: isDarkMode ? '#94a3b8' : undefined }}>QUỸ BHYT CHI TRẢ TẠM TÍNH</span>}
+              title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">QUỸ BHYT CHI TRẢ TẠM TÍNH</span>}
               value={98400000}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#10b981', fontWeight: 800 }}
@@ -222,10 +213,10 @@ export const BillingPage: React.FC = () => {
           </Card>
         </Col>
 
-        <Col span={8}>
-          <Card style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : undefined }}>
+        <Col xs={24} md={8}>
+          <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
             <Statistic
-              title={<span style={{ color: isDarkMode ? '#94a3b8' : undefined }}>HÓA ĐƠN CHỜ THU PHÍ</span>}
+              title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">HÓA ĐƠN CHỜ THU PHÍ</span>}
               value={invoices.filter((i) => i.trangThai === 'Chưa thanh toán').length}
               valueStyle={{ color: '#f59e0b', fontWeight: 800 }}
               suffix="hóa đơn"
@@ -235,8 +226,9 @@ export const BillingPage: React.FC = () => {
       </Row>
 
       <Card
-        title={<span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh sách Hóa đơn Chi phí Khám chữa bệnh</span>}
-        style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : undefined }}
+        title={<span className="font-semibold text-slate-800 dark:text-slate-100 text-base">Danh sách Hóa đơn Chi phí Khám chữa bệnh</span>}
+        bordered={false}
+        className="rounded-xl bg-white dark:bg-slate-800 hover-lift"
       >
         <Table dataSource={filteredInvoices} columns={columns} rowKey="id" />
       </Card>

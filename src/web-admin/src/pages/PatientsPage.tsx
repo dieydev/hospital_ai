@@ -37,7 +37,7 @@ import { showSuccessAlert, showErrorAlert, showConfirmDelete, showToast } from '
 
 import { useThemeStore } from '../store/useThemeStore';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 export const PatientsPage: React.FC = () => {
@@ -323,30 +323,23 @@ export const PatientsPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Page Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e1b4b 100%)'
-            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-          padding: '20px 24px',
-          borderRadius: '12px',
-          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)'
-        }}
-      >
+    <div className="flex flex-col gap-6">
+      {/* Modern Medical Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-            <UserOutlined style={{ marginRight: 10, color: isDarkMode ? '#38bdf8' : '#0284c7' }} />
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <UserOutlined className="text-sky-400" />
+            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Bệnh Viện Đa Khoa • Quản Lý Bệnh Nhân</Text>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Quản lý Hồ sơ Bệnh nhân (Patient Management)
-          </Title>
+          </h1>
+          <p className="text-slate-300 text-xs md:text-sm mt-1">
+            Tra cứu, cập nhật thông tin hành chính, thẻ BHYT, tiền sử bệnh và lịch sử khám chữa bệnh
+          </p>
         </div>
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchPatients} loading={loading}>
+        <Space wrap>
+          <Button icon={<ReloadOutlined />} onClick={fetchPatients} loading={loading} className="rounded-lg font-medium">
             Làm mới
           </Button>
           <Button

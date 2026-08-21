@@ -16,7 +16,6 @@ import {
   Tooltip,
 } from 'antd';
 import {
-  ScheduleOutlined,
   SearchOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -34,7 +33,7 @@ import { showSuccessAlert, showToast } from '../utils/sweetAlert';
 import { appointmentService } from '../services/appointmentService';
 import { queueService } from '../services/queueService';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 export interface OnlineAppointmentItem {
@@ -302,61 +301,35 @@ export const AppointmentsPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Header Banner */}
-      <Card
-        style={{
-          borderRadius: 16,
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
-            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.1)',
-        }}
-      >
-        <Row align="middle" justify="space-between">
-          <Col>
-            <Space size={14} align="center">
-              <div
-                style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 14,
-                  background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: 24,
-                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)',
-                }}
-              >
-                <ScheduleOutlined />
-              </div>
-              <div>
-                <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-                  Quản lý Lịch hẹn Khám Trực tuyến
-                </Title>
-                <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                  Tiếp nhận, xác nhận và tự động cấp số hàng chờ cho bệnh nhân đăng ký từ Mobile Patient App
-                </Text>
-              </div>
-            </Space>
-          </Col>
-          <Col>
-            <Space>
-              <Badge count={appointments.filter((a) => a.status === 'Pending').length} overflowCount={99}>
-                <Tag color="processing" style={{ padding: '6px 14px', fontSize: 14, borderRadius: 10 }}>
-                  {appointments.filter((a) => a.status === 'Pending').length} Lịch hẹn chờ xác nhận
-                </Tag>
-              </Badge>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+    <div className="flex flex-col gap-6">
+      {/* Modern Medical Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="status-dot-active" />
+            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Đồng Bộ Flutter Mobile App • Lịch Hẹn Online</Text>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
+            Quản lý Lịch hẹn Đăng ký từ Bệnh nhân (Mobile App)
+          </h1>
+          <p className="text-slate-300 text-xs md:text-sm mt-1">
+            Duyệt lịch đặt khám trực tuyến, tự động chuyển số thứ tự hàng chờ (Queue) khi bệnh nhân đến quầy
+          </p>
+        </div>
+        <Space wrap>
+          <Badge count={appointments.filter((a) => a.status === 'Pending').length} overflowCount={99}>
+            <Tag color="processing" className="px-3 py-1 text-xs rounded-lg font-semibold">
+              {appointments.filter((a) => a.status === 'Pending').length} Lịch hẹn chờ xác nhận
+            </Tag>
+          </Badge>
+          <Button icon={<ReloadOutlined />} onClick={fetchAppointments} loading={loading} className="rounded-lg font-medium">
+            Làm mới
+          </Button>
+        </Space>
+      </div>
 
       {/* Filter & Search Bar */}
-      <Card style={{ borderRadius: 16 }}>
+      <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
             <Input
@@ -413,7 +386,7 @@ export const AppointmentsPage: React.FC = () => {
       </Card>
 
       {/* Main Appointments Table */}
-      <Card style={{ borderRadius: 16 }}>
+      <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
         <Table
           dataSource={filteredAppointments}
           columns={columns}

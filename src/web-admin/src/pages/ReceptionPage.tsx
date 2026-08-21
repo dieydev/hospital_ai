@@ -303,39 +303,30 @@ export const ReceptionPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Header Banner */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
-            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-          padding: '20px 24px',
-          borderRadius: '16px',
-          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)',
-        }}
-      >
+    <div className="flex flex-col gap-6">
+      {/* Modern Medical Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 800 }}>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="status-dot-active" />
+            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Quầy Lễ Tân • Cấp Số Hàng Chờ Tự Động</Text>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Tiếp nhận Bệnh nhân & Cấp số Hàng chờ Realtime
-          </Title>
-          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-            Quản lý điều phối luồng tiếp đón, cấp số tự động và gọi loa thông minh tại quầy lễ tân
-          </Text>
+          </h1>
+          <p className="text-slate-300 text-xs md:text-sm mt-1">
+            Điều phối luồng tiếp đón, phát số thứ tự tự động và gọi loa thông minh theo phòng khám
+          </p>
         </div>
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
+        <Space wrap>
+          <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} className="rounded-lg font-medium">
             Làm mới
           </Button>
           <Button
             type="primary"
             icon={<ForwardOutlined />}
             size="large"
-            style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
+            className="bg-emerald-600 hover:bg-emerald-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
             onClick={handleCallNext}
           >
             Gọi loa Số tiếp theo
@@ -344,7 +335,7 @@ export const ReceptionPage: React.FC = () => {
             type="primary"
             icon={<PlusOutlined />}
             size="large"
-            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            className="bg-sky-600 hover:bg-sky-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
             onClick={() => setIsModalOpen(true)}
           >
             Đăng ký & Cấp số mới
@@ -353,16 +344,9 @@ export const ReceptionPage: React.FC = () => {
       </div>
 
       {/* Realtime Stats Cards */}
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card
-            style={{
-              borderRadius: 16,
-              textAlign: 'center',
-              background: isDarkMode ? '#0f172a' : '#f0f9ff',
-              borderColor: isDarkMode ? '#0284c7' : '#bae6fd',
-            }}
-          >
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} xl={6}>
+          <Card className="rounded-xl border-l-4 border-l-sky-600 bg-white dark:bg-slate-800 hover-lift text-center">
             <Text type="secondary" style={{ fontSize: 13, fontWeight: 600 }}>Số STT Đang gọi phát loa</Text>
             <Title level={1} style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', margin: '6px 0', fontSize: 36, fontWeight: 900 }}>
               #{callingTicket ? callingTicket.sequenceNumber : '---'}
