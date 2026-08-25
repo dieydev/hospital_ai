@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import '../styles/prescriptionPrint.css';
 import { Card, Timeline, Typography, Tag, Button, Space, Row, Col, Modal, Table, Divider } from 'antd';
 import {
   FilePdfOutlined,
@@ -188,7 +190,18 @@ export const MedicalRecordsPage: React.FC = () => {
         width={800}
         footer={[
           <Button key="close" onClick={() => setIsPdfModalOpen(false)}>Đóng</Button>,
-          <Button key="print" type="primary" icon={<PrinterOutlined />} style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }} onClick={() => showToast('Đã gửi lệnh in Hồ sơ EMR!', 'info')}>In File PDF</Button>,
+          <Button
+            key="print"
+            type="primary"
+            icon={<PrinterOutlined />}
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            onClick={() => {
+              window.print();
+              showToast('Đã xuất file PDF / In Hồ sơ Bệnh án EMR!', 'success');
+            }}
+          >
+            In File PDF (A4)
+          </Button>,
         ]}
       >
         {selectedRecord && (
@@ -239,10 +252,10 @@ export const MedicalRecordsPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 24, paddingTop: 16, borderTop: isDarkMode ? '1px dashed #334155' : '1px dashed #cbd5e1' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ background: '#ffffff', padding: 8, borderRadius: 8, display: 'inline-block', border: '1px solid #bae6fd' }}>
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=EMR_${selectedRecord.maLuotKham}_BN20260001`}
-                    alt="EMR QR Code"
-                    style={{ width: 90, height: 90, display: 'block' }}
+                  <QRCodeSVG
+                    value={`https://hospital-ai.vn/verify-emr?code=${selectedRecord.maLuotKham}`}
+                    size={90}
+                    level="H"
                   />
                 </div>
                 <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4, color: isDarkMode ? '#94a3b8' : '#64748b' }}>

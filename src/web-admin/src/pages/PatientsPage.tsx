@@ -15,7 +15,8 @@ import {
   Col,
   Descriptions,
   Alert,
-  Tooltip
+  Tooltip,
+  Checkbox
 } from 'antd';
 import {
   PlusOutlined,
@@ -103,6 +104,7 @@ export const PatientsPage: React.FC = () => {
         emergencyContactName: values.emergencyContactName || undefined,
         emergencyContactPhone: values.emergencyContactPhone || undefined,
         emergencyContactRelation: values.emergencyContactRelation || undefined,
+        isConsentData: values.isConsentData, // NĐ 13/2023/NĐ-CP
       };
 
       const newPatient = await patientService.createPatient(params);
@@ -138,6 +140,7 @@ export const PatientsPage: React.FC = () => {
       emergencyContactName: patient.tenNguoiThan,
       emergencyContactPhone: patient.soDienThoaiNguoiThan,
       emergencyContactRelation: patient.quanHeNguoiThan,
+      isConsentData: patient.isConsentData,
     });
     setIsEditModalOpen(true);
   };
@@ -162,6 +165,7 @@ export const PatientsPage: React.FC = () => {
         emergencyContactName: values.emergencyContactName || undefined,
         emergencyContactPhone: values.emergencyContactPhone || undefined,
         emergencyContactRelation: values.emergencyContactRelation || undefined,
+        isConsentData: values.isConsentData,
       };
 
       await patientService.updatePatient(selectedPatient.id, params);
@@ -223,6 +227,11 @@ export const PatientsPage: React.FC = () => {
           {record.tuoi !== undefined && (
             <Tag color="cyan" style={{ marginLeft: 6 }}>{record.tuoi} tuổi</Tag>
           )}
+          {record.isConsentData && (
+            <Tooltip title="Đã ký cam kết bảo vệ dữ liệu NĐ 13/2023">
+              <SafetyOutlined style={{ color: '#10b981', marginLeft: 4 }} />
+            </Tooltip>
+          )}
         </div>
       ),
     },
@@ -237,7 +246,10 @@ export const PatientsPage: React.FC = () => {
       title: 'Số CCCD',
       dataIndex: 'soCCCD',
       key: 'soCCCD',
-      render: (text: string) => <Text style={{ fontFamily: 'monospace', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{text}</Text>,
+      render: (text: string) => {
+        const masked = text ? text.substring(0, 3) + '******' + text.substring(text.length - 3) : '';
+        return <Text style={{ fontFamily: 'monospace', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{masked}</Text>;
+      }
     },
     {
       title: 'Thẻ BHYT',
@@ -256,11 +268,14 @@ export const PatientsPage: React.FC = () => {
       title: 'Số điện thoại',
       dataIndex: 'soDienThoai',
       key: 'soDienThoai',
-      render: (t: string) => (
-        <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-          {t}
-        </Text>
-      ),
+      render: (t: string) => {
+        const masked = t ? t.substring(0, 3) + '****' + t.substring(t.length - 3) : '';
+        return (
+          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+            {masked}
+          </Text>
+        );
+      }
     },
     {
       title: 'Cảnh báo Dị ứng',
@@ -551,6 +566,17 @@ export const PatientsPage: React.FC = () => {
             </Col>
           </Row>
 
+          <Divider title="Xác nhận Pháp lý (NĐ 13/2023/NĐ-CP)" />
+          <Form.Item
+            name="isConsentData"
+            valuePropName="checked"
+            rules={[{ validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('Bắt buộc xác nhận sự đồng ý của bệnh nhân!')) }]}
+          >
+            <Checkbox>
+              <Text strong style={{ color: '#0369a1' }}>Bệnh nhân đã đọc, hiểu và ký cam kết đồng ý</Text> cho phép Bệnh viện thu thập, lưu trữ và xử lý dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.
+            </Checkbox>
+          </Form.Item>
+
           <div style={{ textAlign: 'right', marginTop: 16 }}>
             <Space>
               <Button onClick={() => setIsCreateModalOpen(false)}>Hủy</Button>
@@ -688,6 +714,17 @@ export const PatientsPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+
+          <Divider title="Xác nhận Pháp lý (NĐ 13/2023/NĐ-CP)" />
+          <Form.Item
+            name="isConsentData"
+            valuePropName="checked"
+            rules={[{ validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('Bắt buộc xác nhận sự đồng ý của bệnh nhân!')) }]}
+          >
+            <Checkbox>
+              <Text strong style={{ color: '#0369a1' }}>Bệnh nhân đã đọc, hiểu và ký cam kết đồng ý</Text> cho phép Bệnh viện thu thập, lưu trữ và xử lý dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.
+            </Checkbox>
+          </Form.Item>
 
           <div style={{ textAlign: 'right', marginTop: 16 }}>
             <Space>

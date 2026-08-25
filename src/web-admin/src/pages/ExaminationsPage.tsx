@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { geminiService } from '../services/geminiService';
+import { QRCodeSVG } from 'qrcode.react';
+import '../styles/prescriptionPrint.css';
 import {
   Card,
   Form,
@@ -745,114 +747,134 @@ export const ExaminationsPage: React.FC = () => {
         ]}
       >
         {examToPrint && (
-          <div
-            id="printable-prescription"
-            style={{
-              padding: 24,
-              backgroundColor: '#ffffff',
-              color: '#0f172a',
-              fontFamily: 'Arial, sans-serif',
-              border: '1px solid #e2e8f0',
-              borderRadius: 8,
-            }}
-          >
-            {/* Form Header */}
-            <Row justify="space-between" align="middle" style={{ borderBottom: '2px solid #0369a1', paddingBottom: 12, marginBottom: 16 }}>
-              <Col>
-                <Text style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: '#0369a1' }}>
-                  BỘ Y TẾ - BỆNH VIỆN ĐA KHOA HOSPITAL AI
-                </Text>
-                <Title level={4} style={{ margin: 0, color: '#0284c7', fontWeight: 800 }}>
-                  ĐƠN THUỐC ĐIỆN TỬ (EMR PRESCRIPTION)
-                </Title>
-                <Text style={{ fontSize: 11, color: '#64748b' }}>
-                  Địa chỉ: 123 Đường Y Dược, Q. Cầu Giấy, Hà Nội • Hotline: 1900-6789
-                </Text>
-              </Col>
-              <Col style={{ textAlign: 'right' }}>
-                <Tag color="blue" style={{ fontFamily: 'monospace', fontSize: 13, padding: '4px 8px' }}>
-                  Mã Đơn: {examToPrint.examinationCode}
-                </Tag>
-                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
-                  Mã tra cứu QR: {examToPrint.patientCode}
-                </div>
-              </Col>
-            </Row>
-
-            {/* Patient Information */}
-            <div style={{ backgroundColor: '#f0f9ff', padding: 12, borderRadius: 8, marginBottom: 16, border: '1px solid #bae6fd' }}>
-              <Row gutter={[12, 6]}>
-                <Col span={12}>
-                  <Text>Họ và tên người bệnh: <strong style={{ textTransform: 'uppercase', color: '#0369a1' }}>{examToPrint.patientName}</strong></Text>
-                </Col>
-                <Col span={6}>
-                  <Text>Tuổi: <strong>{examToPrint.patientAge}</strong></Text>
-                </Col>
-                <Col span={6}>
-                  <Text>Giới tính: <strong>{examToPrint.patientGender}</strong></Text>
-                </Col>
-                <Col span={12}>
-                  <Text>Mã bệnh nhân: <strong>{examToPrint.patientCode}</strong></Text>
-                </Col>
-                <Col span={12}>
-                  <Text>Chỉ số sinh hiệu: <strong>{examToPrint.pulseRate} bpm • {examToPrint.bloodPressure} mmHg</strong></Text>
-                </Col>
-                <Col span={24}>
-                  <Text>Chẩn đoán bệnh: <strong style={{ color: '#0284c7' }}>[{examToPrint.icd10Code}] {examToPrint.icd10Name}</strong></Text>
-                </Col>
-              </Row>
+          <div id="printable-prescription" className="prescription-container">
+            {/* National Header */}
+            <div className="prescription-header-national">
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, fontStyle: 'italic', marginBottom: 4 }}>
+                Độc lập - Tự do - Hạnh phúc
+              </div>
+              <div style={{ width: 120, height: 1, backgroundColor: '#0284c7', margin: '4px auto' }} />
             </div>
 
-            {/* Prescription Table */}
-            <Title level={5} style={{ color: '#0369a1', marginBottom: 8 }}>
-              💊 CHỈ ĐỊNH DÙNG THUỐC:
-            </Title>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
+            {/* Facility Header */}
+            <div className="prescription-facility-info">
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#0369a1', textTransform: 'uppercase' }}>
+                  BỆNH VIỆN ĐA KHOA THỦ DẦU MỘT - HOSPITAL AI
+                </div>
+                <div style={{ fontSize: 11, color: '#475569' }}>
+                  Địa chỉ: Số 01 Đường Lê Lợi, TP. Thủ Dầu Một, Bình Dương
+                </div>
+                <div style={{ fontSize: 11, color: '#475569' }}>
+                  Điện thoại: (0274) 3822 999 • Mã CSKCBT Quốc gia: 74001
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <Tag color="blue" style={{ fontFamily: 'monospace', fontSize: 13, padding: '4px 10px', fontWeight: 700 }}>
+                  Mã Đơn: {examToPrint.examinationCode}
+                </Tag>
+                <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>
+                  Ngày tạo: {examToPrint.examinationDate || new Date().toLocaleDateString('vi-VN')}
+                </div>
+              </div>
+            </div>
+
+            {/* Prescription Title */}
+            <div className="prescription-title-main">
+              <h2>ĐƠN THUỐC ĐIỆN TỬ (E-PRESCRIPTION)</h2>
+              <p>(Ban hành theo Thông tư 27/2021/TT-BYT của Bộ Y Tế)</p>
+            </div>
+
+            {/* Patient Administrative Info */}
+            <div className="prescription-info-grid">
+              <div>
+                Họ và tên người bệnh: <strong style={{ textTransform: 'uppercase', color: '#0369a1', fontSize: 14 }}>{examToPrint.patientName}</strong>
+              </div>
+              <div>
+                Tuổi / Giới tính: <strong>{examToPrint.patientAge} tuổi • {examToPrint.patientGender}</strong>
+              </div>
+              <div>
+                Mã định danh BN: <strong style={{ fontFamily: 'monospace' }}>{examToPrint.patientCode}</strong>
+              </div>
+              <div>
+                Chỉ số sinh hiệu: <strong>{examToPrint.pulseRate} bpm • {examToPrint.bloodPressure} mmHg</strong>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                Chẩn đoán bệnh: <strong style={{ color: '#0284c7', fontSize: 14 }}>[{examToPrint.icd10Code}] {examToPrint.icd10Name}</strong>
+              </div>
+            </div>
+
+            {/* Medicine Prescription Table */}
+            <div style={{ fontWeight: 700, color: '#0369a1', marginBottom: 8, fontSize: 13 }}>
+              💊 CHỈ ĐỊNH DÙNG THUỐC ĐIỆN TỬ:
+            </div>
+            <table className="prescription-table">
               <thead>
-                <tr style={{ backgroundColor: '#e0f2fe', color: '#0369a1', textAlign: 'left', fontSize: 13 }}>
-                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>STT</th>
-                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>Tên thuốc & Hoạt chất</th>
-                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>SL</th>
-                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>Đơn vị</th>
-                  <th style={{ padding: '8px', border: '1px solid #bae6fd' }}>Hướng dẫn sử dụng</th>
+                <tr>
+                  <th style={{ width: '6%', textAlign: 'center' }}>STT</th>
+                  <th style={{ width: '40%' }}>Tên thuốc & Hàm lượng</th>
+                  <th style={{ width: '10%', textAlign: 'center' }}>Số lượng</th>
+                  <th style={{ width: '10%', textAlign: 'center' }}>Đơn vị</th>
+                  <th style={{ width: '34%' }}>Liều dùng & Cách sử dụng</th>
                 </tr>
               </thead>
               <tbody>
                 {examToPrint.prescriptionDetails?.map((item, idx) => (
-                  <tr key={idx} style={{ fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{idx + 1}</td>
-                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', fontWeight: 600, color: '#0f172a' }}>{item.medicineName}</td>
-                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 700 }}>{item.quantity}</td>
-                    <td style={{ padding: '8px', border: '1px solid #e2e8f0' }}>{item.unit}</td>
-                    <td style={{ padding: '8px', border: '1px solid #e2e8f0', fontStyle: 'italic', color: '#334155' }}>{item.dosageInstruction}</td>
+                  <tr key={idx}>
+                    <td style={{ textAlign: 'center', fontWeight: 700 }}>{idx + 1}</td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.medicineName}</div>
+                      <div style={{ fontSize: 11, color: '#64748b' }}>Hoạt chất: Chuẩn Dược điển Việt Nam</div>
+                    </td>
+                    <td style={{ textAlign: 'center', fontWeight: 800, color: '#0284c7' }}>{item.quantity}</td>
+                    <td style={{ textAlign: 'center' }}>{item.unit}</td>
+                    <td style={{ fontStyle: 'italic', color: '#334155' }}>{item.dosageInstruction}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            {/* Advice & Signatures */}
-            <Row gutter={16} style={{ marginTop: 20 }}>
-              <Col span={14}>
-                <Text strong style={{ color: '#0369a1' }}>Lời dặn của Bác sĩ điều trị:</Text>
-                <div style={{ fontSize: 12, color: '#475569', marginTop: 4, fontStyle: 'italic' }}>
-                  - Uống thuốc đúng giờ, đúng liều lượng chỉ định.<br />
-                  - Nghỉ ngơi hợp lý, tái khám theo hẹn hoặc khi có dấu hiệu bất thường.<br />
-                  - Mang theo đơn thuốc này khi đến tái khám.
+            {/* Advice & Verification Footer */}
+            <div className="prescription-footer">
+              <div style={{ maxWidth: '55%' }}>
+                <div style={{ fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>📌 Lời dặn của Bác sĩ điều trị:</div>
+                <div style={{ fontSize: 11.5, color: '#475569', fontStyle: 'italic', lineHeight: 1.6 }}>
+                  1. Uống thuốc đúng liều lượng, đúng thời gian theo hướng dẫn.<br />
+                  2. Tái khám sau khi hết thuốc hoặc có dấu hiệu bất thường.<br />
+                  3. Mang theo đơn thuốc này khi đến tái khám tại bệnh viện.
                 </div>
-              </Col>
-              <Col span={10} style={{ textAlign: 'center' }}>
-                <Text style={{ fontSize: 12, color: '#64748b' }}>
-                  Hà Nội, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}
-                </Text>
-                <div style={{ fontWeight: 700, color: '#0f172a', marginTop: 4 }}>BÁC SĨ KÊ ĐƠN</div>
-                <div style={{ border: '2px dashed #10b981', padding: '6px 12px', borderRadius: 8, display: 'inline-block', marginTop: 10, backgroundColor: '#ecfdf5' }}>
-                  <Text style={{ fontSize: 11, color: '#059669', fontWeight: 700, display: 'block' }}>
+              </div>
+
+              {/* Dynamic QR Verification Box */}
+              <div className="prescription-qr-box">
+                <QRCodeSVG
+                  value={`https://hospital-ai.vn/verify-prescription?code=${examToPrint.examinationCode}&patient=${examToPrint.patientCode}`}
+                  size={72}
+                  level="H"
+                  includeMargin={false}
+                />
+                <div style={{ fontSize: 9, color: '#0369a1', fontWeight: 800, textAlign: 'center', marginTop: 2 }}>
+                  MÃ TRA CỨU ĐƠN THUỐC
+                </div>
+              </div>
+
+              {/* Doctor Sign Box */}
+              <div style={{ textAlign: 'center', minWidth: 160 }}>
+                <div style={{ fontSize: 11, color: '#64748b' }}>
+                  Thủ Dầu Một, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}
+                </div>
+                <div style={{ fontWeight: 800, color: '#0f172a', marginTop: 2, fontSize: 12 }}>BÁC SĨ KÊ ĐƠN</div>
+                <div style={{ border: '2px dashed #10b981', padding: '4px 10px', borderRadius: 8, display: 'inline-block', marginTop: 8, backgroundColor: '#ecfdf5' }}>
+                  <div style={{ fontSize: 10, color: '#059669', fontWeight: 700 }}>
                     ✔ CHỮ KÝ SỐ ĐÃ XÁC THỰC
-                  </Text>
-                  <Text style={{ fontSize: 12, color: '#047857', fontWeight: 800 }}>{examToPrint.doctorName}</Text>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#047857', fontWeight: 800 }}>{examToPrint.doctorName}</div>
                 </div>
-              </Col>
-            </Row>
+              </div>
+            </div>
           </div>
         )}
       </Modal>

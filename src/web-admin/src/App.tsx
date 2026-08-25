@@ -10,11 +10,11 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (isDarkMode) {
-      document.documentElement.classList.add('dark-mode');
-      document.body.classList.add('dark-mode');
+      document.documentElement.classList.add('dark', 'dark-mode');
+      document.body.classList.add('dark', 'dark-mode');
     } else {
-      document.documentElement.classList.remove('dark-mode');
-      document.body.classList.remove('dark-mode');
+      document.documentElement.classList.remove('dark', 'dark-mode');
+      document.body.classList.remove('dark', 'dark-mode');
     }
   }, [isDarkMode]);
 

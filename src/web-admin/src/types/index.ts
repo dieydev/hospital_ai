@@ -33,6 +33,7 @@ export interface Patient {
   tenNguoiThan?: string;
   soDienThoaiNguoiThan?: string;
   quanHeNguoiThan?: string;
+  isConsentData?: boolean; // NĐ 13/2023/NĐ-CP
   ngayTao?: string;
   ngayCapNhat?: string;
 }

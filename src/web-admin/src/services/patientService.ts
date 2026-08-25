@@ -26,6 +26,7 @@ export interface PatientCreateParams {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   emergencyContactRelation?: string;
+  isConsentData?: boolean; // NĐ 13/2023/NĐ-CP
 }
 
 const FALLBACK_PATIENTS: Patient[] = [
@@ -560,6 +561,7 @@ export const patientService = {
         tenNguoiThan: params.emergencyContactName,
         soDienThoaiNguoiThan: params.emergencyContactPhone,
         quanHeNguoiThan: params.emergencyContactRelation,
+        isConsentData: params.isConsentData,
         ngayTao: new Date().toISOString().substring(0, 10),
       };
       localPatients.unshift(newP);
@@ -591,6 +593,7 @@ export const patientService = {
         tenNguoiThan: params.emergencyContactName,
         soDienThoaiNguoiThan: params.emergencyContactPhone,
         quanHeNguoiThan: params.emergencyContactRelation,
+        isConsentData: params.isConsentData,
         ngayCapNhat: new Date().toISOString().substring(0, 10),
       };
       localPatients[index] = updated;

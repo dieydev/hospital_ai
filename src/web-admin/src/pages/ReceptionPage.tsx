@@ -28,6 +28,7 @@ import {
 import { useThemeStore } from '../store/useThemeStore';
 import { queueService, DepartmentItem, QueueTicketItem } from '../services/queueService';
 import { patientService, Patient } from '../services/patientService';
+import { signalrService } from '../services/signalrService';
 import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
@@ -71,6 +72,10 @@ export const ReceptionPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    const unsubscribe = signalrService.subscribeQueueUpdates(() => {
+      fetchData();
+    });
+    return () => unsubscribe();
   }, [fetchData]);
 
   // Handle Issue Ticket

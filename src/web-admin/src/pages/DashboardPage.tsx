@@ -1,5 +1,5 @@
-import React from 'react';
-import { Row, Col, Card, Typography, Table, Tag, Button, Progress } from 'antd';
+import React, { useEffect } from 'react';
+import { Row, Col, Card, Table, Tag, Button, Progress } from 'antd';
 import {
   UserOutlined,
   ScheduleOutlined,
@@ -16,12 +16,18 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { formatCurrency } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/useThemeStore';
-
-const { Text } = Typography;
+import { signalrService } from '../services/signalrService';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useThemeStore();
+
+  useEffect(() => {
+    const unsubscribe = signalrService.subscribeQueueUpdates(() => {
+      console.log('⚡ Dashboard live queue real-time event received');
+    });
+    return () => unsubscribe();
+  }, []);
 
   const chartData = [
     { name: 'Khoa Nội', lutKham: 142, revenue: 28500000 },
@@ -67,11 +73,26 @@ export const DashboardPage: React.FC = () => {
       title: 'Bệnh nhân',
       dataIndex: 'hoTen',
       key: 'hoTen',
-      render: (text: string) => <Text strong className="text-slate-900 dark:text-slate-100 font-semibold">{text}</Text>
+      render: (text: string) => <span className="text-slate-900 dark:text-slate-100 font-semibold">{text}</span>
     },
-    { title: 'Phòng khám', dataIndex: 'phong', key: 'phong' },
-    { title: 'Bác sĩ phụ trách', dataIndex: 'bacSi', key: 'bacSi' },
-    { title: 'Thời gian cấp', dataIndex: 'time', key: 'time', render: (t: string) => <Text type="secondary">{t}</Text> },
+    {
+      title: 'Phòng khám',
+      dataIndex: 'phong',
+      key: 'phong',
+      render: (text: string) => <span className="text-slate-800 dark:text-slate-200">{text}</span>
+    },
+    {
+      title: 'Bác sĩ phụ trách',
+      dataIndex: 'bacSi',
+      key: 'bacSi',
+      render: (text: string) => <span className="text-slate-800 dark:text-slate-200">{text}</span>
+    },
+    {
+      title: 'Thời gian cấp',
+      dataIndex: 'time',
+      key: 'time',
+      render: (t: string) => <span className="text-slate-500 dark:text-slate-400 text-xs font-mono">{t}</span>
+    },
     {
       title: 'Trạng thái khám',
       dataIndex: 'trangThai',
@@ -135,16 +156,16 @@ export const DashboardPage: React.FC = () => {
           <Card bordered={false} className="rounded-xl border-l-4 border-l-sky-600 bg-white dark:bg-slate-800 hover-lift">
             <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">TỔNG TIẾP NHẬN HÔM NAY</Text>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">158</h2>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300 block">TỔNG TIẾP NHẬN HÔM NAY</span>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">158</h2>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-sky-50 dark:bg-slate-900 text-sky-600 flex items-center justify-center text-lg shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-sky-50 dark:bg-slate-900/80 text-sky-600 dark:text-sky-400 flex items-center justify-center text-lg shrink-0">
                 <UserOutlined />
               </div>
             </div>
             <div className="mt-2 flex items-center gap-2">
               <Tag color="green" icon={<ArrowUpOutlined />} className="m-0 font-semibold text-xs">+12.5%</Tag>
-              <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400">Tăng so với hôm qua</Text>
+              <span className="text-xs text-slate-500 dark:text-slate-300">Tăng so với hôm qua</span>
             </div>
           </Card>
         </Col>
@@ -153,12 +174,12 @@ export const DashboardPage: React.FC = () => {
           <Card bordered={false} className="rounded-xl border-l-4 border-l-amber-500 bg-white dark:bg-slate-800 hover-lift">
             <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">ĐẶT LỊCH MOBILE APP</Text>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
-                  45 <span className="text-xs font-normal text-slate-400">/ 50 lượt</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300 block">ĐẶT LỊCH MOBILE APP</span>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                  45 <span className="text-xs font-normal text-slate-400 dark:text-slate-300">/ 50 lượt</span>
                 </h2>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-slate-900 text-amber-500 flex items-center justify-center text-lg shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-slate-900/80 text-amber-500 dark:text-amber-400 flex items-center justify-center text-lg shrink-0">
                 <ScheduleOutlined />
               </div>
             </div>
@@ -170,14 +191,14 @@ export const DashboardPage: React.FC = () => {
           <Card bordered={false} className="rounded-xl border-l-4 border-l-emerald-500 bg-white dark:bg-slate-800 hover-lift">
             <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">CA KHÁM HOÀN THÀNH</Text>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">92</h2>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300 block">CA KHÁM HOÀN THÀNH</span>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">92</h2>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-slate-900 text-emerald-500 flex items-center justify-center text-lg shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-slate-900/80 text-emerald-500 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0">
                 <CheckCircleFilled />
               </div>
             </div>
-            <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400 block mt-2">66 ca đang xử lý & chờ kết quả</Text>
+            <span className="text-xs text-slate-500 dark:text-slate-300 block mt-2">66 ca đang xử lý & chờ kết quả</span>
           </Card>
         </Col>
 
@@ -185,14 +206,14 @@ export const DashboardPage: React.FC = () => {
           <Card bordered={false} className="rounded-xl border-l-4 border-l-indigo-500 bg-white dark:bg-slate-800 hover-lift">
             <div className="flex justify-between items-start">
               <div>
-                <Text type="secondary" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">DOANH THU TẠM TÍNH</Text>
-                <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{formatCurrency(158800000)}</h2>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300 block">DOANH THU TẠM TÍNH</span>
+                <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-300 mt-1">{formatCurrency(158800000)}</h2>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-slate-900 text-indigo-500 flex items-center justify-center text-lg shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-slate-900/80 text-indigo-500 dark:text-indigo-400 flex items-center justify-center text-lg shrink-0">
                 <DollarOutlined />
               </div>
             </div>
-            <Text type="secondary" className="text-xs text-slate-500 dark:text-slate-400 block mt-2">BHYT: 62% • VietQR: 38%</Text>
+            <span className="text-xs text-slate-500 dark:text-slate-300 block mt-2">BHYT: 62% • VietQR: 38%</span>
           </Card>
         </Col>
       </Row>

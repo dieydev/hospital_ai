@@ -1,0 +1,141 @@
+/* 
+  Mẫu In Đơn Thuốc Điện Tử & Phiếu Khám SOAP Chuẩn Bộ Y Tế (A4 Portrait)
+  Theo chuẩn Thông tư 27/2021/TT-BYT & Quyết định 808/QĐ-BYT
+*/
+
+@media print {
+  /* Hide all non-printable UI elements (Sidebar, Navbar, Modals Backdrop, Buttons) */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Only display the printable prescription container */
+  #printable-prescription, #printable-prescription * {
+    visibility: visible !important;
+  }
+
+  #printable-prescription {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Be Vietnam Pro', 'Times New Roman', Times, serif !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm 15mm 15mm;
+  }
+
+  /* Force background colors and borders in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* Screen Preview Styling for Prescription Modal */
+.prescription-container {
+  background: #ffffff;
+  color: #0f172a;
+  font-family: 'Be Vietnam Pro', 'Times New Roman', sans-serif;
+  padding: 24px 32px;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.08);
+}
+
+.prescription-header-national {
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #0284c7;
+}
+
+.prescription-facility-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.prescription-title-main {
+  text-align: center;
+  margin: 16px 0;
+}
+
+.prescription-title-main h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.prescription-title-main p {
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.prescription-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 1px dashed #bae6fd;
+}
+
+.prescription-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.prescription-table th {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 12px;
+  border: 1px solid #bae6fd;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.prescription-table td {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.prescription-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.prescription-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  background: #f0f9ff;
+}
