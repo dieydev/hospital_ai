@@ -29,6 +29,10 @@ export interface IssueTicketParams {
   patientId: string;
   departmentId: string;
   priority?: 'Normal' | 'Priority' | 'Emergency';
+  patientName?: string;
+  patientCode?: string;
+  patientAge?: number;
+  patientGender?: string;
 }
 
 const FALLBACK_DEPARTMENTS: DepartmentItem[] = [
@@ -39,7 +43,7 @@ const FALLBACK_DEPARTMENTS: DepartmentItem[] = [
   { id: 'dept-05', departmentName: 'Phòng X-Quang & CLS', location: 'Tầng 1 - Khu B', roomType: 'Lab' },
 ];
 
-let localQueueTickets: QueueTicketItem[] = [
+export const localQueueTickets: QueueTicketItem[] = [
   {
     id: 'ticket-101',
     patientId: '276-15f20b4ed6be',
@@ -121,77 +125,24 @@ export const queueService = {
   },
 
   async getTodayQueue(departmentId?: string, status?: string): Promise<QueueTicketItem[]> {
-    try {
-      const response = await api.get('/queue', {
-        params: { departmentId, status },
-      });
-      return response.data || [];
-    } catch {
-      let filtered = localQueueTickets;
-      if (departmentId) {
-        filtered = filtered.filter((q) => q.departmentId === departmentId);
-      }
-      if (status) {
-        filtered = filtered.filter((q) => q.status === status);
-      }
-      return filtered;
-    }
+    const response = await api.get('/queue', {
+      params: { departmentId, status },
+    });
+    return response.data || [];
   },
 
   async issueQueueTicket(params: IssueTicketParams): Promise<QueueTicketItem> {
-    try {
-      const response = await api.post('/queue/issue', params);
-      return response.data;
-    } catch {
-      const lastSeq = localQueueTickets.length > 0 ? Math.max(...localQueueTickets.map((q) => q.sequenceNumber)) : 100;
-      const newTicket: QueueTicketItem = {
-        id: `ticket-${Date.now()}`,
-        patientId: params.patientId,
-        patientCode: `BN2026${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        patientName: 'Bệnh nhân Mới Tiếp Nhận',
-        patientGender: 'Nam',
-        patientAge: 30,
-        identityCardNumber: '038090000000',
-        departmentId: params.departmentId,
-        departmentName: 'Khoa Nội Tổng Hợp',
-        location: 'Phòng 102 - Tầng 1',
-        sequenceNumber: lastSeq + 1,
-        status: 'Waiting',
-        priority: params.priority || 'Normal',
-        createdAt: new Date().toISOString(),
-      };
-      localQueueTickets.push(newTicket);
-      return newTicket;
-    }
+    const response = await api.post('/queue/issue', params);
+    return response.data;
   },
 
   async updateQueueTicketStatus(ticketId: string, status: string): Promise<QueueTicketItem> {
-    try {
-      const response = await api.put(`/queue/${ticketId}/status`, { status });
-      return response.data;
-    } catch {
-      const index = localQueueTickets.findIndex((q) => q.id === ticketId);
-      if (index !== -1) {
-        localQueueTickets[index].status = status as any;
-        return localQueueTickets[index];
-      }
-      throw new Error('Không tìm thấy phiếu hàng chờ');
-    }
+    const response = await api.put(`/queue/${ticketId}/status`, { status });
+    return response.data;
   },
 
   async callNextPatient(departmentId: string): Promise<QueueTicketItem | null> {
-    try {
-      const response = await api.post(`/queue/departments/${departmentId}/call-next`);
-      return response.data;
-    } catch {
-      const waiting = localQueueTickets.find(
-        (q) => (q.departmentId === departmentId || !departmentId) && q.status === 'Waiting'
-      );
-      if (waiting) {
-        waiting.status = 'Calling';
-        return waiting;
-      }
-      return null;
-    }
+    const response = await api.post(`/queue/departments/${departmentId}/call-next`);
+    return response.data;
   },
 };

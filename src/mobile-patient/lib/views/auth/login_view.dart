@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
-import '../../models/patient_model.dart';
 import '../../providers/auth_provider.dart';
 import 'register_view.dart';
 
@@ -16,11 +15,7 @@ class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController(text: 'patient01');
   final _passwordController = TextEditingController(text: '123456');
-  final _phoneOtpController = TextEditingController(text: '0987654321');
-  final _otpCodeController = TextEditingController(text: '888888');
 
-  int _loginMethodTab = 0; // 0: Mật khẩu, 1: Mã OTP SĐT
-  bool _otpSent = false;
   bool _obscurePassword = true;
   bool _agreeTerms = true;
   bool _isLoading = false;
@@ -30,8 +25,7 @@ class _LoginViewState extends State<LoginView> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _phoneOtpController.dispose();
-    _otpCodeController.dispose();
+
     super.dispose();
   }
 
@@ -47,31 +41,37 @@ class _LoginViewState extends State<LoginView> {
       return;
     }
 
+
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 900));
 
-    if (!mounted) return;
+    try {
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text;
+      
+      await context.read<AuthProvider>().login(username, password);
 
-    final username = _usernameController.text.trim();
-    final samplePatient = PatientModel(
-      id: 'P2026001',
-      maBenhNhan: 'BN20260810',
-      hoTen: username == 'dr.duy' ? 'BS. CKII. Nguyễn Thanh Duy' : 'Nguyễn Văn An',
-      gioiTinh: 'Nam',
-      ngaySinh: '15/05/1990',
-      soCCCD: '012345678901',
-      maTheBHYT: 'DN4010123456789',
-    );
-
-    context.read<AuthProvider>().login('sample_jwt_token_${DateTime.now().millisecondsSinceEpoch}', samplePatient);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đăng nhập thành công! Chào mừng ${samplePatient.hoTen}'),
-        backgroundColor: AppTheme.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng nhập thành công!'),
+          backgroundColor: AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đăng nhập thất bại: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _handleBiometricLogin() async {
@@ -100,16 +100,7 @@ class _LoginViewState extends State<LoginView> {
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
             onPressed: () {
               Navigator.pop(ctx);
-              final bioPatient = PatientModel(
-                id: 'P_BIO_2026',
-                maBenhNhan: 'BN20260777',
-                hoTen: 'Nguyễn Văn An (Fingerprint/FaceID)',
-                gioiTinh: 'Nam',
-                ngaySinh: '15/05/1990',
-                soCCCD: '012345678901',
-                maTheBHYT: 'DN4010123456789',
-              );
-              context.read<AuthProvider>().login('biometric_token_2026', bioPatient);
+              context.read<AuthProvider>().login('patient01', '123456');
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('⚡ Đăng nhập Vân tay / Face ID thành công!'), backgroundColor: AppTheme.primaryColor),
               );
@@ -161,16 +152,7 @@ class _LoginViewState extends State<LoginView> {
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
             onPressed: () {
               Navigator.pop(ctx);
-              final qrPatient = PatientModel(
-                id: 'P_QR_2026',
-                maBenhNhan: 'BN20260999',
-                hoTen: 'Nguyễn Văn An (Quét QR BHYT)',
-                gioiTinh: 'Nam',
-                ngaySinh: '15/05/1990',
-                soCCCD: '012345678901',
-                maTheBHYT: 'DN4010123456789',
-              );
-              context.read<AuthProvider>().login('qr_token_2026', qrPatient);
+              context.read<AuthProvider>().login('patient01', '123456');
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('📷 Nhận diện Thẻ BHYT thành công! Đã đăng nhập.'), backgroundColor: AppTheme.primaryColor),
               );
@@ -184,41 +166,18 @@ class _LoginViewState extends State<LoginView> {
 
   void _handleGoogleLogin() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
+
 
     if (!mounted) return;
 
-    final googlePatient = PatientModel(
-      id: 'P_GOOGLE_2026',
-      maBenhNhan: 'BN20260899',
-      hoTen: 'Nguyễn Văn An (Google)',
-      gioiTinh: 'Nam',
-      ngaySinh: '15/05/1990',
-      soCCCD: '012345678901',
-      maTheBHYT: 'DN4010123456789',
-    );
+    await context.read<AuthProvider>().login('patient01', '123456');
 
-    context.read<AuthProvider>().login('google_oauth_token_${DateTime.now().millisecondsSinceEpoch}', googlePatient);
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Đăng nhập thành công với tài khoản Google!'),
         backgroundColor: AppTheme.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _fillSampleAccount(String username, String password) {
-    setState(() {
-      _usernameController.text = username;
-      _passwordController.text = password;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã tự động điền tài khoản mẫu: $username'),
-        duration: const Duration(seconds: 1),
-        backgroundColor: AppTheme.primaryDark,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -344,7 +303,7 @@ class _LoginViewState extends State<LoginView> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.2),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.2),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -370,7 +329,7 @@ class _LoginViewState extends State<LoginView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: const Color(0xFFBAE6FD)),
                     ),
@@ -427,72 +386,6 @@ class _LoginViewState extends State<LoginView> {
                             style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                           ),
 
-                          const SizedBox(height: 16),
-
-                          // Login Method Segmented Control (Tabs)
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () => setState(() => _loginMethodTab = 0),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      decoration: BoxDecoration(
-                                        color: _loginMethodTab == 0 ? Colors.white : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(8),
-                                        boxShadow: _loginMethodTab == 0
-                                            ? [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
-                                            : [],
-                                      ),
-                                      child: Text(
-                                        'Tài khoản & Mật khẩu',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: _loginMethodTab == 0 ? AppTheme.primaryColor : const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () => setState(() => _loginMethodTab = 1),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      decoration: BoxDecoration(
-                                        color: _loginMethodTab == 1 ? Colors.white : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(8),
-                                        boxShadow: _loginMethodTab == 1
-                                            ? [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
-                                            : [],
-                                      ),
-                                      child: Text(
-                                        'Mã OTP Số điện thoại',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: _loginMethodTab == 1 ? AppTheme.primaryColor : const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          if (_loginMethodTab == 0) ...[
                             // Username / Phone Input
                             const Text(
                               'Tài khoản / Số điện thoại / Email *',
@@ -535,6 +428,7 @@ class _LoginViewState extends State<LoginView> {
                                     color: const Color(0xFF64748B),
                                   ),
                                   onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+
                                 ),
                                 filled: true,
                                 fillColor: const Color(0xFFF8FAFC),
@@ -546,74 +440,6 @@ class _LoginViewState extends State<LoginView> {
                               ),
                               validator: (val) => val == null || val.isEmpty ? 'Vui lòng nhập mật khẩu' : null,
                             ),
-                          ] else ...[
-                            // OTP Phone Input
-                            const Text(
-                              'Số điện thoại đăng ký KCB *',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF334155)),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _phoneOtpController,
-                                    keyboardType: TextInputType.phone,
-                                    decoration: InputDecoration(
-                                      hintText: '0987654321',
-                                      prefixIcon: const Icon(Icons.phone_android, color: AppTheme.primaryColor),
-                                      filled: true,
-                                      fillColor: const Color(0xFFF8FAFC),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Color(0xFFBAE6FD)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryColor,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                                  ),
-                                  onPressed: () {
-                                    setState(() => _otpSent = true);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('📱 Đã gửi mã OTP (888888) tới SĐT của bạn!'), backgroundColor: Colors.green),
-                                    );
-                                  },
-                                  child: Text(_otpSent ? 'Gửi lại' : 'Gửi OTP', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // OTP Code Input
-                            const Text(
-                              'Nhập mã OTP 6 chữ số *',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF334155)),
-                            ),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _otpCodeController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: 'Nhập mã 6 số (VD: 888888)',
-                                prefixIcon: const Icon(Icons.security, color: AppTheme.primaryColor),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFBAE6FD)),
-                                ),
-                              ),
-                            ),
-                          ],
 
                           const SizedBox(height: 12),
 
@@ -658,7 +484,7 @@ class _LoginViewState extends State<LoginView> {
                                 backgroundColor: AppTheme.primaryColor,
                                 foregroundColor: Colors.white,
                                 elevation: 4,
-                                shadowColor: AppTheme.primaryColor.withOpacity(0.4),
+                                shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -754,53 +580,7 @@ class _LoginViewState extends State<LoginView> {
 
                           const SizedBox(height: 20),
 
-                          // Quick Sample Credentials Selector
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0F9FF),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFBAE6FD)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Row(
-                                  children: [
-                                    Icon(Icons.touch_app_outlined, size: 16, color: AppTheme.primaryDark),
-                                    SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        'Chọn nhanh tài khoản mẫu thử nghiệm:',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 6,
-                                  children: [
-                                    ActionChip(
-                                      avatar: const Icon(Icons.person, size: 14, color: AppTheme.primaryColor),
-                                      label: const Text('Bệnh nhân: patient01', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                                      backgroundColor: Colors.white,
-                                      side: const BorderSide(color: Color(0xFFBAE6FD)),
-                                      onPressed: () => _fillSampleAccount('patient01', '123456'),
-                                    ),
-                                    ActionChip(
-                                      avatar: const Icon(Icons.medication_liquid, size: 14, color: Color(0xFF0EA5E9)),
-                                      label: const Text('Bác sĩ: dr.duy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                                      backgroundColor: Colors.white,
-                                      side: const BorderSide(color: Color(0xFFBAE6FD)),
-                                      onPressed: () => _fillSampleAccount('dr.duy', '123456'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
+
                         ],
                       ),
                     ),

@@ -27,6 +27,7 @@ builder.Services.AddDbContext<HospitalDbContext>(options =>
     ));
 
 builder.Services.AddScoped<IExaminationService, ExaminationService>();
+builder.Services.AddScoped<IPaymentService, VNPayService>();
 
 var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT";
 var issuer = builder.Configuration["JwtSettings:Issuer"] ?? "HospitalAI.Backend";

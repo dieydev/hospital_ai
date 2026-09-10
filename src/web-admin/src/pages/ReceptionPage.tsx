@@ -104,9 +104,12 @@ export const ReceptionPage: React.FC = () => {
       }
 
       const priorityVal = values.triageLevel || 'Normal';
+      const depts = await queueService.getDepartments();
+      const targetDeptId = values.departmentId || (depts.length > 0 ? depts[0].id : '');
+
       const ticket = await queueService.issueQueueTicket({
         patientId: targetPatientId,
-        departmentId: values.departmentId || departments[0]?.id || 'dept-01',
+        departmentId: targetDeptId,
         priority: priorityVal === 'Emergency' || priorityVal === 'Elderly' || priorityVal === 'Pregnant' || priorityVal === 'Child' ? 'Emergency' : 'Normal',
       });
 

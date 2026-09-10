@@ -69,6 +69,7 @@ export const ExaminationsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [examinations, setExaminations] = useState<ExaminationItem[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [queueList, setQueueList] = useState<any[]>([]); // Danh sách Hàng chờ
   const [searchText, setSearchText] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -159,12 +160,16 @@ export const ExaminationsPage: React.FC = () => {
   const fetchExaminations = useCallback(async () => {
     setLoading(true);
     try {
-      const [examRes, patientRes] = await Promise.all([
+      // Import queueService động để tránh lỗi biên dịch nếu quên import ở top level
+      const { queueService } = await import('../services/queueService');
+      const [examRes, patientRes, queueRes] = await Promise.all([
         examinationService.getExaminations(searchText),
         patientService.getPatients(),
+        queueService.getTodayQueue('dept-01'), // Mặc định giả lập BS khoa Nội
       ]);
       setExaminations(examRes);
       setPatients(patientRes.items || []);
+      setQueueList(queueRes.filter((q: any) => q.status === 'Waiting' || q.status === 'Calling'));
     } catch {
       showErrorAlert('Lỗi tải dữ liệu', 'Không thể kết nối danh sách khám bệnh.');
     } finally {
@@ -241,6 +246,12 @@ export const ExaminationsPage: React.FC = () => {
         prescriptionDetails: prescriptions,
         serviceOrderDetails: services,
       });
+
+      // Cập nhật trạng thái phiếu khám thành 'Finished' để xóa khỏi hàng đợi
+      if (values.ticketId) {
+        const { queueService } = await import('../services/queueService');
+        await queueService.updateQueueTicketStatus(values.ticketId, 'Finished');
+      }
 
       showSuccessAlert(
         'Hoàn tất Ca Khám & Kê Đơn Thuốc!',
@@ -410,7 +421,84 @@ export const ExaminationsPage: React.FC = () => {
         </Space>
       </div>
 
-      {/* Main Table Card */}
+      {/* Hàng Đợi Bệnh Nhân Đang Chờ (Waiting Queue) */}
+      <Card
+        title={
+          <Space>
+            <SoundOutlined style={{ color: '#f59e0b', fontSize: 18 }} />
+            <span style={{ color: isDarkMode ? '#f8fafc' : '#0f172a', fontWeight: 700 }}>Hàng đợi chờ Khám (Cập nhật Real-time)</span>
+            <Badge count={queueList.length} style={{ backgroundColor: '#10b981' }} />
+          </Space>
+        }
+        style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd', marginBottom: 24 }}
+        bodyStyle={{ padding: 0 }}
+      >
+        <Table
+          dataSource={queueList}
+          rowKey="id"
+          pagination={false}
+          columns={[
+            {
+              title: 'STT',
+              dataIndex: 'sequenceNumber',
+              render: (t) => <Text strong style={{ fontSize: 20, color: '#ef4444' }}>#{t}</Text>,
+              width: 80,
+            },
+            {
+              title: 'Họ tên & Mã BN',
+              key: 'patientInfo',
+              render: (_, record) => (
+                <div>
+                  <Text strong style={{ fontSize: 15, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{record.patientName}</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>{record.patientGender} • {record.patientAge} tuổi • Mã: {record.patientCode}</Text>
+                </div>
+              ),
+            },
+            {
+              title: 'Phân loại',
+              dataIndex: 'priority',
+              render: (t) => (
+                <Tag color={t === 'Normal' ? 'blue' : 'volcano'}>{t === 'Normal' ? 'Thường' : 'Ưu tiên'}</Tag>
+              ),
+            },
+            {
+              title: 'Thao tác',
+              key: 'actions',
+              render: (_, record) => (
+                <Space>
+                  <Button
+                    icon={<SoundOutlined />}
+                    onClick={() => handleSpeakCallQueue(record)}
+                  >
+                    Gọi Loa
+                  </Button>
+                  <Button
+                    type="primary"
+                    style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+                    icon={<MedicineBoxOutlined />}
+                    onClick={() => {
+                      form.resetFields();
+                      setDrugSafetyWarnings([]);
+                      // Tự động điền bệnh nhân vào form khám
+                      form.setFieldsValue({
+                        patientId: record.patientId, // In reality, this requires patientId to be in the patients list
+                        subjective: 'Đau đầu, mệt mỏi', // Mock
+                        ticketId: record.id, // Lưu lại ID của vé chờ
+                      });
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    Khám Bệnh
+                  </Button>
+                </Space>
+              ),
+            }
+          ]}
+        />
+      </Card>
+
+      {/* Main Table Card (Lịch sử khám) */}
       <Card style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd' }}>
         <Table
           dataSource={examinations}
@@ -450,6 +538,9 @@ export const ExaminationsPage: React.FC = () => {
                 ),
                 children: (
                   <div style={{ marginTop: 12 }}>
+                    <Form.Item name="ticketId" hidden>
+                      <Input />
+                    </Form.Item>
                     <Form.Item
                       label="Chọn Bệnh nhân Khám"
                       name="patientId"

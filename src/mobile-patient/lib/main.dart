@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/appointment_provider.dart';
+import 'providers/queue_provider.dart';
+import 'providers/patient_provider.dart';
+import 'providers/settings_provider.dart';
 import 'views/auth/login_view.dart';
 import 'views/main_layout_view.dart';
 
@@ -10,6 +14,10 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AppointmentProvider()..fetchDepartments()),
+        ChangeNotifierProvider(create: (_) => QueueProvider()..startPollingQueue()),
+        ChangeNotifierProvider(create: (_) => PatientProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: const HospitalAiPatientApp(),
     ),

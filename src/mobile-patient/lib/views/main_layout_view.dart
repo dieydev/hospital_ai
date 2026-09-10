@@ -38,9 +38,11 @@ class _MainLayoutViewState extends State<MainLayoutView> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeIn,
+        switchOutCurve: Curves.easeOut,
+        child: pages[_currentIndex],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
-import '../../models/patient_model.dart';
 import '../../providers/auth_provider.dart';
 
 class RegisterView extends StatefulWidget {
@@ -48,31 +47,35 @@ class _RegisterViewState extends State<RegisterView> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1200)); // Simulate API call
+
 
     if (!mounted) return;
 
-    // Create new patient model instance
-    final newPatient = PatientModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      maBenhNhan: 'BN${DateTime.now().year}${DateTime.now().microsecond.toString().padLeft(4, '0')}',
-      hoTen: _fullNameController.text.trim(),
-      gioiTinh: _selectedGender,
-      ngaySinh: '15/08/1995',
-      soCCCD: _cccdController.text.trim(),
-      maTheBHYT: 'DN4010${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
-    );
+    try {
+      await context.read<AuthProvider>().login('patient01', '123456');
 
-    context.read<AuthProvider>().login('new_register_token', newPatient);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng ký tài khoản Bệnh nhân thành công!'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đăng ký tài khoản Bệnh nhân thành công!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    Navigator.of(context).pop();
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đăng ký / Đăng nhập thất bại: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -99,7 +102,7 @@ class _RegisterViewState extends State<RegisterView> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

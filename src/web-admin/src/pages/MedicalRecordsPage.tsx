@@ -11,55 +11,32 @@ import {
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showToast } from '../utils/sweetAlert';
+import { examinationService, ExaminationItem } from '../services/examinationService';
 
 const { Title, Text } = Typography;
 
 export const MedicalRecordsPage: React.FC = () => {
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [selectedRecord, setSelectedRecord] = useState<ExaminationItem | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<ExaminationItem[]>([]);
   const { isDarkMode } = useThemeStore();
 
-  const historyItems = [
-    {
-      id: 'emr-001',
-      ngayKham: '2026-08-02',
-      maLuotKham: 'LK20260802-01',
-      bacSiKham: 'BS. CKII. Nguyễn Thanh Duy',
-      khoaKham: 'Khoa Nội Tổng Hợp',
-      chanDoanChinh: 'Viêm họng cấp tính, không đặc hiệu',
-      maICD10: 'J02.9',
-      trieuChung: 'Bệnh nhân đau họng 3 ngày, sốt 38°C, ho khan',
-      sinhHieu: 'Mạch: 78 bpm | HA: 125/80 mmHg | Nhiệt độ: 38.0°C | BMI: 23.0',
-      donThuoc: [
-        { tenThuoc: 'Paracetamol 500mg', soLuong: '20 viên', lieuDung: 'Sáng 1v, Tối 1v' },
-        { tenThuoc: 'Augmentin 1g', soLuong: '14 viên', lieuDung: 'Sáng 1v, Tối 1v' },
-      ],
-      xetNghiem: [
-        { ten: 'Công thức máu toàn phần (CBC)', ketQua: 'WBC 11.2 (Tăng nhẹ)' },
-        { ten: 'X-Quang Phổi thẳng', ketQua: 'Phế trường 2 bên sáng' },
-      ],
-      chiPhi: 385000,
-    },
-    {
-      id: 'emr-002',
-      ngayKham: '2026-05-14',
-      maLuotKham: 'LK20260514-08',
-      bacSiKham: 'BS. CKI. Lê Văn Tuấn',
-      khoaKham: 'Khoa Tiêu Hóa',
-      chanDoanChinh: 'Viêm dạ dày - tá tràng cấp',
-      maICD10: 'K29.7',
-      trieuChung: 'Đau thượng vị ợ chua, buồn nôn sau khi ăn đồ cay nóng',
-      sinhHieu: 'Mạch: 72 bpm | HA: 120/75 mmHg | Nhiệt độ: 36.8°C | BMI: 22.8',
-      donThuoc: [
-        { tenThuoc: 'Esomeprazole 40mg', soLuong: '14 viên', lieuDung: 'Sáng 1v trước ăn 30p' },
-        { tenThuoc: 'Phosphalugel (Sữa dạ dày)', soLuong: '20 gói', lieuDung: 'Uống khi đau 1 gói' },
-      ],
-      xetNghiem: [{ ten: 'Nội soi dạ dày không đau', ketQua: 'Niêm mạc hang vị sung huyết nhẹ' }],
-      chiPhi: 1250000,
-    },
-  ];
+  React.useEffect(() => {
+    fetchExaminations();
+  }, []);
 
-  const handleOpenPdf = (record: any) => {
+  const fetchExaminations = async () => {
+    try {
+      const data = await examinationService.getExaminations();
+      // Calculate chiPhi (total cost) for UI if needed, or we just map it.
+      setHistoryItems(data);
+    } catch (error) {
+      console.error("Lỗi khi tải dữ liệu:", error);
+      showToast('Lỗi khi tải dữ liệu khám bệnh', 'error');
+    }
+  };
+
+  const handleOpenPdf = (record: ExaminationItem) => {
     setSelectedRecord(record);
     setIsPdfModalOpen(true);
   };
@@ -123,27 +100,29 @@ export const MedicalRecordsPage: React.FC = () => {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <Text strong style={{ fontSize: 16, color: isDarkMode ? '#38bdf8' : '#0284c7' }}>
-                        {formatDate(item.ngayKham)} - {item.khoaKham}
+                        {formatDate(item.examinationDate)} - {item.departmentName}
                       </Text>
-                      <Tag color="purple">Mã ICD-10: {item.maICD10}</Tag>
+                      <Tag color="purple">Mã ICD-10: {item.icd10Code}</Tag>
                     </div>
 
                     <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                      <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Bác sĩ khám:</strong> {item.bacSiKham}
+                      <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Bác sĩ khám:</strong> {item.doctorName}
                     </p>
                     <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                      <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Triệu chứng:</strong> {item.trieuChung}
+                      <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Triệu chứng:</strong> {item.subjective}
                     </p>
                     <p style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
                       <strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Chẩn đoán:</strong>{' '}
-                      <Text strong style={{ color: isDarkMode ? '#f59e0b' : '#d97706' }}>{item.chanDoanChinh}</Text>
+                      <Text strong style={{ color: isDarkMode ? '#f59e0b' : '#d97706' }}>{item.icd10Name}</Text>
                     </p>
 
                     <Divider style={{ margin: '8px 0', borderColor: isDarkMode ? '#334155' : undefined }} />
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Text type="secondary" style={{ color: isDarkMode ? '#94a3b8' : undefined }}>
-                        Tổng chi phí lượt khám: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{formatCurrency(item.chiPhi)}</strong>
+                        Tổng chi phí lượt khám: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>
+                          {formatCurrency((item.prescriptionDetails?.reduce((sum, p) => sum + (p.unitPrice * p.quantity), 0) || 0) + (item.serviceOrderDetails?.reduce((sum, s) => sum + s.price, 0) || 0))}
+                        </strong>
                       </Text>
                       <Button type="link" icon={<FilePdfOutlined />} onClick={() => handleOpenPdf(item)}>
                         Xem PDF Chi tiết
@@ -218,32 +197,33 @@ export const MedicalRecordsPage: React.FC = () => {
               <Title level={4} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>BỆNH VIỆN ĐA KHOA HOSPITAL AI</Title>
               <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Địa chỉ: Đường Lê Hồng Phong, TP. Thủ Dầu Một, Bình Dương</Text>
               <Title level={3} style={{ color: isDarkMode ? '#f8fafc' : '#001529', marginTop: 12, marginBottom: 0 }}>PHIẾU KHÁM BỆNH & HỒ SƠ EMR</Title>
-              <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã lượt khám: {selectedRecord.maLuotKham}</Text>
+              <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã lượt khám: {selectedRecord.examinationCode}</Text>
             </div>
 
             <Row gutter={[16, 8]}>
-              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Họ tên: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>NGUYỄN VĂN AN</strong></Text></Col>
-              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Ngày sinh: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>1990-05-15 (Nam)</strong></Text></Col>
-              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã BN: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>BN20260001</strong></Text></Col>
-              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã thẻ BHYT: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>DN40101234567</strong></Text></Col>
-              <Col span={24}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Địa chỉ: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>TP. Thủ Dầu Một, Bình Dương</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Họ tên: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>{selectedRecord.patientName.toUpperCase()}</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Tuổi / Giới tính: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>{selectedRecord.patientAge} tuổi ({selectedRecord.patientGender})</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã BN: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{selectedRecord.patientCode}</strong></Text></Col>
+              <Col span={12}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã thẻ BHYT: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>{selectedRecord.healthInsuranceNumber || 'Không có'}</strong></Text></Col>
+              <Col span={24}><Text style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Căn cước công dân: <strong style={{ color: isDarkMode ? '#f8fafc' : undefined }}>{selectedRecord.identityCardNumber}</strong></Text></Col>
             </Row>
 
             <Divider style={{ margin: '12px 0', borderColor: isDarkMode ? '#334155' : undefined }} />
 
             <Title level={5} style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>I. KẾT QUẢ KHÁM LÂM SÀNG (SOAP)</Title>
-            <p><strong>1. Triệu chứng cơ năng (Subjective):</strong> {selectedRecord.trieuChung}</p>
-            <p><strong>2. Sinh hiệu (Objective):</strong> {selectedRecord.sinhHieu}</p>
-            <p><strong>3. Chẩn đoán xác định (Assessment):</strong> {selectedRecord.chanDoanChinh} (Mã ICD-10: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{selectedRecord.maICD10}</strong>)</p>
+            <p><strong>1. Triệu chứng cơ năng (Subjective):</strong> {selectedRecord.subjective}</p>
+            <p><strong>2. Sinh hiệu (Objective):</strong> Mạch: {selectedRecord.pulseRate} bpm | HA: {selectedRecord.bloodPressure} mmHg | Nhiệt độ: {selectedRecord.temperature}°C | BMI: {selectedRecord.bmi}</p>
+            <p><strong>3. Chẩn đoán xác định (Assessment):</strong> {selectedRecord.icd10Name} (Mã ICD-10: <strong style={{ color: isDarkMode ? '#38bdf8' : '#0284c7' }}>{selectedRecord.icd10Code}</strong>)</p>
 
             <Title level={5} style={{ marginTop: 16, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>II. ĐƠN THUỐC ĐIỆN TỬ (PLAN)</Title>
             <Table
-              dataSource={selectedRecord.donThuoc}
+              dataSource={selectedRecord.prescriptionDetails}
+              rowKey="id"
               columns={[
                 { title: 'STT', key: 'stt', render: (_: any, __: any, index: number) => index + 1 },
-                { title: 'Tên Thuốc', dataIndex: 'tenThuoc', key: 'tenThuoc' },
-                { title: 'Số lượng', dataIndex: 'soLuong', key: 'soLuong' },
-                { title: 'Liều dùng', dataIndex: 'lieuDung', key: 'lieuDung' },
+                { title: 'Tên Thuốc', dataIndex: 'medicineName', key: 'medicineName' },
+                { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity', render: (val: number, record: any) => `${val} ${record.unit}` },
+                { title: 'Liều dùng', dataIndex: 'dosageInstruction', key: 'dosageInstruction' },
               ]}
               pagination={false}
               size="small"
@@ -253,7 +233,7 @@ export const MedicalRecordsPage: React.FC = () => {
               <div style={{ textAlign: 'center' }}>
                 <div style={{ background: '#ffffff', padding: 8, borderRadius: 8, display: 'inline-block', border: '1px solid #bae6fd' }}>
                   <QRCodeSVG
-                    value={`https://hospital-ai.vn/verify-emr?code=${selectedRecord.maLuotKham}`}
+                    value={`https://hospital-ai.vn/verify-emr?code=${selectedRecord.examinationCode}`}
                     size={90}
                     level="H"
                   />
@@ -268,7 +248,7 @@ export const MedicalRecordsPage: React.FC = () => {
                 <Tag color="green" style={{ marginTop: 4, marginBottom: 8, fontWeight: 700 }}>
                   <SafetyCertificateOutlined /> Đã ký số SHA-256
                 </Tag>
-                <Text strong style={{ color: isDarkMode ? '#f8fafc' : undefined, display: 'block' }}>{selectedRecord.bacSiKham}</Text>
+                <Text strong style={{ color: isDarkMode ? '#f8fafc' : undefined, display: 'block' }}>{selectedRecord.doctorName}</Text>
               </div>
             </div>
           </div>

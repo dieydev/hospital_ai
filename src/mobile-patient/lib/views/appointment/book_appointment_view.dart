@@ -1,7 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../providers/appointment_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../booking/vnpay_payment_view.dart';
 
 class BookAppointmentView extends StatefulWidget {
   const BookAppointmentView({super.key});
@@ -14,91 +16,47 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   int _currentStep = 0;
 
   // Form selections
-  String _selectedDepartment = 'Khoa Nội Tổng Hợp';
-  String _selectedDoctor = 'BS. CKII. Nguyễn Thanh Duy';
+  String? _selectedDepartment;
+  String? _selectedDoctor;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
-  String _selectedTimeSlot = '08:30 - 09:00';
+  String? _selectedTimeSlot;
 
-  final List<String> _departments = [
-    'Khoa Nội Tổng Hợp',
-    'Khoa Nhi',
-    'Khoa Mắt',
-    'Khoa Ngoại',
-    'Khoa Tai Mũi Họng',
-    'Khoa Răng Hàm Mặt',
-  ];
-
-  final List<Map<String, String>> _doctors = [
-    {
-      'name': 'BS. CKII. Nguyễn Thanh Duy',
-      'dept': 'Khoa Nội Tổng Hợp',
-      'title': 'Trưởng Khoa Nội',
-      'avatar': 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      'name': 'BS. CKI. Lê Văn Tuấn',
-      'dept': 'Khoa Nội Tổng Hợp',
-      'title': 'Bác sĩ Điều trị',
-      'avatar': 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      'name': 'BS. CKI. Phạm Minh Đức',
-      'dept': 'Khoa Nhi',
-      'title': 'Trưởng Khoa Nhi',
-      'avatar': 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      'name': 'BS. Nguyễn Thị Lan',
-      'dept': 'Khoa Nhi',
-      'title': 'Bác sĩ Điều trị',
-      'avatar': 'https://images.unsplash.com/photo-1594824813570-8910014e7a77?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      'name': 'BS. Trần Ngọc Mai',
-      'dept': 'Khoa Mắt',
-      'title': 'Trưởng Khoa Mắt',
-      'avatar': 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      'name': 'BS. CKII. Hoàng Văn Hùng',
-      'dept': 'Khoa Ngoại',
-      'title': 'Trưởng Khoa Ngoại',
-      'avatar': 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      'name': 'BS. CKI. Vũ Thị Hà',
-      'dept': 'Khoa Tai Mũi Họng',
-      'title': 'Trưởng Khoa TMH',
-      'avatar': 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      'name': 'BS. Đỗ Minh Triết',
-      'dept': 'Khoa Răng Hàm Mặt',
-      'title': 'Trưởng Khoa RHM',
-      'avatar': 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80',
-    },
-  ];
-
-  final List<String> _timeSlots = [
-    '07:30 - 08:00',
-    '08:00 - 08:30',
-    '08:30 - 09:00',
-    '09:00 - 09:30',
-    '09:30 - 10:00',
-    '10:00 - 10:30',
-    '13:30 - 14:00',
-    '14:00 - 14:30',
-    '14:30 - 15:00',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<AppointmentProvider>();
+      if (provider.departments.isNotEmpty) {
+        setState(() {
+          _selectedDepartment = provider.departments.first;
+        });
+        provider.fetchDoctors(_selectedDepartment!).then((_) {
+          if (provider.doctors.isNotEmpty) {
+            setState(() {
+              _selectedDoctor = provider.doctors.first['name'];
+            });
+          }
+        });
+      }
+      if (provider.timeSlots.isNotEmpty) {
+        setState(() {
+          _selectedTimeSlot = provider.timeSlots.first;
+        });
+      }
+    });
+  }
 
   void _onDepartmentChanged(String dept) {
     setState(() {
       _selectedDepartment = dept;
-      final matchingDocs = _doctors.where((d) => d['dept'] == dept).toList();
-      if (matchingDocs.isNotEmpty) {
-        _selectedDoctor = matchingDocs.first['name'] ?? '';
-      } else {
-        _selectedDoctor = 'BS. CKII. Nguyễn Thanh Duy';
+      _selectedDoctor = null;
+    });
+    final provider = context.read<AppointmentProvider>();
+    provider.fetchDoctors(dept).then((_) {
+      if (provider.doctors.isNotEmpty) {
+        setState(() {
+          _selectedDoctor = provider.doctors.first['name'];
+        });
       }
     });
   }
@@ -242,6 +200,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   Widget _buildCurrentStepContent() {
     switch (_currentStep) {
       case 0:
+        final provider = context.watch<AppointmentProvider>();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -249,53 +208,58 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             const SizedBox(height: 4),
             const Text('Vui lòng chọn khoa khám theo nhu cầu của bạn', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
             const SizedBox(height: 16),
-            ..._departments.map((dept) {
-              final isSelected = _selectedDepartment == dept;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: ListTile(
-                  leading: Icon(
-                    isSelected ? Icons.check_circle : Icons.circle_outlined,
-                    color: isSelected ? AppTheme.primaryColor : const Color(0xFF94A3B8),
-                  ),
-                  title: Text(
-                    dept,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? AppTheme.primaryDark : const Color(0xFF334155),
+            if (provider.isLoading && provider.departments.isEmpty)
+              const Center(child: CircularProgressIndicator())
+            else
+              ...provider.departments.map((dept) {
+                final isSelected = _selectedDepartment == dept;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+                      width: isSelected ? 2 : 1,
                     ),
                   ),
-                  onTap: () => _onDepartmentChanged(dept),
-                ),
-              );
-            }),
+                  child: ListTile(
+                    leading: Icon(
+                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                      color: isSelected ? AppTheme.primaryColor : const Color(0xFF94A3B8),
+                    ),
+                    title: Text(
+                      dept,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected ? AppTheme.primaryDark : const Color(0xFF334155),
+                      ),
+                    ),
+                    onTap: () => _onDepartmentChanged(dept),
+                  ),
+                );
+              }),
           ],
         );
 
       case 1:
-        final filteredDoctors = _doctors.where((d) => d['dept'] == _selectedDepartment).toList();
+        final provider = context.watch<AppointmentProvider>();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Bước 2: Chọn Bác Sĩ Khám', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
             const SizedBox(height: 4),
-            Text('Danh sách bác sĩ thuộc khoa: $_selectedDepartment', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+            Text('Danh sách bác sĩ thuộc khoa: ${_selectedDepartment ?? ''}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
             const SizedBox(height: 16),
-            if (filteredDoctors.isEmpty)
+            if (provider.isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (provider.doctors.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(20),
                 child: Text('Chưa có bác sĩ thuộc khoa này trong danh sách.', style: TextStyle(color: Colors.grey)),
               )
             else
-              ...filteredDoctors.map((doc) {
+              ...provider.doctors.map((doc) {
                 final docName = doc['name'] ?? '';
                 final docTitle = doc['title'] ?? '';
                 final docDept = doc['dept'] ?? '';
@@ -413,11 +377,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             // 3-Column Time Slot Grid
             LayoutBuilder(
               builder: (context, constraints) {
+                final provider = context.watch<AppointmentProvider>();
                 final chipWidth = (constraints.maxWidth - 16) / 3;
                 return Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _timeSlots.map((slot) {
+                  children: provider.timeSlots.map((slot) {
                     final isSelected = _selectedTimeSlot == slot;
                     return GestureDetector(
                       onTap: () => setState(() => _selectedTimeSlot = slot),
@@ -495,12 +460,13 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               const SizedBox(height: 10),
               _buildDetailRow(Icons.phone_android_outlined, 'Số điện thoại:', '0987654321'),
               const SizedBox(height: 10),
-              _buildDetailRow(Icons.medical_services_outlined, 'Chuyên khoa:', _selectedDepartment),
+              _buildDetailRow(Icons.medical_services_outlined, 'Chuyên khoa:', _selectedDepartment ?? ''),
               const SizedBox(height: 10),
 
               // Selected Doctor Card Preview with Avatar
               Builder(builder: (_) {
-                final currentDoc = _doctors.firstWhere((d) => d['name'] == _selectedDoctor, orElse: () => _doctors.first);
+                final provider = context.read<AppointmentProvider>();
+                final currentDoc = provider.doctors.firstWhere((d) => d['name'] == _selectedDoctor, orElse: () => provider.doctors.isNotEmpty ? provider.doctors.first : {});
                 final avatarUrl = currentDoc['avatar'] ?? '';
                 final docTitle = currentDoc['title'] ?? '';
                 return Container(
@@ -523,8 +489,8 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_selectedDoctor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryDark)),
-                            Text('$docTitle • $_selectedDepartment', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                            Text(_selectedDoctor ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryDark)),
+                            Text('$docTitle • ${_selectedDepartment ?? ''}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                           ],
                         ),
                       ),
@@ -537,7 +503,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               _buildDetailRow(
                 Icons.access_time_outlined,
                 'Thời gian hẹn:',
-                '$_selectedTimeSlot - ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                '${_selectedTimeSlot ?? ''} - ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
               ),
               const SizedBox(height: 16),
               Container(
@@ -567,34 +533,80 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   }
 
   Future<void> _showSuccessConfirmation() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final auth = context.read<AuthProvider>();
+    final user = auth.user;
+
+    if (user == null || _selectedDepartment == null || _selectedDoctor == null || _selectedTimeSlot == null) {
+      Navigator.pop(context); // Close loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn đầy đủ thông tin!'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     final appointmentData = {
-      'patientCode': 'BN20260001',
-      'patientName': 'Nguyễn Văn An',
-      'patientPhone': '0987654321',
-      'patientGender': 'Nam',
-      'patientAge': 36,
+      'patientCode': user.maBenhNhan,
+      'patientName': user.hoTen,
+      'patientPhone': user.soDienThoai,
+      'patientGender': user.gioiTinh,
       'departmentName': _selectedDepartment,
       'doctorName': _selectedDoctor,
       'appointmentDate': '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
-      'appointmentTime': _selectedTimeSlot.split(' - ')[0],
+      'appointmentTime': _selectedTimeSlot!.split(' - ')[0],
       'symptomsReason': 'Đặt lịch hẹn khám trực tuyến từ Mobile Patient App',
       'status': 'Pending',
       'sourceApp': 'Flutter Mobile App',
     };
 
+    final provider = context.read<AppointmentProvider>();
     try {
-      final url = Uri.parse('http://localhost:5000/api/appointments');
-      await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(appointmentData),
+      await provider.bookAppointment(appointmentData);
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lỗi: Không thể kết nối tới máy chủ Hệ thống Bệnh viện! Vui lòng thử lại.'), backgroundColor: Colors.red),
       );
-    } catch (_) {
-      // Handled
+      return;
     }
 
+    // Call VNPay URL
+    final vnpayUrl = await provider.getVnPayUrl(150000, 'Thanh toan phi kham benh ${user.hoTen}');
     if (!mounted) return;
+    Navigator.pop(context); // Close loading dialog
 
+    if (vnpayUrl != null) {
+      // Navigate to VNPay WebView
+      final isSuccess = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VnPayPaymentView(paymentUrl: vnpayUrl),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (isSuccess == true) {
+        _showFinalSuccessDialog('Thanh toán VNPay thành công. Hệ thống đã xác nhận lịch khám!');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Thanh toán VNPay thất bại hoặc bị hủy.'), backgroundColor: Colors.red),
+        );
+      }
+    } else {
+      if (!mounted) return;
+      // Fallback if VNPay API fails (e.g. backend down)
+      _showFinalSuccessDialog('Đã ghi nhận lịch hẹn nhưng hệ thống thanh toán đang gián đoạn. Vui lòng thanh toán tại quầy.');
+    }
+  }
+
+  void _showFinalSuccessDialog(String paymentMessage) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -616,6 +628,8 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             const SizedBox(height: 6),
             Text('Bác sĩ: $_selectedDoctor'),
             const SizedBox(height: 10),
+            Text(paymentMessage, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
@@ -635,8 +649,13 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
             onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
+              Navigator.pop(ctx); // Đóng Dialog
+              setState(() {
+                _currentStep = 0;
+                _selectedDoctor = null;
+                _selectedTimeSlot = null;
+                _selectedDate = DateTime.now().add(const Duration(days: 1));
+              });
             },
             child: const Text('Về Trang Chủ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),

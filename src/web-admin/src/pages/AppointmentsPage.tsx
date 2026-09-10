@@ -32,6 +32,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert, showToast } from '../utils/sweetAlert';
 import { appointmentService } from '../services/appointmentService';
 import { queueService } from '../services/queueService';
+import { patientService } from '../services/patientService';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -101,15 +102,33 @@ export const AppointmentsPage: React.FC = () => {
 
   const handleIssueQueueTicket = async (item: OnlineAppointmentItem) => {
     await appointmentService.updateStatus(item.id, 'Completed');
+    
+    // Tự động tạo một Bệnh nhân thật trong DB để lấy GUID hợp lệ
+    const newPatient = await patientService.createPatient({
+      fullName: item.patientName,
+      gender: item.patientGender === 'Nam' ? 'Male' : 'Female',
+      dateOfBirth: '1990-01-01',
+      identityCardNumber: `038090${Date.now().toString().slice(-6)}`,
+      phoneNumber: item.patientPhone,
+      address: 'TP.HCM'
+    });
+
+    const depts = await queueService.getDepartments();
+    const targetDeptId = depts.length > 0 ? depts[0].id : '';
+
     const newTicket = await queueService.issueQueueTicket({
-      patientId: `pt-${Date.now()}`,
-      departmentId: 'dept-01',
+      patientId: newPatient.id,
+      departmentId: targetDeptId,
       priority: 'Normal',
+      patientName: item.patientName,
+      patientCode: item.patientCode,
+      patientAge: item.patientAge,
+      patientGender: item.patientGender,
     });
     fetchAppointments();
     showSuccessAlert(
       'Cấp Số thứ tự thành công!',
-      `Đã chuyển lịch hẹn thành Số thứ tự #${newTicket.sequenceNumber} tại ${item.departmentName}.`
+      `Đã chuyển lịch hẹn thành Số thứ tự #${newTicket.sequenceNumber} tại Khoa khám.`
     );
   };
 
