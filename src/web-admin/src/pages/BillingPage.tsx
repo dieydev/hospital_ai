@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Card, Table, Button, Space, Input, Tag, Typography, Row, Col, Modal, Statistic, Image, Select } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Button, Space, Input, Tag, Typography, Row, Col, Modal, Statistic, Image, Select, message } from 'antd';
 import {
   DollarOutlined,
   SearchOutlined,
@@ -12,6 +12,7 @@ import { Invoice } from '../types';
 import { formatCurrency, getStatusTagColor } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert, showToast } from '../utils/sweetAlert';
+import { billingService } from '../services/billingService';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -24,55 +25,25 @@ export const BillingPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const { isDarkMode } = useThemeStore();
 
-  const [invoices, setInvoices] = useState<Invoice[]>([
-    {
-      id: 'inv-001',
-      maHoaDon: 'HD20260802-001',
-      maBenhNhan: 'BN20260001',
-      tenBenhNhan: 'Nguyễn Văn An',
-      maLuotKham: 'LK20260802-01',
-      ngayLap: '2026-08-02 09:30',
-      tienKham: 150000,
-      tienThuoc: 185000,
-      tienDichVu: 235000,
-      bhytChiTra: 220000,
-      benhNhanThanhToan: 350000,
-      phuongThucThanhToan: 'Chuyển khoản VietQR',
-      trangThai: 'Chưa thanh toán',
-      qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=VIETQR_HOSPITAL_AI_350000_HD20260802-001',
-    },
-    {
-      id: 'inv-002',
-      maHoaDon: 'HD20260802-002',
-      maBenhNhan: 'BN20260002',
-      tenBenhNhan: 'Trần Thị Bình',
-      maLuotKham: 'LK20260802-02',
-      ngayLap: '2026-08-02 09:15',
-      tienKham: 150000,
-      tienThuoc: 420000,
-      tienDichVu: 550000,
-      bhytChiTra: 650000,
-      benhNhanThanhToan: 470000,
-      phuongThucThanhToan: 'Tiền mặt',
-      trangThai: 'Đã thanh toán',
-    },
-    {
-      id: 'inv-003',
-      maHoaDon: 'HD20260802-003',
-      maBenhNhan: 'BN20260003',
-      tenBenhNhan: 'Lê Hoàng Minh',
-      maLuotKham: 'LK20260802-03',
-      ngayLap: '2026-08-02 10:05',
-      tienKham: 150000,
-      tienThuoc: 120000,
-      tienDichVu: 150000,
-      bhytChiTra: 180000,
-      benhNhanThanhToan: 240000,
-      phuongThucThanhToan: 'Chuyển khoản VietQR',
-      trangThai: 'Chưa thanh toán',
-      qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=VIETQR_HOSPITAL_AI_240000_HD20260802-003',
-    },
-  ]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchBillings();
+  }, [statusFilter]);
+
+  const fetchBillings = async () => {
+    setLoading(true);
+    try {
+      const data = await billingService.getBillings(statusFilter === 'ALL' ? undefined : statusFilter, 'Registration');
+      setInvoices(data);
+    } catch (error) {
+      console.error("Failed to fetch billings:", error);
+      message.error("Lỗi khi tải danh sách hóa đơn");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredInvoices = invoices.filter((inv) => {
     const matchKw =
@@ -95,14 +66,20 @@ export const BillingPage: React.FC = () => {
     setIsPrintModalOpen(true);
   };
 
-  const handleConfirmPayment = (id: string) => {
-    const inv = invoices.find((i) => i.id === id);
-    setInvoices(invoices.map((i) => (i.id === id ? { ...i, trangThai: 'Đã thanh toán' } : i)));
-    showSuccessAlert(
-      'Thanh toán Thành công!',
-      `Đã thu thành công số tiền viện phí cho hóa đơn ${inv?.maHoaDon || ''}`
-    );
-    setIsQrModalOpen(false);
+  const handleConfirmPayment = async (id: string) => {
+    try {
+      await billingService.payCash(id);
+      const inv = invoices.find((i) => i.id === id);
+      setInvoices(invoices.map((i) => (i.id === id ? { ...i, trangThai: 'Đã thanh toán', phuongThucThanhToan: 'Tiền mặt' } : i)));
+      showSuccessAlert(
+        'Thanh toán Thành công!',
+        `Đã thu thành công số tiền viện phí cho hóa đơn ${inv?.maHoaDon || ''}`
+      );
+      setIsQrModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      message.error("Có lỗi xảy ra khi xác nhận thanh toán.");
+    }
   };
 
   const columns = [
@@ -119,15 +96,9 @@ export const BillingPage: React.FC = () => {
       render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text>
     },
     { title: 'Mã BN', dataIndex: 'maBenhNhan', key: 'maBenhNhan', render: (c: string) => <Tag color="blue">{c}</Tag> },
-    { title: 'Tiền Khám & DV', dataIndex: 'tienDichVu', key: 'tienDichVu', render: (_: any, r: Invoice) => formatCurrency(r.tienKham + r.tienDichVu) },
-    { title: 'Tiền Thuốc', dataIndex: 'tienThuoc', key: 'tienThuoc', render: (val: number) => formatCurrency(val) },
-    { title: 'BHYT Chi trả (80%)', dataIndex: 'bhytChiTra', key: 'bhytChiTra', render: (val: number) => <Text style={{ color: '#10b981', fontWeight: 600 }}>{formatCurrency(val)}</Text> },
-    {
-      title: 'BN Cần Thanh Toán',
-      dataIndex: 'benhNhanThanhToan',
-      key: 'benhNhanThanhToan',
-      render: (val: number) => <Text strong style={{ color: '#f43f5e', fontSize: 16 }}>{formatCurrency(val)}</Text>,
-    },
+    { title: 'Tiền Khám (VND)', dataIndex: 'tongTien', key: 'tongTien', render: (val: number) => <Text strong style={{ color: '#f43f5e', fontSize: 16 }}>{formatCurrency(val)}</Text> },
+    { title: 'Loại HĐ', dataIndex: 'loaiHoaDon', key: 'loaiHoaDon', render: (val: string) => <Tag color="purple">{val}</Tag> },
+    { title: 'Phương thức', dataIndex: 'phuongThucThanhToan', key: 'phuongThucThanhToan' },
     {
       title: 'Trạng thái',
       dataIndex: 'trangThai',
@@ -230,7 +201,7 @@ export const BillingPage: React.FC = () => {
         bordered={false}
         className="rounded-xl bg-white dark:bg-slate-800 hover-lift"
       >
-        <Table dataSource={filteredInvoices} columns={columns} rowKey="id" />
+        <Table dataSource={filteredInvoices} columns={columns} rowKey="id" loading={loading} />
       </Card>
 
       {/* Modal QR Chuyển khoản VietQR Ngân hàng */}
@@ -255,7 +226,7 @@ export const BillingPage: React.FC = () => {
 
             <div style={{ margin: '0 auto 16px', width: 240, padding: 12, border: '2px solid #0284c7', borderRadius: 16, background: '#fff', boxShadow: '0 8px 24px rgba(2, 132, 199, 0.15)' }}>
               <Image
-                src={`https://img.vietqr.io/image/MB-1990002026-compact2.png?amount=${selectedInvoice.benhNhanThanhToan}&addInfo=THANHTOAN%20${selectedInvoice.maHoaDon}&accountName=BV%20DA%20KHOA%20HOSPITAL%20AI`}
+                src={`https://img.vietqr.io/image/MB-1990002026-compact2.png?amount=${selectedInvoice.tongTien}&addInfo=THANHTOAN%20${selectedInvoice.maHoaDon}&accountName=BV%20DA%20KHOA%20HOSPITAL%20AI`}
                 alt="VietQR Bank Payment"
                 width={216}
                 preview={false}
@@ -264,7 +235,7 @@ export const BillingPage: React.FC = () => {
             </div>
 
             <Title level={2} style={{ color: '#f43f5e', margin: '0 0 8px', fontWeight: 900 }}>
-              {formatCurrency(selectedInvoice.benhNhanThanhToan)}
+              {formatCurrency(selectedInvoice.tongTien)}
             </Title>
 
             <div style={{ textAlign: 'left', backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', padding: 12, borderRadius: 8, fontSize: 13, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -321,27 +292,20 @@ export const BillingPage: React.FC = () => {
               <Text>Số HĐ: <strong>{selectedInvoice.maHoaDon}</strong></Text>
               <Text>Ngày: {selectedInvoice.ngayLap}</Text>
             </div>
-            <Text style={{ display: 'block', marginBottom: 4 }}>Bệnh nhân: <strong>{selectedInvoice.tenBenhNhan}</strong> ({selectedInvoice.maBenhNhan})</Text>
-            <Text style={{ display: 'block', marginBottom: 12 }}>Mã lượt khám: {selectedInvoice.maLuotKham}</Text>
-
             <div style={{ borderTop: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', padding: '8px 0', marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Text>Tiền khám & Dịch vụ CLS:</Text>
-                <Text>{formatCurrency(selectedInvoice.tienKham + selectedInvoice.tienDichVu)}</Text>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Text>Tiền thuốc kê đơn:</Text>
-                <Text>{formatCurrency(selectedInvoice.tienThuoc)}</Text>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
-                <Text>BHYT chi trả (80%):</Text>
-                <Text>-{formatCurrency(selectedInvoice.bhytChiTra)}</Text>
-              </div>
+              {selectedInvoice.items && selectedInvoice.items.map((item, index) => (
+                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text>{item.tenDichVu} (x{item.soLuong}):</Text>
+                  <Text>{formatCurrency(item.thanhTien)}</Text>
+                </div>
+              ))}
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#f43f5e' }}>
-              <span>BỆNH NHÂN THANH TOÁN:</span>
-              <span>{formatCurrency(selectedInvoice.benhNhanThanhToan)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+              <Text strong>TỔNG TIỀN PHẢI THANH TOÁN:</Text>
+              <Text strong style={{ fontSize: 18, color: '#f43f5e' }}>{formatCurrency(selectedInvoice.tongTien)}</Text>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <Text style={{ fontSize: 12, fontStyle: 'italic', color: '#64748b' }}>Trạng thái: {selectedInvoice.trangThai}</Text>
             </div>
           </div>
         )}

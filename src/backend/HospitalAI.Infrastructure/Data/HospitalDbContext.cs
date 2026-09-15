@@ -34,7 +34,8 @@ public class HospitalDbContext : DbContext
     public DbSet<ServiceResult> ServiceResults => Set<ServiceResult>();
     public DbSet<MedicalGuideline> MedicalGuidelines => Set<MedicalGuideline>();
     public DbSet<AILog> AILogs => Set<AILog>();
-
+    public DbSet<Billing> Billings => Set<Billing>();
+    public DbSet<BillingItem> BillingItems => Set<BillingItem>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -142,6 +143,13 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.EmergencyContactRelation).HasColumnName("QuanHeNguoiThan").HasMaxLength(50);
             entity.Property(e => e.EmergencyContactPhone).HasColumnName("SoDienThoaiNguoiThan").HasMaxLength(20);
             entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
+
+            entity.Property(e => e.UserId).HasColumnName("TaiKhoanId");
+
+            entity.HasOne(p => p.User)
+                  .WithMany()
+                  .HasForeignKey(p => p.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(e => e.PatientCode).IsUnique();
             entity.HasIndex(e => e.IdentityCardNumber).IsUnique();
@@ -340,6 +348,39 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.OutputResult).HasColumnName("KetQuaGoiYAI");
             entity.Property(e => e.DoctorFeedback).HasColumnName("PhanHoiBacSi").HasMaxLength(20);
             entity.Property(e => e.CreatedAt).HasColumnName("ThoiGianTao");
+        });
+
+        modelBuilder.Entity<Billing>(entity =>
+        {
+            entity.ToTable("HoaDon", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PatientId).HasColumnName("BenhNhanId");
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.BillingType).HasColumnName("LoaiHoaDon").HasMaxLength(50);
+            entity.Property(e => e.TotalAmount).HasColumnName("TongTien").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Status).HasColumnName("TrangThai").HasMaxLength(20);
+            entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
+            entity.Property(e => e.PaidAt).HasColumnName("NgayThanhToan");
+            entity.Property(e => e.PaymentMethod).HasColumnName("PhuongThucThanhToan").HasMaxLength(50);
+            entity.Property(e => e.TransactionRef).HasColumnName("MaGiaoDich").HasMaxLength(100);
+            entity.Property(e => e.CashierId).HasColumnName("NguoiThuTienId");
+
+            entity.HasMany(e => e.Items)
+                  .WithOne(e => e.Billing)
+                  .HasForeignKey(e => e.BillingId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BillingItem>(entity =>
+        {
+            entity.ToTable("ChiTietHoaDon", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BillingId).HasColumnName("HoaDonId");
+            entity.Property(e => e.ItemName).HasColumnName("TenDichVu").HasMaxLength(255);
+            entity.Property(e => e.UnitPrice).HasColumnName("DonGia").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Quantity).HasColumnName("SoLuong");
+            entity.Property(e => e.TotalPrice).HasColumnName("ThanhTien").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.ReferenceId).HasColumnName("ThamChieuId");
         });
     }
 }

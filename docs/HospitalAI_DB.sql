@@ -1,4 +1,4 @@
-﻿-- ============================================================================
+-- ============================================================================
 -- KHỞI TẠO DATABASE
 -- ============================================================================
 IF DB_ID('HospitalAI_DB') IS NOT NULL
@@ -290,6 +290,36 @@ CREATE TABLE dbo.ChiTietChiDinhDV (
     CONSTRAINT PK_ChiTietChiDinhDV PRIMARY KEY (Id),
     -- Ràng buộc khóa ngoại về bảng LuotKhamBenh (dựa theo code C# của bạn)
     CONSTRAINT FK_ChiTietChiDinhDV_LuotKham FOREIGN KEY (ExaminationId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE
+);
+
+CREATE TABLE dbo.HoaDon (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    BenhNhanId UNIQUEIDENTIFIER NOT NULL,
+    LuotKhamId UNIQUEIDENTIFIER NULL,
+    LoaiHoaDon VARCHAR(50) NOT NULL, -- Registration, ServiceOrder, Prescription
+    TongTien DECIMAL(18,2) NOT NULL DEFAULT 0,
+    TrangThai VARCHAR(20) NOT NULL DEFAULT 'Unpaid', -- Unpaid, Paid, Cancelled
+    NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
+    NgayThanhToan DATETIME NULL,
+    PhuongThucThanhToan VARCHAR(50) NULL, -- VNPay, Cash, Transfer
+    MaGiaoDich VARCHAR(100) NULL, -- vnp_TxnRef or VNPay transaction no
+    NguoiThuTienId UNIQUEIDENTIFIER NULL,
+    CONSTRAINT PK_HoaDon PRIMARY KEY (Id),
+    CONSTRAINT FK_HoaDon_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id),
+    CONSTRAINT FK_HoaDon_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id),
+    CONSTRAINT FK_HoaDon_NguoiThuTien FOREIGN KEY (NguoiThuTienId) REFERENCES dbo.HoSoNhanVien(Id)
+);
+
+CREATE TABLE dbo.ChiTietHoaDon (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    HoaDonId UNIQUEIDENTIFIER NOT NULL,
+    TenDichVu NVARCHAR(255) NOT NULL,
+    DonGia DECIMAL(18,2) NOT NULL DEFAULT 0,
+    SoLuong INT NOT NULL DEFAULT 1,
+    ThanhTien DECIMAL(18,2) NOT NULL DEFAULT 0,
+    ThamChieuId UNIQUEIDENTIFIER NULL, -- Tham chiếu đến ID ChiDinh, DonThuoc...
+    CONSTRAINT PK_ChiTietHoaDon PRIMARY KEY (Id),
+    CONSTRAINT FK_ChiTietHoaDon_HoaDon FOREIGN KEY (HoaDonId) REFERENCES dbo.HoaDon(Id) ON DELETE CASCADE
 );
 
 -- ============================================================================

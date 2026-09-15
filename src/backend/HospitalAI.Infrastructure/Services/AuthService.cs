@@ -43,7 +43,7 @@ public class AuthService : IAuthService
         var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
         var (token, expiresAt) = _tokenGenerator.GenerateToken(user, roles);
 
-        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.PhoneNumber == user.PhoneNumber);
+        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
 
         return new AuthResponseDto
         {
@@ -136,6 +136,23 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
         }
 
+        var newUser = new User
+        {
+            Username = request.Username,
+            PasswordHash = _passwordHasher.HashPassword(request.Password),
+            FullName = request.FullName,
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
+            Specialty = request.Specialty,
+            Title = request.Title,
+            IsActive = true,
+            AvatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={request.Username}",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        newUser.UserRoles.Add(new UserRole { UserId = newUser.Id, RoleId = role.Id });
+        _context.Users.Add(newUser);
+
         string? patientCode = null;
 
         if (roleName == "Patient" && !string.IsNullOrWhiteSpace(request.IdentityCardNumber))
@@ -154,35 +171,18 @@ public class AuthService : IAuthService
             var patient = new Patient
             {
                 Id = Guid.NewGuid(),
+                UserId = newUser.Id,
                 PatientCode = patientCode,
                 FullName = request.FullName.Trim(),
                 Gender = request.Gender ?? "Nam",
                 DateOfBirth = DateTime.UtcNow.AddYears(-20), // Default DateOfBirth if not provided
                 IdentityCardNumber = request.IdentityCardNumber.Trim(),
-                PhoneNumber = request.PhoneNumber.Trim(),
-                Email = request.Email?.Trim(),
+                Address = "Chưa cập nhật",
                 CreatedAt = DateTime.UtcNow
             };
             _context.Patients.Add(patient);
         }
 
-        var newUser = new User
-        {
-            Username = request.Username,
-            PasswordHash = _passwordHasher.HashPassword(request.Password),
-            FullName = request.FullName,
-            Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
-            Specialty = request.Specialty,
-            Title = request.Title,
-            IsActive = true,
-            AvatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={request.Username}",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        newUser.UserRoles.Add(new UserRole { UserId = newUser.Id, RoleId = role.Id });
-
-        _context.Users.Add(newUser);
         await _context.SaveChangesAsync();
 
         return new UserProfileDto
@@ -213,7 +213,7 @@ public class AuthService : IAuthService
             throw new Exception("Không tìm thấy thông tin người dùng.");
         }
 
-        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.PhoneNumber == user.PhoneNumber);
+        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
 
         return new UserProfileDto
         {

@@ -4,7 +4,7 @@ services:
     container_name: hospitalai-sqlserver
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=HospitalAI@2026!Secret
+      - MSSQL_SA_PASSWORD=@Duy12345
       - MSSQL_PID=Developer
     ports:
       - "14333:1433"
@@ -18,7 +18,7 @@ services:
       context: ./src/backend
       dockerfile: services/HospitalAI.IdentityService/Dockerfile
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
@@ -34,7 +34,7 @@ services:
       context: ./src/backend
       dockerfile: services/HospitalAI.PatientService/Dockerfile
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
@@ -50,7 +50,7 @@ services:
       context: ./src/backend
       dockerfile: services/HospitalAI.QueueService/Dockerfile
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
@@ -66,7 +66,7 @@ services:
       context: ./src/backend
       dockerfile: services/HospitalAI.ExaminationService/Dockerfile
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=HospitalAI@2026!Secret;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients

@@ -138,6 +138,13 @@ export interface MedicalRecordTimelineItem {
   tongChiPhi: number;
 }
 
+export interface InvoiceItem {
+  tenDichVu: string;
+  donGia: number;
+  soLuong: number;
+  thanhTien: number;
+}
+
 export interface Invoice {
   id: string;
   maHoaDon: string;
@@ -145,14 +152,11 @@ export interface Invoice {
   tenBenhNhan: string;
   maLuotKham: string;
   ngayLap: string;
-  tienKham: number;
-  tienThuoc: number;
-  tienDichVu: number;
-  bhytChiTra: number;
-  benhNhanThanhToan: number;
-  phuongThucThanhToan: 'Tiền mặt' | 'Chuyển khoản VietQR' | 'Thẻ ATM/Credit';
-  trangThai: 'Chưa thanh toán' | 'Đã thanh toán';
-  qrCodeUrl?: string;
+  tongTien: number;
+  loaiHoaDon: string;
+  phuongThucThanhToan: string;
+  trangThai: string;
+  items: InvoiceItem[];
 }
 
 export interface ICD10Item {

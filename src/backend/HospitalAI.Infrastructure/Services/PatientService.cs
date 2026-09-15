@@ -30,7 +30,6 @@ public class PatientService : IPatientService
                 p.FullName.ToLower().Contains(search) ||
                 p.PatientCode.ToLower().Contains(search) ||
                 p.IdentityCardNumber.Contains(search) ||
-                p.PhoneNumber.Contains(search) ||
                 (p.HealthInsuranceNumber != null && p.HealthInsuranceNumber.ToLower().Contains(search))
             );
         }
@@ -94,12 +93,7 @@ public class PatientService : IPatientService
             DateOfBirth = dto.DateOfBirth,
             IdentityCardNumber = dto.IdentityCardNumber.Trim(),
             HealthInsuranceNumber = dto.HealthInsuranceNumber?.Trim(),
-            PhoneNumber = dto.PhoneNumber?.Trim() ?? string.Empty,
-            Email = dto.Email?.Trim(),
             Address = dto.Address?.Trim() ?? string.Empty,
-            MedicalHistory = dto.MedicalHistory?.Trim(),
-            DrugAllergies = dto.DrugAllergies?.Trim(),
-            BloodType = dto.BloodType,
             EmergencyContactName = dto.EmergencyContactName?.Trim(),
             EmergencyContactPhone = dto.EmergencyContactPhone?.Trim(),
             EmergencyContactRelation = dto.EmergencyContactRelation?.Trim(),
@@ -134,16 +128,10 @@ public class PatientService : IPatientService
         patient.DateOfBirth = dto.DateOfBirth;
         patient.IdentityCardNumber = dto.IdentityCardNumber.Trim();
         patient.HealthInsuranceNumber = dto.HealthInsuranceNumber?.Trim();
-        patient.PhoneNumber = dto.PhoneNumber?.Trim() ?? string.Empty;
-        patient.Email = dto.Email?.Trim();
         patient.Address = dto.Address?.Trim() ?? string.Empty;
-        patient.MedicalHistory = dto.MedicalHistory?.Trim();
-        patient.DrugAllergies = dto.DrugAllergies?.Trim();
-        patient.BloodType = dto.BloodType;
         patient.EmergencyContactName = dto.EmergencyContactName?.Trim();
         patient.EmergencyContactPhone = dto.EmergencyContactPhone?.Trim();
         patient.EmergencyContactRelation = dto.EmergencyContactRelation?.Trim();
-        patient.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -180,17 +168,11 @@ public class PatientService : IPatientService
             DateOfBirth = p.DateOfBirth,
             IdentityCardNumber = p.IdentityCardNumber,
             HealthInsuranceNumber = p.HealthInsuranceNumber,
-            PhoneNumber = p.PhoneNumber,
-            Email = p.Email,
             Address = p.Address,
-            MedicalHistory = p.MedicalHistory,
-            DrugAllergies = p.DrugAllergies,
-            BloodType = p.BloodType,
             EmergencyContactName = p.EmergencyContactName,
             EmergencyContactPhone = p.EmergencyContactPhone,
             EmergencyContactRelation = p.EmergencyContactRelation,
-            CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
+            CreatedAt = p.CreatedAt
         };
     }
 }

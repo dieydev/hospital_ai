@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System;
 using HospitalAI.Infrastructure.Data;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace HospitalAI.ExaminationService.Controllers
 {
@@ -43,13 +44,34 @@ namespace HospitalAI.ExaminationService.Controllers
 
             if (vnp_ResponseCode == "00")
             {
-                // Thanh toán thành công, cập nhật trạng thái lịch khám / Examination thành "Paid"
-                if (Guid.TryParse(vnp_TxnRef, out Guid examId))
+                if (Guid.TryParse(vnp_TxnRef, out Guid billingId))
                 {
-                    var exam = _dbContext.Examinations.FirstOrDefault(e => e.Id == examId);
-                    if (exam != null)
+                    var billing = await _dbContext.Billings
+                        .Include(b => b.Items)
+                        .FirstOrDefaultAsync(b => b.Id == billingId);
+
+                    if (billing != null && billing.Status != "Paid")
                     {
-                        exam.Status = "Paid";
+                        billing.Status = "Paid";
+                        billing.PaidAt = DateTime.UtcNow;
+                        billing.PaymentMethod = "VNPay";
+                        billing.TransactionRef = vnp_TxnRef;
+
+                        // Logic update according to billing type
+                        if (billing.BillingType == "ServiceOrder")
+                        {
+                            var item = billing.Items.FirstOrDefault();
+                            if (item != null && item.ReferenceId.HasValue)
+                            {
+                                var serviceOrder = await _dbContext.ServiceOrders.FirstOrDefaultAsync(s => s.Id == item.ReferenceId.Value);
+                                if (serviceOrder != null) serviceOrder.Status = "Paid";
+                            }
+                        }
+                        else if (billing.BillingType == "Registration")
+                        {
+                            // Could update QueueTicket status or something else if needed
+                        }
+
                         await _dbContext.SaveChangesAsync();
                     }
                 }
