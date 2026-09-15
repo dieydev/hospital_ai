@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+
 using System.Collections.Generic;
 
 namespace HospitalAI.Application.Interfaces;
@@ -12,6 +12,6 @@ public class PaymentInformationModel
 
 public interface IPaymentService
 {
-    string CreatePaymentUrl(PaymentInformationModel model, HttpContext context);
-    bool ValidateSignature(IQueryCollection collections);
+    string CreatePaymentUrl(PaymentInformationModel model, string ipAddress);
+    bool ValidateSignature(IDictionary<string, string> collections);
 }

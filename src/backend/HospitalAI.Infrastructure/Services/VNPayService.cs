@@ -19,7 +19,7 @@ public class VNPayService : IPaymentService
         _configuration = configuration;
     }
 
-    public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context)
+    public string CreatePaymentUrl(PaymentInformationModel model, string ipAddress)
     {
         var timeZoneById = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
         var timeNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneById);
@@ -39,7 +39,7 @@ public class VNPayService : IPaymentService
             { "vnp_Amount", (model.Amount * 100).ToString() }, 
             { "vnp_CreateDate", timeNow.ToString("yyyyMMddHHmmss") },
             { "vnp_CurrCode", "VND" },
-            { "vnp_IpAddr", context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1" },
+            { "vnp_IpAddr", ipAddress },
             { "vnp_Locale", "vn" },
             { "vnp_OrderInfo", model.OrderDescription },
             { "vnp_OrderType", "other" },
@@ -70,10 +70,10 @@ public class VNPayService : IPaymentService
         return $"{vnp_Url}?{queryString}&vnp_SecureHash={vnp_SecureHash}";
     }
 
-    public bool ValidateSignature(IQueryCollection collections)
+    public bool ValidateSignature(IDictionary<string, string> collections)
     {
         var vnp_HashSecret = _configuration["Vnpay:HashSecret"];
-        var vnp_SecureHash = collections.FirstOrDefault(p => p.Key == "vnp_SecureHash").Value.ToString();
+        var vnp_SecureHash = collections["vnp_SecureHash"];
 
         var vnpayData = collections
             .Where(x => x.Key.StartsWith("vnp_") && x.Key != "vnp_SecureHash" && x.Key != "vnp_SecureHashType")

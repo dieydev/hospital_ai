@@ -23,14 +23,16 @@ namespace HospitalAI.ExaminationService.Controllers
         [HttpPost("create-payment-url")]
         public IActionResult CreatePaymentUrl([FromBody] PaymentInformationModel model)
         {
-            var url = _paymentService.CreatePaymentUrl(model, HttpContext);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+            var url = _paymentService.CreatePaymentUrl(model, ipAddress);
             return Ok(new { Url = url });
         }
 
         [HttpGet("vnpay-return")]
         public async Task<IActionResult> PaymentCallback()
         {
-            var response = _paymentService.ValidateSignature(Request.Query);
+            var dict = Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString());
+            var response = _paymentService.ValidateSignature(dict);
             if (!response)
             {
                 return BadRequest(new { Message = "Chữ ký không hợp lệ" });

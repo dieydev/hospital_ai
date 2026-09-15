@@ -279,6 +279,18 @@ CREATE TABLE dbo.NhatKyGoiYAI (
     CONSTRAINT FK_NhatKyGoiYAI_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE
 );
 GO
+CREATE TABLE dbo.ChiTietChiDinhDV (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    ExaminationId UNIQUEIDENTIFIER NOT NULL,
+    ServiceName NVARCHAR(150) NOT NULL,
+    ServiceCategory NVARCHAR(100) NOT NULL DEFAULT N'Xét nghiệm',
+    Price DECIMAL(18,2) NOT NULL DEFAULT 0,
+    Result NVARCHAR(MAX) NULL,
+    Status NVARCHAR(50) NOT NULL DEFAULT N'Đã có kết quả',
+    CONSTRAINT PK_ChiTietChiDinhDV PRIMARY KEY (Id),
+    -- Ràng buộc khóa ngoại về bảng LuotKhamBenh (dựa theo code C# của bạn)
+    CONSTRAINT FK_ChiTietChiDinhDV_LuotKham FOREIGN KEY (ExaminationId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE
+);
 
 -- ============================================================================
 -- PHẦN 2: CHÈN DỮ LIỆU MẪU (CHẠY TRONG 1 BATCH ĐỂ GIỮ LIÊN KẾT BIẾN)

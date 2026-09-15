@@ -67,7 +67,7 @@ class AccountProfileView extends StatelessWidget {
                       child: CircleAvatar(
                         radius: 32,
                         backgroundColor: const Color(0xFFE0F2FE),
-                        backgroundImage: NetworkImage(user?.avatarUrl ?? 'https://api.dicebear.com/7.x/avataaars/svg?seed=PatientAn'),
+                        backgroundImage: NetworkImage((user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) ? user.avatarUrl! : 'https://api.dicebear.com/7.x/avataaars/svg?seed=PatientAn'),
                         child: user?.avatarUrl == null ? const Icon(Icons.person, size: 36, color: AppTheme.primaryColor) : null,
                       ),
                     ),

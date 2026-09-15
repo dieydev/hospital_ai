@@ -6,6 +6,9 @@ class AppointmentProvider extends ChangeNotifier {
   
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
   
   List<String> _departments = [];
   List<String> get departments => _departments;
@@ -13,6 +16,8 @@ class AppointmentProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _doctors = [];
   List<Map<String, dynamic>> get doctors => _doctors;
 
+  // Ideally this should also come from API to avoid conflict, 
+  // but keeping it as requested until backend provides a specific endpoint.
   List<String> _timeSlots = [
     '07:30 - 08:00',
     '08:00 - 08:30',
@@ -28,22 +33,15 @@ class AppointmentProvider extends ChangeNotifier {
 
   Future<void> fetchDepartments() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
-      // Temporary fallback until backend is fully up
-      try {
-        final res = await _apiService.get('/departments');
-        _departments = List<String>.from(res.map((d) => d['name']));
-      } catch (e) {
-        _departments = [
-          'Khoa Nội Tổng Hợp',
-          'Khoa Nhi',
-          'Khoa Mắt',
-          'Khoa Ngoại',
-          'Khoa Tai Mũi Họng',
-          'Khoa Răng Hàm Mặt',
-        ];
-      }
+      final res = await _apiService.get('/queue/departments');
+      _departments = List<String>.from(res.map((d) => d['departmentName']));
+    } catch (e) {
+      _departments = [];
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -52,59 +50,17 @@ class AppointmentProvider extends ChangeNotifier {
 
   Future<void> fetchDoctors(String department) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
-      try {
-        final res = await _apiService.get('/doctors?department=$department');
-        _doctors = List<Map<String, dynamic>>.from(res);
-      } catch (e) {
-        // Fallback dummy data
-        final dummyDoctors = [
-          {
-            'name': 'BS. CKII. Nguyễn Thanh Duy',
-            'dept': 'Khoa Nội Tổng Hợp',
-            'title': 'Trưởng Khoa Nội',
-            'avatar': 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80',
-          },
-          {
-            'name': 'BS. CKI. Lê Văn Tuấn',
-            'dept': 'Khoa Nội Tổng Hợp',
-            'title': 'Bác sĩ Điều trị',
-            'avatar': 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
-          },
-          {
-            'name': 'BS. CKI. Phạm Minh Đức',
-            'dept': 'Khoa Nhi',
-            'title': 'Trưởng Khoa Nhi',
-            'avatar': 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80',
-          },
-          {
-            'name': 'BS. Trần Ngọc Mai',
-            'dept': 'Khoa Mắt',
-            'title': 'Trưởng Khoa Mắt',
-            'avatar': 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80',
-          },
-          {
-            'name': 'BS. CKII. Hoàng Văn Hùng',
-            'dept': 'Khoa Ngoại',
-            'title': 'Trưởng Khoa Ngoại',
-            'avatar': 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&auto=format&fit=crop&q=80',
-          },
-          {
-            'name': 'BS. CKI. Vũ Thị Hà',
-            'dept': 'Khoa Tai Mũi Họng',
-            'title': 'Trưởng Khoa TMH',
-            'avatar': 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=150&auto=format&fit=crop&q=80',
-          },
-          {
-            'name': 'BS. Đỗ Minh Triết',
-            'dept': 'Khoa Răng Hàm Mặt',
-            'title': 'Trưởng Khoa RHM',
-            'avatar': 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80',
-          }
-        ];
-        _doctors = dummyDoctors.where((d) => d['dept'] == department).toList();
-      }
+      final res = await _apiService.get('/auth/doctors');
+      final allDoctors = List<Map<String, dynamic>>.from(res);
+      // Filter by department locally since backend doesn't filter
+      _doctors = allDoctors.where((doc) => doc['dept'] == department).toList();
+    } catch (e) {
+      _doctors = [];
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -116,6 +72,8 @@ class AppointmentProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _apiService.post('/appointments', appointmentData);
+    } catch (e) {
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -131,7 +89,7 @@ class AppointmentProvider extends ChangeNotifier {
       });
       return res['url'] as String?;
     } catch (e) {
-      return null;
+      rethrow;
     }
   }
 }

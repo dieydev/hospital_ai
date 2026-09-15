@@ -43,6 +43,8 @@ public class AuthService : IAuthService
         var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
         var (token, expiresAt) = _tokenGenerator.GenerateToken(user, roles);
 
+        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.PhoneNumber == user.PhoneNumber);
+
         return new AuthResponseDto
         {
             Token = token,
@@ -57,7 +59,9 @@ public class AuthService : IAuthService
                 Specialty = user.Specialty,
                 Title = user.Title,
                 Roles = roles,
-                AvatarUrl = user.AvatarUrl
+                AvatarUrl = user.AvatarUrl,
+                PatientCode = patient?.PatientCode,
+                IdentityCardNumber = patient?.IdentityCardNumber
             }
         };
     }
@@ -132,6 +136,36 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
         }
 
+        string? patientCode = null;
+
+        if (roleName == "Patient" && !string.IsNullOrWhiteSpace(request.IdentityCardNumber))
+        {
+            var existingCCCD = await _context.Patients.AnyAsync(p => p.IdentityCardNumber == request.IdentityCardNumber.Trim());
+            if (existingCCCD)
+            {
+                throw new Exception($"Số CCCD {request.IdentityCardNumber} đã tồn tại trong hệ thống!");
+            }
+
+            var currentYear = DateTime.Now.Year;
+            var prefix = $"BN{currentYear}";
+            var count = await _context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
+            patientCode = $"{prefix}{(count + 1):D6}";
+
+            var patient = new Patient
+            {
+                Id = Guid.NewGuid(),
+                PatientCode = patientCode,
+                FullName = request.FullName.Trim(),
+                Gender = request.Gender ?? "Nam",
+                DateOfBirth = DateTime.UtcNow.AddYears(-20), // Default DateOfBirth if not provided
+                IdentityCardNumber = request.IdentityCardNumber.Trim(),
+                PhoneNumber = request.PhoneNumber.Trim(),
+                Email = request.Email?.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Patients.Add(patient);
+        }
+
         var newUser = new User
         {
             Username = request.Username,
@@ -161,7 +195,9 @@ public class AuthService : IAuthService
             Specialty = newUser.Specialty,
             Title = newUser.Title,
             Roles = new List<string> { role.Name },
-            AvatarUrl = newUser.AvatarUrl
+            AvatarUrl = newUser.AvatarUrl,
+            PatientCode = patientCode,
+            IdentityCardNumber = request.IdentityCardNumber?.Trim()
         };
     }
 
@@ -177,6 +213,8 @@ public class AuthService : IAuthService
             throw new Exception("Không tìm thấy thông tin người dùng.");
         }
 
+        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.PhoneNumber == user.PhoneNumber);
+
         return new UserProfileDto
         {
             Id = user.Id,
@@ -187,7 +225,9 @@ public class AuthService : IAuthService
             Specialty = user.Specialty,
             Title = user.Title,
             Roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList(),
-            AvatarUrl = user.AvatarUrl
+            AvatarUrl = user.AvatarUrl,
+            PatientCode = patient?.PatientCode,
+            IdentityCardNumber = patient?.IdentityCardNumber
         };
     }
 

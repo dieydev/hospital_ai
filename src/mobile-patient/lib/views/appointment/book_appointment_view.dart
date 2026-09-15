@@ -210,6 +210,21 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             const SizedBox(height: 16),
             if (provider.isLoading && provider.departments.isEmpty)
               const Center(child: CircularProgressIndicator())
+            else if (provider.errorMessage != null && provider.departments.isEmpty)
+              Center(
+                child: Column(
+                  children: [
+                    Text('Lỗi: ${provider.errorMessage}', style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () => context.read<AppointmentProvider>().fetchDepartments(),
+                      child: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              )
+            else if (provider.departments.isEmpty)
+              const Center(child: Text('Chưa có danh sách khoa.', style: TextStyle(color: Colors.grey)))
             else
               ...provider.departments.map((dept) {
                 final isSelected = _selectedDepartment == dept;
@@ -251,8 +266,25 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             const SizedBox(height: 4),
             Text('Danh sách bác sĩ thuộc khoa: ${_selectedDepartment ?? ''}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
             const SizedBox(height: 16),
-            if (provider.isLoading)
+            if (provider.isLoading && provider.doctors.isEmpty)
               const Center(child: CircularProgressIndicator())
+            else if (provider.errorMessage != null && provider.doctors.isEmpty)
+              Center(
+                child: Column(
+                  children: [
+                    Text('Lỗi: ${provider.errorMessage}', style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_selectedDepartment != null) {
+                          context.read<AppointmentProvider>().fetchDoctors(_selectedDepartment!);
+                        }
+                      },
+                      child: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              )
             else if (provider.doctors.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(20),

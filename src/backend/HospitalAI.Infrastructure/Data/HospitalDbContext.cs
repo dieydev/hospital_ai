@@ -19,6 +19,22 @@ public class HospitalDbContext : DbContext
     public DbSet<PrescriptionDetail> PrescriptionDetails => Set<PrescriptionDetail>();
     public DbSet<ServiceOrderDetail> ServiceOrderDetails => Set<ServiceOrderDetail>();
 
+    // New Entities
+    public DbSet<StaffProfile> StaffProfiles => Set<StaffProfile>();
+    public DbSet<DoctorSchedule> DoctorSchedules => Set<DoctorSchedule>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<PatientAllergy> PatientAllergies => Set<PatientAllergy>();
+    public DbSet<MedicalHistory> MedicalHistories => Set<MedicalHistory>();
+    public DbSet<VitalSign> VitalSigns => Set<VitalSign>();
+    public DbSet<SoapNote> SoapNotes => Set<SoapNote>();
+    public DbSet<Diagnosis> Diagnoses => Set<Diagnosis>();
+    public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<MedicalAttachment> MedicalAttachments => Set<MedicalAttachment>();
+    public DbSet<ServiceOrder> ServiceOrders => Set<ServiceOrder>();
+    public DbSet<ServiceResult> ServiceResults => Set<ServiceResult>();
+    public DbSet<MedicalGuideline> MedicalGuidelines => Set<MedicalGuideline>();
+    public DbSet<AILog> AILogs => Set<AILog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -164,6 +180,166 @@ public class HospitalDbContext : DbContext
             entity.ToTable("ChiTietChiDinhDV", "dbo");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Price).HasPrecision(18, 2);
+        });
+
+        // Configurations for New Entities
+        modelBuilder.Entity<StaffProfile>(entity =>
+        {
+            entity.ToTable("HoSoNhanVien", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).HasColumnName("TaiKhoanId");
+            entity.Property(e => e.DepartmentId).HasColumnName("KhoaPhongId");
+            entity.Property(e => e.FullName).HasColumnName("HoTen").HasMaxLength(100);
+            entity.Property(e => e.Title).HasColumnName("ChucDanh").HasMaxLength(50);
+            entity.Property(e => e.IsAvailable).HasColumnName("TrangThaiSanSang");
+        });
+
+        modelBuilder.Entity<PatientAllergy>(entity =>
+        {
+            entity.ToTable("DiUngBenhNhan", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PatientId).HasColumnName("BenhNhanId");
+            entity.Property(e => e.AllergyType).HasColumnName("LoaiDiUng").HasMaxLength(20);
+            entity.Property(e => e.Allergen).HasColumnName("TenChatDiUng").HasMaxLength(100);
+            entity.Property(e => e.Severity).HasColumnName("MucDoDiUng").HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<MedicalHistory>(entity =>
+        {
+            entity.ToTable("TienSuBenhLy", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PatientId).HasColumnName("BenhNhanId");
+            entity.Property(e => e.DiseaseName).HasColumnName("TenBenhNen").HasMaxLength(150);
+            entity.Property(e => e.OnsetDate).HasColumnName("NgayPhatBenh");
+            entity.Property(e => e.Notes).HasColumnName("GhiChu").HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<DoctorSchedule>(entity =>
+        {
+            entity.ToTable("LichLamViecBacSi", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.StaffId).HasColumnName("NhanVienId");
+            entity.Property(e => e.DepartmentId).HasColumnName("KhoaPhongId");
+            entity.Property(e => e.WorkDate).HasColumnName("NgayLamViec");
+            entity.Property(e => e.TimeSlot).HasColumnName("KhungGioKham").HasMaxLength(50);
+            entity.Property(e => e.MaxPatients).HasColumnName("SoCaToiDa");
+        });
+
+        modelBuilder.Entity<Appointment>(entity =>
+        {
+            entity.ToTable("LichHenKham", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PatientId).HasColumnName("BenhNhanId");
+            entity.Property(e => e.ScheduleId).HasColumnName("LichLamViecId");
+            entity.Property(e => e.AppointmentDate).HasColumnName("NgayDatHen");
+            entity.Property(e => e.Symptoms).HasColumnName("GhiChuTrieuChung").HasMaxLength(500);
+            entity.Property(e => e.Status).HasColumnName("TrangThaiLichHen").HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<VitalSign>(entity =>
+        {
+            entity.ToTable("ChiSoSinhHieu", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.PulseRate).HasColumnName("Mach");
+            entity.Property(e => e.Temperature).HasColumnName("NhietDo").HasColumnType("decimal(4,2)");
+            entity.Property(e => e.SystolicBloodPressure).HasColumnName("HuyetApTamThu");
+            entity.Property(e => e.DiastolicBloodPressure).HasColumnName("HuyetApTamTruong");
+            entity.Property(e => e.Weight).HasColumnName("CanNang").HasColumnType("decimal(5,2)");
+            entity.Property(e => e.Height).HasColumnName("ChieuCao").HasColumnType("decimal(5,2)");
+            entity.Property(e => e.MeasurementTime).HasColumnName("ThoiDiemDo");
+        });
+
+        modelBuilder.Entity<SoapNote>(entity =>
+        {
+            entity.ToTable("GhiChuSOAP", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.Subjective).HasColumnName("TrieuChungChuQuan");
+            entity.Property(e => e.Objective).HasColumnName("KhamKhachQuan");
+            entity.Property(e => e.Assessment).HasColumnName("DanhGiaLamSang");
+            entity.Property(e => e.Plan).HasColumnName("KeHoachXuTri");
+        });
+
+        modelBuilder.Entity<Diagnosis>(entity =>
+        {
+            entity.ToTable("ChanDoanBenh", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.ICD10Code).HasColumnName("MaICD10").HasMaxLength(10);
+            entity.Property(e => e.ICD10Name).HasColumnName("TenBenhICD10").HasMaxLength(255);
+            entity.Property(e => e.IsPrimary).HasColumnName("LaBenhChinh");
+            entity.Property(e => e.Notes).HasColumnName("GhiChuChiTiet").HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Prescription>(entity =>
+        {
+            entity.ToTable("DonThuoc", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.DoctorId).HasColumnName("BacSiId");
+            entity.Property(e => e.PrescribedTime).HasColumnName("ThoiGianKy");
+            entity.Property(e => e.DigitalSignature).HasColumnName("ChuKySoBacSi");
+            entity.Property(e => e.DoctorAdvice).HasColumnName("LoiDanBacSi").HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<MedicalAttachment>(entity =>
+        {
+            entity.ToTable("DinhKemBenhAn", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.FileFormat).HasColumnName("DinhDangFile").HasMaxLength(10);
+            entity.Property(e => e.FileUrl).HasColumnName("DuongDanFile").HasMaxLength(500);
+            entity.Property(e => e.Description).HasColumnName("MoTaFile").HasMaxLength(255);
+            entity.Property(e => e.UploadTime).HasColumnName("ThoiGianTaiLen");
+        });
+
+        modelBuilder.Entity<ServiceOrder>(entity =>
+        {
+            entity.ToTable("ChiDinhCanLamSang", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.DoctorId).HasColumnName("BacSiChiDinhId");
+            entity.Property(e => e.ServiceCode).HasColumnName("MaDichVu").HasMaxLength(20);
+            entity.Property(e => e.ServiceName).HasColumnName("TenDichVu").HasMaxLength(150);
+            entity.Property(e => e.Status).HasColumnName("TrangThaiChiDinh").HasMaxLength(20);
+            entity.Property(e => e.OrderTime).HasColumnName("ThoiGianChiDinh");
+        });
+
+        modelBuilder.Entity<ServiceResult>(entity =>
+        {
+            entity.ToTable("KetQuaCanLamSang", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ServiceOrderId).HasColumnName("ChiDinhId");
+            entity.Property(e => e.TechnicianId).HasColumnName("KyThuatVienId");
+            entity.Property(e => e.MetricName).HasColumnName("TenChiSo").HasMaxLength(100);
+            entity.Property(e => e.MeasuredValue).HasColumnName("GiaTriDo").HasMaxLength(50);
+            entity.Property(e => e.ReferenceRange).HasColumnName("KhoangThamChieu").HasMaxLength(50);
+            entity.Property(e => e.IsAbnormal).HasColumnName("CoBatThuong");
+            entity.Property(e => e.ImageConclusion).HasColumnName("KetLuanHinhAnh");
+            entity.Property(e => e.ApprovalTime).HasColumnName("ThoiGianKyDuyet");
+        });
+
+        modelBuilder.Entity<MedicalGuideline>(entity =>
+        {
+            entity.ToTable("TaiLieuPhacDo", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasColumnName("TieuDe").HasMaxLength(255);
+            entity.Property(e => e.Content).HasColumnName("NoiDungTho");
+            entity.Property(e => e.Specialty).HasColumnName("ChuyenKhoa").HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasColumnName("NgayCapNhat");
+        });
+
+        modelBuilder.Entity<AILog>(entity =>
+        {
+            entity.ToTable("NhatKyGoiYAI", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.AIType).HasColumnName("LoaiTroLyAI").HasMaxLength(30);
+            entity.Property(e => e.InputData).HasColumnName("DuLieuDauVao");
+            entity.Property(e => e.OutputResult).HasColumnName("KetQuaGoiYAI");
+            entity.Property(e => e.DoctorFeedback).HasColumnName("PhanHoiBacSi").HasMaxLength(20);
+            entity.Property(e => e.CreatedAt).HasColumnName("ThoiGianTao");
         });
     }
 }

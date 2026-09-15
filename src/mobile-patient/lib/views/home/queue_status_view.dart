@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../../services/api_service.dart';
 import '../../core/theme.dart';
 
 class QueueStatusView extends StatefulWidget {
@@ -32,9 +32,9 @@ class _QueueStatusViewState extends State<QueueStatusView> {
 
   Future<void> _fetchLiveQueue() async {
     try {
-      final res = await http.get(Uri.parse('http://localhost:5000/api/queue'));
-      if (res.statusCode == 200) {
-        final List data = jsonDecode(res.body);
+      final apiService = ApiService();
+      final data = await apiService.get('/queue');
+      if (data is List) {
         final calling = data.firstWhere((t) => t['status'] == 'Calling', orElse: () => null);
         if (calling != null) {
           setState(() {

@@ -1,0 +1,334 @@
+Bạn là Senior Flutter Developer, hãy audit và hoàn thiện toàn bộ Mobile Patient App của dự án Hospital_AI tại `src/mobile-patient`.
+
+Mục tiêu: biến app hiện tại thành một ứng dụng đặt lịch khám có kiến trúc sạch, ổn định, bảo mật và trải nghiệm gần Production, nhưng tuyệt đối không phá vỡ các chức năng/backend đang hoạt động.
+
+### 1. Nguyên tắc bắt buộc
+
+* Đọc và phân tích toàn bộ source code hiện tại trước khi chỉnh sửa.
+* Không tự ý viết lại toàn bộ project.
+* Không thay đổi API contract/backend nếu chưa kiểm tra code backend hiện tại.
+* Tái sử dụng các Provider, Service, Model và View đang có nếu chúng còn phù hợp.
+* Không thêm package chỉ vì "Production thường dùng"; chỉ thêm khi thực sự cần và tương thích với backend hiện tại.
+* Sau mỗi nhóm thay đổi phải kiểm tra compile/analyze/test và sửa lỗi phát sinh.
+* Ưu tiên tính ổn định, bảo mật và nghiệp vụ hơn hiệu ứng UI.
+
+### 2. Network Layer
+
+Đánh giá `http` hiện tại. Nếu phù hợp, migrate sang `dio`.
+
+Thiết kế một Network/API layer tập trung:
+
+* Base URL cấu hình tập trung.
+* Request/response handling.
+* Timeout.
+* Error handling thống nhất.
+* HTTP status mapping.
+* Tự động gắn `Authorization: Bearer <token>`.
+* Xử lý 401 và refresh token nếu backend hiện tại hỗ trợ refresh token.
+* Không lưu API key/secret trong Flutter.
+* Không để từng View tự gọi HTTP trực tiếp.
+
+Nếu migrate từ `http` sang `dio`, phải đảm bảo toàn bộ chức năng cũ vẫn hoạt động.
+
+### 3. Authentication & Security
+
+* Kiểm tra toàn bộ login/register/logout flow.
+* Token nhạy cảm phải được lưu bằng secure storage thay vì SharedPreferences.
+* SharedPreferences chỉ dùng cho các setting không nhạy cảm.
+* Xử lý token hết hạn.
+* Xử lý logout khi refresh token thất bại.
+* Không log token, password hoặc dữ liệu bệnh nhân nhạy cảm.
+* Không hard-code secret/API key trong source code.
+
+### 4. Appointment là nghiệp vụ trung tâm
+
+Hoàn thiện flow:
+
+Trang chủ
+→ Chọn chuyên khoa
+→ Chọn bác sĩ
+→ Chọn ngày
+→ Chọn khung giờ
+→ Nhập/xác nhận thông tin
+→ Xác nhận lịch
+→ Thanh toán nếu cần
+→ Đặt lịch thành công
+→ Hiển thị mã lịch hẹn + QR
+→ Theo dõi lịch hẹn/hàng chờ.
+
+Backend phải là nơi kiểm tra slot còn trống và chống double booking. Flutter không được tự quyết định rằng slot còn trống chỉ dựa vào UI.
+
+Xử lý rõ các trường hợp:
+
+* Slot đã được người khác đặt.
+* Slot không còn khả dụng.
+* API timeout.
+* Mất mạng.
+* Người dùng bấm đặt nhiều lần.
+* Request bị gửi trùng.
+* Server trả 409 Conflict.
+
+Nút "Đặt lịch" phải được disable/loading trong lúc request để tránh submit nhiều lần.
+
+### 5. Appointment State Machine
+
+Chuẩn hóa trạng thái lịch hẹn theo backend hiện tại, ưu tiên mô hình:
+
+PENDING → CONFIRMED → CHECKED_IN → WAITING → IN_PROGRESS → COMPLETED
+
+và các nhánh:
+PENDING/CONFIRMED → CANCELLED
+CONFIRMED → NO_SHOW
+
+Không tự tạo status mới nếu backend hiện tại đã có enum/status khác. Hãy map đúng với backend.
+
+UI phải hiển thị trạng thái bằng text/icon rõ ràng.
+
+### 6. Hủy và đổi lịch
+
+Đối với lịch chưa đến thời gian khám:
+
+* Cho phép Hủy lịch nếu backend hỗ trợ.
+* Cho phép Đổi lịch nếu backend hỗ trợ.
+* Kiểm tra điều kiện hủy/đổi lịch từ backend.
+* Không tự xử lý hoàn tiền giả nếu backend chưa hỗ trợ.
+* Nếu VNPay đã thanh toán, hiển thị đúng trạng thái payment và thông báo rõ ràng thay vì giả lập "hoàn tiền" gây sai nghiệp vụ.
+
+### 7. VNPay
+
+Audit `vnpay_payment_view.dart`.
+
+Xử lý đầy đủ:
+
+* Thanh toán thành công.
+* Thanh toán thất bại.
+* Người dùng đóng WebView.
+* Timeout.
+* Mất mạng.
+* Callback không hợp lệ.
+* Người dùng bấm thanh toán nhiều lần.
+
+Không coi kết quả phía Flutter là nguồn sự thật cuối cùng. Trạng thái thanh toán phải được xác nhận từ backend.
+
+### 8. QR Appointment
+
+QR phải gắn với mã/lịch hẹn thực tế.
+
+Sau khi đặt thành công, hiển thị:
+
+* Mã lịch hẹn.
+* Bác sĩ.
+* Chuyên khoa.
+* Ngày/giờ.
+* Trạng thái.
+* QR Code.
+
+Không đưa dữ liệu bệnh nhân nhạy cảm không cần thiết trực tiếp vào QR.
+
+### 9. Queue / Hàng chờ
+
+Kiểm tra `queue_provider.dart` và Queue Service hiện tại.
+
+Mục tiêu:
+
+* Bệnh nhân xem số thứ tự.
+* Số đang phục vụ.
+* Số của mình.
+* Số người phía trước.
+* Trạng thái hàng chờ.
+* Thời gian chờ ước tính nếu backend cung cấp.
+
+Nếu backend hiện tại đã có SignalR/realtime thì tích hợp cơ chế tương ứng cho Flutter.
+
+Nếu chưa có realtime, triển khai polling có kiểm soát trước; không tự thêm Socket.IO nếu backend không sử dụng Socket.IO.
+
+Không tạo realtime giả ở phía client.
+
+### 10. Push Notification
+
+Đánh giá nhu cầu FCM.
+
+Nếu backend đã có notification infrastructure:
+
+* Tích hợp Firebase Cloud Messaging.
+* Đăng ký device token.
+* Gửi token về backend.
+* Xử lý foreground/background/terminated state.
+* Deep link đến lịch hẹn khi người dùng nhấn notification.
+
+Nếu backend chưa hỗ trợ gửi notification, hãy chuẩn bị kiến trúc/service interface nhưng không tạo flow giả.
+
+Notification nên phục vụ:
+
+* Đặt lịch thành công.
+* Lịch được xác nhận.
+* Nhắc lịch khám.
+* Thay đổi/hủy lịch.
+* Cập nhật hàng chờ khi cần.
+
+### 11. Đặt khám cho người thân
+
+Trong `book_appointment_view.dart`, thiết kế:
+
+* Bản thân.
+* Người thân.
+
+Nếu backend chưa hỗ trợ dependent/family profile, không tự tạo API giả. Hãy xây UI/model/service abstraction phù hợp và ghi rõ phần backend cần bổ sung.
+
+### 12. BHYT
+
+Giữ `bhyt_info_view.dart` ở phạm vi phù hợp với đồ án:
+
+* Lưu thông tin/thẻ BHYT cần thiết.
+* Nếu có lưu ảnh, phải dùng storage an toàn.
+* Không tự xây dựng logic tính phần trăm bảo hiểm nếu backend chưa có nghiệp vụ chính thức.
+* Không log hoặc expose thông tin BHYT.
+
+### 13. UI State
+
+Tất cả màn hình gọi API phải xử lý tối thiểu:
+
+Initial
+Loading
+Success
+Empty
+Error
+Retry
+
+Không để màn hình trắng hoặc crash khi:
+
+* Mất Internet.
+* Backend timeout.
+* API trả 401/403/404/409/500.
+* JSON thiếu field.
+* Database/service tạm thời không khả dụng.
+
+Ưu tiên Skeleton/Loading phù hợp thay vì spinner ở mọi nơi.
+
+### 14. UX
+
+Audit toàn bộ UI hiện tại.
+
+Ưu tiên:
+
+* Home tập trung vào Đặt lịch.
+* Lịch hẹn sắp tới hiển thị nổi bật.
+* Navigation rõ ràng.
+* Button và trạng thái nhất quán.
+* Form validation rõ ràng.
+* Confirmation trước thao tác nguy hiểm.
+* Empty state.
+* Error state.
+* Retry.
+* Accessibility cơ bản.
+* Không lạm dụng animation/effect làm giảm performance.
+
+Không thay đổi visual design lớn nếu không cần thiết; ưu tiên cải thiện UX và consistency.
+
+### 15. Provider / Architecture
+
+Giữ Provider nếu kiến trúc hiện tại phù hợp.
+
+Đảm bảo flow:
+
+View
+→ Provider
+→ Service
+→ API
+→ Backend
+
+Không để View chứa business logic hoặc gọi API trực tiếp.
+
+Kiểm tra:
+
+* Dispose controller/listener.
+* Race condition.
+* Duplicate API request.
+* Memory leak.
+* Provider state bị stale.
+* Loading state bị kẹt.
+
+### 16. Models & API
+
+Audit toàn bộ model JSON parsing:
+
+* Null safety.
+* Optional fields.
+* Enum/status mapping.
+* DateTime parsing.
+* Currency formatting VND.
+* API error model.
+
+Không để app crash chỉ vì backend trả thêm/missing một field không bắt buộc.
+
+### 17. Performance
+
+Kiểm tra:
+
+* API request dư thừa.
+* Rebuild Widget không cần thiết.
+* ListView lớn.
+* Image loading/cache.
+* Memory usage.
+* WebView lifecycle.
+* Provider rebuild.
+
+Không tối ưu quá mức nếu chưa có vấn đề thực tế.
+
+### 18. Medical Data & AI Security
+
+Nếu app có AI:
+Flutter KHÔNG gọi trực tiếp Gemini API.
+
+Luồng phải là:
+
+Flutter
+→ API Gateway
+→ AI Service
+→ Privacy/Data Filter
+→ Gemini API
+
+Chỉ gửi dữ liệu cần thiết cho tác vụ AI. Không gửi toàn bộ hồ sơ bệnh nhân nếu không cần.
+
+Không lưu API key Gemini trong Flutter.
+
+Không log prompt/response chứa thông tin bệnh nhân nhạy cảm.
+
+### 19. Testing
+
+Sau khi hoàn thiện:
+
+* `flutter analyze`
+* `flutter test`
+* Kiểm tra build Android.
+* Test login/logout.
+* Test đặt lịch.
+* Test slot bị người khác đặt.
+* Test hủy lịch.
+* Test payment success/failure.
+* Test mất mạng.
+* Test token hết hạn.
+* Test API 401/403/409/500.
+* Test QR.
+* Test queue.
+* Test notification nếu đã tích hợp.
+
+### 20. Cuối cùng
+
+Sau khi code xong, tạo một báo cáo ngắn gồm:
+
+1. Những vấn đề phát hiện trong project hiện tại.
+2. Những file đã thay đổi.
+3. Package nào được thêm/thay đổi và lý do.
+4. Những API/backend dependency cần có.
+5. Những tính năng đã hoàn thành.
+6. Những tính năng chưa thể hoàn thành vì backend chưa hỗ trợ.
+7. Các lỗi đã sửa.
+8. Kết quả `flutter analyze` và test/build.
+9. Các điểm bảo mật đã cải thiện.
+10. Đề xuất bước tiếp theo.
+
+QUAN TRỌNG:
+Không được chỉ tạo UI mock hoặc dữ liệu giả để đánh dấu "hoàn thành". Ưu tiên kết nối với API/backend thật đang tồn tại trong Hospital_AI. Nếu phát hiện backend chưa có API cần thiết, hãy ghi rõ dependency thay vì tự bịa endpoint.
+
+Hãy bắt đầu bằng việc audit source code hiện tại, lập danh sách vấn đề theo mức độ Critical/High/Medium/Low, sau đó lần lượt sửa theo mức độ ưu tiên. Không hỏi lại những thông tin có thể tự kiểm tra từ source code.

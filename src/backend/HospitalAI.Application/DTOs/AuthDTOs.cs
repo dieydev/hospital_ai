@@ -19,6 +19,8 @@ public class RegisterRequestDto
     public string Role { get; set; } = "Patient"; // Default Role
     public string? Specialty { get; set; }
     public string? Title { get; set; }
+    public string? IdentityCardNumber { get; set; }
+    public string? Gender { get; set; }
 }
 
 public class AuthResponseDto
@@ -39,6 +41,8 @@ public class UserProfileDto
     public string? Title { get; set; }
     public List<string> Roles { get; set; } = new();
     public string AvatarUrl { get; set; } = string.Empty;
+    public string? PatientCode { get; set; }
+    public string? IdentityCardNumber { get; set; }
 }
 
 public class ChangePasswordDto

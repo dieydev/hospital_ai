@@ -52,7 +52,14 @@ class _RegisterViewState extends State<RegisterView> {
     if (!mounted) return;
 
     try {
-      await context.read<AuthProvider>().login('patient01', '123456');
+      await context.read<AuthProvider>().register(
+        username: _phoneController.text.trim(),
+        password: _passwordController.text,
+        fullName: _fullNameController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        cccd: _cccdController.text.trim(),
+        gender: _selectedGender,
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

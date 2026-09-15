@@ -24,11 +24,11 @@ class PatientModel {
   factory PatientModel.fromJson(Map<String, dynamic> json) {
     return PatientModel(
       id: json['id'] ?? '',
-      maBenhNhan: json['maBenhNhan'] ?? '',
-      hoTen: json['hoTen'] ?? '',
-      gioiTinh: json['gioiTinh'] ?? 'Other',
+      maBenhNhan: json['maBenhNhan'] ?? json['patientCode'] ?? '',
+      hoTen: json['hoTen'] ?? json['fullName'] ?? '',
+      gioiTinh: json['gioiTinh'] ?? 'Nam',
       ngaySinh: json['ngaySinh'] ?? '',
-      soCCCD: json['soCCCD'] ?? '',
+      soCCCD: json['soCCCD'] ?? json['identityCardNumber'] ?? '',
       maTheBHYT: json['maTheBHYT'],
       soDienThoai: json['soDienThoai'] ?? json['phoneNumber'] ?? '0987654321',
       avatarUrl: json['avatarUrl'] ?? json['photoUrl'],
