@@ -37,52 +37,7 @@ export interface MongoAILogDocument {
   status: 'SUCCESS' | 'WARNING' | 'ERROR';
 }
 
-// In-Memory & LocalStorage NoSQL Collection Store
-const MOCK_MONGO_AI_LOGS: MongoAILogDocument[] = [
-  {
-    _id: 'mongo-doc-66ba10f1',
-    timestamp: '2026-08-08 14:35:12',
-    userRole: 'Bác sĩ Điều trị',
-    doctorName: 'BS. CKII. Nguyễn Thanh Duy',
-    actionType: 'CHAT_ASSISTANT',
-    modelUsed: 'gemini-3.6-flash',
-    promptText: 'Tóm tắt tiền sử bệnh án của bệnh nhân Nguyễn Văn An [CCCD_REDACTED]',
-    responseText: 'Tóm tắt EMR: Tiền sử Tăng huyết áp độ 1 (Amlodipine 5mg). Khám 02/08/2026 đau họng 3 ngày, sốt 38.0°C. Bạch cầu 11.2 G/L. Đơn thuốc Augmentin 1g + Paracetamol 500mg.',
-    latencyMs: 312,
-    piiRedacted: true,
-    redactedCategories: ['CCCD / CMND', 'Số điện thoại'],
-    sources: ['EMR_LK20260802-01.pdf', 'KetQuaXetNghiem_CBC.pdf'],
-    status: 'SUCCESS',
-  },
-  {
-    _id: 'mongo-doc-66ba10f2',
-    timestamp: '2026-08-08 14:40:05',
-    userRole: 'Bác sĩ Điều trị',
-    doctorName: 'BS. CKI. Lê Văn Tuấn',
-    actionType: 'ICD10_SUGGESTION',
-    modelUsed: 'gemini-3.6-flash',
-    promptText: 'Triệu chứng: Đau họng 3 ngày, sốt nhẹ 38.0°C',
-    responseText: 'Mã ICD-10 gợi ý: J02.9 (Viêm họng cấp - 98%), J03.9 (Viêm amydal cấp - 85%), J06.9 (Nhiễm trùng hô hấp trên - 72%)',
-    latencyMs: 245,
-    piiRedacted: false,
-    sources: ['Danh mục ICD-10 Bộ Y tế'],
-    status: 'SUCCESS',
-  },
-  {
-    _id: 'mongo-doc-66ba10f3',
-    timestamp: '2026-08-08 15:02:18',
-    userRole: 'Bác sĩ Điều trị',
-    doctorName: 'BS. CKII. Nguyễn Thanh Duy',
-    actionType: 'DRUG_SAFETY_CHECK',
-    modelUsed: 'gemini-2.0-flash (Fallback Cascade)',
-    promptText: 'Kiểm tra kê trùng thuốc: Paracetamol 500mg và Ultracet',
-    responseText: 'Cảnh báo lặp hoạt chất Paracetamol! Cả 2 thuốc Paracetamol 500mg và Ultracet đều chứa thành phần Paracetamol. Nguy cơ quá liều độc gan.',
-    latencyMs: 198,
-    piiRedacted: false,
-    sources: ['Dược thư Quốc gia Việt Nam 2024'],
-    status: 'WARNING',
-  },
-];
+// MOCK_MONGO_AI_LOGS has been removed. Data is now fetched directly from Backend API (MongoDB).
 
 // RAG Knowledge Base Context for EMR Queries
 const RAG_EMR_CONTEXT_DATABASE = `
@@ -103,24 +58,34 @@ const RAG_EMR_CONTEXT_DATABASE = `
    - Tiền sử: Dị ứng thuốc Penicillin. Khám Tai Mũi Họng ngày 05/08/2026. Chẩn đoán Viêm mũi dị ứng (ICD-10: J30.4).
 `;
 
+import api from './api';
+
 export const geminiService = {
   /**
-   * Save AI Log document into MongoDB Store
+   * Save AI Log document into MongoDB Store via Backend API
    */
   async saveAILogToMongo(doc: Omit<MongoAILogDocument, '_id'>): Promise<MongoAILogDocument> {
-    const newDoc: MongoAILogDocument = {
-      _id: `mongo-doc-${Math.random().toString(36).substring(2, 10)}`,
-      ...doc,
-    };
-    MOCK_MONGO_AI_LOGS.unshift(newDoc);
-    return newDoc;
+    try {
+      const response = await api.post('/ailogs', doc);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to save AI log to MongoDB via Backend:', error);
+      // Fallback mock return so UI doesn't break if API is down
+      return { _id: `temp-${Date.now()}`, ...doc } as MongoAILogDocument;
+    }
   },
 
   /**
-   * Fetch all AI Logs from MongoDB Store
+   * Fetch all AI Logs from MongoDB Store via Backend API
    */
   async getAILogsFromMongo(): Promise<MongoAILogDocument[]> {
-    return MOCK_MONGO_AI_LOGS;
+    try {
+      const response = await api.get('/ailogs');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch AI logs from Backend:', error);
+      return [];
+    }
   },
 
   /**
