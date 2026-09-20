@@ -516,96 +516,26 @@ export const patientService = {
   },
 
   async getPatientById(id: string): Promise<Patient> {
-    try {
-      const response = await api.get(`/patients/${id}`);
-      return mapBackendToPatient(response.data);
-    } catch {
-      const found = localPatients.find((p) => p.id === id);
-      if (!found) throw new Error('Không tìm thấy bệnh nhân');
-      return found;
-    }
+    const response = await api.get(`/patients/${id}`);
+    return mapBackendToPatient(response.data);
   },
 
   async getPatientByCode(code: string): Promise<Patient> {
-    try {
-      const response = await api.get(`/patients/code/${code}`);
-      return mapBackendToPatient(response.data);
-    } catch {
-      const found = localPatients.find((p) => p.maBenhNhan === code);
-      if (!found) throw new Error('Không tìm thấy bệnh nhân');
-      return found;
-    }
+    const response = await api.get(`/patients/code/${code}`);
+    return mapBackendToPatient(response.data);
   },
 
   async createPatient(params: PatientCreateParams): Promise<Patient> {
-    try {
-      const response = await api.post('/patients', params);
-      return mapBackendToPatient(response.data);
-    } catch (err: any) {
-      if (err.response?.data?.message) throw err;
-      const newP: Patient = {
-        id: `p-${Date.now()}`,
-        maBenhNhan: `BN2026${String(localPatients.length + 1).padStart(4, '0')}`,
-        hoTen: params.fullName,
-        gioiTinh: (params.gender === 'Female' ? 'Nữ' : params.gender === 'Male' ? 'Nam' : 'Khác') as 'Nam' | 'Nữ' | 'Khác',
-        ngaySinh: params.dateOfBirth,
-        tuoi: new Date().getFullYear() - new Date(params.dateOfBirth).getFullYear(),
-        soCCCD: params.identityCardNumber,
-        maTheBHYT: params.healthInsuranceNumber,
-        soDienThoai: params.phoneNumber,
-        email: params.email,
-        diaChi: params.address,
-        tienSuBenh: params.medicalHistory,
-        diUngThuoc: params.drugAllergies,
-        nhomMau: params.bloodType,
-        tenNguoiThan: params.emergencyContactName,
-        soDienThoaiNguoiThan: params.emergencyContactPhone,
-        quanHeNguoiThan: params.emergencyContactRelation,
-        isConsentData: params.isConsentData,
-        ngayTao: new Date().toISOString().substring(0, 10),
-      };
-      localPatients.unshift(newP);
-      return newP;
-    }
+    const response = await api.post('/patients', params);
+    return mapBackendToPatient(response.data);
   },
 
   async updatePatient(id: string, params: PatientCreateParams): Promise<Patient> {
-    try {
-      const response = await api.put(`/patients/${id}`, params);
-      return mapBackendToPatient(response.data);
-    } catch (err: any) {
-      if (err.response?.data?.message) throw err;
-      const index = localPatients.findIndex((p) => p.id === id);
-      if (index === -1) throw new Error('Không tìm thấy bệnh nhân để cập nhật');
-      const updated: Patient = {
-        ...localPatients[index],
-        hoTen: params.fullName,
-        gioiTinh: (params.gender === 'Female' ? 'Nữ' : params.gender === 'Male' ? 'Nam' : 'Khác') as 'Nam' | 'Nữ' | 'Khác',
-        ngaySinh: params.dateOfBirth,
-        soCCCD: params.identityCardNumber,
-        maTheBHYT: params.healthInsuranceNumber,
-        soDienThoai: params.phoneNumber,
-        email: params.email,
-        diaChi: params.address,
-        tienSuBenh: params.medicalHistory,
-        diUngThuoc: params.drugAllergies,
-        nhomMau: params.bloodType,
-        tenNguoiThan: params.emergencyContactName,
-        soDienThoaiNguoiThan: params.emergencyContactPhone,
-        quanHeNguoiThan: params.emergencyContactRelation,
-        isConsentData: params.isConsentData,
-        ngayCapNhat: new Date().toISOString().substring(0, 10),
-      };
-      localPatients[index] = updated;
-      return updated;
-    }
+    const response = await api.put(`/patients/${id}`, params);
+    return mapBackendToPatient(response.data);
   },
 
   async deletePatient(id: string): Promise<void> {
-    try {
-      await api.delete(`/patients/${id}`);
-    } catch {
-      localPatients = localPatients.filter((p) => p.id !== id);
-    }
+    await api.delete(`/patients/${id}`);
   },
 };

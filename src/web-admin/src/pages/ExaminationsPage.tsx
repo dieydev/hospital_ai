@@ -140,7 +140,7 @@ export const ExaminationsPage: React.FC = () => {
     try {
       const selectedPatientId = form.getFieldValue('patientId');
       const patient = patients.find((p) => p.id === selectedPatientId);
-      const patientAllergies = patient?.tienSuBenh ? [patient.tienSuBenh] : ['Penicillin']; // Mock allergy context if present
+      const patientAllergies = patient?.tienSuBenh ? [patient.tienSuBenh] : []; // Remove mock
 
       const warnings = await geminiService.checkDrugSafety(prescriptions, patientAllergies);
       setDrugSafetyWarnings(warnings);
@@ -165,7 +165,7 @@ export const ExaminationsPage: React.FC = () => {
       const [examRes, patientRes, queueRes] = await Promise.all([
         examinationService.getExaminations(searchText),
         patientService.getPatients(),
-        queueService.getTodayQueue('dept-01'), // Mặc định giả lập BS khoa Nội
+        queueService.getTodayQueue(), // Bỏ mock department, load hàng chờ theo thực tế
       ]);
       setExaminations(examRes);
       setPatients(patientRes.items || []);
@@ -480,10 +480,9 @@ export const ExaminationsPage: React.FC = () => {
                     onClick={() => {
                       form.resetFields();
                       setDrugSafetyWarnings([]);
-                      // Tự động điền bệnh nhân vào form khám
                       form.setFieldsValue({
-                        patientId: record.patientId, // In reality, this requires patientId to be in the patients list
-                        subjective: 'Đau đầu, mệt mỏi', // Mock
+                        patientId: record.patientId, 
+                        subjective: '', // Yêu cầu bác sĩ tự điền hoặc lấy từ lúc tiếp đón
                         ticketId: record.id, // Lưu lại ID của vé chờ
                       });
                       setIsModalOpen(true);

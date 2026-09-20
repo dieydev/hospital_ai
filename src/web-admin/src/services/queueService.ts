@@ -116,12 +116,8 @@ export const localQueueTickets: QueueTicketItem[] = [
 
 export const queueService = {
   async getDepartments(): Promise<DepartmentItem[]> {
-    try {
-      const response = await api.get('/queue/departments');
-      return response.data || [];
-    } catch {
-      return FALLBACK_DEPARTMENTS;
-    }
+    const response = await api.get('/queue/departments');
+    return response.data || [];
   },
 
   async getTodayQueue(departmentId?: string, status?: string): Promise<QueueTicketItem[]> {
