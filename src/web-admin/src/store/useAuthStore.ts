@@ -9,33 +9,33 @@ interface AuthState {
   logout: () => void;
 }
 
-const defaultMockUser: UserAccount = {
-  id: 'usr-001',
-  tenDangNhap: 'dr.duy',
-  hoTen: 'BS. CKII. Nguyễn Thanh Duy',
-  email: 'thanhduy.md@hospital-ai.vn',
-  soDienThoai: '0336022526',
-  vaiTro: ['Doctor', 'Admin'],
-  chuyenKhoa: 'Khoa Nội Tổng hợp',
-  chucDanh: 'Trưởng Khoa Nội',
-  trangThaiKichHoat: true,
-  avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor',
+const getInitialUser = (): UserAccount | null => {
+  try {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  } catch {
+    return null;
+  }
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: defaultMockUser,
-  token: localStorage.getItem('token') || 'mock-jwt-token-2026',
+  user: getInitialUser(),
+  token: localStorage.getItem('token') || null,
   setAuth: (user, token) => {
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
     set({ user, token });
   },
   updateUser: (partialUser) => {
-    set((state) => ({
-      user: state.user ? { ...state.user, ...partialUser } : null,
-    }));
+    set((state) => {
+      const newUser = state.user ? { ...state.user, ...partialUser } : null;
+      if (newUser) localStorage.setItem('user', JSON.stringify(newUser));
+      return { user: newUser };
+    });
   },
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     set({ user: null, token: null });
   },
 }));

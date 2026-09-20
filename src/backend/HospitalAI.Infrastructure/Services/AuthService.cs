@@ -75,8 +75,13 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Patient")
-                ?? new Role { Name = "Patient", Description = "Bệnh nhân Google Login" };
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Patient");
+            if (role == null)
+            {
+                role = new Role { Name = "Patient", Description = "Bệnh nhân Google Login" };
+                _context.Roles.Add(role);
+                await _context.SaveChangesAsync();
+            }
 
             user = new User
             {

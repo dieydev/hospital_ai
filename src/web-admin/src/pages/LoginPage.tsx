@@ -76,52 +76,10 @@ export const LoginPage: React.FC = () => {
       setLoginLoading(false);
       navigate('/dashboard');
     } catch (err: any) {
-      const apiError = err.response?.data?.message;
-
-      if (apiError) {
-        setErrorMsg(apiError);
-        showErrorAlert('Đăng nhập thất bại', apiError);
-        setLoginLoading(false);
-        return;
-      }
-
-      if (
-        (values.username === 'dr.duy' && (values.password === '123456' || values.password === '123')) ||
-        (values.username === 'admin' && (values.password === '123456' || values.password === '123')) ||
-        (values.username === 'receptionist' && (values.password === '123456' || values.password === '123'))
-      ) {
-        let fullName = 'BS. CKII. Nguyễn Thanh Duy';
-        let role = ['Doctor', 'Admin'];
-        if (values.username === 'admin') {
-          fullName = 'Quản trị viên Hệ thống';
-          role = ['Admin'];
-        } else if (values.username === 'receptionist') {
-          fullName = 'Lễ tân Trần Thị Hương';
-          role = ['Receptionist'];
-        }
-
-        setAuth(
-          {
-            id: 'usr-001',
-            tenDangNhap: values.username,
-            hoTen: fullName,
-            email: `${values.username}@hospital-ai.vn`,
-            soDienThoai: '0336022526',
-            vaiTro: role as any,
-            chuyenKhoa: 'Khoa Nội Tổng hợp',
-            chucDanh: 'Bác sĩ Điều trị',
-            trangThaiKichHoat: true,
-            avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${values.username}`,
-          },
-          'jwt-bearer-token-2026'
-        );
-        showToast(`Đăng nhập thành công! Chào mừng ${fullName}`, 'success');
-        setLoginLoading(false);
-        navigate('/dashboard');
-      } else {
-        setLoginLoading(false);
-        setErrorMsg('Tên đăng nhập hoặc mật khẩu không chính xác.');
-      }
+      const apiError = err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng.';
+      setErrorMsg(apiError);
+      showErrorAlert('Đăng nhập thất bại', apiError);
+      setLoginLoading(false);
     }
   };
 
@@ -161,26 +119,10 @@ export const LoginPage: React.FC = () => {
         showToast(`Đăng nhập Google thành công! Chào mừng ${googleUser.name || googleUser.email}`, 'success');
         setGoogleLoading(false);
         navigate('/dashboard');
-      } catch {
-        // Fallback smooth login if backend DB offline
-        setAuth(
-          {
-            id: 'usr-google-real',
-            tenDangNhap: 'google.user',
-            hoTen: 'Bác sĩ Google OAuth',
-            email: 'user@gmail.com',
-            soDienThoai: '0336022526',
-            vaiTro: ['Doctor', 'Admin'],
-            chuyenKhoa: 'Khoa Nội Tổng hợp',
-            chucDanh: 'Bác sĩ Điều trị',
-            trangThaiKichHoat: true,
-            avatarUrl: 'https://lh3.googleusercontent.com/a/default-user',
-          },
-          `google-token-${Date.now()}`
-        );
-        showToast('Đăng nhập Google OAuth thành công!', 'success');
+      } catch (err: any) {
+        const apiError = err.response?.data?.message || 'Đăng nhập Google thất bại. Vui lòng thử lại.';
+        showErrorAlert('Đăng nhập thất bại', apiError);
         setGoogleLoading(false);
-        navigate('/dashboard');
       }
     },
     onError: (error) => {
