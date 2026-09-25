@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../core/theme.dart';
@@ -83,7 +82,7 @@ class _QueueStatusViewState extends State<QueueStatusView> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -111,7 +110,7 @@ class _QueueStatusViewState extends State<QueueStatusView> {
                   Text(
                     'STT CỦA BẠN',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
@@ -130,7 +129,7 @@ class _QueueStatusViewState extends State<QueueStatusView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -243,7 +242,7 @@ class _QueueStatusViewState extends State<QueueStatusView> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       value: isAlertEnabled,
-                      activeColor: AppTheme.primaryColor,
+                      activeThumbColor: AppTheme.primary,
                       title: const Text('Nhắc nhở qua Thông báo Đẩy', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       subtitle: const Text('Tự động rung & báo âm thanh khi còn 2 người nữa là tới lượt bạn', style: TextStyle(fontSize: 11)),
                       onChanged: (val) {

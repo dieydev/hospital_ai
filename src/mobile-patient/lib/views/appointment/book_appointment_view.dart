@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/appointment_provider.dart';
@@ -64,44 +65,52 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Đặt Lịch Khám Trực Tuyến'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: const Text('Đặt Lịch Khám'),
       ),
       body: Column(
         children: [
-          // Step Progress Tab Bar
+          // Step Progress Tab Bar (Horizontal Stepper)
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: _buildStepTab(0, '1. Khoa')),
-                Expanded(child: _buildStepTab(1, '2. Bác sĩ')),
-                Expanded(child: _buildStepTab(2, '3. Ngày & Giờ')),
-                Expanded(child: _buildStepTab(3, '4. Xác nhận')),
+                _buildStepperItem(0, 'Khoa'),
+                _buildStepperLine(0),
+                _buildStepperItem(1, 'Bác sĩ'),
+                _buildStepperLine(1),
+                _buildStepperItem(2, 'Lịch'),
+                _buildStepperLine(2),
+                _buildStepperItem(3, 'Xác nhận'),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
-
+          
           // Step Content Container
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: _buildCurrentStepContent(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppTheme.borderSubtle),
+                ),
+                child: _buildCurrentStepContent(),
+              ),
             ),
           ),
         ],
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, -2))],
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          border: const Border(top: BorderSide(color: AppTheme.borderSubtle)),
         ),
         child: Row(
           children: [
@@ -110,11 +119,11 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Color(0xFFBAE6FD)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: const BorderSide(color: AppTheme.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: () => setState(() => _currentStep -= 1),
-                  child: const Text('Quay lại', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  child: Text('Quay lại', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppTheme.primary)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -123,10 +132,11 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               flex: 2,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0, // Removed default elevation
                 ),
                 onPressed: () {
                   if (_currentStep < 3) {
@@ -137,7 +147,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 },
                 child: Text(
                   _currentStep == 3 ? 'XÁC NHẬN ĐẶT LỊCH' : 'TIẾP THEO',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),
             ),
@@ -147,52 +157,54 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
     );
   }
 
-  Widget _buildStepTab(int stepIndex, String title) {
+  Widget _buildStepperItem(int stepIndex, String title) {
     final isActive = _currentStep >= stepIndex;
     final isCurrent = _currentStep == stepIndex;
 
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
       onTap: () => setState(() => _currentStep = stepIndex),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isCurrent ? AppTheme.primaryColor : (isActive ? const Color(0xFFBAE6FD) : Colors.transparent),
-              width: isCurrent ? 3 : 1,
+      child: Column(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: isActive ? AppTheme.primary : AppTheme.background,
+              shape: BoxShape.circle,
+              border: Border.all(color: isActive ? AppTheme.primary : AppTheme.borderSubtle, width: 2),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${stepIndex + 1}',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isActive ? Colors.white : AppTheme.textSecondary,
+              ),
             ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 12,
-              backgroundColor: isActive ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-              child: Text(
-                '${stepIndex + 1}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isActive ? Colors.white : const Color(0xFF64748B),
-                ),
-              ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+              color: isCurrent ? AppTheme.primaryDark : AppTheme.textSecondary,
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                color: isCurrent ? AppTheme.primaryDark : const Color(0xFF64748B),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepperLine(int stepIndex) {
+    final isActive = _currentStep > stepIndex;
+    return Expanded(
+      child: Container(
+        height: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        alignment: Alignment.topCenter,
+        color: isActive ? AppTheme.primary : AppTheme.borderSubtle,
       ),
     );
   }
@@ -204,10 +216,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bước 1: Chọn Chuyên Khoa Khám', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
+            Text('Chọn Chuyên Khoa Khám', style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
             const SizedBox(height: 4),
-            const Text('Vui lòng chọn khoa khám theo nhu cầu của bạn', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-            const SizedBox(height: 16),
+            Text('Vui lòng chọn khoa khám theo nhu cầu của bạn', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
+            const SizedBox(height: 20),
             if (provider.isLoading && provider.departments.isEmpty)
               const Center(child: CircularProgressIndicator())
             else if (provider.errorMessage != null && provider.departments.isEmpty)
@@ -230,47 +242,38 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 final isSelected = _selectedDepartment == dept;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => _onDepartmentChanged(dept),
-                      borderRadius: BorderRadius.circular(16),
-                      splashColor: AppTheme.primaryColor.withOpacity(0.1),
-                      highlightColor: AppTheme.primaryColor.withOpacity(0.05),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFE0F2FE) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-                            width: isSelected ? 2.5 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
-                              : [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                  child: InkWell(
+                    onTap: () => _onDepartmentChanged(dept),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : AppTheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? AppTheme.primary : AppTheme.borderSubtle,
+                          width: isSelected ? 2 : 1,
                         ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          leading: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppTheme.primaryColor : const Color(0xFFF1F5F9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isSelected ? Icons.check_rounded : Icons.medical_services_outlined,
-                              color: isSelected ? Colors.white : const Color(0xFF64748B),
-                            ),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.primary : AppTheme.background,
+                            shape: BoxShape.circle,
                           ),
-                          title: Text(
-                            dept,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                              color: isSelected ? AppTheme.primaryDark : const Color(0xFF334155),
-                            ),
+                          child: Icon(
+                            isSelected ? Icons.check_rounded : Icons.medical_services_outlined,
+                            color: isSelected ? Colors.white : AppTheme.textSecondary,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          dept,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                            color: isSelected ? AppTheme.primaryDark : AppTheme.textPrimary,
                           ),
                         ),
                       ),
@@ -286,10 +289,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bước 2: Chọn Bác Sĩ Khám', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
+            Text('Chọn Bác Sĩ Khám', style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
             const SizedBox(height: 4),
-            Text('Danh sách bác sĩ thuộc khoa: ${_selectedDepartment ?? ''}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-            const SizedBox(height: 16),
+            Text('Thuộc khoa: ${_selectedDepartment ?? ''}', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
+            const SizedBox(height: 20),
             if (provider.isLoading && provider.doctors.isEmpty)
               const Center(child: CircularProgressIndicator())
             else if (provider.errorMessage != null && provider.doctors.isEmpty)
@@ -324,62 +327,45 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => setState(() => _selectedDoctor = docName),
-                      borderRadius: BorderRadius.circular(16),
-                      splashColor: AppTheme.primaryColor.withOpacity(0.1),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFE0F2FE) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-                            width: isSelected ? 2.5 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
-                              : [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedDoctor = docName),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : AppTheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? AppTheme.primary : AppTheme.borderSubtle,
+                          width: isSelected ? 2 : 1,
                         ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          leading: CircleAvatar(
-                            radius: 28,
-                            backgroundColor: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-                            backgroundImage: docAvatar.isNotEmpty ? NetworkImage(docAvatar) : null,
-                            child: docAvatar.isEmpty ? Icon(Icons.person, size: 30, color: isSelected ? Colors.white : const Color(0xFF94A3B8)) : null,
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: CircleAvatar(
+                          radius: 26,
+                          backgroundColor: isSelected ? AppTheme.primary : AppTheme.background,
+                          backgroundImage: docAvatar.isNotEmpty ? NetworkImage(docAvatar) : null,
+                          child: docAvatar.isEmpty ? Icon(Icons.person, size: 28, color: isSelected ? Colors.white : AppTheme.textSecondary) : null,
+                        ),
+                        title: Text(
+                          docName, 
+                          style: GoogleFonts.inter(
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.bold, 
+                            fontSize: 15, 
+                            color: isSelected ? AppTheme.primaryDark : AppTheme.textPrimary
+                          )
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            '$docTitle • $docDept', 
+                            style: GoogleFonts.inter(fontSize: 12, color: isSelected ? AppTheme.primary : AppTheme.textSecondary)
                           ),
-                          title: Text(
-                            docName, 
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.bold, 
-                              fontSize: 15, 
-                              color: isSelected ? AppTheme.primaryDark : const Color(0xFF0F172A)
-                            )
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              '$docTitle • $docDept', 
-                              style: TextStyle(fontSize: 13, color: isSelected ? AppTheme.primaryColor : const Color(0xFF64748B))
-                            ),
-                          ),
-                          trailing: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: isSelected ? AppTheme.primaryColor : const Color(0xFFCBD5E1), width: 2),
-                            ),
-                            child: Icon(
-                              Icons.check,
-                              color: isSelected ? Colors.white : Colors.transparent,
-                              size: 16,
-                            ),
-                          ),
+                        ),
+                        trailing: Icon(
+                          Icons.check_circle,
+                          color: isSelected ? AppTheme.primary : Colors.transparent,
+                          size: 24,
                         ),
                       ),
                     ),
@@ -393,10 +379,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bước 3: Chọn Ngày & Khung Giờ Khám', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
+            Text('Ngày & Giờ Khám', style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
             const SizedBox(height: 4),
-            const Text('Vui lòng chọn ngày khám và khung giờ còn trống bên dưới', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-            const SizedBox(height: 16),
+            Text('Chọn thời gian thuận tiện nhất', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
+            const SizedBox(height: 20),
 
             // Date Picker Card
             GestureDetector(
@@ -413,59 +399,58 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   initialDate: safeInitialDate,
                   firstDate: firstDate,
                   lastDate: lastDate,
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: AppTheme.primary,
+                          onPrimary: Colors.white,
+                          onSurface: AppTheme.textPrimary,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
                 );
                 if (picked != null) {
                   setState(() => _selectedDate = picked);
                 }
               },
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFBAE6FD)),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.primary, width: 1.5),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_month_rounded, color: AppTheme.primaryColor, size: 28),
-                    const SizedBox(width: 12),
+                    const Icon(Icons.calendar_month_rounded, color: AppTheme.primary, size: 28),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Ngày khám đã chọn:', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text('Ngày khám', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                          const SizedBox(height: 2),
                           Text(
                             'Thứ ${_getVietnameseDayOfWeek(_selectedDate.weekday)}, ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark),
+                            style: GoogleFonts.sora(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark),
                           ),
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE0F2FE),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        children: [
-                          Text('Đổi ngày', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-                          SizedBox(width: 4),
-                          Icon(Icons.edit_calendar, size: 14, color: AppTheme.primaryColor),
-                        ],
-                      ),
-                    ),
+                    const Icon(Icons.edit_calendar, size: 20, color: AppTheme.primary),
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
-            const Text('Khung giờ làm việc còn trống:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF334155))),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
+            Text('Khung giờ trống:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.textPrimary)),
+            const SizedBox(height: 16),
 
-            // 3-Column Time Slot Grid
+            // Time Slot Grid
             LayoutBuilder(
               builder: (context, constraints) {
                 final provider = context.watch<AppointmentProvider>();
@@ -475,47 +460,34 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   runSpacing: 8,
                   children: provider.timeSlots.map((slot) {
                     final isSelected = _selectedTimeSlot == slot;
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => setState(() => _selectedTimeSlot = slot),
-                        borderRadius: BorderRadius.circular(14),
-                        splashColor: AppTheme.primaryColor.withOpacity(0.2),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: chipWidth,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.primaryColor : Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isSelected ? AppTheme.primaryColor : const Color(0xFFCBD5E1),
-                              width: isSelected ? 2 : 1,
+                    return InkWell(
+                      onTap: () => setState(() => _selectedTimeSlot = slot),
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: chipWidth,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.primary : AppTheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? AppTheme.primary : AppTheme.borderSubtle,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              slot,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                color: isSelected ? Colors.white : AppTheme.textPrimary,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                fontSize: 13,
+                              ),
                             ),
-                            boxShadow: isSelected
-                                ? [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))]
-                                : [const BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1))],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 20,
-                                color: isSelected ? Colors.white : AppTheme.primaryColor,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                slot,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : const Color(0xFF1E293B),
-                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
                     );
@@ -528,102 +500,101 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
 
       case 3:
       default:
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFBAE6FD)),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.assignment_turned_in, color: AppTheme.primary, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'XÁC NHẬN THÔNG TIN',
+                    style: GoogleFonts.sora(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryDark),
+                  ),
+                ),
+              ],
+            ),
+            const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(color: AppTheme.borderSubtle, height: 1)),
+            Builder(builder: (context) {
+              final user = context.read<AuthProvider>().user;
+              return Column(
                 children: [
-                  Icon(Icons.assignment_turned_in, color: AppTheme.primaryColor, size: 24),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'XÁC NHẬN THÔNG TIN PHIẾU HẸN',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark),
-                    ),
-                  ),
+                  _buildDetailRow(Icons.person_outline, 'Bệnh nhân:', '${user?.hoTen ?? ''} (${user?.maBenhNhan ?? ''})'),
+                  const SizedBox(height: 12),
+                  _buildDetailRow(Icons.phone_android_outlined, 'Số điện thoại:', user?.soDienThoai ?? ''),
                 ],
-              ),
-              const Divider(height: 24, color: Color(0xFFBAE6FD)),
-              _buildDetailRow(Icons.person_outline, 'Họ và tên:', 'Nguyễn Văn An (BN20260001)'),
-              const SizedBox(height: 10),
-              _buildDetailRow(Icons.phone_android_outlined, 'Số điện thoại:', '0987654321'),
-              const SizedBox(height: 10),
-              _buildDetailRow(Icons.medical_services_outlined, 'Chuyên khoa:', _selectedDepartment ?? ''),
-              const SizedBox(height: 10),
+              );
+            }),
+            const SizedBox(height: 12),
+            _buildDetailRow(Icons.medical_services_outlined, 'Chuyên khoa:', _selectedDepartment ?? ''),
+            const SizedBox(height: 12),
 
-              // Selected Doctor Card Preview with Avatar
-              Builder(builder: (_) {
-                final provider = context.read<AppointmentProvider>();
-                final currentDoc = provider.doctors.firstWhere((d) => d['name'] == _selectedDoctor, orElse: () => provider.doctors.isNotEmpty ? provider.doctors.first : {});
-                final avatarUrl = currentDoc['avatar'] ?? '';
-                final docTitle = currentDoc['title'] ?? '';
-                return Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F9FF),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFBAE6FD)),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: AppTheme.primaryColor,
-                        backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                        child: avatarUrl.isEmpty ? const Icon(Icons.person, color: Colors.white) : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_selectedDoctor ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryDark)),
-                            Text('$docTitle • ${_selectedDepartment ?? ''}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-
-              const SizedBox(height: 10),
-              _buildDetailRow(
-                Icons.access_time_outlined,
-                'Thời gian hẹn:',
-                '${_selectedTimeSlot ?? ''} - ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-              ),
-              const SizedBox(height: 16),
-              Container(
+            // Selected Doctor Card
+            Builder(builder: (_) {
+              final provider = context.read<AppointmentProvider>();
+              final currentDoc = provider.doctors.firstWhere((d) => d['name'] == _selectedDoctor, orElse: () => provider.doctors.isNotEmpty ? provider.doctors.first : {});
+              final avatarUrl = currentDoc['avatar'] ?? '';
+              final docTitle = currentDoc['title'] ?? '';
+              return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.amber.shade200),
+                  color: AppTheme.background,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.borderSubtle),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.amber, size: 20),
-                    SizedBox(width: 8),
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppTheme.primary,
+                      backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl.isEmpty ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'Quý khách vui lòng đến trước 15 phút để làm thủ tục xác nhận tại quầy tiếp nhận.',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_selectedDoctor ?? '', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimary)),
+                          Text(docTitle, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                        ],
                       ),
                     ),
                   ],
                 ),
+              );
+            }),
+
+            const SizedBox(height: 16),
+            _buildDetailRow(
+              Icons.access_time_outlined,
+              'Thời gian hẹn:',
+              '${_selectedTimeSlot ?? ''} - ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7), // Amber 100
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFDE68A)), // Amber 200
               ),
-            ],
-          ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFFD97706), size: 20), // Amber 600
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Quý khách vui lòng đến trước 15 phút để làm thủ tục xác nhận tại quầy tiếp nhận.',
+                      style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF92400E), height: 1.4), // Amber 800
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         );
     }
   }
@@ -632,7 +603,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (c) => const Center(child: CircularProgressIndicator()),
+      builder: (c) => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
     );
 
     final auth = context.read<AuthProvider>();
@@ -667,7 +638,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lỗi: Không thể kết nối tới máy chủ Hệ thống Bệnh viện! Vui lòng thử lại.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Lỗi: Không thể kết nối tới máy chủ! Vui lòng thử lại.'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -697,7 +668,6 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       }
     } else {
       if (!mounted) return;
-      // Fallback if VNPay API fails (e.g. backend down)
       _showFinalSuccessDialog('Đã ghi nhận lịch hẹn nhưng hệ thống thanh toán đang gián đoạn. Vui lòng thanh toán tại quầy.');
     }
   }
@@ -706,35 +676,36 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: AppTheme.surface,
+        title: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 8),
-            Expanded(child: Text('ĐẶT LỊCH THÀNH CÔNG!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+            const Icon(Icons.check_circle, color: AppTheme.accentMint, size: 28),
+            const SizedBox(width: 8),
+            Expanded(child: Text('ĐẶT LỊCH THÀNH CÔNG', style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Mã phiếu hẹn: LH${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}'),
+            Text('Mã phiếu hẹn: LH${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
             const SizedBox(height: 6),
-            Text('STT dự kiến: #105 (Phòng 102 - $_selectedDepartment)'),
+            Text('STT dự kiến: #105 (Phòng 102 - $_selectedDepartment)', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
             const SizedBox(height: 6),
-            Text('Bác sĩ: $_selectedDoctor'),
-            const SizedBox(height: 10),
-            Text(paymentMessage, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
-            const SizedBox(height: 10),
+            Text('Bác sĩ: $_selectedDoctor', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
+            const SizedBox(height: 12),
+            Text(paymentMessage, style: GoogleFonts.inter(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-              child: const Row(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: AppTheme.accentMint.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              child: Row(
                 children: [
-                  Icon(Icons.cloud_done, color: Colors.green, size: 18),
-                  SizedBox(width: 6),
+                  const Icon(Icons.cloud_done, color: AppTheme.accentMint, size: 18),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: Text('Đã đồng bộ trực tiếp lên hệ thống Web Admin Bệnh viện!', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
+                    child: Text('Đã đồng bộ trực tiếp lên hệ thống Web Admin Bệnh viện!', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.accentMint, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -743,9 +714,13 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
         ),
         actions: [
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
             onPressed: () {
-              Navigator.pop(ctx); // Đóng Dialog
+              Navigator.pop(ctx);
               setState(() {
                 _currentStep = 0;
                 _selectedDoctor = null;
@@ -753,7 +728,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 _selectedDate = DateTime.now().add(const Duration(days: 1));
               });
             },
-            child: const Text('Về Trang Chủ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Về Trang Chủ', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -764,14 +739,15 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppTheme.primaryColor),
+        Icon(icon, size: 20, color: AppTheme.textSecondary),
+        const SizedBox(width: 12),
+        Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
         const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-        const SizedBox(width: 6),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+            textAlign: TextAlign.right,
           ),
         ),
       ],
@@ -780,21 +756,13 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
 
   String _getVietnameseDayOfWeek(int weekday) {
     switch (weekday) {
-      case 1:
-        return 'Hai';
-      case 2:
-        return 'Ba';
-      case 3:
-        return 'Tư';
-      case 4:
-        return 'Năm';
-      case 5:
-        return 'Sáu';
-      case 6:
-        return 'Bảy';
-      case 7:
-      default:
-        return 'Chủ Nhật';
+      case 1: return 'Hai';
+      case 2: return 'Ba';
+      case 3: return 'Tư';
+      case 4: return 'Năm';
+      case 5: return 'Sáu';
+      case 6: return 'Bảy';
+      case 7: default: return 'Chủ Nhật';
     }
   }
 }

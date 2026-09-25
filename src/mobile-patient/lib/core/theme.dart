@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF0284C7); // Sky 600
-  static const Color primaryDark = Color(0xFF0369A1);  // Sky 700
-  static const Color secondaryColor = Color(0xFF0EA5E9);
-  static const Color backgroundColor = Color(0xFFF0F9FF);
-  static const Color cardColor = Colors.white;
-  static const Color borderColor = Color(0xFFBAE6FD); // Sky 200
+  // New Design System Tokens
+  static const Color primary = Color(0xFF0284C7); // Sky 600
+  static const Color primaryDark = Color(0xFF0369A1); // Sky 700
+  static const Color primaryDeep = Color(0xFF062A3D); // Gradient in topbar/CTA
+  static const Color accentMint = Color(0xFF14B8A6); // LIVE, badge success
+  static const Color background = Color(0xFFF4F8FA);
+  static const Color surface = Colors.white;
+  static const Color borderSubtle = Color(0xFFE3EDF1);
   
-  static const Color textMain = Color(0xFF0F172A); // Slate 900
-  static const Color textSub = Color(0xFF334155); // Slate 700
-  static const Color textMuted = Color(0xFF64748B); // Slate 500
+  static const Color textPrimary = Color(0xFF0B2431);
+  static const Color textSecondary = Color(0xFF4A6373);
+
+  // Keep old names for compatibility, point to new tokens where applicable
+  static const Color primaryColor = primary;
+  static const Color textMain = textPrimary;
+  static const Color textSub = textSecondary;
+  static const Color textMuted = textSecondary;
 
   // Standard Premium Medical Gradient
   static const LinearGradient premiumGradient = LinearGradient(
@@ -23,47 +31,62 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
-  // Standard Premium Box Shadow
-  static List<BoxShadow> get premiumShadow => [
+  // Important CTA Shadow
+  static List<BoxShadow> get prominentShadow => [
     BoxShadow(
-      color: primaryColor.withOpacity(0.1),
-      blurRadius: 30,
-      offset: const Offset(0, 10),
+      color: primary.withValues(alpha: 0.14),
+      blurRadius: 34,
+      offset: const Offset(0, 14),
     )
   ];
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      primaryColor: primaryColor,
-      scaffoldBackgroundColor: backgroundColor,
-      appBarTheme: const AppBarTheme(
+      primaryColor: primary,
+      scaffoldBackgroundColor: background,
+      appBarTheme: AppBarTheme(
         backgroundColor: primaryDark,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        titleTextStyle: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.bold),
       ),
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        primary: primaryColor,
-        secondary: secondaryColor,
+        seedColor: primary,
+        primary: primary,
+        secondary: accentMint,
+        surface: surface,
+      ),
+      textTheme: GoogleFonts.interTextTheme().copyWith(
+        displayLarge: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w800),
+        displayMedium: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w700),
+        displaySmall: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w700),
+        headlineLarge: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w700),
+        headlineMedium: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w600),
+        headlineSmall: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w600),
+        titleLarge: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w600),
+        titleMedium: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w600),
+        titleSmall: GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w600),
+        bodyLarge: GoogleFonts.inter(color: textPrimary, fontWeight: FontWeight.w400),
+        bodyMedium: GoogleFonts.inter(color: textPrimary, fontWeight: FontWeight.w400),
+        bodySmall: GoogleFonts.inter(color: textSecondary, fontWeight: FontWeight.w400),
       ),
       cardTheme: CardThemeData(
-        color: cardColor,
-        elevation: 0, // We use custom shadow instead
+        color: surface,
+        elevation: 0, 
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: borderColor, width: 1),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: borderSubtle, width: 1),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: primary,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );

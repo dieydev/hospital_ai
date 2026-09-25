@@ -21,7 +21,7 @@ public class PatientService : IPatientService
 
     public async Task<PatientListResultDto> GetPatientsAsync(string? search, int pageIndex = 1, int pageSize = 20)
     {
-        var query = _context.Patients.AsNoTracking().AsQueryable();
+        var query = _context.Patients.Include(p => p.User).AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -36,12 +36,13 @@ public class PatientService : IPatientService
 
         var totalCount = await query.CountAsync();
 
-        var patients = await query
+        var rawPatients = await query
             .OrderByDescending(p => p.CreatedAt)
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
-            .Select(p => MapToDto(p))
             .ToListAsync();
+
+        var patients = rawPatients.Select(p => MapToDto(p)).ToList();
 
         return new PatientListResultDto
         {
@@ -54,19 +55,19 @@ public class PatientService : IPatientService
 
     public async Task<PatientDto?> GetPatientByIdAsync(Guid id)
     {
-        var patient = await _context.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+        var patient = await _context.Patients.Include(p => p.User).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
         return patient == null ? null : MapToDto(patient);
     }
 
     public async Task<PatientDto?> GetPatientByCodeAsync(string code)
     {
-        var patient = await _context.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.PatientCode == code);
+        var patient = await _context.Patients.Include(p => p.User).AsNoTracking().FirstOrDefaultAsync(p => p.PatientCode == code);
         return patient == null ? null : MapToDto(patient);
     }
 
     public async Task<PatientDto?> GetPatientByIdentityCardAsync(string identityCardNumber)
     {
-        var patient = await _context.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.IdentityCardNumber == identityCardNumber);
+        var patient = await _context.Patients.Include(p => p.User).AsNoTracking().FirstOrDefaultAsync(p => p.IdentityCardNumber == identityCardNumber);
         return patient == null ? null : MapToDto(patient);
     }
 
@@ -108,7 +109,10 @@ public class PatientService : IPatientService
 
     public async Task<PatientDto> UpdatePatientAsync(Guid id, UpdatePatientDto dto)
     {
-        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.Id == id);
+        var patient = await _context.Patients
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
         if (patient == null)
             throw new KeyNotFoundException($"Không tìm thấy bệnh nhân với ID: {id}");
 
@@ -132,6 +136,15 @@ public class PatientService : IPatientService
         patient.EmergencyContactName = dto.EmergencyContactName?.Trim();
         patient.EmergencyContactPhone = dto.EmergencyContactPhone?.Trim();
         patient.EmergencyContactRelation = dto.EmergencyContactRelation?.Trim();
+
+        // Sync PhoneNumber and Email back to linked User (TaiKhoan) table
+        if (patient.User != null)
+        {
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                patient.User.PhoneNumber = dto.PhoneNumber.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                patient.User.Email = dto.Email.Trim();
+        }
 
         await _context.SaveChangesAsync();
 
@@ -168,6 +181,9 @@ public class PatientService : IPatientService
             DateOfBirth = p.DateOfBirth,
             IdentityCardNumber = p.IdentityCardNumber,
             HealthInsuranceNumber = p.HealthInsuranceNumber,
+            // Phone & Email are stored on the User (TaiKhoan) table, not Patient (BenhNhan)
+            PhoneNumber = p.User?.PhoneNumber ?? string.Empty,
+            Email = p.User?.Email,
             Address = p.Address,
             EmergencyContactName = p.EmergencyContactName,
             EmergencyContactPhone = p.EmergencyContactPhone,

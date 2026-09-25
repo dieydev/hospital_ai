@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -26,6 +27,7 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text('Lịch sử Khám & Đơn thuốc EMR'),
       ),
@@ -36,89 +38,129 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
           }
           final visits = provider.medicalHistory;
           if (visits.isEmpty) {
-            return const Center(child: Text('Chưa có lịch sử khám bệnh.'));
+            return Center(
+              child: Text(
+                'Chưa có lịch sử khám bệnh.',
+                style: GoogleFonts.inter(color: AppTheme.textSecondary),
+              ),
+            );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             itemCount: visits.length,
             itemBuilder: (context, index) {
               final visit = visits[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 6,
+              final isLast = index == visits.length - 1;
+
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Vertical Timeline
+                    SizedBox(
+                      width: 24,
+                      child: Column(
                         children: [
-                          Text(
-                            visit['date'] as String,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryDark),
-                          ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            width: 12,
+                            height: 12,
+                            margin: const EdgeInsets.only(top: 24),
                             decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green.shade200),
-                            ),
-                            child: Text(
-                              'Đã hoàn thành',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade700),
+                              color: AppTheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3), width: 3),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${visit['department']} • ${visit['doctor']}',
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.label_outlined, size: 16, color: AppTheme.primaryColor),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Chẩn đoán: ${visit['diagnosis']}',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 20),
-                      const Text(
-                        'Đơn thuốc Điện tử:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryColor),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.medication_outlined, size: 16, color: Colors.teal),
-                            const SizedBox(width: 8),
+                          if (!isLast)
                             Expanded(
-                              child: Text(
-                                '${visit['prescription']}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              child: Container(
+                                width: 2,
+                                color: AppTheme.borderSubtle,
+                                margin: const EdgeInsets.symmetric(vertical: 4),
                               ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Summary Card
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.borderSubtle),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min, // Fix intrinsic height error
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  visit['date'] as String,
+                                  style: GoogleFonts.sora(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.primaryDark),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentMint.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Hoàn thành',
+                                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.accentMint),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${visit['department']} • ${visit['doctor']}',
+                              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.label_outlined, size: 16, color: AppTheme.primary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Chẩn đoán: ${visit['diagnosis']}',
+                                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 24, color: AppTheme.borderSubtle),
+                            Text(
+                              'Đơn thuốc Điện tử:',
+                              style: GoogleFonts.sora(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.medication_outlined, size: 16, color: AppTheme.accentMint),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${visit['prescription']}',
+                                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textSecondary),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -127,6 +169,4 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
       ),
     );
   }
-
-
 }

@@ -382,5 +382,10 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.TotalPrice).HasColumnName("ThanhTien").HasColumnType("decimal(18,2)");
             entity.Property(e => e.ReferenceId).HasColumnName("ThamChieuId");
         });
+
+        foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
+        {
+            relationship.DeleteBehavior = DeleteBehavior.Restrict;
+        }
     }
 }

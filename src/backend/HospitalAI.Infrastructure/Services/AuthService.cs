@@ -135,6 +135,12 @@ public class AuthService : IAuthService
             throw new Exception("Tên đăng nhập đã tồn tại trong hệ thống.");
         }
 
+        var existingPhone = await _context.Users.AnyAsync(u => u.PhoneNumber == request.PhoneNumber);
+        if (existingPhone)
+        {
+            throw new Exception("Số điện thoại này đã được đăng ký tài khoản.");
+        }
+
         var roleName = string.IsNullOrWhiteSpace(request.Role) ? "Patient" : request.Role;
         var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
         if (role == null)

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+
 
 class QueueProvider extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+
   
   final bool _isLoading = false;
   bool get isLoading => _isLoading;

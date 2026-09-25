@@ -83,8 +83,8 @@ class _AnimatedPremiumCardState extends State<AnimatedPremiumCard> with SingleTi
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: borderRadius,
-            border: Border.all(color: AppTheme.borderColor, width: 1.5),
-            boxShadow: AppTheme.premiumShadow,
+            border: Border.all(color: AppTheme.borderSubtle, width: 1.5),
+            boxShadow: AppTheme.prominentShadow,
           ),
           child: ClipRRect(
             borderRadius: borderRadius,

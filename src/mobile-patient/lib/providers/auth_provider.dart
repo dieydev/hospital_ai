@@ -68,7 +68,7 @@ class AuthProvider extends ChangeNotifier {
     required String gender,
   }) async {
     try {
-      final response = await _apiService.register({
+      await _apiService.register({
         'username': username,
         'password': password,
         'fullName': fullName,

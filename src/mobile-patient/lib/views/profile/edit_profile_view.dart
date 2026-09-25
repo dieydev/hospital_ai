@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
-import '../../models/patient_model.dart';
+
 
 class EditProfileView extends StatefulWidget {
   const EditProfileView({super.key});
@@ -191,7 +191,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppTheme.borderColor),
+                              border: Border.all(color: AppTheme.borderSubtle),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
@@ -285,11 +285,11 @@ class _EditProfileViewState extends State<EditProfileView> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.borderColor),
+          borderSide: const BorderSide(color: AppTheme.borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.borderColor),
+          borderSide: const BorderSide(color: AppTheme.borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

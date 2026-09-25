@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/constants.dart';
@@ -54,7 +53,7 @@ class ApiService {
       final response = await _dio.post('/auth/register', data: data);
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      throw Exception('Đăng ký thất bại: ${_getErrorMessage(e)}');
+      throw Exception(_getErrorMessage(e));
     }
   }
 

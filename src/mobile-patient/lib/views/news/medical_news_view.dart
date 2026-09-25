@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 
 class MedicalNewsView extends StatelessWidget {
@@ -31,71 +32,83 @@ class MedicalNewsView extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text('Tin Tức & Sức Khỏe Y Tế'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        centerTitle: true,
       ),
-      body: ListView.builder(
+      body: GridView.builder(
         padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.65,
+        ),
         itemCount: articles.length,
         itemBuilder: (context, index) {
           final item = articles[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            clipBehavior: Clip.antiAlias,
-            elevation: 2,
+          return Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.borderSubtle),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Stack(
                   children: [
-                    Image.network(
-                      item['image']!,
-                      height: 160,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                    Container(
+                      height: 120, // Approx 4:3 ratio based on width
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                        image: DecorationImage(
+                          image: NetworkImage(item['image']!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                     Positioned(
                       top: 12,
                       left: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor,
-                          borderRadius: BorderRadius.circular(20),
+                          color: AppTheme.primaryDeep.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           item['tag']!,
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.inter(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
                   ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         item['title']!,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                        style: GoogleFonts.sora(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimary, height: 1.3),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item['desc']!,
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
-                      ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                          const Icon(Icons.access_time, size: 12, color: AppTheme.textSecondary),
                           const SizedBox(width: 4),
-                          Text(item['date']!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          Expanded(
+                            child: Text(
+                              item['date']!,
+                              style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ],

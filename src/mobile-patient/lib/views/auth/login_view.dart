@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../main_layout_view.dart';
 import 'register_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -12,21 +15,31 @@ class LoginView extends StatefulWidget {
   State<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<LoginView> {
+class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _storage = const FlutterSecureStorage();
 
   bool _obscurePassword = true;
-  bool _agreeTerms = true;
   bool _rememberMe = false;
   bool _isLoading = false;
-  String _selectedLang = 'VI';
+
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+    _slideController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+    _fadeController.forward();
+    _slideController.forward();
     _loadSavedCredentials();
   }
 
@@ -46,645 +59,352 @@ class _LoginViewState extends State<LoginView> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-
+    _fadeController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreeTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng chấp nhận Điều khoản & Bảo mật Y tế để tiếp tục!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-
-
     setState(() => _isLoading = true);
-
     try {
-      final username = _usernameController.text.trim();
-      final password = _passwordController.text;
-      
-      await context.read<AuthProvider>().login(username, password);
-
       if (_rememberMe) {
-        await _storage.write(key: 'saved_username', value: username);
-        await _storage.write(key: 'saved_password', value: password);
+        await _storage.write(key: 'saved_username', value: _usernameController.text.trim());
+        await _storage.write(key: 'saved_password', value: _passwordController.text);
       } else {
         await _storage.delete(key: 'saved_username');
         await _storage.delete(key: 'saved_password');
       }
-
+      await context.read<AuthProvider>().login(
+        _usernameController.text.trim(),
+        _passwordController.text,
+      );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đăng nhập thành công!'),
-          backgroundColor: AppTheme.primaryColor,
-          behavior: SnackBarBehavior.floating,
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const MainLayoutView(),
+          transitionDuration: const Duration(milliseconds: 500),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đăng nhập thất bại: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          content: Row(children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Text(e.toString().replaceAll('Exception: ', ''),
+                style: GoogleFonts.inter(fontSize: 13))),
+          ]),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _handleBiometricLogin() async {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Column(
-          children: [
-            Icon(Icons.fingerprint_rounded, size: 64, color: AppTheme.primaryColor),
-            SizedBox(height: 12),
-            Text('Xác thực Sinh Trắc Học', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Text(
-          'Đang quét Vân tay / Face ID trên thiết bị di động của bạn để đăng nhập nhanh...',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<AuthProvider>().login('patient01', '123456');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('⚡ Đăng nhập Vân tay / Face ID thành công!'), backgroundColor: AppTheme.primaryColor),
-              );
-            },
-            child: const Text('Mô phỏng Chạm Vân tay', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleQrCodeScan() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.qr_code_scanner, color: AppTheme.primaryColor, size: 28),
-            SizedBox(width: 10),
-            Text('Quét mã QR Thẻ Y tế'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 180,
-              width: 180,
-              decoration: BoxDecoration(
-                color: Colors.black12,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.primaryColor, width: 2),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.qr_code_2, size: 80, color: AppTheme.primaryColor),
-                  SizedBox(height: 8),
-                  Text('Đưa mã QR BHYT / CCCD vào khung', style: TextStyle(fontSize: 11, color: Colors.grey), textAlign: TextAlign.center),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đóng')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<AuthProvider>().login('patient01', '123456');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('📷 Nhận diện Thẻ BHYT thành công! Đã đăng nhập.'), backgroundColor: AppTheme.primaryColor),
-              );
-            },
-            child: const Text('Giả lập Quét QR', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleGoogleLogin() async {
-    setState(() => _isLoading = true);
-
-
-    if (!mounted) return;
-
-    await context.read<AuthProvider>().login('patient01', '123456');
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đăng nhập thành công với tài khoản Google!'),
-        backgroundColor: AppTheme.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showForgotPasswordDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.lock_reset, color: AppTheme.primaryColor),
-            SizedBox(width: 8),
-            Text('Quên Mật khẩu?'),
-          ],
-        ),
-        content: const Text(
-          'Vui lòng nhập Số điện thoại hoặc Mã bệnh nhân BHYT đăng ký tại quầy tiếp nhận để nhận mã xác thực OTP khôi phục mật khẩu.',
-          style: TextStyle(fontSize: 14, color: Color(0xFF334155)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Đóng'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Mã OTP khôi phục đã gửi tới SĐT đăng ký!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('Gửi mã OTP', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE0F2FE), // Sky 100
-              Color(0xFFF0F9FF), // Sky 50
-              Color(0xFFE2E8F0), // Slate 200
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Top Bar: Language & Biometric Shortcut
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Language Switcher
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFBAE6FD)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.language, size: 16, color: AppTheme.primaryColor),
-                            const SizedBox(width: 6),
-                            DropdownButton<String>(
-                              value: _selectedLang,
-                              isDense: true,
-                              underline: const SizedBox(),
-                              items: const [
-                                DropdownMenuItem(value: 'VI', child: Text('🇻🇳  Tiếng Việt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
-                                DropdownMenuItem(value: 'EN', child: Text('🇬🇧  English', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) setState(() => _selectedLang = val);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Biometric / QR Quick Buttons Header Bar
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.fingerprint, color: AppTheme.primaryColor, size: 26),
-                            tooltip: 'Đăng nhập Vân tay / FaceID',
-                            onPressed: _handleBiometricLogin,
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.qr_code_scanner, color: AppTheme.primaryDark, size: 24),
-                            tooltip: 'Quét thẻ BHYT đăng nhập',
-                            onPressed: _handleQrCodeScan,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // App Branding Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.local_hospital_rounded,
-                      size: 54,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'HOSPITAL AI',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A), // Slate 900
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFBAE6FD)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.stars, size: 14, color: AppTheme.primaryColor),
-                        SizedBox(width: 4),
-                        Text(
-                          'Cổng Bệnh nhân & Hồ sơ EMR Thông minh',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.primaryDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Main Login Form Card
-                  Container(
-                    padding: const EdgeInsets.all(24.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color.fromRGBO(2, 132, 199, 0.12),
-                          blurRadius: 30,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
-                      border: Border.all(color: const Color(0xFFBAE6FD)),
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Đăng nhập Hệ thống',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Nhập thông tin tài khoản để theo dõi lịch khám & đơn thuốc',
-                            style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                          ),
-
-                            // Username / Phone Input
-                            const Text(
-                              'Tài khoản / Số điện thoại / Email *',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF334155)),
-                            ),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _usernameController,
-                              decoration: InputDecoration(
-                                hintText: 'Nhập SĐT hoặc tên tài khoản',
-                                prefixIcon: const Icon(Icons.person_outline_rounded, color: AppTheme.primaryColor),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFBAE6FD)),
-                                ),
-                              ),
-                              validator: (val) => val == null || val.trim().isEmpty ? 'Vui lòng nhập tài khoản' : null,
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Password Input
-                            const Text(
-                              'Mật khẩu *',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF334155)),
-                            ),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              decoration: InputDecoration(
-                                hintText: 'Nhập mật khẩu',
-                                prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.primaryColor),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                    color: const Color(0xFF64748B),
-                                  ),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFBAE6FD)),
-                                ),
-                              ),
-                              validator: (val) => val == null || val.isEmpty ? 'Vui lòng nhập mật khẩu' : null,
-                            ),
-
-                          const SizedBox(height: 12),
-
-                          // Remember Me & Terms Acceptance
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: Checkbox(
-                                  value: _rememberMe,
-                                  activeColor: AppTheme.primaryColor,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                  onChanged: (val) => setState(() => _rememberMe = val ?? false),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Expanded(
-                                child: Text(
-                                  'Lưu thông tin đăng nhập',
-                                  style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w500),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _showForgotPasswordDialog,
-                                child: const Text(
-                                  'Quên?',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: Checkbox(
-                                  value: _agreeTerms,
-                                  activeColor: AppTheme.primaryColor,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                  onChanged: (val) => setState(() => _agreeTerms = val ?? false),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Expanded(
-                                child: Text(
-                                  'Tôi đồng ý Điều khoản Sử dụng & Bảo mật Dữ liệu Y tế',
-                                  style: TextStyle(fontSize: 11, color: Color(0xFF475569)),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Login Submit Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                elevation: 4,
-                                shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              onPressed: _isLoading ? null : _handleLogin,
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                                    )
-                                  : const Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'ĐĂNG NHẬP HỆ THỐNG',
-                                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Icon(Icons.arrow_forward_rounded, size: 20),
-                                      ],
-                                    ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Biometrics & QR Quick Action Buttons Row
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.fingerprint, color: AppTheme.primaryColor, size: 20),
-                                  label: const Text('Vân tay / FaceID', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    side: const BorderSide(color: Color(0xFFBAE6FD)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  onPressed: _handleBiometricLogin,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.qr_code_scanner, color: AppTheme.primaryDark, size: 18),
-                                  label: const Text('Quét mã BHYT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    side: const BorderSide(color: Color(0xFFBAE6FD)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  onPressed: _handleQrCodeScan,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Divider
-                          const Row(
-                            children: [
-                              Expanded(child: Divider(color: Color(0xFFCBD5E1))),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                child: Text('HOẶC', style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-                              ),
-                              Expanded(child: Divider(color: Color(0xFFCBD5E1))),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Google Sign-In Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.g_mobiledata_rounded, color: Colors.redAccent, size: 28),
-                              label: const Text(
-                                'Đăng nhập nhanh với Google',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                side: const BorderSide(color: Color(0xFFBAE6FD)),
-                                backgroundColor: const Color(0xFFF8FAFC),
-                              ),
-                              onPressed: _isLoading ? null : _handleGoogleLogin,
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Register Redirection
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Chưa có tài khoản Bệnh nhân? ',
-                        style: TextStyle(color: Color(0xFF475569), fontSize: 14),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (ctx) => const RegisterView()),
-                          );
-                        },
-                        child: const Text(
-                          'Đăng ký ngay',
-                          style: TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Security & Footer Notice
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.shield_outlined, size: 14, color: Color(0xFF64748B)),
-                      SizedBox(width: 4),
-                      Text(
-                        'Dữ liệu Y tế mã hóa & bảo mật chuẩn HIPAA / ISO 27001',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                ],
+      body: Stack(
+        children: [
+          // Full screen gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.primaryDeep, AppTheme.primaryDark, AppTheme.primary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0.0, 0.5, 1.0],
               ),
             ),
           ),
-        ),
+
+          // Decorative circles
+          Positioned(top: -70, right: -70,
+              child: _circle(240, Colors.white.withValues(alpha: 0.04))),
+          Positioned(top: 80, left: -90,
+              child: _circle(200, Colors.white.withValues(alpha: 0.03))),
+          Positioned(bottom: -50, right: -30,
+              child: _circle(180, AppTheme.accentMint.withValues(alpha: 0.12))),
+          Positioned(bottom: 120, left: -60,
+              child: _circle(140, Colors.white.withValues(alpha: 0.03))),
+
+          // Content
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 52),
+
+                      // Logo + Brand
+                      Center(
+                        child: Column(
+                          children: [
+                            // White logo on dark gradient
+                            Image.asset(
+                              'assets/images/logo_white.png',
+                              height: 90,
+                              fit: BoxFit.contain,
+                            ),
+                            const SizedBox(height: 10),
+                            Text('Healthcare Connected', style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.65),
+                              letterSpacing: 2,
+                            )),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 44),
+
+                      // Form card (white, floating)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.18),
+                              blurRadius: 40,
+                              offset: const Offset(0, 20),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(28),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Đăng nhập', style: GoogleFonts.sora(
+                                fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.textPrimary,
+                              )),
+                              const SizedBox(height: 4),
+                              Text('Chào mừng bạn trở lại 👋', style: GoogleFonts.inter(
+                                fontSize: 13, color: AppTheme.textSecondary,
+                              )),
+                              const SizedBox(height: 28),
+
+                              _buildLabel('Tên đăng nhập / Số điện thoại'),
+                              const SizedBox(height: 8),
+                              _buildTextField(
+                                controller: _usernameController,
+                                hint: 'Nhập số điện thoại hoặc tên đăng nhập',
+                                prefixIcon: Icons.person_outline_rounded,
+                                validator: (v) => (v == null || v.trim().isEmpty)
+                                    ? 'Vui lòng nhập tên đăng nhập' : null,
+                              ),
+                              const SizedBox(height: 20),
+
+                              _buildLabel('Mật khẩu'),
+                              const SizedBox(height: 8),
+                              _buildTextField(
+                                controller: _passwordController,
+                                hint: 'Nhập mật khẩu của bạn',
+                                prefixIcon: Icons.lock_outline_rounded,
+                                isPassword: true,
+                                obscureText: _obscurePassword,
+                                onToggleVisibility: () =>
+                                    setState(() => _obscurePassword = !_obscurePassword),
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Vui lòng nhập mật khẩu' : null,
+                              ),
+                              const SizedBox(height: 16),
+
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => setState(() => _rememberMe = !_rememberMe),
+                                    child: Row(children: [
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        width: 20, height: 20,
+                                        decoration: BoxDecoration(
+                                          color: _rememberMe ? AppTheme.primary : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: _rememberMe ? AppTheme.primary : AppTheme.borderSubtle,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: _rememberMe
+                                            ? const Icon(Icons.check, color: Colors.white, size: 13)
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text('Ghi nhớ', style: GoogleFonts.inter(
+                                        fontSize: 13, color: AppTheme.textSecondary,
+                                      )),
+                                    ]),
+                                  ),
+                                  Text('Quên mật khẩu?', style: GoogleFonts.inter(
+                                    fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primary,
+                                  )),
+                                ],
+                              ),
+                              const SizedBox(height: 28),
+
+                              // Gradient login button
+                              Container(
+                                width: double.infinity,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [AppTheme.primaryDark, AppTheme.primary],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.primary.withValues(alpha: 0.4),
+                                      blurRadius: 16, offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _handleLogin,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16)),
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(width: 22, height: 22,
+                                          child: CircularProgressIndicator(
+                                              color: Colors.white, strokeWidth: 2.5))
+                                      : Text('ĐĂNG NHẬP', style: GoogleFonts.inter(
+                                          fontSize: 15, fontWeight: FontWeight.w700,
+                                          color: Colors.white)),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              Row(children: [
+                                const Expanded(child: Divider(color: Color(0xFFE8F0F4))),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text('hoặc', style: GoogleFonts.inter(
+                                      fontSize: 12, color: AppTheme.textSecondary)),
+                                ),
+                                const Expanded(child: Divider(color: Color(0xFFE8F0F4))),
+                              ]),
+                              const SizedBox(height: 20),
+
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.push(context,
+                                      MaterialPageRoute(builder: (_) => const RegisterView())),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: AppTheme.borderSubtle, width: 1.5),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.person_add_outlined,
+                                          color: AppTheme.primary, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text('Tạo tài khoản bệnh nhân mới',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14, fontWeight: FontWeight.w600,
+                                            color: AppTheme.primary)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      Center(
+                        child: Text(
+                          '🏥 D-Medical © 2026 · NĐ 13/2023/NĐ-CP',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.45),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _circle(double size, Color color) =>
+      Container(width: size, height: size,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+
+  Widget _buildLabel(String text) => Text(text,
+      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600,
+          color: AppTheme.textSecondary));
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData prefixIcon,
+    bool isPassword = false,
+    bool obscureText = false,
+    VoidCallback? onToggleVisibility,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      validator: validator,
+      style: GoogleFonts.inter(fontSize: 15, color: AppTheme.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFB0C4CE)),
+        prefixIcon: Icon(prefixIcon, color: AppTheme.textSecondary, size: 20),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  color: AppTheme.textSecondary, size: 20),
+                onPressed: onToggleVisibility)
+            : null,
+        filled: true,
+        fillColor: AppTheme.background,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppTheme.borderSubtle)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppTheme.borderSubtle)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppTheme.primary, width: 1.8)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFDC2626))),
+        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.8)),
       ),
     );
   }

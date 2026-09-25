@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/queue_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../appointment/book_appointment_view.dart';
-import '../appointment/medical_history_view.dart';
-import '../../widgets/animated_premium_card.dart';
 
 class HomeView extends StatefulWidget {
   final Function(int)? onNavigateTab;
@@ -14,465 +14,540 @@ class HomeView extends StatefulWidget {
   State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
-  int _bannerIndex = 0;
+class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin {
+  // Temporary flag until backend returns appointments
+  final bool _hasUpcomingAppointment = false;
+  late AnimationController _blinkController;
+  late Animation<double> _blinkAnimation;
 
-  final List<String> _banners = [
-    'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _blinkAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(_blinkController);
+  }
+
+  @override
+  void dispose() {
+    _blinkController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 0,
-        title: const SizedBox.shrink(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 28),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🔔 Không có thông báo mới!'), duration: Duration(seconds: 1)),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.premiumGradient,
-        ),
+      backgroundColor: AppTheme.background,
+      body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Top Hospital Header Branding (Animated on load)
-                  TweenAnimationBuilder(
-                    duration: const Duration(milliseconds: 600),
-                    tween: Tween<double>(begin: 0, end: 1),
-                    builder: (context, double value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 20 * (1 - value)),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      color: Colors.transparent, // Let gradient show through or keep white? Let's use semi-transparent white
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          // Hospital Logo Emblem
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFBAE6FD), width: 2),
-                              color: const Color(0xFFF0F9FF),
-                            ),
-                            child: const Icon(Icons.local_hospital_rounded, color: AppTheme.primaryColor, size: 30),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Bệnh viện Đa Khoa Thủ Đức',
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryDark,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Chuyên Nghiệp - Tận Tâm - Vươn Tầm Chất Lượng',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.textMuted,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Hospital Banner Image Carousel with Dot Indicators
-                  Stack(
-                    alignment: Alignment.bottomLeft,
-                    children: [
-                      SizedBox(
-                        height: 200,
-                        width: double.infinity,
-                        child: PageView.builder(
-                          itemCount: _banners.length,
-                          onPageChanged: (index) => setState(() => _bannerIndex = index),
-                          itemBuilder: (context, index) {
-                            return Image.network(
-                              _banners[index],
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            );
-                          },
-                        ),
-                      ),
-                      // Carousel Dots
-                      Positioned(
-                        bottom: 12,
-                        left: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black38,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: List.generate(_banners.length, (i) {
-                              return Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 3),
-                                width: _bannerIndex == i ? 16 : 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: _bannerIndex == i ? Colors.white : Colors.white54,
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  
-                  // Live Queue Ticket Card - GLASSMORPHISM OVERHAUL
-                  Consumer<QueueProvider>(
-                    builder: (context, queue, child) {
-                      if (!queue.hasActiveTicket) return const SizedBox.shrink();
-                      
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF0284c7), Color(0xFF0369a1)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(24), // Tăng bo góc
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF0284c7).withOpacity(0.4), // Glow mạnh hơn
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.25),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Icon(Icons.confirmation_num_rounded, color: Colors.white, size: 24),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        'PHIẾU KHÁM',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 18, // Chữ to hơn cho người lớn tuổi
-                                          letterSpacing: 1.0,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF10b981),
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(color: const Color(0xFF10b981).withOpacity(0.4), blurRadius: 8),
-                                      ],
-                                    ),
-                                    child: const Row(
-                                      children: [
-                                        Icon(Icons.sensors, color: Colors.white, size: 16),
-                                        SizedBox(width: 4),
-                                        Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('Số Thứ Tự Của Bạn', style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500)),
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                                        textBaseline: TextBaseline.alphabetic,
-                                        children: [
-                                          const Text('#', style: TextStyle(color: Colors.white70, fontSize: 32, fontWeight: FontWeight.bold)),
-                                          Text('${queue.myNumber}', style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w900, height: 1.1)),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: Colors.white.withOpacity(0.3)),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        const Text('PHÒNG KHÁM', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
-                                        const SizedBox(height: 4),
-                                        Text(queue.room, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF0F9FF),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Icon(Icons.info_rounded, color: AppTheme.primaryColor, size: 24),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: RichText(
-                                        text: TextSpan(
-                                          style: const TextStyle(color: AppTheme.textMain, fontSize: 15, height: 1.4),
-                                          children: [
-                                            const TextSpan(text: 'Trạng thái: '),
-                                            TextSpan(text: '${queue.status}\n', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFf59e0b), fontSize: 16)),
-                                            const TextSpan(text: 'Đang gọi STT: '),
-                                            TextSpan(text: '#${queue.currentNumber}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppTheme.primaryColor, fontSize: 20)),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Quick Utility Services Grid
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildQuickServiceItem(
-                          icon: Icons.calendar_month_rounded,
-                          label: 'Lịch khám',
-                          onTap: () {
-                            if (widget.onNavigateTab != null) {
-                              widget.onNavigateTab!(1);
-                            } else {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const BookAppointmentView()));
-                            }
-                          },
-                        ),
-                        _buildQuickServiceItem(
-                          icon: Icons.history_rounded,
-                          label: 'Thanh toán',
-                          onTap: () {
-                            if (widget.onNavigateTab != null) widget.onNavigateTab!(3);
-                          },
-                        ),
-                        _buildQuickServiceItem(
-                          icon: Icons.receipt_long_rounded,
-                          label: 'Hóa đơn',
-                          onTap: () {
-                            if (widget.onNavigateTab != null) widget.onNavigateTab!(3);
-                          },
-                        ),
-                        _buildQuickServiceItem(
-                          icon: Icons.folder_shared_rounded,
-                          label: 'Hồ sơ',
-                          onTap: () {
-                            if (widget.onNavigateTab != null) {
-                              widget.onNavigateTab!(3);
-                            } else {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-          ),
-
-          // Prominent "Đặt khám" Action Button Fixed Above Bottom Nav Bar
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24), // Tăng padding dưới cho to
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
-                )
-              ]
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 60, // Nút cao và to hơn
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  elevation: 4, // Tăng đổ bóng nút
-                  shadowColor: AppTheme.primaryColor.withOpacity(0.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _buildHeader(),
+                Positioned(
+                  bottom: -40,
+                  left: 16,
+                  right: 16,
+                  child: _buildQueueStatusCard(),
                 ),
-                onPressed: () {
-                  if (widget.onNavigateTab != null) {
-                    widget.onNavigateTab!(1);
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const BookAppointmentView()),
-                    );
-                  }
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add_circle_outline, size: 24),
-                    SizedBox(width: 12),
-                    Text(
-                      'ĐẶT KHÁM NGAY',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 64), // Space for overlapped card
+            
+            _buildUpcomingAppointmentCard(),
+            const SizedBox(height: 24),
+            
+            _buildServicesGrid(context),
+            const SizedBox(height: 24),
+            
+            _buildMedicalNews(),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildQuickServiceItem({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return AnimatedPremiumCard(
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 80,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95), // Kính mờ
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ]
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 60),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.primaryDark, AppTheme.primary, AppTheme.accentMint],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.0, 0.6, 1.0],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F9FF),
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFBAE6FD), width: 1.5),
-              ),
-              child: Icon(icon, color: AppTheme.primaryColor, size: 28),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13, // Chữ to hơn
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textSub,
-                height: 1.2,
-              ),
-            ),
-          ],
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
       ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.local_hospital_rounded, color: Colors.white70, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    'D-Medical',
+                    style: GoogleFonts.sora(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Xin chào,',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Builder(
+                builder: (context) {
+                  final user = context.watch<AuthProvider>().user;
+                  return Text(
+                    user?.hoTen ?? 'Chưa đăng nhập',
+                    style: GoogleFonts.sora(
+                      fontSize: 23,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  );
+                }
+              ),
+            ],
+          ),
+          Builder(
+            builder: (context) {
+              final user = context.watch<AuthProvider>().user;
+              return Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  image: DecorationImage(
+                    image: NetworkImage((user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) 
+                        ? user!.avatarUrl! 
+                        : 'https://api.dicebear.com/7.x/avataaars/svg?seed=PatientAn'),
+                    fit: BoxFit.cover,
+                  ),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                ),
+              );
+            }
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQueueStatusCard() {
+    return Consumer<QueueProvider>(
+      builder: (context, queue, child) {
+        if (!queue.hasActiveTicket) return const SizedBox.shrink();
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppTheme.prominentShadow,
+            border: Border.all(color: AppTheme.borderSubtle),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              // Left: Current Number
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'STT',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primary),
+                    ),
+                    Text(
+                      '${queue.myNumber}',
+                      style: GoogleFonts.sora(fontSize: 30, fontWeight: FontWeight.w800, color: AppTheme.primaryDark, height: 1.1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Right: Queue info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        FadeTransition(
+                          opacity: _blinkAnimation,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.accentMint,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'ĐANG KHÁM SỐ ${queue.currentNumber}',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.accentMint,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Phòng khám: ${queue.room}',
+                      style: GoogleFonts.sora(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Builder(
+                      builder: (context) {
+                        final queue = context.read<QueueProvider>();
+                        final remaining = (queue.currentNumber > 0 && queue.myNumber > queue.currentNumber) 
+                            ? queue.myNumber - queue.currentNumber 
+                            : 0;
+                        return Text(
+                          'Dự kiến còn $remaining lượt nữa',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppTheme.textSecondary,
+                          ),
+                        );
+                      }
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildUpcomingAppointmentCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lịch hẹn sắp tới',
+            style: GoogleFonts.sora(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (!_hasUpcomingAppointment)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.borderSubtle),
+              ),
+              child: Text(
+                'Chưa có lịch hẹn nào.',
+                style: GoogleFonts.inter(color: AppTheme.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.borderSubtle),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Date Block
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryDark,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            Text('26', style: GoogleFonts.sora(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, height: 1.0)),
+                            const SizedBox(height: 4),
+                            Text('Thg 9', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'BS. Nguyễn Văn A',
+                              style: GoogleFonts.sora(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Khoa Tim mạch',
+                              style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textSecondary),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time_rounded, size: 16, color: AppTheme.primary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '08:30 AM - 09:00 AM',
+                                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primary),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {},
+                          style: TextButton.styleFrom(
+                            backgroundColor: AppTheme.background,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text('Xem mã QR', style: GoogleFonts.inter(color: AppTheme.textSecondary, fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text('Chi tiết', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServicesGrid(BuildContext context) {
+    final services = [
+      {'icon': Icons.medical_services_outlined, 'title': 'Tổng quát', 'color': AppTheme.primary},
+      {'icon': Icons.favorite_outline, 'title': 'Chuyên khoa', 'color': Colors.redAccent},
+      {'icon': Icons.science_outlined, 'title': 'Xét nghiệm', 'color': Colors.purpleAccent},
+      {'icon': Icons.monitor_heart_outlined, 'title': 'CĐHA', 'color': Colors.orangeAccent},
+      {'icon': Icons.health_and_safety_outlined, 'title': 'Gói khám', 'color': Colors.green},
+      {'icon': Icons.receipt_long_outlined, 'title': 'Bảng giá', 'color': Colors.blueGrey},
+      {'icon': Icons.folder_shared_outlined, 'title': 'Hồ sơ', 'color': Colors.teal},
+      {'icon': Icons.grid_view_rounded, 'title': 'Xem tất cả', 'color': AppTheme.textSecondary},
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dịch vụ Y tế',
+            style: GoogleFonts.sora(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.8,
+            ),
+            itemCount: services.length,
+            itemBuilder: (context, index) {
+              final item = services[index];
+              return InkWell(
+                onTap: () {
+                  if (index == 0 || index == 1 || index == 7) {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const BookAppointmentView()));
+                  }
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: (item['color'] as Color).withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        item['icon'] as IconData,
+                        color: item['color'] as Color,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      item['title'] as String,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMedicalNews() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Tin tức y tế',
+                style: GoogleFonts.sora(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              Text(
+                'Xem tất cả',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: 3,
+            itemBuilder: (context, index) {
+              return Container(
+                width: 180,
+                margin: const EdgeInsets.only(right: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.borderSubtle),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 100,
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+                        image: DecorationImage(
+                          image: NetworkImage('https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&auto=format&fit=crop&q=80'),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: Text(
+                        'Phát hiện mới trong điều trị tim mạch tại VN',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

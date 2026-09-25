@@ -44,52 +44,47 @@ class _MainLayoutViewState extends State<MainLayoutView> {
         switchOutCurve: Curves.easeOut,
         child: pages[_currentIndex],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          indicatorColor: AppTheme.primaryColor.withValues(alpha: 0.15),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppTheme.primaryColor);
+            }
+            return const TextStyle(fontWeight: FontWeight.normal, fontSize: 11, color: Color(0xFF94A3B8));
+          }),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _changeTab,
           backgroundColor: Colors.white,
-          selectedItemColor: AppTheme.primaryColor,
-          unselectedItemColor: const Color(0xFF94A3B8),
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 11),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home_rounded),
+          elevation: 8,
+          shadowColor: Colors.black.withValues(alpha: 0.08),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined, color: Color(0xFF94A3B8)),
+              selectedIcon: Icon(Icons.home, color: AppTheme.primaryColor),
               label: 'Trang chủ',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today_rounded),
+            NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined, color: Color(0xFF94A3B8)),
+              selectedIcon: Icon(Icons.calendar_month, color: AppTheme.primaryColor),
               label: 'Lịch khám',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.folder_shared_outlined),
-              activeIcon: Icon(Icons.folder_shared_rounded),
-              label: 'Hồ sơ',
+            NavigationDestination(
+              icon: Icon(Icons.folder_outlined, color: Color(0xFF94A3B8)),
+              selectedIcon: Icon(Icons.folder, color: AppTheme.primaryColor),
+              label: 'Bệnh án',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined),
-              activeIcon: Icon(Icons.article_rounded),
-              label: 'Tin y tế',
+            NavigationDestination(
+              icon: Icon(Icons.article_outlined, color: Color(0xFF94A3B8)),
+              selectedIcon: Icon(Icons.article, color: AppTheme.primaryColor),
+              label: 'Tin tức',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Tài khoản',
+            NavigationDestination(
+              icon: Icon(Icons.person_outline, color: Color(0xFF94A3B8)),
+              selectedIcon: Icon(Icons.person, color: AppTheme.primaryColor),
+              label: 'Cá nhân',
             ),
           ],
         ),
