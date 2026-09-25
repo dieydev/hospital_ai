@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import 'bhyt_info_view.dart';
 import 'help_center_view.dart';
+import 'edit_profile_view.dart';
 
 class AccountProfileView extends StatelessWidget {
   const AccountProfileView({super.key});
@@ -18,11 +19,21 @@ class AccountProfileView extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Tài Khoản & Cá Nhân'),
+        title: const Text('Hồ sơ Cá nhân', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppTheme.primaryDark,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_note_rounded, color: AppTheme.primaryColor, size: 28),
+            tooltip: 'Chỉnh sửa Hồ sơ',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileView()));
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -51,41 +62,66 @@ class AccountProfileView extends StatelessWidget {
                   border: Border.all(color: AppTheme.borderColor),
                   boxShadow: AppTheme.premiumShadow,
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    TweenAnimationBuilder(
-                      duration: const Duration(seconds: 2),
-                      tween: Tween<double>(begin: 0.95, end: 1.05),
-                      builder: (context, double value, child) {
-                        return Transform.scale(
-                          scale: value,
-                          child: child,
-                        );
-                      },
-                      // Add a trick to make it pulse continuously by reversing it, but since it's simple we just scale once or we can skip continuous pulse for simplicity and just do a nice load. 
-                      // Let's just do a nice entry animation for the avatar.
-                      child: CircleAvatar(
-                        radius: 32,
-                        backgroundColor: const Color(0xFFE0F2FE),
-                        backgroundImage: NetworkImage((user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) ? user.avatarUrl! : 'https://api.dicebear.com/7.x/avataaars/svg?seed=PatientAn'),
-                        child: user?.avatarUrl == null ? const Icon(Icons.person, size: 36, color: AppTheme.primaryColor) : null,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.hoTen ?? 'Nguyễn Văn An',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.textMain),
+                    Row(
+                      children: [
+                        TweenAnimationBuilder(
+                          duration: const Duration(seconds: 1),
+                          tween: Tween<double>(begin: 0.9, end: 1.0),
+                          builder: (context, double value, child) {
+                            return Transform.scale(
+                              scale: value,
+                              child: child,
+                            );
+                          },
+                          child: CircleAvatar(
+                            radius: 36,
+                            backgroundColor: const Color(0xFFE0F2FE),
+                            backgroundImage: NetworkImage((user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) ? user.avatarUrl! : 'https://api.dicebear.com/7.x/avataaars/svg?seed=PatientAn'),
+                            child: user?.avatarUrl == null ? const Icon(Icons.person, size: 40, color: AppTheme.primaryColor) : null,
                           ),
-                          const SizedBox(height: 4),
-                          Text('SĐT: ${user?.soDienThoai ?? '0987654321'}', style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
-                          Text('Mã BN: ${user?.maBenhNhan ?? 'BN20260001'}', style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user?.hoTen ?? 'Chưa cập nhật',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppTheme.textMain),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F9FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppTheme.borderColor),
+                                ),
+                                child: Text('Mã BN: ${user?.maBenhNhan ?? 'Đang tải...'}', style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      child: Divider(color: Color(0xFFE2E8F0)),
+                    ),
+                    _buildInfoRow(Icons.phone_android, 'Số điện thoại', user?.soDienThoai ?? 'Chưa cập nhật'),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(Icons.email_outlined, 'Email', (user?.email != null && user!.email!.isNotEmpty) ? user.email! : 'Chưa cập nhật'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: _buildInfoRow(Icons.calendar_today, 'Ngày sinh', (user?.ngaySinh != null && user!.ngaySinh!.isNotEmpty) ? user.ngaySinh! : '--/--/----')),
+                        Expanded(child: _buildInfoRow(Icons.wc, 'Giới tính', user?.gioiTinh ?? 'Nam')),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(Icons.location_on_outlined, 'Địa chỉ', (user?.diaChi != null && user!.diaChi!.isNotEmpty) ? user.diaChi! : 'Chưa cập nhật'),
                   ],
                 ),
               ),
@@ -184,6 +220,26 @@ class AccountProfileView extends StatelessWidget {
         ),
       ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF64748B)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textMain)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

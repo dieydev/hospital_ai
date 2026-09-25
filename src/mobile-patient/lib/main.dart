@@ -15,7 +15,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AppointmentProvider()..fetchDepartments()),
-        ChangeNotifierProvider(create: (_) => QueueProvider()..startPollingQueue()),
+        ChangeNotifierProvider(create: (_) => QueueProvider()),
         ChangeNotifierProvider(create: (_) => PatientProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],

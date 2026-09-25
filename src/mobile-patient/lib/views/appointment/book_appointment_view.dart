@@ -228,29 +228,53 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             else
               ...provider.departments.map((dept) {
                 final isSelected = _selectedDepartment == dept;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-                      width: isSelected ? 2 : 1,
-                    ),
-                  ),
-                  child: ListTile(
-                    leading: Icon(
-                      isSelected ? Icons.check_circle : Icons.circle_outlined,
-                      color: isSelected ? AppTheme.primaryColor : const Color(0xFF94A3B8),
-                    ),
-                    title: Text(
-                      dept,
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? AppTheme.primaryDark : const Color(0xFF334155),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _onDepartmentChanged(dept),
+                      borderRadius: BorderRadius.circular(16),
+                      splashColor: AppTheme.primaryColor.withOpacity(0.1),
+                      highlightColor: AppTheme.primaryColor.withOpacity(0.05),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFFE0F2FE) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+                            width: isSelected ? 2.5 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
+                              : [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          leading: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppTheme.primaryColor : const Color(0xFFF1F5F9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isSelected ? Icons.check_rounded : Icons.medical_services_outlined,
+                              color: isSelected ? Colors.white : const Color(0xFF64748B),
+                            ),
+                          ),
+                          title: Text(
+                            dept,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                              color: isSelected ? AppTheme.primaryDark : const Color(0xFF334155),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    onTap: () => _onDepartmentChanged(dept),
                   ),
                 );
               }),
@@ -298,32 +322,67 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 final docAvatar = doc['avatar'] ?? '';
                 final isSelected = _selectedDoctor == docName;
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
-                      width: isSelected ? 2 : 1,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedDoctor = docName),
+                      borderRadius: BorderRadius.circular(16),
+                      splashColor: AppTheme.primaryColor.withOpacity(0.1),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFFE0F2FE) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+                            width: isSelected ? 2.5 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]
+                              : [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          leading: CircleAvatar(
+                            radius: 28,
+                            backgroundColor: isSelected ? AppTheme.primaryColor : const Color(0xFFE2E8F0),
+                            backgroundImage: docAvatar.isNotEmpty ? NetworkImage(docAvatar) : null,
+                            child: docAvatar.isEmpty ? Icon(Icons.person, size: 30, color: isSelected ? Colors.white : const Color(0xFF94A3B8)) : null,
+                          ),
+                          title: Text(
+                            docName, 
+                            style: TextStyle(
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.bold, 
+                              fontSize: 15, 
+                              color: isSelected ? AppTheme.primaryDark : const Color(0xFF0F172A)
+                            )
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              '$docTitle • $docDept', 
+                              style: TextStyle(fontSize: 13, color: isSelected ? AppTheme.primaryColor : const Color(0xFF64748B))
+                            ),
+                          ),
+                          trailing: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: isSelected ? AppTheme.primaryColor : const Color(0xFFCBD5E1), width: 2),
+                            ),
+                            child: Icon(
+                              Icons.check,
+                              color: isSelected ? Colors.white : Colors.transparent,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    leading: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: isSelected ? AppTheme.primaryColor : const Color(0xFFE0F2FE),
-                      backgroundImage: docAvatar.isNotEmpty ? NetworkImage(docAvatar) : null,
-                      child: docAvatar.isEmpty ? Icon(Icons.person, color: isSelected ? Colors.white : AppTheme.primaryColor) : null,
-                    ),
-                    title: Text(docName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isSelected ? AppTheme.primaryDark : const Color(0xFF0F172A))),
-                    subtitle: Text('$docTitle • $docDept', style: TextStyle(fontSize: 12, color: isSelected ? AppTheme.primaryColor : const Color(0xFF64748B))),
-                    trailing: Icon(
-                      isSelected ? Icons.check_circle : Icons.circle_outlined,
-                      color: isSelected ? AppTheme.primaryColor : const Color(0xFF94A3B8),
-                      size: 22,
-                    ),
-                    onTap: () => setState(() => _selectedDoctor = docName),
                   ),
                 );
               }),
@@ -416,42 +475,47 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   runSpacing: 8,
                   children: provider.timeSlots.map((slot) {
                     final isSelected = _selectedTimeSlot == slot;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedTimeSlot = slot),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: chipWidth,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primaryColor : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected ? AppTheme.primaryColor : const Color(0xFFCBD5E1),
-                            width: isSelected ? 2 : 1,
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedTimeSlot = slot),
+                        borderRadius: BorderRadius.circular(14),
+                        splashColor: AppTheme.primaryColor.withOpacity(0.2),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: chipWidth,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.primaryColor : Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected ? AppTheme.primaryColor : const Color(0xFFCBD5E1),
+                              width: isSelected ? 2 : 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))]
+                                : [const BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1))],
                           ),
-                          boxShadow: isSelected
-                              ? [const BoxShadow(color: Color.fromRGBO(2, 132, 199, 0.25), blurRadius: 6, offset: Offset(0, 3))]
-                              : [],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 16,
-                              color: isSelected ? Colors.white : AppTheme.primaryColor,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              slot,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : const Color(0xFF1E293B),
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                fontSize: 11,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 20,
+                                color: isSelected ? Colors.white : AppTheme.primaryColor,
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 6),
+                              Text(
+                                slot,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

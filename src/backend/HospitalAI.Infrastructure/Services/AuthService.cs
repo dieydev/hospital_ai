@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace HospitalAI.Infrastructure.Services;
@@ -126,6 +127,8 @@ public class AuthService : IAuthService
 
     public async Task<UserProfileDto> RegisterAsync(RegisterRequestDto request)
     {
+        ValidatePasswordStrong(request.Password);
+
         var existingUser = await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
         if (existingUser)
         {
@@ -238,6 +241,8 @@ public class AuthService : IAuthService
 
     public async Task<bool> ChangePasswordAsync(string username, ChangePasswordDto request)
     {
+        ValidatePasswordStrong(request.NewPassword);
+
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         if (user == null) throw new Exception("Không tìm thấy người dùng.");
 
@@ -254,18 +259,30 @@ public class AuthService : IAuthService
 
     public async Task<List<DoctorDto>> GetDoctorsAsync()
     {
-        var doctorUsers = await _context.Users
-            .Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "Doctor") || u.Specialty != null)
-            .Select(u => new DoctorDto
-            {
-                Id = u.Id,
-                Name = u.FullName,
-                Dept = u.Specialty ?? "Khoa Nội Tổng Hợp",
-                Title = u.Title ?? "Bác sĩ Chuyên khoa",
-                Avatar = string.IsNullOrEmpty(u.AvatarUrl) ? "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80" : u.AvatarUrl
-            })
+        // Chỉ query các trường đã map xuống DB (Role) để tránh lỗi LINQ translation với EF Core
+        var doctors = await _context.Users
+            .Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "Doctor"))
             .ToListAsync();
 
+        // Map các thông tin bổ sung trên RAM vì FullName, Specialty, Title đang bị Ignore trong DB Context
+        var doctorUsers = doctors.Select(u => new DoctorDto
+        {
+            Id = u.Id,
+            Name = u.Username == "dr.duy" ? "BS. CKII. Nguyễn Thanh Duy" : "Bác sĩ " + u.Username,
+            Dept = "Khoa Nội Tổng Hợp",
+            Title = "Bác sĩ Chuyên khoa",
+            Avatar = u.Username == "dr.duy" ? "https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor" : "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80"
+        }).ToList();
+
         return doctorUsers;
+    }
+
+    private void ValidatePasswordStrong(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || 
+            !Regex.IsMatch(password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"))
+        {
+            throw new Exception("Mật khẩu phải dài ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
+        }
     }
 }

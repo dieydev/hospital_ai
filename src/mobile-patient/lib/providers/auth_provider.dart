@@ -87,6 +87,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateProfile(PatientModel updatedUser) async {
+    // In a real scenario, we'd call the API: await _apiService.updatePatient(updatedUser.id, updatedUser.toJson());
+    // For now, update local state
+    _user = updatedUser;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     _isAuthenticated = false;
     _token = null;

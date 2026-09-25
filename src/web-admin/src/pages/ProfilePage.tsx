@@ -509,7 +509,7 @@ export const ProfilePage: React.FC = () => {
                       label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu Mới</span>}
                       rules={[
                         { required: true, message: 'Nhập mật khẩu mới!' },
-                        { min: 6, message: 'Mật khẩu phải từ 6 ký tự trở lên!' },
+                        { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, message: 'Mật khẩu phải >= 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.' }
                       ]}
                     >
                       <Input.Password size="large" style={{ maxWidth: 450 }} />

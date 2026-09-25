@@ -161,7 +161,7 @@ class _HomeViewState extends State<HomeView> {
 
                   const SizedBox(height: 16),
                   
-                  // Live Queue Ticket Card
+                  // Live Queue Ticket Card - GLASSMORPHISM OVERHAUL
                   Consumer<QueueProvider>(
                     builder: (context, queue, child) {
                       if (!queue.hasActiveTicket) return const SizedBox.shrink();
@@ -171,20 +171,21 @@ class _HomeViewState extends State<HomeView> {
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFF0ea5e9), Color(0xFF0284c7)],
+                              colors: [Color(0xFF0284c7), Color(0xFF0369a1)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(24), // Tăng bo góc
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF0284c7).withOpacity(0.3),
-                                blurRadius: 16,
+                                color: const Color(0xFF0284c7).withOpacity(0.4), // Glow mạnh hơn
+                                blurRadius: 20,
+                                spreadRadius: 2,
                                 offset: const Offset(0, 8),
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -194,42 +195,45 @@ class _HomeViewState extends State<HomeView> {
                                   Row(
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.all(6),
+                                        padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: Colors.white.withOpacity(0.25),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: const Icon(Icons.confirmation_num_outlined, color: Colors.white, size: 20),
+                                        child: const Icon(Icons.confirmation_num_rounded, color: Colors.white, size: 24),
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 12),
                                       const Text(
-                                        'PHIẾU KHÁM CỦA BẠN',
+                                        'PHIẾU KHÁM',
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          letterSpacing: 0.5,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 18, // Chữ to hơn cho người lớn tuổi
+                                          letterSpacing: 1.0,
                                         ),
                                       ),
                                     ],
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF10b981),
                                       borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(color: const Color(0xFF10b981).withOpacity(0.4), blurRadius: 8),
+                                      ],
                                     ),
                                     child: const Row(
                                       children: [
-                                        Icon(Icons.sync, color: Colors.white, size: 12),
+                                        Icon(Icons.sensors, color: Colors.white, size: 16),
                                         SizedBox(width: 4),
-                                        Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                        Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -237,48 +241,61 @@ class _HomeViewState extends State<HomeView> {
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Số Thứ Tự', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                                      const Text('Số Thứ Tự Của Bạn', style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500)),
                                       Row(
                                         crossAxisAlignment: CrossAxisAlignment.baseline,
                                         textBaseline: TextBaseline.alphabetic,
                                         children: [
-                                          const Text('#', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                                          Text('${queue.myNumber}', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900)),
-                                          const SizedBox(width: 12),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.15),
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
-                                            child: Text(queue.room, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                                          ),
+                                          const Text('#', style: TextStyle(color: Colors.white70, fontSize: 32, fontWeight: FontWeight.bold)),
+                                          Text('${queue.myNumber}', style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w900, height: 1.1)),
                                         ],
                                       ),
                                     ],
                                   ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Text('PHÒNG KHÁM', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 4),
+                                        Text(queue.room, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 20),
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 20),
-                                    const SizedBox(width: 10),
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF0F9FF),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.info_rounded, color: AppTheme.primaryColor, size: 24),
+                                    ),
+                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: RichText(
                                         text: TextSpan(
-                                          style: const TextStyle(color: Colors.black87, fontSize: 13, fontFamily: 'Inter'),
+                                          style: const TextStyle(color: AppTheme.textMain, fontSize: 15, height: 1.4),
                                           children: [
                                             const TextSpan(text: 'Trạng thái: '),
-                                            TextSpan(text: '${queue.status}\n', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFf59e0b))),
+                                            TextSpan(text: '${queue.status}\n', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFf59e0b), fontSize: 16)),
                                             const TextSpan(text: 'Đang gọi STT: '),
-                                            TextSpan(text: '#${queue.currentNumber}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                                            TextSpan(text: '#${queue.currentNumber}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppTheme.primaryColor, fontSize: 20)),
                                           ],
                                         ),
                                       ),
@@ -295,7 +312,7 @@ class _HomeViewState extends State<HomeView> {
 
                   const SizedBox(height: 24),
 
-                  // Quick Utility Services Grid (Matching Reference Screenshot)
+                  // Quick Utility Services Grid
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
@@ -303,8 +320,8 @@ class _HomeViewState extends State<HomeView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildQuickServiceItem(
-                          icon: Icons.headset_mic_outlined,
-                          label: 'Hỗ trợ\nđặt khám',
+                          icon: Icons.calendar_month_rounded,
+                          label: 'Lịch khám',
                           onTap: () {
                             if (widget.onNavigateTab != null) {
                               widget.onNavigateTab!(1);
@@ -314,30 +331,22 @@ class _HomeViewState extends State<HomeView> {
                           },
                         ),
                         _buildQuickServiceItem(
-                          icon: Icons.history_edu_outlined,
-                          label: 'Lịch sử\nthanh toán',
+                          icon: Icons.history_rounded,
+                          label: 'Thanh toán',
                           onTap: () {
-                            if (widget.onNavigateTab != null) {
-                              widget.onNavigateTab!(3);
-                            } else {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
-                            }
+                            if (widget.onNavigateTab != null) widget.onNavigateTab!(3);
                           },
                         ),
                         _buildQuickServiceItem(
-                          icon: Icons.receipt_long_outlined,
-                          label: 'Tra cứu\nhoá đơn',
+                          icon: Icons.receipt_long_rounded,
+                          label: 'Hóa đơn',
                           onTap: () {
-                            if (widget.onNavigateTab != null) {
-                              widget.onNavigateTab!(3);
-                            } else {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
-                            }
+                            if (widget.onNavigateTab != null) widget.onNavigateTab!(3);
                           },
                         ),
                         _buildQuickServiceItem(
-                          icon: Icons.folder_shared_outlined,
-                          label: 'Hồ sơ\nsức khỏe',
+                          icon: Icons.folder_shared_rounded,
+                          label: 'Hồ sơ',
                           onTap: () {
                             if (widget.onNavigateTab != null) {
                               widget.onNavigateTab!(3);
@@ -350,25 +359,36 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
           ),
 
-          // Prominent "Đặt khám" Action Button Fixed Above Bottom Nav Bar (Matching Reference)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          // Prominent "Đặt khám" Action Button Fixed Above Bottom Nav Bar
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24), // Tăng padding dưới cho to
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
+                )
+              ]
+            ),
             child: SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 60, // Nút cao và to hơn
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
-                  elevation: 2,
+                  elevation: 4, // Tăng đổ bóng nút
+                  shadowColor: AppTheme.primaryColor.withOpacity(0.5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 onPressed: () {
@@ -381,13 +401,20 @@ class _HomeViewState extends State<HomeView> {
                     );
                   }
                 },
-                child: const Text(
-                  'Đặt khám',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_circle_outline, size: 24),
+                    SizedBox(width: 12),
+                    Text(
+                      'ĐẶT KHÁM NGAY',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -406,32 +433,39 @@ class _HomeViewState extends State<HomeView> {
     return AnimatedPremiumCard(
       onTap: onTap,
       padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        width: 76,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        width: 80,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9), // Glassy effect
+          color: Colors.white.withOpacity(0.95), // Kính mờ
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ]
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFFF0F9FF),
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFBAE6FD)),
+                border: Border.all(color: const Color(0xFFBAE6FD), width: 1.5),
               ),
-              child: Icon(icon, color: AppTheme.primaryColor, size: 26),
+              child: Icon(icon, color: AppTheme.primaryColor, size: 28),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               label,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+                fontSize: 13, // Chữ to hơn
+                fontWeight: FontWeight.w700,
                 color: AppTheme.textSub,
                 height: 1.2,
               ),

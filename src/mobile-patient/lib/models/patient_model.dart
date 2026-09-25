@@ -7,6 +7,8 @@ class PatientModel {
   final String soCCCD;
   final String? maTheBHYT;
   final String? soDienThoai;
+  final String? email;
+  final String? diaChi;
   final String? avatarUrl;
 
   PatientModel({
@@ -18,8 +20,35 @@ class PatientModel {
     required this.soCCCD,
     this.maTheBHYT,
     this.soDienThoai = '0987654321',
+    this.email,
+    this.diaChi,
     this.avatarUrl,
   });
+
+  PatientModel copyWith({
+    String? hoTen,
+    String? gioiTinh,
+    String? ngaySinh,
+    String? soCCCD,
+    String? soDienThoai,
+    String? email,
+    String? diaChi,
+    String? avatarUrl,
+  }) {
+    return PatientModel(
+      id: id,
+      maBenhNhan: maBenhNhan,
+      hoTen: hoTen ?? this.hoTen,
+      gioiTinh: gioiTinh ?? this.gioiTinh,
+      ngaySinh: ngaySinh ?? this.ngaySinh,
+      soCCCD: soCCCD ?? this.soCCCD,
+      maTheBHYT: maTheBHYT,
+      soDienThoai: soDienThoai ?? this.soDienThoai,
+      email: email ?? this.email,
+      diaChi: diaChi ?? this.diaChi,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+    );
+  }
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
     return PatientModel(
@@ -31,6 +60,8 @@ class PatientModel {
       soCCCD: json['soCCCD'] ?? json['identityCardNumber'] ?? '',
       maTheBHYT: json['maTheBHYT'],
       soDienThoai: json['soDienThoai'] ?? json['phoneNumber'] ?? '0987654321',
+      email: json['email'] ?? '',
+      diaChi: json['diaChi'] ?? json['address'] ?? 'Chưa cập nhật',
       avatarUrl: json['avatarUrl'] ?? json['photoUrl'],
     );
   }

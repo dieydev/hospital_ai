@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import 'register_view.dart';
@@ -13,13 +14,33 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController(text: 'patient01');
-  final _passwordController = TextEditingController(text: '123456');
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _storage = const FlutterSecureStorage();
 
   bool _obscurePassword = true;
   bool _agreeTerms = true;
+  bool _rememberMe = false;
   bool _isLoading = false;
   String _selectedLang = 'VI';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final savedUsername = await _storage.read(key: 'saved_username');
+    final savedPassword = await _storage.read(key: 'saved_password');
+    if (savedUsername != null && savedPassword != null) {
+      setState(() {
+        _usernameController.text = savedUsername;
+        _passwordController.text = savedPassword;
+        _rememberMe = true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -50,6 +71,14 @@ class _LoginViewState extends State<LoginView> {
       final password = _passwordController.text;
       
       await context.read<AuthProvider>().login(username, password);
+
+      if (_rememberMe) {
+        await _storage.write(key: 'saved_username', value: username);
+        await _storage.write(key: 'saved_password', value: password);
+      } else {
+        await _storage.delete(key: 'saved_username');
+        await _storage.delete(key: 'saved_password');
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -450,6 +479,35 @@ class _LoginViewState extends State<LoginView> {
                                 width: 20,
                                 height: 20,
                                 child: Checkbox(
+                                  value: _rememberMe,
+                                  activeColor: AppTheme.primaryColor,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                  onChanged: (val) => setState(() => _rememberMe = val ?? false),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Lưu thông tin đăng nhập',
+                                  style: TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _showForgotPasswordDialog,
+                                child: const Text(
+                                  'Quên?',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Checkbox(
                                   value: _agreeTerms,
                                   activeColor: AppTheme.primaryColor,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
@@ -461,13 +519,6 @@ class _LoginViewState extends State<LoginView> {
                                 child: Text(
                                   'Tôi đồng ý Điều khoản Sử dụng & Bảo mật Dữ liệu Y tế',
                                   style: TextStyle(fontSize: 11, color: Color(0xFF475569)),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _showForgotPasswordDialog,
-                                child: const Text(
-                                  'Quên?',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
                                 ),
                               ),
                             ],

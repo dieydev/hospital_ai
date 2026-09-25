@@ -242,7 +242,7 @@ class _RegisterViewState extends State<RegisterView> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    hintText: 'Nhập mật khẩu (tối thiểu 6 ký tự)',
+                    hintText: 'Mật khẩu mạnh (>= 8 ký tự, hoa, thường, số, đặc biệt)',
                     prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
                     suffixIcon: IconButton(
                       icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF64748B)),
@@ -254,7 +254,13 @@ class _RegisterViewState extends State<RegisterView> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
                   ),
-                  validator: (val) => val == null || val.length < 6 ? 'Mật khẩu phải từ 6 ký tự' : null,
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'Vui lòng nhập mật khẩu';
+                    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$').hasMatch(val)) {
+                      return 'Mật khẩu yếu: Cần >=8 ký tự, chữ hoa, thường, số, ký tự đặc biệt';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 16),

@@ -204,7 +204,7 @@ export const LoginPage: React.FC = () => {
           <div>
             <Form
               name="login"
-              initialValues={{ remember: true, username: 'dr.duy', password: '123' }}
+              initialValues={{ remember: true }}
               onFinish={onLoginFinish}
               layout="vertical"
             >
@@ -345,9 +345,12 @@ export const LoginPage: React.FC = () => {
               <Form.Item
                 name="password"
                 label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu</span>}
-                rules={[{ required: true, message: 'Nhập mật khẩu!' }]}
+                rules={[
+                  { required: true, message: 'Nhập mật khẩu!' },
+                  { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, message: 'Mật khẩu phải >= 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.' }
+                ]}
               >
-                <Input.Password placeholder="Tối thiểu 6 ký tự..." size="large" style={{ borderRadius: 8 }} />
+                <Input.Password placeholder="Mật khẩu mạnh (>= 8 ký tự, hoa, thường, số, đặc biệt)" size="large" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item

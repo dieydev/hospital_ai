@@ -35,13 +35,7 @@ export interface IssueTicketParams {
   patientGender?: string;
 }
 
-const FALLBACK_DEPARTMENTS: DepartmentItem[] = [
-  { id: 'dept-01', departmentName: 'Khoa Nội Tổng Hợp', location: 'Phòng 102 - Tầng 1', roomType: 'Clinical' },
-  { id: 'dept-02', departmentName: 'Khoa Nhi', location: 'Phòng 105 - Tầng 1', roomType: 'Clinical' },
-  { id: 'dept-03', departmentName: 'Khoa Mắt', location: 'Phòng 201 - Tầng 2', roomType: 'Clinical' },
-  { id: 'dept-04', departmentName: 'Khoa Cấp Cứu & Hồi Sức', location: 'Tầng Trệt - Khu A', roomType: 'Emergency' },
-  { id: 'dept-05', departmentName: 'Phòng X-Quang & CLS', location: 'Tầng 1 - Khu B', roomType: 'Lab' },
-];
+
 
 export const localQueueTickets: QueueTicketItem[] = [
   {
