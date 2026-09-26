@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../main_layout_view.dart';
+import '../profile/complete_profile_view.dart';
 import 'register_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -75,19 +76,33 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
         await _storage.delete(key: 'saved_username');
         await _storage.delete(key: 'saved_password');
       }
-      await context.read<AuthProvider>().login(
+      final auth = context.read<AuthProvider>();
+      await auth.login(
         _usernameController.text.trim(),
         _passwordController.text,
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const MainLayoutView(),
-          transitionDuration: const Duration(milliseconds: 500),
-          transitionsBuilder: (_, anim, __, child) =>
-              FadeTransition(opacity: anim, child: child),
-        ),
-      );
+
+      if (!auth.isProfileComplete) {
+        // Bắt buộc hoàn thiện hồ sơ nếu chưa đầy đủ
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const CompleteProfileView(isDismissible: false),
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder: (_, anim, __, child) =>
+                FadeTransition(opacity: anim, child: child),
+          ),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const MainLayoutView(),
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder: (_, anim, __, child) =>
+                FadeTransition(opacity: anim, child: child),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -154,18 +169,30 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
                       Center(
                         child: Column(
                           children: [
-                            // White logo on dark gradient
+                            // White D-Medical logo on dark gradient
                             Image.asset(
                               'assets/images/logo_white.png',
-                              height: 90,
+                              height: 64,
                               fit: BoxFit.contain,
                             ),
-                            const SizedBox(height: 10),
-                            Text('Healthcare Connected', style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.65),
-                              letterSpacing: 2,
-                            )),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                              ),
+                              child: Text(
+                                'CỔNG DỊCH VỤ Y TẾ SỐ DÀNH CHO BỆNH NHÂN',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),

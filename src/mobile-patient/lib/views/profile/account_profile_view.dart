@@ -6,7 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import 'bhyt_info_view.dart';
 import 'help_center_view.dart';
-import 'edit_profile_view.dart';
+import 'complete_profile_view.dart';
+import '../onboarding/onboarding_view.dart';
 
 class AccountProfileView extends StatelessWidget {
   const AccountProfileView({super.key});
@@ -65,7 +66,10 @@ class AccountProfileView extends StatelessWidget {
                             ],
                           ),
                           GestureDetector(
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileView())),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CompleteProfileView(isDismissible: true)),
+                            ),
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
@@ -111,7 +115,9 @@ class AccountProfileView extends StatelessWidget {
 
             // Name + Code
             Text(
-              user?.hoTen ?? 'Chưa cập nhật',
+              (user?.hoTen.isNotEmpty == true && user?.hoTen != 'Bệnh nhân mới')
+                  ? user!.hoTen
+                  : 'Bệnh nhân chưa đặt tên',
               style: GoogleFonts.sora(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
             ),
             const SizedBox(height: 6),
@@ -122,10 +128,69 @@ class AccountProfileView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                user?.maBenhNhan != null ? '🏥  ${user!.maBenhNhan}' : 'Chưa có mã bệnh nhân',
+                user?.maBenhNhan.isNotEmpty == true ? '🏥  ${user!.maBenhNhan}' : 'Chưa có mã bệnh nhân',
                 style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primary),
               ),
             ),
+
+            if (!auth.isProfileComplete)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFBAE6FD), width: 1.2),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Hồ sơ của bạn chưa hoàn tất (*)',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Cần cập nhật CCCD, ngày sinh và địa chỉ để được cấp mã khám và bốc số.',
+                        style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF334155)),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CompleteProfileView(isDismissible: true)),
+                            );
+                          },
+                          icon: const Icon(Icons.edit_note_rounded, size: 18),
+                          label: const Text('CẬP NHẬT THÔNG TIN NGAY'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 24),
 
             // ── Info Card ───────────────────────────────────────
@@ -142,17 +207,17 @@ class AccountProfileView extends StatelessWidget {
                     _buildInfoTile(Icons.phone_android_outlined, 'Số điện thoại',
                         user?.soDienThoai ?? 'Chưa cập nhật', AppTheme.primary),
                     _buildDivider(),
-                    _buildInfoTile(Icons.email_outlined, 'Email',
-                        (user?.email?.isNotEmpty ?? false) ? user!.email! : 'Chưa cập nhật', AppTheme.accentMint),
+                    _buildInfoTile(Icons.badge_outlined, 'Số CCCD / CMND',
+                        (user?.soCCCD.isNotEmpty ?? false) ? user!.soCCCD : 'Chưa cập nhật', AppTheme.accentMint),
                     _buildDivider(),
                     _buildInfoTile(Icons.cake_outlined, 'Ngày sinh',
-                        (user?.ngaySinh?.isNotEmpty ?? false) ? user!.ngaySinh! : 'Chưa cập nhật', AppTheme.primary),
+                        (user?.ngaySinh.isNotEmpty ?? false) ? user!.ngaySinh : 'Chưa cập nhật', AppTheme.primary),
                     _buildDivider(),
                     _buildInfoTile(Icons.wc_rounded, 'Giới tính',
                         user?.gioiTinh ?? 'Nam', AppTheme.accentMint),
                     _buildDivider(),
                     _buildInfoTile(Icons.location_on_outlined, 'Địa chỉ',
-                        (user?.diaChi?.isNotEmpty ?? false) ? user!.diaChi! : 'Chưa cập nhật', AppTheme.primary),
+                        (user?.diaChi != null && user!.diaChi!.isNotEmpty) ? user.diaChi! : 'Chưa cập nhật', AppTheme.primary),
                   ],
                 ),
               ),
@@ -214,6 +279,14 @@ class AccountProfileView extends StatelessWidget {
                         ),
                         _buildDivider(indent: 64),
                         _buildMenuItem(
+                          icon: Icons.auto_stories_outlined,
+                          title: 'Giới thiệu & Hướng dẫn sử dụng',
+                          subtitle: 'Tính năng D-Medical Care',
+                          color: const Color(0xFF0EA5E9),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OnboardingView(isRevisit: true))),
+                        ),
+                        _buildDivider(indent: 64),
+                        _buildMenuItem(
                           icon: Icons.help_outline_rounded,
                           title: 'Trợ giúp & Điều khoản',
                           subtitle: 'Hỗ trợ 24/7',
@@ -254,7 +327,30 @@ class AccountProfileView extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 28),
+
+            // D-Medical Footer Branding
+            Center(
+              child: Column(
+                children: [
+                  Image.asset(
+                    'assets/images/logo.png',
+                    height: 28,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Hệ thống Y tế Quốc tế D-Medical • v1.0.0',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 36),
           ],
         ),
       ),
@@ -366,7 +462,7 @@ class AccountProfileView extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppTheme.primary,
+            activeThumbColor: AppTheme.primary,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],

@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../providers/appointment_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../booking/vnpay_payment_view.dart';
+import '../profile/complete_profile_view.dart';
 
 class BookAppointmentView extends StatefulWidget {
   const BookAppointmentView({super.key});
@@ -64,6 +65,74 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    if (!auth.isProfileComplete) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        appBar: AppBar(
+          title: const Text('Đặt Lịch Khám'),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
+                boxShadow: AppTheme.prominentShadow,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.person_add_alt_1_rounded, size: 48, color: AppTheme.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chưa hoàn tất hồ sơ',
+                    style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Để đăng ký lịch khám và tiếp nhận bệnh án theo quy định của Bệnh viện D-Medical, quý khách vui lòng cập nhật đầy đủ thông tin cá nhân (Họ tên, CCCD, Ngày sinh, Địa chỉ).',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textSecondary, height: 1.45),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CompleteProfileView(isDismissible: true)),
+                        );
+                      },
+                      icon: const Icon(Icons.edit_note_rounded),
+                      label: const Text('CẬP NHẬT HỒ SƠ NGAY'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -705,7 +774,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   const Icon(Icons.cloud_done, color: AppTheme.accentMint, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('Đã đồng bộ trực tiếp lên hệ thống Web Admin Bệnh viện!', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.accentMint, fontWeight: FontWeight.bold)),
+                    child: Text('Đã đồng bộ trực tiếp lên hệ thống Bệnh viện D-Medical!', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.accentMint, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

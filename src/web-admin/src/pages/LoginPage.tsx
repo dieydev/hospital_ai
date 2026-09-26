@@ -189,8 +189,13 @@ export const LoginPage: React.FC = () => {
       >
         {/* Header Logo & Title */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img
+            src="/logo.png"
+            alt="D-Medical Logo"
+            style={{ height: 48, objectFit: 'contain', marginBottom: 12 }}
+          />
           <Title level={3} style={{ margin: '0 0 4px', fontWeight: 800, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-            HOSPITAL <span style={{ color: isDarkMode ? '#0284c7' : '#0284c7' }}>AI</span>
+            D-MEDICAL <span style={{ color: '#0284c7' }}>AI</span>
           </Title>
           <Text type="secondary" style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#64748b' }}>
             {isRegisterMode ? 'Đăng ký tài khoản hệ thống mới' : 'Hệ thống Quản lý Khám chữa bệnh & Bệnh án Điện tử EMR'}

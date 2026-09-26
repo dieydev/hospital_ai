@@ -8,6 +8,7 @@ import 'providers/patient_provider.dart';
 import 'providers/settings_provider.dart';
 import 'views/auth/login_view.dart';
 import 'views/main_layout_view.dart';
+import 'views/onboarding/onboarding_view.dart';
 
 void main() {
   runApp(
@@ -30,12 +31,18 @@ class HospitalAiPatientApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Hospital AI Patient',
+      title: 'D-Medical',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-          return auth.isAuthenticated ? const MainLayoutView() : const LoginView();
+      home: Consumer2<AuthProvider, SettingsProvider>(
+        builder: (context, auth, settings, _) {
+          if (auth.isAuthenticated) {
+            return const MainLayoutView();
+          }
+          if (settings.isInitialized && !settings.hasSeenOnboarding) {
+            return const OnboardingView();
+          }
+          return const LoginView();
         },
       ),
     );

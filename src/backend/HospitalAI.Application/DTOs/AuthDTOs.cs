@@ -43,6 +43,43 @@ public class UserProfileDto
     public string AvatarUrl { get; set; } = string.Empty;
     public string? PatientCode { get; set; }
     public string? IdentityCardNumber { get; set; }
+    public string? Gender { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? Address { get; set; }
+    public string? HealthInsuranceNumber { get; set; }
+    public bool IsProfileComplete { get; set; }
+}
+
+public class SendOtpRequestDto
+{
+    public string PhoneNumber { get; set; } = string.Empty;
+}
+
+public class SendOtpResponseDto
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string? OtpCode { get; set; } // Available in dev/testing mode
+}
+
+public class VerifyOtpRequestDto
+{
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string OtpCode { get; set; } = string.Empty;
+}
+
+public class CompleteProfileRequestDto
+{
+    public string? PhoneNumber { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string IdentityCardNumber { get; set; } = string.Empty;
+    public DateTime DateOfBirth { get; set; }
+    public string Gender { get; set; } = "Nam";
+    public string Address { get; set; } = string.Empty;
+    public string? HealthInsuranceNumber { get; set; }
+    public string? EmergencyContactName { get; set; }
+    public string? EmergencyContactPhone { get; set; }
+    public string? EmergencyContactRelation { get; set; }
 }
 
 public class ChangePasswordDto

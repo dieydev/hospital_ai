@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/patient_provider.dart';
+import '../profile/complete_profile_view.dart';
 
 class MedicalHistoryView extends StatefulWidget {
   const MedicalHistoryView({super.key});
@@ -26,6 +27,74 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    if (!auth.isProfileComplete) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        appBar: AppBar(
+          title: const Text('Bệnh Án Điện Tử (EMR)'),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
+                boxShadow: AppTheme.prominentShadow,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.folder_shared_rounded, size: 48, color: AppTheme.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Yêu cầu hoàn tất hồ sơ',
+                    style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Để liên kết và tra cứu lịch sử khám bệnh, kết quả xét nghiệm và đơn thuốc điện tử, bạn cần cập nhật thông tin cá nhân (CCCD, Họ tên, Ngày sinh).',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textSecondary, height: 1.45),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CompleteProfileView(isDismissible: true)),
+                        );
+                      },
+                      icon: const Icon(Icons.badge_outlined),
+                      label: const Text('CẬP NHẬT THÔNG TIN NGAY'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(

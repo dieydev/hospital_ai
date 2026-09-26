@@ -3,13 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import 'complete_profile_view.dart';
 
 class BhytInfoView extends StatelessWidget {
   const BhytInfoView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<AuthProvider>().user;
+    final auth = context.watch<AuthProvider>();
+    final user = auth.user;
     
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -23,6 +25,51 @@ class BhytInfoView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (!auth.isProfileComplete)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFBAE6FD)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.info_outline, color: Color(0xFF0284C7)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Hồ sơ của bạn chưa có đầy đủ thông tin CCCD hoặc BHYT.',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0369A1)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CompleteProfileView(isDismissible: true)),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Cập nhật CCCD & BHYT ngay', style: TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const Text(
               'Thẻ Bảo Hiểm Y Tế',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),

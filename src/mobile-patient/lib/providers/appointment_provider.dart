@@ -18,7 +18,7 @@ class AppointmentProvider extends ChangeNotifier {
 
   // Ideally this should also come from API to avoid conflict, 
   // but keeping it as requested until backend provides a specific endpoint.
-  List<String> _timeSlots = [
+  final List<String> _timeSlots = [
     '07:30 - 08:00',
     '08:00 - 08:30',
     '08:30 - 09:00',

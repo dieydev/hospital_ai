@@ -276,22 +276,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 width: 40,
                 height: 40,
                 borderRadius: 12,
-                background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+                background: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 800,
-                fontSize: 20,
+                padding: 4,
                 boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)',
               }}
             >
-              H
+              <img src="/logo.png" alt="D-Medical" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             {!collapsed && (
               <div>
                 <Title level={4} style={{ color: '#fff', margin: 0, lineHeight: 1.2, fontWeight: 700, fontSize: 17 }}>
-                  HOSPITAL <span style={{ color: '#38bdf8' }}>AI</span>
+                  D-MEDICAL <span style={{ color: '#38bdf8' }}>AI</span>
                 </Title>
                 <Text style={{ color: '#94a3b8', fontSize: 11, letterSpacing: '0.5px' }}>BỆNH VIỆN ĐA KHOA</Text>
               </div>
