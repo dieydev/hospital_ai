@@ -21,6 +21,7 @@ import {
   InputNumber,
   Tabs,
   Drawer,
+  Tooltip,
 } from 'antd';
 import {
   SaveOutlined,
@@ -45,6 +46,7 @@ import {
   ServiceOrderItem,
 } from '../services/examinationService';
 import { patientService, Patient } from '../services/patientService';
+import { signalrService } from '../services/signalrService';
 import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
@@ -71,6 +73,7 @@ export const ExaminationsPage: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [queueList, setQueueList] = useState<any[]>([]); // Danh sách Hàng chờ
   const [searchText, setSearchText] = useState('');
+  const [isSoundOn, setIsSoundOn] = useState(signalrService.getSoundEnabled());
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -179,6 +182,17 @@ export const ExaminationsPage: React.FC = () => {
 
   useEffect(() => {
     fetchExaminations();
+
+    // ⚡ Lắng nghe WebSocket/SignalR thời gian thực:
+    // Khi bệnh nhân bốc số từ Mobile App hoặc Tiếp tân cấp số, tự động phát chuông và cập nhật hàng chờ
+    const unsubscribe = signalrService.subscribeQueueUpdates((data) => {
+      console.log('⚡ [ExaminationsPage] Nhận tín hiệu SignalR hàng chờ mới:', data);
+      fetchExaminations();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [fetchExaminations]);
 
   // Handle AI Consultation
@@ -405,6 +419,25 @@ export const ExaminationsPage: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={fetchExaminations} loading={loading}>
             Làm mới
           </Button>
+          <Tooltip title={isSoundOn ? 'Nhấp để tắt chuông báo tự động' : 'Nhấp để bật chuông báo tự động'}>
+            <Button
+              icon={<SoundOutlined />}
+              type={isSoundOn ? 'primary' : 'default'}
+              style={{
+                backgroundColor: isSoundOn ? '#0284c7' : undefined,
+                borderColor: '#bae6fd',
+              }}
+              onClick={() => {
+                const next = !isSoundOn;
+                setIsSoundOn(next);
+                signalrService.setSoundEnabled(next);
+                if (next) signalrService.playChime();
+                showToast(`Chuông báo tự động: ${next ? 'Đang bật' : 'Đã tắt'}`, 'info');
+              }}
+            >
+              {isSoundOn ? 'Chuông: Bật' : 'Chuông: Tắt'}
+            </Button>
+          </Tooltip>
           <Button
             type="primary"
             icon={<PlusOutlined />}

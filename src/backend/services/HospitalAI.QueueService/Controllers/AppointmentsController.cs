@@ -1,7 +1,10 @@
+using HospitalAI.QueueService.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace HospitalAI.QueueService.Controllers
 {
@@ -32,6 +35,13 @@ namespace HospitalAI.QueueService.Controllers
     [Route("api/appointments")]
     public class AppointmentsController : ControllerBase
     {
+        private readonly IHubContext<QueueHub> _hubContext;
+
+        public AppointmentsController(IHubContext<QueueHub> hubContext)
+        {
+            _hubContext = hubContext;
+        }
+
         // Static In-Memory list to sync between Mobile App and Web Admin for Demo
         private static readonly List<OnlineAppointmentItem> _appointments = new()
         {
@@ -77,7 +87,7 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateAppointment([FromBody] OnlineAppointmentItem model)
+        public async Task<IActionResult> CreateAppointment([FromBody] OnlineAppointmentItem model)
         {
             model.Id = $"apt-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
             model.Status = "Pending";
@@ -92,11 +102,23 @@ namespace HospitalAI.QueueService.Controllers
 
             _appointments.Add(model);
 
+            // Bắn tín hiệu SignalR thời gian thực đến Web Bác sĩ & Tiếp tân
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("NewPatientInQueue", model);
+                await _hubContext.Clients.All.SendAsync("ReceiveNewAppointment", model);
+                await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", model);
+            }
+            catch (Exception hubEx)
+            {
+                Console.WriteLine($"[SignalR Warning] CreateAppointment broadcast failed: {hubEx.Message}");
+            }
+
             return Ok(model);
         }
 
         [HttpPut("{id}/status")]
-        public IActionResult UpdateStatus(string id, [FromBody] UpdateStatusDto dto)
+        public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusDto dto)
         {
             var appointment = _appointments.FirstOrDefault(a => a.Id == id);
             if (appointment == null)
@@ -105,6 +127,16 @@ namespace HospitalAI.QueueService.Controllers
             }
 
             appointment.Status = dto.Status;
+
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", appointment);
+            }
+            catch (Exception hubEx)
+            {
+                Console.WriteLine($"[SignalR Warning] Appointment status broadcast failed: {hubEx.Message}");
+            }
+
             return Ok(appointment);
         }
     }

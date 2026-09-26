@@ -1,15 +1,33 @@
 /* 
-  Mẫu In Đơn Thuốc Điện Tử & Phiếu Khám SOAP Chuẩn Bộ Y Tế (A4 Portrait)
-  Theo chuẩn Thông tư 27/2021/TT-BYT & Quyết định 808/QĐ-BYT
+  Mẫu In Y Tế Chuẩn Bệnh Viện Đa Khoa Quốc Tế D-Medical
+  Bao gồm:
+  1. Đơn thuốc điện tử & Phiếu khám SOAP (#printable-prescription - A4)
+  2. Phiếu bốc số thứ tự hàng chờ POS (#printable-ticket - K80 nhiệt 80mm)
+  3. Hồ sơ Bệnh án Điện tử EMR (#printable-emr-record - A4)
 */
 
 @media print {
-  /* Hide all non-printable UI elements (Sidebar, Navbar, Modals Backdrop, Buttons) */
+  /* Ẩn toàn bộ giao diện website (Sider, Header, Modals backdrop, Buttons, Scrollbars) */
+  html, body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   body * {
     visibility: hidden !important;
   }
 
-  /* Only display the printable prescription container */
+  /* Ẩn Ant Design Modal wrappers khi in */
+  .ant-modal-mask, 
+  .ant-modal-wrap,
+  .ant-modal-footer,
+  .ant-modal-close,
+  .ant-btn {
+    display: none !important;
+  }
+
+  /* 1. MẪU IN ĐƠN THUỐC ĐIỆN TỬ (A4) */
   #printable-prescription, #printable-prescription * {
     visibility: visible !important;
   }
@@ -19,28 +37,71 @@
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
-    padding: 0 !important;
+    padding: 10mm 15mm !important;
     margin: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    font-family: 'Be Vietnam Pro', 'Times New Roman', Times, serif !important;
+    font-family: 'Be Vietnam Pro', 'Times New Roman', serif !important;
     font-size: 13px !important;
     line-height: 1.5 !important;
+    box-sizing: border-box !important;
   }
 
+  /* 2. MẪU IN PHIẾU SỐ THỨ TỰ NHIỆT K80 (80mm POS Roll) */
+  #printable-ticket, #printable-ticket * {
+    visibility: visible !important;
+  }
+
+  #printable-ticket {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 78mm !important;
+    max-width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 4mm 2mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Courier New', monospace, sans-serif !important;
+    border: none !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+
+  /* 3. MẪU IN HỒ SƠ BỆNH ÁN EMR (A4) */
+  #printable-emr-record, #printable-emr-record * {
+    visibility: visible !important;
+  }
+
+  #printable-emr-record {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 10mm 15mm !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Be Vietnam Pro', 'Times New Roman', serif !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Cấu hình trang in */
   @page {
-    size: A4 portrait;
-    margin: 12mm 15mm 15mm 15mm;
+    margin: 5mm;
   }
 
-  /* Force background colors and borders in print */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 }
 
-/* Screen Preview Styling for Prescription Modal */
+/* ─────────────────────────────────────────────────────────────────────────
+   SCREEN PREVIEW STYLING (Xem trước trên màn hình)
+   ───────────────────────────────────────────────────────────────────────── */
 .prescription-container {
   background: #ffffff;
   color: #0f172a;
@@ -103,39 +164,25 @@
 }
 
 .prescription-table th {
-  background-color: #e0f2fe;
+  background: #f8fafc;
   color: #0369a1;
   font-weight: 700;
+  padding: 10px 12px;
   text-align: left;
-  padding: 8px 12px;
-  border: 1px solid #bae6fd;
-  font-size: 12px;
-  text-transform: uppercase;
+  border-bottom: 2px solid #0284c7;
+  font-size: 12.5px;
 }
 
 .prescription-table td {
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
   font-size: 13px;
-  vertical-align: top;
+  color: #1e293b;
 }
 
-.prescription-footer {
+.prescription-footer-signatures {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  margin-top: 24px;
+  margin-top: 32px;
   padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.prescription-qr-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  background: #f0f9ff;
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Table,
   Button,
@@ -596,6 +597,7 @@ export const ReceptionPage: React.FC = () => {
       >
         {ticketToPrint && (
           <div
+            id="printable-ticket"
             style={{
               padding: 20,
               backgroundColor: '#ffffff',
@@ -606,10 +608,17 @@ export const ReceptionPage: React.FC = () => {
               borderRadius: 12,
             }}
           >
-            <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#0369a1' }}>
-              BV ĐA KHOA HOSPITAL AI
+            <div style={{ textAlign: 'center', marginBottom: 6 }}>
+              <img
+                src="/logo.png"
+                alt="D-Medical Logo"
+                style={{ height: 36, objectFit: 'contain', marginBottom: 4 }}
+              />
             </div>
-            <div style={{ fontSize: 11, color: '#64748b' }}>PHIẾU KHÁM BỆNH TỰ ĐỘNG</div>
+            <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#0369a1' }}>
+              BV ĐA KHOA QUỐC TẾ D-MEDICAL
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b' }}>PHIẾU KHÁM BỆNH & BỐC SỐ TỰ ĐỘNG</div>
             <Divider style={{ margin: '10px 0' }} />
 
             <div style={{ fontSize: 12, color: '#475569' }}>SỐ THỨ TỰ CỦA BẠN:</div>
@@ -631,9 +640,19 @@ export const ReceptionPage: React.FC = () => {
               <div>Thời gian cấp: <strong>{new Date().toLocaleTimeString('vi-VN')}</strong></div>
             </div>
 
-            <div style={{ marginTop: 14, fontSize: 10, color: '#94a3b8' }}>
+            {/* QR Code tra cứu trên Mobile App */}
+            <div style={{ margin: '14px 0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <QRCodeSVG
+                value={`https://dmedical.hospital.vn/queue/${ticketToPrint.id || ticketToPrint.sequenceNumber}`}
+                size={84}
+                level="M"
+              />
+              <span style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>Quét mã QR để theo dõi hàng chờ trên App</span>
+            </div>
+
+            <div style={{ marginTop: 10, fontSize: 10, color: '#94a3b8' }}>
               Vui lòng theo dõi màn hình TV và loa gọi số trước cửa phòng khám.<br />
-              Xin cảm ơn Quý bệnh nhân!
+              D-Medical xin cảm ơn Quý bệnh nhân!
             </div>
           </div>
         )}

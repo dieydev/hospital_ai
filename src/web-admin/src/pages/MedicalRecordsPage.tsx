@@ -185,6 +185,7 @@ export const MedicalRecordsPage: React.FC = () => {
       >
         {selectedRecord && (
           <div
+            id="printable-emr-record"
             style={{
               padding: 20,
               border: isDarkMode ? '1px solid #334155' : '1px solid #d9d9d9',
@@ -194,7 +195,7 @@ export const MedicalRecordsPage: React.FC = () => {
             }}
           >
             <div style={{ textAlign: 'center', borderBottom: isDarkMode ? '2px solid #38bdf8' : '2px solid #001529', paddingBottom: 12, marginBottom: 16 }}>
-              <Title level={4} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>BỆNH VIỆN ĐA KHOA HOSPITAL AI</Title>
+              <Title level={4} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>BỆNH VIỆN ĐA KHOA QUỐC TẾ D-MEDICAL</Title>
               <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Địa chỉ: Đường Lê Hồng Phong, TP. Thủ Dầu Một, Bình Dương</Text>
               <Title level={3} style={{ color: isDarkMode ? '#f8fafc' : '#001529', marginTop: 12, marginBottom: 0 }}>PHIẾU KHÁM BỆNH & HỒ SƠ EMR</Title>
               <Text type="secondary" style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Mã lượt khám: {selectedRecord.examinationCode}</Text>

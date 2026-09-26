@@ -1,6 +1,8 @@
 using HospitalAI.Application.DTOs;
 using HospitalAI.Application.Interfaces;
+using HospitalAI.QueueService.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading.Tasks;
 
@@ -11,10 +13,12 @@ namespace HospitalAI.QueueService.Controllers;
 public class QueueController : ControllerBase
 {
     private readonly IQueueService _queueService;
+    private readonly IHubContext<QueueHub> _hubContext;
 
-    public QueueController(IQueueService queueService)
+    public QueueController(IQueueService queueService, IHubContext<QueueHub> hubContext)
     {
         _queueService = queueService;
+        _hubContext = hubContext;
     }
 
     /// <summary>
@@ -46,6 +50,19 @@ public class QueueController : ControllerBase
         try
         {
             var result = await _queueService.IssueQueueTicketAsync(dto);
+
+            // Bắn tín hiệu SignalR thời gian thực đến Web Bác sĩ, Tiếp tân và Mobile App
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("NewPatientInQueue", result);
+                await _hubContext.Clients.All.SendAsync("ReceiveQueueUpdate", result);
+                await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", result);
+            }
+            catch (Exception hubEx)
+            {
+                Console.WriteLine($"[SignalR Warning] IssueTicket broadcast failed: {hubEx.Message}");
+            }
+
             return Ok(result);
         }
         catch (Exception ex)
@@ -63,6 +80,17 @@ public class QueueController : ControllerBase
         try
         {
             var result = await _queueService.UpdateQueueTicketStatusAsync(ticketId, dto.Status);
+
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("ReceiveQueueStatusChanged", result);
+                await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", result);
+            }
+            catch (Exception hubEx)
+            {
+                Console.WriteLine($"[SignalR Warning] UpdateStatus broadcast failed: {hubEx.Message}");
+            }
+
             return Ok(result);
         }
         catch (Exception ex)
@@ -80,6 +108,16 @@ public class QueueController : ControllerBase
         var result = await _queueService.CallNextPatientAsync(departmentId);
         if (result == null)
             return NotFound(new { message = "Không có bệnh nhân nào đang chờ trong phòng khám này." });
+
+        try
+        {
+            await _hubContext.Clients.All.SendAsync("ReceiveCallingPatient", result);
+            await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", result);
+        }
+        catch (Exception hubEx)
+        {
+            Console.WriteLine($"[SignalR Warning] CallNext broadcast failed: {hubEx.Message}");
+        }
 
         return Ok(result);
     }
