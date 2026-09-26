@@ -517,22 +517,176 @@ public class AuthService : IAuthService
 
     public async Task<List<DoctorDto>> GetDoctorsAsync()
     {
-        // Chỉ query các trường đã map xuống DB (Role) để tránh lỗi LINQ translation với EF Core
-        var doctors = await _context.Users
+        // Lấy danh sách bác sĩ thực từ DB nếu có
+        var dbDoctors = await _context.Users
             .Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "Doctor"))
             .ToListAsync();
 
-        // Map các thông tin bổ sung trên RAM vì FullName, Specialty, Title đang bị Ignore trong DB Context
-        var doctorUsers = doctors.Select(u => new DoctorDto
-        {
-            Id = u.Id,
-            Name = u.Username == "dr.duy" ? "BS. CKII. Nguyễn Thanh Duy" : "Bác sĩ " + u.Username,
-            Dept = "Khoa Nội Tổng Hợp",
-            Title = "Bác sĩ Chuyên khoa",
-            Avatar = u.Username == "dr.duy" ? "https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor" : "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80"
-        }).ToList();
+        var duyId = dbDoctors.FirstOrDefault(u => u.Username == "dr.duy")?.Id ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
 
-        return doctorUsers;
+        // Danh mục đầy đủ Bác sĩ Chuyên khoa cho từng Khoa phòng tại Bệnh viện D-Medical
+        var allSpecialistDoctors = new List<DoctorDto>
+        {
+            // 1. Khoa Nội Tổng Hợp
+            new DoctorDto
+            {
+                Id = duyId,
+                Name = "BS. CKII. Nguyễn Thanh Duy",
+                Dept = "Khoa Nội Tổng Hợp",
+                Title = "Trưởng Khoa Nội • 15 năm KN",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                Name = "ThS. BS. Trần Thị Thu Hà",
+                Dept = "Khoa Nội Tổng Hợp",
+                Title = "Bác sĩ Nội khoa • 8 năm KN",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=HaDoctor"
+            },
+
+            // 2. Khoa Nhi
+            new DoctorDto
+            {
+                Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                Name = "BS. CKI. Phạm Minh Đức",
+                Dept = "Khoa Nhi",
+                Title = "Trưởng Khoa Nhi • Chuyên khoa Sơ sinh",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=DucDoctor"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                Name = "BS. Đặng Hồng Hạnh",
+                Dept = "Khoa Nhi",
+                Title = "Bác sĩ Nhi khoa • Tiêm chủng",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=HanhDoctor"
+            },
+
+            // 3. Khoa Mắt
+            new DoctorDto
+            {
+                Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                Name = "BS. CKI. Trần Ngọc Mai",
+                Dept = "Khoa Mắt",
+                Title = "Trưởng Khoa Mắt • Phẫu thuật Phaco",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=MaiDoctor"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("66666666-6666-6666-6666-666666666666"),
+                Name = "BS. Vũ Hoàng Long",
+                Dept = "Khoa Mắt",
+                Title = "Nhãn khoa & Khúc xạ thị giác",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=LongDoctor"
+            },
+
+            // 4. Khoa Tai Mũi Họng
+            new DoctorDto
+            {
+                Id = Guid.Parse("77777777-7777-7777-7777-777777777777"),
+                Name = "BS. CKII. Lê Văn Tuấn",
+                Dept = "Khoa Tai Mũi Họng",
+                Title = "Trưởng Khoa TMH • Nội soi vi phẫu",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=TuanDoctor"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("88888888-8888-8888-8888-888888888888"),
+                Name = "ThS. BS. Nguyễn Mai Linh",
+                Dept = "Khoa Tai Mũi Họng",
+                Title = "Bác sĩ Tai Mũi Họng",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=LinhDoctor"
+            },
+
+            // 5. Khoa Tim Mạch
+            new DoctorDto
+            {
+                Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
+                Name = "TS. BS. Huỳnh Quốc Dũng",
+                Dept = "Khoa Tim Mạch",
+                Title = "Viện Tim Mạch • Can thiệp tim mạch",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=DungDoctor"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Name = "BS. CKI. Vũ Thu Trang",
+                Dept = "Khoa Tim Mạch",
+                Title = "Siêu âm Tim & Tăng huyết áp",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=TrangDoctor"
+            },
+
+            // 6. Khoa Tiêu Hóa
+            new DoctorDto
+            {
+                Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                Name = "BS. CKII. Đinh Khắc Vương",
+                Dept = "Khoa Tiêu Hóa",
+                Title = "Trưởng Khoa Tiêu Hóa • Nội soi HP",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=VuongDoctor"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Name = "BS. Hoàng Lan Anh",
+                Dept = "Khoa Tiêu Hóa",
+                Title = "Bác sĩ Gan Mật & Tiêu hóa",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=LanAnhDoctor"
+            },
+
+            // 7. Khoa Ngoại Tổng Quát
+            new DoctorDto
+            {
+                Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                Name = "BS. CKII. Đỗ Hoàng Giang",
+                Dept = "Khoa Ngoại Tổng Quát",
+                Title = "Trưởng Khoa Ngoại • Phẫu thuật Nội soi",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=GiangDoctor"
+            },
+
+            // 8. Khoa Răng Hàm Mặt
+            new DoctorDto
+            {
+                Id = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                Name = "BS. CKI. Hoàng Trọng Nghĩa",
+                Dept = "Khoa Răng Hàm Mặt",
+                Title = "Chuyên gia Chỉnh nha & Cấy Implant",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=NghiaDoctor"
+            },
+
+            // 9. Khoa Da Liễu
+            new DoctorDto
+            {
+                Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                Name = "BS. CKI. Nguyễn Phương Anh",
+                Dept = "Khoa Da Liễu",
+                Title = "Da liễu & Laser Thẩm mỹ da",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=PhuongAnhDoctor"
+            },
+
+            // 10. Khoa Sản Phụ Khoa
+            new DoctorDto
+            {
+                Id = Guid.Parse("12121212-1212-1212-1212-121212121212"),
+                Name = "BS. CKII. Lê Thị Kim Phượng",
+                Dept = "Khoa Sản Phụ Khoa",
+                Title = "Trưởng Khoa Sản • Quản lý thai kỳ",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=PhuongSanDoctor"
+            },
+
+            // 11. Khoa Cấp Cứu & Hồi Sức
+            new DoctorDto
+            {
+                Id = Guid.Parse("13131313-1313-1313-1313-131313131313"),
+                Name = "BS. CKI. Trịnh Văn Thành",
+                Dept = "Khoa Cấp Cứu & Hồi Sức",
+                Title = "Trưởng kíp Cấp cứu 24/7",
+                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=ThanhDoctor"
+            }
+        };
+
+        return allSpecialistDoctors;
     }
 
     private void ValidatePasswordStrong(string password)

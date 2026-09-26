@@ -16,8 +16,22 @@ export const CatalogsPage: React.FC = () => {
 
   const [doctorsData, setDoctorsData] = useState([
     { id: '1', maNV: 'NV001', hoTen: 'BS. CKII. Nguyễn Thanh Duy', chuyenKhoa: 'Khoa Nội Tổng Hợp', chucVu: 'Trưởng Khoa', soDienThoai: '0336022526', trangThai: 'Hoạt động' },
-    { id: '2', maNV: 'NV002', hoTen: 'BS. CKI. Phạm Minh Đức', chuyenKhoa: 'Khoa Nhi', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0912345999', trangThai: 'Hoạt động' },
-    { id: '3', maNV: 'NV003', hoTen: 'BS. Trần Ngọc Mai', chuyenKhoa: 'Khoa Mắt', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0988776655', trangThai: 'Hoạt động' },
+    { id: '2', maNV: 'NV002', hoTen: 'ThS. BS. Trần Thị Thu Hà', chuyenKhoa: 'Khoa Nội Tổng Hợp', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0912345001', trangThai: 'Hoạt động' },
+    { id: '3', maNV: 'NV003', hoTen: 'BS. CKI. Phạm Minh Đức', chuyenKhoa: 'Khoa Nhi', chucVu: 'Trưởng Khoa', soDienThoai: '0912345999', trangThai: 'Hoạt động' },
+    { id: '4', maNV: 'NV004', hoTen: 'BS. Đặng Hồng Hạnh', chuyenKhoa: 'Khoa Nhi', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0988776002', trangThai: 'Hoạt động' },
+    { id: '5', maNV: 'NV005', hoTen: 'BS. CKI. Trần Ngọc Mai', chuyenKhoa: 'Khoa Mắt', chucVu: 'Trưởng Khoa', soDienThoai: '0988776655', trangThai: 'Hoạt động' },
+    { id: '6', maNV: 'NV006', hoTen: 'BS. Vũ Hoàng Long', chuyenKhoa: 'Khoa Mắt', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0988776003', trangThai: 'Hoạt động' },
+    { id: '7', maNV: 'NV007', hoTen: 'BS. CKII. Lê Văn Tuấn', chuyenKhoa: 'Khoa Tai Mũi Họng', chucVu: 'Trưởng Khoa', soDienThoai: '0903112233', trangThai: 'Hoạt động' },
+    { id: '8', maNV: 'NV008', hoTen: 'ThS. BS. Nguyễn Mai Linh', chuyenKhoa: 'Khoa Tai Mũi Họng', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0903112234', trangThai: 'Hoạt động' },
+    { id: '9', maNV: 'NV009', hoTen: 'TS. BS. Huỳnh Quốc Dũng', chuyenKhoa: 'Khoa Tim Mạch', chucVu: 'Trưởng Khoa', soDienThoai: '0909445566', trangThai: 'Hoạt động' },
+    { id: '10', maNV: 'NV010', hoTen: 'BS. CKI. Vũ Thu Trang', chuyenKhoa: 'Khoa Tim Mạch', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0909445567', trangThai: 'Hoạt động' },
+    { id: '11', maNV: 'NV011', hoTen: 'BS. CKII. Đinh Khắc Vương', chuyenKhoa: 'Khoa Tiêu Hóa', chucVu: 'Trưởng Khoa', soDienThoai: '0918776655', trangThai: 'Hoạt động' },
+    { id: '12', maNV: 'NV012', hoTen: 'BS. Hoàng Lan Anh', chuyenKhoa: 'Khoa Tiêu Hóa', chucVu: 'Bác sĩ Điều trị', soDienThoai: '0918776656', trangThai: 'Hoạt động' },
+    { id: '13', maNV: 'NV013', hoTen: 'BS. CKII. Đỗ Hoàng Giang', chuyenKhoa: 'Khoa Ngoại Tổng Quát', chucVu: 'Trưởng Khoa', soDienThoai: '0977889900', trangThai: 'Hoạt động' },
+    { id: '14', maNV: 'NV014', hoTen: 'BS. CKI. Hoàng Trọng Nghĩa', chuyenKhoa: 'Khoa Răng Hàm Mặt', chucVu: 'Trưởng Khoa', soDienThoai: '0933221100', trangThai: 'Hoạt động' },
+    { id: '15', maNV: 'NV015', hoTen: 'BS. CKI. Nguyễn Phương Anh', chuyenKhoa: 'Khoa Da Liễu', chucVu: 'Trưởng Khoa', soDienThoai: '0944556677', trangThai: 'Hoạt động' },
+    { id: '16', maNV: 'NV016', hoTen: 'BS. CKII. Lê Thị Kim Phượng', chuyenKhoa: 'Khoa Sản Phụ Khoa', chucVu: 'Trưởng Khoa', soDienThoai: '0966778899', trangThai: 'Hoạt động' },
+    { id: '17', maNV: 'NV017', hoTen: 'BS. CKI. Trịnh Văn Thành', chuyenKhoa: 'Khoa Cấp Cứu & Hồi Sức', chucVu: 'Trưởng Kíp', soDienThoai: '0911223344', trangThai: 'Hoạt động' },
   ]);
 
   const [medicinesData, setMedicinesData] = useState([
