@@ -101,7 +101,44 @@ public static class DataSeeder
         }
         await context.SaveChangesAsync();
 
-        // 3. Seed Default Departments
+        // Seed thêm các Bác sĩ chuyên khoa nếu chưa có
+        var seedDoctors = new (string username, string name, string dept, string title)[]
+        {
+            ("dr.duc", "BS. CKI. Phạm Minh Đức", "Khoa Nhi", "Trưởng Khoa Nhi"),
+            ("dr.mai", "BS. CKI. Trần Ngọc Mai", "Khoa Mắt", "Trưởng Khoa Mắt"),
+            ("dr.tuan", "BS. CKII. Lê Văn Tuấn", "Khoa Tai Mũi Họng", "Trưởng Khoa TMH"),
+            ("dr.dung", "TS. BS. Huỳnh Quốc Dũng", "Khoa Tim Mạch", "Trưởng Khoa Tim Mạch"),
+            ("dr.vuong", "BS. CKII. Đinh Khắc Vương", "Khoa Tiêu Hóa", "Trưởng Khoa Tiêu Hóa"),
+            ("dr.giang", "BS. CKII. Đỗ Hoàng Giang", "Khoa Ngoại Tổng Quát", "Trưởng Khoa Ngoại"),
+            ("dr.nghia", "BS. CKI. Hoàng Trọng Nghĩa", "Khoa Răng Hàm Mặt", "Trưởng Khoa Răng Hàm Mặt"),
+            ("dr.phuonganh", "BS. CKI. Nguyễn Phương Anh", "Khoa Da Liễu", "Trưởng Khoa Da Liễu"),
+            ("dr.phuong", "BS. CKII. Lê Thị Kim Phượng", "Khoa Sản Phụ Khoa", "Trưởng Khoa Sản"),
+            ("dr.thanh", "BS. CKI. Trịnh Văn Thành", "Khoa Cấp Cứu & Hồi Sức", "Trưởng Kíp Cấp Cứu")
+        };
+
+        foreach (var doc in seedDoctors)
+        {
+            if (!await context.Users.AnyAsync(u => u.Username == doc.username))
+            {
+                var docUser = new User
+                {
+                    Username = doc.username,
+                    PasswordHash = passwordHasher.HashPassword("123456"),
+                    FullName = doc.name,
+                    Email = $"{doc.username}@hospital-ai.vn",
+                    PhoneNumber = "0901234567",
+                    Specialty = doc.dept,
+                    Title = doc.title,
+                    IsActive = true,
+                    AvatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={doc.username}"
+                };
+                docUser.UserRoles.Add(new UserRole { UserId = docUser.Id, RoleId = doctorRole.Id });
+                context.Users.Add(docUser);
+            }
+        }
+        await context.SaveChangesAsync();
+
+        // 3. Seed Default Departments (Đầy đủ các chuyên khoa D-Medical)
         if (!await context.Departments.AnyAsync())
         {
             var initialDepts = new[]
@@ -109,6 +146,13 @@ public static class DataSeeder
                 new Department { DepartmentName = "Khoa Nội Tổng Hợp", Location = "Phòng 102 - Tầng 1", RoomType = "Clinical" },
                 new Department { DepartmentName = "Khoa Nhi", Location = "Phòng 105 - Tầng 1", RoomType = "Clinical" },
                 new Department { DepartmentName = "Khoa Mắt", Location = "Phòng 201 - Tầng 2", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Tai Mũi Họng", Location = "Phòng 205 - Tầng 2", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Tim Mạch", Location = "Phòng 301 - Tầng 3", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Tiêu Hóa", Location = "Phòng 305 - Tầng 3", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Ngoại Tổng Quát", Location = "Phòng 401 - Tầng 4", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Răng Hàm Mặt", Location = "Phòng 203 - Tầng 2", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Da Liễu", Location = "Phòng 208 - Tầng 2", RoomType = "Clinical" },
+                new Department { DepartmentName = "Khoa Sản Phụ Khoa", Location = "Phòng 308 - Tầng 3", RoomType = "Clinical" },
                 new Department { DepartmentName = "Khoa Cấp Cứu & Hồi Sức", Location = "Tầng Trệt - Khu A", RoomType = "Emergency" },
                 new Department { DepartmentName = "Phòng Chẩn Đoán Hình Ảnh (X-Quang)", Location = "Tầng 1 - Khu B", RoomType = "Lab" },
             };
