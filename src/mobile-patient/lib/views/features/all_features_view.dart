@@ -7,6 +7,7 @@ import '../appointment/medical_history_view.dart';
 import '../booking/hospital_payment_view.dart';
 import '../features/health_monitor_view.dart';
 import '../features/vaccine_view.dart';
+import '../features/medication_reminder_view.dart';
 import '../home/queue_status_view.dart' show QueueStatusView;
 import '../news/medical_news_view.dart';
 import '../profile/help_center_view.dart';
@@ -159,9 +160,7 @@ class AllFeaturesView extends StatelessWidget {
                         'icon': Icons.medication_rounded,
                         'color': const Color(0xFFF43F5E),
                         'onTap': (BuildContext ctx) {
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(content: Text('Tính năng Nhắc thuốc đang được phát triển...')),
-                          );
+                          Navigator.push(ctx, MaterialPageRoute(builder: (_) => const MedicationReminderView()));
                         },
                       },
                     ],

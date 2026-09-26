@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/patient_provider.dart';
+import '../features/medication_reminder_view.dart';
 import '../profile/complete_profile_view.dart';
 
 class MedicalHistoryView extends StatefulWidget {
@@ -51,8 +52,8 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEFF6FF),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.folder_shared_rounded, size: 48, color: AppTheme.primary),
@@ -165,7 +166,7 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min, // Fix intrinsic height error
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -224,6 +225,39 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 12),
+                            InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const MedicationReminderView()),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F9FF),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.alarm_add_rounded, size: 16, color: Color(0xFF0284C7)),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Tạo nhắc nhở uống thuốc từ đơn này',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF0284C7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),
