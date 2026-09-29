@@ -48,6 +48,11 @@ export const App: React.FC = () => {
             rowHoverBg: isDarkMode ? '#334155' : '#f0f9ff',
           },
           Menu: {
+            itemColor: isDarkMode ? '#cbd5e1' : '#334155',
+            itemHoverColor: '#0284c7',
+            itemHoverBg: isDarkMode ? '#1e293b' : '#f0f9ff',
+            itemSelectedColor: '#0284c7',
+            itemSelectedBg: isDarkMode ? 'rgba(2, 132, 199, 0.25)' : '#e0f2fe',
             darkItemBg: '#0f172a',
             darkItemSelectedBg: '#0284c7',
             darkItemHoverBg: '#1e293b',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Statistic, DatePicker, Button, Space } from 'antd';
+import { Card, Row, Col, Statistic, DatePicker, Button, Space } from 'antd';
 import { DownloadOutlined, UserOutlined, DollarOutlined, MedicineBoxOutlined, AreaChartOutlined, PieChartOutlined, BarChartOutlined, FieldTimeOutlined } from '@ant-design/icons';
 import {
   ResponsiveContainer,
@@ -22,7 +22,6 @@ import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
 
-const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 export const ReportsPage: React.FC = () => {
@@ -86,26 +85,27 @@ export const ReportsPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Modern Medical Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="status-dot-active" />
-            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Phân Tích Dữ Liệu Y Tế • Business Intelligence (BI)</Text>
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <span className="status-dot-active bg-emerald-400" /> Phân Tích Dữ Liệu Y Tế • Business Intelligence (BI)
+            </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Thống kê & Báo cáo Bệnh viện (BI Analytics Dashboard)
           </h1>
-          <p className="text-slate-300 text-xs md:text-sm mt-1">
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
             Báo cáo tổng hợp lượt khám, tăng trưởng doanh thu, mô hình bệnh tật ICD-10 và phân bổ ca trực theo khung giờ
           </p>
         </div>
         <Space wrap>
-          <RangePicker className="rounded-lg" />
+          <RangePicker className="rounded-lg bg-white text-slate-800" />
           <Button
             type="primary"
             icon={<DownloadOutlined />}
             size="large"
-            className="bg-sky-600 hover:bg-sky-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
+            className="medical-hero-btn-primary rounded-lg font-semibold flex items-center gap-1.5"
             onClick={handleExportExcel}
           >
             Xuất File Excel (CSV)

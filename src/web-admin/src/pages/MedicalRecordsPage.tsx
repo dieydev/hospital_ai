@@ -44,18 +44,19 @@ export const MedicalRecordsPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Modern Medical Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="status-dot-active" />
-            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Lịch Sử Khám Bệnh Toàn Diện • Hồ Sơ EMR</Text>
-            <Tag color="blue" className="m-0 font-mono text-xs">Mã BN: BN20260001</Tag>
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <span className="status-dot-active bg-emerald-400" /> Lịch Sử Khám Bệnh Toàn Diện • Hồ Sơ EMR
+            </span>
+            <Tag color="cyan" className="m-0 font-mono text-xs bg-white/20 text-white border-white/30">Mã BN: BN20260001</Tag>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             HỒ SƠ BỆNH ÁN ĐIỆN TỬ (EMR) - NGUYỄN VĂN AN
           </h1>
-          <p className="text-slate-300 text-xs md:text-sm mt-1">
-            CCCD: <strong>038090001234</strong> • Ngày sinh: <strong>1990-05-15 (36 tuổi)</strong> • BHYT: <strong>DN40101234567</strong>
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
+            CCCD: <strong className="text-white">038090001234</strong> • Ngày sinh: <strong className="text-white">1990-05-15 (36 tuổi)</strong> • BHYT: <strong className="text-white">DN40101234567</strong>
           </p>
         </div>
         <Space wrap>
@@ -63,7 +64,7 @@ export const MedicalRecordsPage: React.FC = () => {
             type="primary"
             icon={<FilePdfOutlined />}
             size="large"
-            className="bg-sky-600 hover:bg-sky-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
+            className="medical-hero-btn-primary rounded-lg font-semibold flex items-center gap-1.5"
             onClick={() => handleOpenPdf(historyItems[0])}
           >
             Xuất Bệnh án EMR (PDF)

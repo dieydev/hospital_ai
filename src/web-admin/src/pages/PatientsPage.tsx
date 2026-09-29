@@ -340,28 +340,29 @@ export const PatientsPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Modern Medical Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <UserOutlined className="text-sky-400" />
-            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Bệnh Viện Đa Khoa • Quản Lý Bệnh Nhân</Text>
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <UserOutlined className="text-white" /> Bệnh Viện Đa Khoa • Quản Lý Bệnh Nhân
+            </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Quản lý Hồ sơ Bệnh nhân (Patient Management)
           </h1>
-          <p className="text-slate-300 text-xs md:text-sm mt-1">
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
             Tra cứu, cập nhật thông tin hành chính, thẻ BHYT, tiền sử bệnh và lịch sử khám chữa bệnh
           </p>
         </div>
         <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={fetchPatients} loading={loading} className="rounded-lg font-medium">
+          <Button icon={<ReloadOutlined />} onClick={fetchPatients} loading={loading} className="medical-hero-btn-secondary rounded-lg font-medium">
             Làm mới
           </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             size="large"
-            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            className="medical-hero-btn-primary rounded-lg font-semibold flex items-center gap-1.5"
             onClick={() => {
               form.resetFields();
               setIsCreateModalOpen(true);

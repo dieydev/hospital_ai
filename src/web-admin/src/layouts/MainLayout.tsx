@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Button, Input, Popover, List, Tag, Tooltip } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Typography, Badge, Button, Input, Popover, List, Tag, Tooltip, Progress } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -18,12 +18,14 @@ import {
   MenuFoldOutlined,
   ScheduleOutlined,
   CalendarOutlined,
-  CheckCircleFilled,
   SunOutlined,
   MoonOutlined,
   InfoCircleOutlined,
   ApiOutlined,
   DisconnectOutlined,
+  ApartmentOutlined,
+  ExperimentOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -162,64 +164,139 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const menuItems = [
     {
-      key: '/dashboard',
-      icon: <DashboardOutlined style={{ fontSize: 18 }} />,
-      label: 'Tổng quan (Dashboard)',
+      type: 'group' as const,
+      label: collapsed ? null : 'TIẾP ĐÓN & ĐIỀU PHỐI',
+      children: [
+        {
+          key: '/dashboard',
+          icon: <DashboardOutlined style={{ fontSize: 17 }} />,
+          label: 'Tổng quan (Dashboard)',
+        },
+        {
+          key: '/reception',
+          icon: <ScheduleOutlined style={{ fontSize: 17 }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Tiếp nhận & Cấp số</span>
+              <span className="sidebar-badge">42</span>
+            </div>
+          ),
+        },
+        {
+          key: '/appointments',
+          icon: <CalendarOutlined style={{ fontSize: 17 }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Lịch hẹn Online</span>
+              <span className="sidebar-badge">18 mới</span>
+            </div>
+          ),
+        },
+        {
+          key: '/patients',
+          icon: <UserOutlined style={{ fontSize: 17 }} />,
+          label: 'Quản lý Bệnh nhân',
+        },
+      ],
     },
     {
-      key: '/reception',
-      icon: <ScheduleOutlined style={{ fontSize: 18 }} />,
-      label: 'Tiếp nhận & Cấp số',
+      type: 'group' as const,
+      label: collapsed ? null : 'KHÁM BỆNH & LÂM SÀNG',
+      children: [
+        {
+          key: '/examinations',
+          icon: <MedicineBoxOutlined style={{ fontSize: 17 }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Khám bệnh (SOAP)</span>
+              <span className="sidebar-badge">12 ca</span>
+            </div>
+          ),
+        },
+        {
+          key: '/emr',
+          icon: <FileTextOutlined style={{ fontSize: 17 }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Hồ sơ bệnh án (EMR)</span>
+              <span className="sidebar-badge">9 ký</span>
+            </div>
+          ),
+        },
+        {
+          key: '/cls-pacs',
+          icon: <ExperimentOutlined style={{ fontSize: 17 }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Cận lâm sàng (CLS)</span>
+              <span className="sidebar-badge">28</span>
+            </div>
+          ),
+        },
+        {
+          key: '/pharmacy',
+          icon: <MedicineBoxOutlined style={{ fontSize: 17 }} />,
+          label: 'Dược & Nhà thuốc BV',
+        },
+      ],
     },
     {
-      key: '/appointments',
-      icon: <CalendarOutlined style={{ fontSize: 18 }} />,
-      label: (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Lịch hẹn Online</span>
-          <Tag color="processing" style={{ margin: 0, fontSize: 10, padding: '0 6px' }}>App</Tag>
-        </div>
-      ),
+      type: 'group' as const,
+      label: collapsed ? null : 'TÀI CHÍNH & BHYT',
+      children: [
+        {
+          key: '/billing',
+          icon: <DollarOutlined style={{ fontSize: 17 }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Quản lý Viện phí</span>
+              <span className="sidebar-badge">VietQR</span>
+            </div>
+          ),
+        },
+        {
+          key: '/insurance',
+          icon: <SafetyCertificateOutlined style={{ fontSize: 17 }} />,
+          label: 'Giám định BHYT 79a',
+        },
+      ],
     },
     {
-      key: '/patients',
-      icon: <UserOutlined style={{ fontSize: 18 }} />,
-      label: 'Quản lý Bệnh nhân',
+      type: 'group' as const,
+      label: collapsed ? null : 'TRÍ TUỆ NHÂN TẠO Y TẾ',
+      children: [
+        {
+          key: '/ai-assistant',
+          icon: <RobotOutlined style={{ fontSize: 17 }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Trợ lý AI Y tế</span>
+              <span className="sidebar-badge">AI 2.0</span>
+            </div>
+          ),
+        },
+      ],
     },
     {
-      key: '/examinations',
-      icon: <MedicineBoxOutlined style={{ fontSize: 18 }} />,
-      label: 'Khám bệnh (SOAP)',
-    },
-    {
-      key: '/emr',
-      icon: <FileTextOutlined style={{ fontSize: 18 }} />,
-      label: 'Hồ sơ bệnh án (EMR)',
-    },
-    {
-      key: '/billing',
-      icon: <DollarOutlined style={{ fontSize: 18 }} />,
-      label: 'Quản lý Viện phí',
-    },
-    {
-      key: '/ai-assistant',
-      icon: <RobotOutlined style={{ fontSize: 18 }} />,
-      label: 'Trợ lý AI Y tế',
-    },
-    {
-      key: '/catalogs',
-      icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
-      label: 'Danh mục Hệ thống',
-    },
-    {
-      key: '/audit-logs',
-      icon: <AuditOutlined style={{ fontSize: 18 }} />,
-      label: 'Nhật ký & Kiểm toán',
-    },
-    {
-      key: '/reports',
-      icon: <BarChartOutlined style={{ fontSize: 18 }} />,
-      label: 'Thống kê & Báo cáo',
+      type: 'group' as const,
+      label: collapsed ? null : 'QUẢN TRỊ & BÁO CÁO',
+      children: [
+        {
+          key: '/catalogs',
+          icon: <AppstoreOutlined style={{ fontSize: 17 }} />,
+          label: 'Danh mục Hệ thống',
+        },
+        {
+          key: '/reports',
+          icon: <BarChartOutlined style={{ fontSize: 17 }} />,
+          label: 'Thống kê & Báo cáo BI',
+        },
+        {
+          key: '/audit-logs',
+          icon: <AuditOutlined style={{ fontSize: 17 }} />,
+          label: 'Nhật ký & Kiểm toán',
+        },
+      ],
     },
   ];
 
@@ -251,10 +328,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         trigger={null}
         collapsible
         collapsed={collapsed}
-        width={260}
+        width={280}
+        className="medical-sidebar"
         style={{
-          background: '#0f172a',
-          boxShadow: '4px 0 20px rgba(15, 23, 42, 0.15)',
+          background: isDarkMode ? '#0f172a' : '#ffffff',
+          borderRight: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+          boxShadow: isDarkMode ? '4px 0 20px rgba(0, 0, 0, 0.25)' : '2px 0 12px rgba(15, 23, 42, 0.03)',
           zIndex: 10,
         }}
       >
@@ -262,81 +341,173 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <div
           style={{
             height: 70,
+            flexShrink: 0,
+            position: 'sticky',
+            top: 0,
+            zIndex: 20,
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '0' : '0 20px',
-            background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: collapsed ? '0' : '0 18px',
+            background: isDarkMode ? '#1e293b' : '#ffffff',
+            borderBottom: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9',
+            boxShadow: isDarkMode ? '0 2px 8px rgba(0, 0, 0, 0.2)' : '0 1px 3px rgba(15, 23, 42, 0.03)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img
+              src="/logo_icon.png"
+              alt="D-Medical AI"
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 4,
-                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)',
+                width: 36,
+                height: 36,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 2px 6px rgba(13, 148, 136, 0.2))',
               }}
-            >
-              <img src="/logo.png" alt="D-Medical" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </div>
+            />
             {!collapsed && (
               <div>
-                <Title level={4} style={{ color: '#fff', margin: 0, lineHeight: 1.2, fontWeight: 700, fontSize: 17 }}>
-                  D-MEDICAL <span style={{ color: '#38bdf8' }}>AI</span>
+                <Title level={4} style={{ color: isDarkMode ? '#f8fafc' : '#1e293b', margin: 0, lineHeight: 1.2, fontWeight: 800, fontSize: 16 }}>
+                  D-MEDICAL <span style={{ color: '#0d9488' }}>AI</span>
                 </Title>
-                <Text style={{ color: '#94a3b8', fontSize: 11, letterSpacing: '0.5px' }}>BỆNH VIỆN ĐA KHOA</Text>
+                <Text style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 10.5, letterSpacing: '0.4px', fontWeight: 600 }}>
+                  BỆNH VIỆN ĐA KHOA
+                </Text>
               </div>
             )}
           </div>
         </div>
 
-        {/* Menu */}
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
+        {/* Scrollable Middle Area: Full Menu & Shift Widget */}
+        <div
           style={{
-            marginTop: 12,
-            background: 'transparent',
-            padding: '0 8px',
-            fontSize: 14,
-            fontWeight: 500,
+            flex: '1 0 auto',
+            display: 'flex',
+            flexDirection: 'column',
           }}
-        />
-
-        {/* System Active Badge at Bottom */}
-        {!collapsed && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 20,
-              left: 16,
-              right: 16,
-              padding: '12px 16px',
-              borderRadius: 12,
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
+        >
+          <Menu
+            theme={isDarkMode ? 'dark' : 'light'}
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={({ key }) => {
+              if (key === '/cls-pacs') {
+                navigate('/examinations');
+              } else if (key === '/pharmacy') {
+                navigate('/catalogs');
+              } else if (key === '/insurance') {
+                navigate('/billing');
+              } else {
+                navigate(key);
+              }
             }}
-          >
-            <CheckCircleFilled style={{ color: '#10b981', fontSize: 16 }} />
-            <div>
-              <Text style={{ color: '#f8fafc', fontSize: 12, fontWeight: 600, display: 'block' }}>Hệ thống sẵn sàng</Text>
-              <Text style={{ color: '#94a3b8', fontSize: 11 }}>Phiên bản 2026.1.0</Text>
+            style={{
+              marginTop: 6,
+              background: 'transparent',
+              padding: '0 4px',
+              fontSize: 13.5,
+              fontWeight: 500,
+              borderInlineEnd: 'none',
+            }}
+          />
+
+          {/* Clinical Shift & Bed Occupancy Widget (Proper Padding from Bottom) */}
+          {!collapsed && (
+            <div
+              style={{
+                margin: '14px 10px 18px 10px',
+                padding: '14px 14px',
+                borderRadius: 14,
+                background: isDarkMode ? '#1e293b' : '#f8fafc',
+                border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <ApartmentOutlined /> Ca trực Sáng
+                </span>
+                <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: isDarkMode ? '#064e3b' : '#f0fdf4', color: '#166534', fontWeight: 600, border: '1px solid #bbf7d0' }}>
+                  07:00 - 15:30
+                </span>
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: isDarkMode ? '#f8fafc' : '#1e293b', marginBottom: 2 }}>
+                Khoa Nội Tổng Hợp
+              </div>
+              <div style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b', marginBottom: 8 }}>
+                BS: CKII. Nguyễn Thanh Duy
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+                <span style={{ color: isDarkMode ? '#cbd5e1' : '#64748b', fontWeight: 500 }}>Công suất giường</span>
+                <strong style={{ color: '#0d9488' }}>428/480 (89%)</strong>
+              </div>
+              <Progress percent={89} strokeColor="#0d9488" size="small" showInfo={false} />
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Pinned Bottom Telemetry & Status */}
+        <div
+          style={{
+            flexShrink: 0,
+            marginTop: 'auto',
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 20,
+            padding: collapsed ? '12px 8px' : '12px 16px',
+            borderTop: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+            background: isDarkMode ? '#1e293b' : '#f8fafc',
+            boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.03)',
+          }}
+        >
+          {collapsed ? (
+            <div style={{ textAlign: 'center' }}>
+              <Tooltip title={isGatewayOnline ? "Gateway 5000: Online" : "Gateway: Offline"} placement="right">
+                <span
+                  className="status-dot-pulse"
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: isGatewayOnline ? '#10b981' : '#f43f5e',
+                    display: 'inline-block',
+                  }}
+                />
+              </Tooltip>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span
+                    className="status-dot-pulse"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: isGatewayOnline ? '#10b981' : '#f43f5e',
+                      display: 'inline-block',
+                    }}
+                  />
+                  <Text style={{ color: isDarkMode ? '#f8fafc' : '#0369a1', fontSize: 12, fontWeight: 700 }}>
+                    Hệ thống Sẵn sàng
+                  </Text>
+                </div>
+                <Tag
+                  color={isGatewayOnline ? 'green' : 'error'}
+                  style={{ margin: 0, fontSize: 10, padding: '0 6px', borderRadius: 6, fontWeight: 600 }}
+                >
+                  {isGatewayOnline ? 'Gateway: 5000' : 'Offline'}
+                </Tag>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                <span>D-Medical AI Enterprise</span>
+                <span>v2026.4</span>
+              </div>
+            </div>
+          )}
+        </div>
       </Sider>
 
       <Layout>
@@ -348,10 +519,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: isDarkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 3px rgba(15, 23, 42, 0.08)',
+            boxShadow: isDarkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 2px 10px rgba(2, 132, 199, 0.04)',
             zIndex: 9,
             height: 70,
-            borderBottom: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9',
+            borderBottom: isDarkMode ? '1px solid #334155' : '1px solid #e0f2fe',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -363,7 +534,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             />
             <Input
               placeholder="Tìm nhanh Bệnh nhân, Mã BN, CCCD, Mã EMR hoặc ICD-10..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              prefix={<SearchOutlined style={{ color: '#0284c7' }} />}
               style={{
                 width: 380,
                 borderRadius: 20,
@@ -413,33 +584,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </Tag>
             </Tooltip>
 
-            {/* Quick AI Assistant Button in Top Header */}
-            <Button
-              type="primary"
-              icon={<RobotOutlined style={{ fontSize: 16 }} />}
-              onClick={() => setIsAiDrawerOpen(true)}
-              style={{
-                borderRadius: 20,
-                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                fontWeight: 600,
-                fontSize: 13,
-                padding: '4px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
-              }}
-            >
-              Hỏi AI
-            </Button>
-
             {/* Theme Toggle Button */}
             <Button
               type="text"
               shape="circle"
-              icon={isDarkMode ? <SunOutlined style={{ fontSize: 20, color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: 20, color: '#0284c7' }} />}
+              icon={isDarkMode ? <SunOutlined style={{ fontSize: 18, color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: 18, color: '#0284c7' }} />}
               onClick={toggleTheme}
-              style={{ background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0' }}
+              style={{
+                background: isDarkMode ? '#0f172a' : '#f8fafc',
+                border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+              }}
               title={isDarkMode ? 'Chuyển sang Chế độ Sáng' : 'Chuyển sang Chế độ Tối'}
             />
 
@@ -448,28 +602,50 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Button
                   type="text"
                   shape="circle"
-                  icon={<BellOutlined style={{ fontSize: 20, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
-                  style={{ background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0' }}
+                  icon={<BellOutlined style={{ fontSize: 18, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
+                  style={{
+                    background: isDarkMode ? '#0f172a' : '#f8fafc',
+                    border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                  }}
                 />
               </Badge>
             </Popover>
 
+            {/* Doctor Profile Dropdown (Clean, seamless background without color deviation) */}
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-              <Space style={{ cursor: 'pointer', padding: '4px 10px', borderRadius: 12, background: isDarkMode ? '#0f172a' : '#f8fafc', border: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9' }}>
+              <div
+                style={{
+                  cursor: 'pointer',
+                  padding: '6px 10px',
+                  borderRadius: 12,
+                  background: 'transparent',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  transition: 'all 0.2s ease',
+                }}
+                className="hover:bg-slate-100 dark:hover:bg-slate-800/70"
+              >
                 <Avatar
+                  size={42}
                   src={user?.avatarUrl}
                   icon={<UserOutlined />}
-                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+                    border: isDarkMode ? '2px solid #334155' : '2px solid #e2e8f0',
+                    flexShrink: 0,
+                  }}
                 />
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                  <Text strong style={{ fontSize: 14, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}>
+                  <Text strong style={{ fontSize: 13.5, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.25, fontWeight: 700 }}>
                     {user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}
                   </Text>
-                  <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                  <Text style={{ fontSize: 11.5, color: isDarkMode ? '#94a3b8' : '#64748b', lineHeight: 1.2 }}>
                     {user?.chucDanh || 'Bác sĩ Điều trị'} • {user?.chuyenKhoa || 'Khoa Nội'}
                   </Text>
                 </div>
-              </Space>
+              </div>
             </Dropdown>
           </div>
         </Header>
@@ -486,25 +662,57 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         </Content>
 
-        {/* Floating Circular Action Button (FAB) for Instant AI Chat Drawer */}
+        {/* Floating Action Button (FAB) for Instant AI Chat Drawer */}
         <div style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 999 }}>
           <Tooltip title="Trợ lý AI Y tế (Click mở khung chat)" placement="left">
-            <Button
-              type="primary"
-              shape="circle"
-              className="ai-fab-pulse"
-              icon={<RobotOutlined style={{ fontSize: 24 }} />}
+            <div
               onClick={() => setIsAiDrawerOpen(true)}
+              className="medical-ai-pulse"
               style={{
-                width: 56,
-                height: 56,
-                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                background: '#ffffff',
+                border: '2.5px solid #0284c7',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                position: 'relative',
+                transition: 'transform 0.2s ease',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
               }}
-            />
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              }}
+            >
+              <img
+                src="/ai_doctor.png"
+                alt="AI Chatbot Y tế"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '50%',
+                }}
+              />
+              <span
+                className="status-dot-pulse"
+                style={{
+                  position: 'absolute',
+                  bottom: 2,
+                  right: 2,
+                  width: 13,
+                  height: 13,
+                  borderRadius: '50%',
+                  backgroundColor: '#10b981',
+                  border: '2px solid #ffffff',
+                }}
+              />
+            </div>
           </Tooltip>
         </div>
 

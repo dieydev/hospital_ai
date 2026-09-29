@@ -166,7 +166,7 @@ Dữ liệu đầu vào đã được khử danh tính PII/PHI tuân thủ chu�
           const rawText = textParts.map((p: any) => p.text).join('\n');
           const endTime = Date.now();
           const latencyMs = endTime - startTime;
-          const sources = ['Google Gemini Medical AI Engine', 'Bộ Y Tế Việt Nam & ICD-10 Standards'];
+          const sources = ['D-Medical AI Clinical Engine', 'Bộ Y Tế Việt Nam & ICD-10 Standards'];
 
           // Save into MongoDB AI Audit Log
           await this.saveAILogToMongo({
@@ -235,7 +235,7 @@ Dữ liệu đầu vào đã được khử danh tính PII/PHI tuân thủ chu�
       userRole: 'Bác sĩ Điều trị',
       doctorName: 'BS. CKII. Nguyễn Thanh Duy',
       actionType: 'ICD10_SUGGESTION',
-      modelUsed: 'gemini-3.6-flash (Cascade Active)',
+      modelUsed: 'D-Medical AI Clinical Engine',
       promptText: `Phân tích triệu chứng: "${sanitization.sanitizedText}"`,
       responseText: `Mã gợi ý: ${suggestions.map((s) => `${s.code} (${s.name})`).join(', ')}`,
       latencyMs,
@@ -318,7 +318,7 @@ Trả về danh sách cảnh báo ngắn gọn bằng tiếng Việt.`;
       userRole: 'Bác sĩ Điều trị',
       doctorName: 'BS. CKII. Nguyễn Thanh Duy',
       actionType: 'DRUG_SAFETY_CHECK',
-      modelUsed: 'gemini-3.6-flash (Cascade Active)',
+      modelUsed: 'D-Medical AI Clinical Engine',
       promptText: `Kiểm tra đơn thuốc: ${drugNames} (Tiền sử dị ứng: ${allergyText})`,
       responseText: warnings.length > 0 ? warnings.join('; ') : 'Đơn thuốc an toàn, không phát hiện tương tác hay dị ứng nguy hiểm.',
       latencyMs,
@@ -340,14 +340,14 @@ Trả về danh sách cảnh báo ngắn gọn bằng tiếng Việt.`;
       return {
         text: `**Tóm tắt diễn biến Hồ sơ Bệnh án EMR (Bệnh nhân Nguyễn Văn An - Mã BN20260001):**\n\n- **Tiền sử:** Tăng huyết áp độ 1 (Amlodipine 5mg/ngày).\n- **Khám lâm sàng:** Đau họng 3 ngày, sốt nhẹ 38.0°C, ho khan nhiều về đêm.\n- **Xét nghiệm cận lâm sàng:** WBC 11.2 G/L (Bạch cầu tăng nhẹ), X-quang phế trường 2 bên sáng.\n- **Chẩn đoán:** Viêm họng cấp tính (ICD-10: J02.9).\n- **Đơn thuốc:** Paracetamol 500mg, Augmentin 1g trong 7 ngày.`,
         sources: ['Hồ sơ EMR_LK20260802-01.pdf', 'Phiếu Kết Quả Xét Nghiệm CBC'],
-        modelUsed: 'gemini-3.6-flash (Local Resilience Engine)',
+        modelUsed: 'D-Medical AI Clinical Engine',
       };
     }
 
     return {
-      text: `Trợ lý AI Y tế (Google Gemini Multi-Model Cascade Engine) đã tiếp nhận yêu cầu: "${query}". Dữ liệu đã được bọc mạ bảo mật HIPAA. Theo Dược thư Quốc gia Việt Nam, hãy luôn kiểm tra tương tác thuốc, tiền sử dị ứng và chức năng gan thận trước khi chỉ định điều trị.`,
-      sources: ['Google Gemini Medical AI Engine', 'Dược thư Quốc gia Việt Nam 2024'],
-      modelUsed: 'gemini-3.6-flash (Local Resilience Engine)',
+      text: `Trợ lý AI Y tế (D-Medical AI Clinical Engine) đã tiếp nhận yêu cầu: "${query}". Dữ liệu đã được bọc mạ bảo mật HIPAA. Theo Dược thư Quốc gia Việt Nam, hãy luôn kiểm tra tương tác thuốc, tiền sử dị ứng và chức năng gan thận trước khi chỉ định điều trị.`,
+      sources: ['D-Medical AI Clinical Engine', 'Dược thư Quốc gia Việt Nam 2024'],
+      modelUsed: 'D-Medical AI Clinical Engine',
     };
   },
 };

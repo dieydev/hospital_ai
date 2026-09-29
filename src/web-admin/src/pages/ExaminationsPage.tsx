@@ -49,7 +49,7 @@ import { patientService, Patient } from '../services/patientService';
 import { signalrService } from '../services/signalrService';
 import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
@@ -154,7 +154,7 @@ export const ExaminationsPage: React.FC = () => {
         showToast('Trợ lý AI đã phát hiện cảnh báo an toàn đơn thuốc!', 'warning');
       }
     } catch {
-      showErrorAlert('Lỗi rà soát', 'Không thể kết nối dịch vụ Gemini AI.');
+      showErrorAlert('Lỗi rà soát', 'Không thể kết nối dịch vụ Trợ lý AI Y tế.');
     } finally {
       setDrugSafetyLoading(false);
     }
@@ -207,7 +207,7 @@ export const ExaminationsPage: React.FC = () => {
     try {
       const suggestions = await geminiService.suggestICD10(subjective);
       setAiSuggestions(suggestions);
-      showToast('Trợ lý Gemini 3.6 Flash AI đã phân tích và gợi ý mã ICD-10!', 'success');
+      showToast('Trợ lý AI Y tế Lâm sàng đã phân tích và gợi ý mã ICD-10!', 'success');
     } catch {
       setAiSuggestions([
         { code: 'J02.9', name: 'Viêm họng cấp tính, không đặc hiệu', match: '98% Phù hợp' },
@@ -383,50 +383,41 @@ export const ExaminationsPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Header Banner */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
-            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-          padding: '20px 24px',
-          borderRadius: '16px',
-          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)',
-        }}
-      >
+      {/* Modern Medical Header Banner (Unified Theme) */}
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <Title level={3} style={{ margin: 0, color: isDarkMode ? '#38bdf8' : '#0369a1', fontWeight: 800 }}>
-            <MedicineBoxOutlined style={{ marginRight: 10 }} />
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <span className="status-dot-active bg-emerald-400" /> Khám Bệnh Lâm Sàng • Hồ Sơ SOAP Note
+            </span>
+            <Tag color="cyan" className="m-0 font-mono text-xs bg-white/20 text-white border-white/30">
+              Phòng khám: {user?.chuyenKhoa || 'Khoa Nội Tổng Hợp'}
+            </Tag>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Khám bệnh Lâm sàng & Hồ sơ EMR (SOAP Note)
-          </Title>
-          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-            Phòng khám: <strong>{user?.chuyenKhoa || 'Khoa Nội Tổng Hợp'}</strong> • Bác sĩ trực: <strong>{user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}</strong>
-          </Text>
+          </h1>
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
+            Bác sĩ khám trực tiếp: <strong className="text-white font-bold">{user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}</strong> • Chẩn đoán ICD-10, kê đơn thuốc và kiểm tra an toàn tương tác AI
+          </p>
         </div>
-        <Space>
+        <Space wrap>
           <Input
-            placeholder="Tìm theo Tên BN, Mã BN, Mã ICD-10..."
-            prefix={<SearchOutlined />}
+            placeholder="Tìm theo Tên BN, Mã BN, ICD-10..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 280 }}
+            style={{ width: 250 }}
             allowClear
+            className="rounded-lg shadow-sm"
           />
-          <Button icon={<ReloadOutlined />} onClick={fetchExaminations} loading={loading}>
+          <Button icon={<ReloadOutlined />} onClick={fetchExaminations} loading={loading} className="medical-hero-btn-secondary rounded-lg font-medium">
             Làm mới
           </Button>
           <Tooltip title={isSoundOn ? 'Nhấp để tắt chuông báo tự động' : 'Nhấp để bật chuông báo tự động'}>
             <Button
               icon={<SoundOutlined />}
-              type={isSoundOn ? 'primary' : 'default'}
-              style={{
-                backgroundColor: isSoundOn ? '#0284c7' : undefined,
-                borderColor: '#bae6fd',
-              }}
+              className="medical-hero-btn-secondary rounded-lg font-medium"
               onClick={() => {
                 const next = !isSoundOn;
                 setIsSoundOn(next);
@@ -442,7 +433,7 @@ export const ExaminationsPage: React.FC = () => {
             type="primary"
             icon={<PlusOutlined />}
             size="large"
-            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            className="medical-hero-btn-primary rounded-lg font-bold flex items-center gap-1.5"
             onClick={() => {
               form.resetFields();
               setDrugSafetyWarnings([]);

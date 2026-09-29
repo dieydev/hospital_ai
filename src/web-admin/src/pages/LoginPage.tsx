@@ -190,9 +190,9 @@ export const LoginPage: React.FC = () => {
         {/* Header Logo & Title */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <img
-            src="/logo.png"
+            src="/logo_icon.png"
             alt="D-Medical Logo"
-            style={{ height: 48, objectFit: 'contain', marginBottom: 12 }}
+            style={{ height: 60, objectFit: 'contain', marginBottom: 12, filter: 'drop-shadow(0 4px 14px rgba(2, 132, 199, 0.25))' }}
           />
           <Title level={3} style={{ margin: '0 0 4px', fontWeight: 800, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
             D-MEDICAL <span style={{ color: '#0284c7' }}>AI</span>

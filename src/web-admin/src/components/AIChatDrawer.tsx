@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Drawer, Input, Button, Typography, Tag, Avatar, Spin, Divider, Space, Tooltip } from 'antd';
 import {
-  RobotOutlined,
   SendOutlined,
   FileTextOutlined,
   SafetyCertificateOutlined,
@@ -35,7 +34,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'ai',
-      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế (Gemini 3.6 Flash). Tôi sẵn sàng hỗ trợ tra cứu bệnh án EMR, gợi ý mã ICD-10 và rà soát tương tác thuốc ngay trên màn hình này.',
+      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế Lâm sàng (D-Medical AI). Tôi sẵn sàng hỗ trợ tra cứu hồ sơ bệnh án EMR, gợi ý mã ICD-10 và rà soát tương tác thuốc chuyên sâu theo phác đồ Bộ Y Tế.',
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -79,7 +78,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
         ...prev,
         {
           sender: 'ai',
-          text: 'Xin lỗi Bác sĩ, không thể kết nối tới dịch vụ Gemini AI. Vui lòng kiểm tra lại mạng hoặc thử lại.',
+          text: 'Xin lỗi Bác sĩ, không thể kết nối tới dịch vụ Trợ lý AI Y tế. Vui lòng kiểm tra lại mạng hoặc thử lại.',
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -102,14 +101,14 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
     <Drawer
       title={
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Avatar size={30} icon={<RobotOutlined />} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Avatar size={34} src="/ai_doctor.png" className="medical-ai-pulse" style={{ border: '1.5px solid #0284c7', flexShrink: 0 }} />
             <div>
               <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a', fontSize: 14, display: 'block', lineHeight: 1.2 }}>
-                Trợ lý Gemini AI
+                Trợ lý AI Y tế Lâm sàng
               </Text>
               <Text type="secondary" style={{ fontSize: 10, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
-                Hỗ trợ Y tế & Tra cứu EMR
+                Hỗ trợ Chẩn đoán & Tra cứu EMR
               </Text>
             </div>
           </div>
@@ -155,7 +154,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
       >
         <SafetyCertificateOutlined style={{ color: '#0284c7', fontSize: 16 }} />
         <Text style={{ fontSize: 11, color: isDarkMode ? '#cbd5e1' : '#0369a1' }}>
-          Đã bật <strong>Bảo mật PII</strong>: Tự động khử dữ liệu cá nhân trước khi gửi AI.
+          Đã bật <strong>Bảo mật PII</strong>: Tự động khử dữ liệu cá nhân trước khi xử lý AI.
         </Text>
       </div>
 
@@ -163,7 +162,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {messages.map((m, idx) => (
           <div key={idx} style={{ display: 'flex', justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start', gap: 10 }}>
-            {m.sender === 'ai' && <Avatar size={30} icon={<RobotOutlined />} style={{ backgroundColor: '#0284c7', flexShrink: 0 }} />}
+            {m.sender === 'ai' && <Avatar size={32} src="/ai_doctor.png" style={{ border: '1px solid #bae6fd', flexShrink: 0 }} />}
 
             <div style={{ maxWidth: '85%' }}>
               <div
@@ -211,8 +210,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
 
         {loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8 }}>
-            <Avatar size={30} icon={<RobotOutlined />} style={{ backgroundColor: '#0284c7' }} />
-            <Spin size="small" tip="AI đang xử lý..." />
+            <Avatar size={30} src="/ai_doctor.png" style={{ border: '1px solid #bae6fd' }} />
+            <Spin size="small" tip="Trợ lý AI đang xử lý..." />
           </div>
         )}
         <div ref={messagesEndRef} />

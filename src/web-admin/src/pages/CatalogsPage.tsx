@@ -112,16 +112,17 @@ export const CatalogsPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Modern Medical Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="status-dot-active" />
-            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Danh Mục Master Data • Bác Sĩ, Thuốc, CLS & ICD-10</Text>
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <span className="status-dot-active bg-emerald-400" /> Danh Mục Master Data • Bác Sĩ, Thuốc, CLS & ICD-10
+            </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Quản trị Danh mục Hệ thống (System Catalogs)
           </h1>
-          <p className="text-slate-300 text-xs md:text-sm mt-1">
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
             Danh mục Bác sĩ/Nhân viên, Thuốc dược phẩm, Dịch vụ kỹ thuật y tế và Bộ mã chuẩn đoán quốc tế ICD-10
           </p>
         </div>
@@ -129,7 +130,7 @@ export const CatalogsPage: React.FC = () => {
           type="primary"
           icon={<PlusOutlined />}
           size="large"
-          className="bg-sky-600 hover:bg-sky-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
+          className="medical-hero-btn-primary rounded-lg font-semibold flex items-center gap-1.5"
           onClick={handleOpenAddModal}
         >
           {activeTab === 'doctors' && 'Thêm Bác sĩ mới'}

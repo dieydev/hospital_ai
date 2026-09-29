@@ -314,28 +314,29 @@ export const ReceptionPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Modern Medical Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="status-dot-active" />
-            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Quầy Lễ Tân • Cấp Số Hàng Chờ Tự Động</Text>
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <span className="status-dot-active bg-emerald-400" /> Quầy Lễ Tân • Cấp Số Hàng Chờ Tự Động
+            </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Tiếp nhận Bệnh nhân & Cấp số Hàng chờ Realtime
           </h1>
-          <p className="text-slate-300 text-xs md:text-sm mt-1">
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
             Điều phối luồng tiếp đón, phát số thứ tự tự động và gọi loa thông minh theo phòng khám
           </p>
         </div>
         <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} className="rounded-lg font-medium">
+          <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} className="medical-hero-btn-secondary rounded-lg font-medium">
             Làm mới
           </Button>
           <Button
             type="primary"
             icon={<ForwardOutlined />}
             size="large"
-            className="bg-emerald-600 hover:bg-emerald-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-lg font-semibold flex items-center gap-1.5 shadow-md"
             onClick={handleCallNext}
           >
             Gọi loa Số tiếp theo
@@ -344,7 +345,7 @@ export const ReceptionPage: React.FC = () => {
             type="primary"
             icon={<PlusOutlined />}
             size="large"
-            className="bg-sky-600 hover:bg-sky-700 border-none rounded-lg font-semibold flex items-center gap-1.5"
+            className="medical-hero-btn-primary rounded-lg font-semibold flex items-center gap-1.5"
             onClick={() => setIsModalOpen(true)}
           >
             Đăng ký & Cấp số mới
@@ -610,9 +611,9 @@ export const ReceptionPage: React.FC = () => {
           >
             <div style={{ textAlign: 'center', marginBottom: 6 }}>
               <img
-                src="/logo.png"
+                src="/logo_icon.png"
                 alt="D-Medical Logo"
-                style={{ height: 36, objectFit: 'contain', marginBottom: 4 }}
+                style={{ height: 42, objectFit: 'contain', marginBottom: 4 }}
               />
             </div>
             <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#0369a1' }}>

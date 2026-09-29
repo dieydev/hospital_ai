@@ -322,26 +322,27 @@ export const AppointmentsPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Modern Medical Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="status-dot-active" />
-            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Đồng Bộ Flutter Mobile App • Lịch Hẹn Online</Text>
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <span className="status-dot-active bg-emerald-400" /> Đồng Bộ Flutter Mobile App • Lịch Hẹn Online
+            </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Quản lý Lịch hẹn Đăng ký từ Bệnh nhân (Mobile App)
           </h1>
-          <p className="text-slate-300 text-xs md:text-sm mt-1">
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
             Duyệt lịch đặt khám trực tuyến, tự động chuyển số thứ tự hàng chờ (Queue) khi bệnh nhân đến quầy
           </p>
         </div>
         <Space wrap>
           <Badge count={appointments.filter((a) => a.status === 'Pending').length} overflowCount={99}>
-            <Tag color="processing" className="px-3 py-1 text-xs rounded-lg font-semibold">
+            <Tag color="cyan" className="px-3 py-1 text-xs rounded-lg font-semibold bg-white/20 text-white border-white/30">
               {appointments.filter((a) => a.status === 'Pending').length} Lịch hẹn chờ xác nhận
             </Tag>
           </Badge>
-          <Button icon={<ReloadOutlined />} onClick={fetchAppointments} loading={loading} className="rounded-lg font-medium">
+          <Button icon={<ReloadOutlined />} onClick={fetchAppointments} loading={loading} className="medical-hero-btn-secondary rounded-lg font-medium">
             Làm mới
           </Button>
         </Space>

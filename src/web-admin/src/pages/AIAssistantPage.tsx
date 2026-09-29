@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, Input, Button, Typography, Tag, Avatar, Spin, Divider, Row, Col, Alert, Space } from 'antd';
-import { RobotOutlined, SendOutlined, FileTextOutlined, SafetyCertificateOutlined, BulbOutlined } from '@ant-design/icons';
+import { SendOutlined, FileTextOutlined, SafetyCertificateOutlined, BulbOutlined } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 
 import { geminiService } from '../services/geminiService';
@@ -57,7 +57,7 @@ export const AIAssistantPage: React.FC = () => {
         ...prev,
         {
           sender: 'ai',
-          text: 'Xin lỗi Bác sĩ, có lỗi kết nối đến Gemini AI API. Vui lòng kiểm tra lại mạng hoặc thử lại.',
+          text: 'Xin lỗi Bác sĩ, có lỗi kết nối đến Trợ lý AI Y tế. Vui lòng kiểm tra lại mạng hoặc thử lại.',
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -69,20 +69,21 @@ export const AIAssistantPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 120px)' }}>
       {/* Modern Medical Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 p-6 md:p-8 text-white shadow-md border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="status-dot-active" />
-            <Text className="text-xs text-sky-300 font-semibold uppercase tracking-wider">Trợ Lý Lâm Sàng • Google Gemini 3.6 Flash</Text>
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
+              <span className="status-dot-active bg-emerald-400" /> Trợ Lý Lâm Sàng • Trí Tuệ Nhân Tạo Y Tế D-Medical AI
+            </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Trợ lý Trí tuệ Nhân tạo Y tế (Hospital AI Medical Engine)
           </h1>
-          <p className="text-slate-300 text-xs md:text-sm mt-1">
+          <p className="text-sky-100 text-xs md:text-sm mt-1">
             Hỗ trợ tra cứu EMR bằng ngôn ngữ tự nhiên, tóm tắt bệnh án, gợi ý chẩn đoán ICD-10 và kiểm tra tương tác thuốc
           </p>
         </div>
-        <Tag color="cyan" icon={<SafetyCertificateOutlined />} className="px-3 py-1.5 text-xs rounded-lg font-semibold m-0">
+        <Tag color="cyan" icon={<SafetyCertificateOutlined />} className="px-3 py-1.5 text-xs rounded-lg font-semibold m-0 bg-white/20 text-white border-white/30">
           Hospital AI Engine Ready
         </Tag>
       </div>
@@ -114,7 +115,7 @@ export const AIAssistantPage: React.FC = () => {
             <div style={{ flex: 1, overflowY: 'auto', paddingRight: 8, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}>
               {messages.map((m, idx) => (
                 <div key={idx} style={{ display: 'flex', justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start', gap: 12 }}>
-                  {m.sender === 'ai' && <Avatar icon={<RobotOutlined />} style={{ backgroundColor: '#10b981' }} />}
+                  {m.sender === 'ai' && <Avatar size={34} src="/ai_doctor.png" style={{ border: '1px solid #bae6fd', flexShrink: 0 }} />}
 
                   <div style={{ maxWidth: '80%' }}>
                     <div
@@ -164,8 +165,8 @@ export const AIAssistantPage: React.FC = () => {
               ))}
               {loading && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Avatar icon={<RobotOutlined />} style={{ backgroundColor: '#10b981' }} />
-                  <Spin tip="Gemini đang phân tích và tổng hợp dữ liệu..." />
+                  <Avatar size={34} src="/ai_doctor.png" style={{ border: '1px solid #bae6fd' }} />
+                  <Spin tip="Trợ lý AI đang phân tích và tổng hợp dữ liệu lâm sàng..." />
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -272,7 +273,7 @@ export const AIAssistantPage: React.FC = () => {
               showIcon
               style={{ marginTop: 24 }}
               message="Lưu ý Y tế:"
-              description="Các gợi ý từ AI Gemini mang tính chất tham khảo hỗ trợ chuyên môn. Quyết định chẩn đoán và điều trị cuối cùng thuộc về Bác sĩ."
+              description="Các khuyến nghị từ Trợ lý AI Y tế mang tính chất tham khảo chuyên môn. Quyết định chẩn đoán và điều trị cuối cùng thuộc về Bác sĩ."
             />
           </Card>
         </Col>

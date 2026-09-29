@@ -154,17 +154,8 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* User Header Profile Card */}
-      <Card
-        style={{
-          borderRadius: 16,
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
-            : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-          border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(2, 132, 199, 0.08)',
-        }}
-      >
+      {/* User Header Profile Banner (Unified Theme) */}
+      <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg">
         <Row align="middle" gutter={[24, 16]}>
           <Col>
             <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -173,8 +164,8 @@ export const ProfilePage: React.FC = () => {
                 src={user?.avatarUrl}
                 icon={<UserOutlined />}
                 style={{
-                  border: '4px solid #0284c7',
-                  boxShadow: '0 6px 16px rgba(2, 132, 199, 0.25)',
+                  border: '4px solid #ffffff',
+                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.25)',
                   cursor: 'pointer',
                 }}
                 onClick={() => setIsAvatarModalOpen(true)}
@@ -190,7 +181,8 @@ export const ProfilePage: React.FC = () => {
                     position: 'absolute',
                     bottom: 4,
                     right: 4,
-                    backgroundColor: '#0284c7',
+                    backgroundColor: '#ffffff',
+                    color: '#0369a1',
                     borderColor: '#ffffff',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                   }}
@@ -200,43 +192,42 @@ export const ProfilePage: React.FC = () => {
           </Col>
           <Col style={{ flex: 1 }}>
             <Space align="center" size="middle" style={{ flexWrap: 'wrap' }}>
-              <Title level={2} style={{ margin: 0, color: isDarkMode ? '#f8fafc' : '#0369a1', fontWeight: 800 }}>
+              <Title level={2} style={{ margin: 0, color: '#ffffff', fontWeight: 800 }}>
                 {user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}
               </Title>
-              <Tag color="blue" style={{ fontSize: 13, padding: '3px 12px', fontWeight: 600 }}>
+              <Tag color="cyan" style={{ fontSize: 13, padding: '3px 12px', fontWeight: 600, backgroundColor: 'rgba(255,255,255,0.2)', color: '#ffffff', borderColor: 'rgba(255,255,255,0.3)' }}>
                 {user?.chucDanh || 'Trưởng Khoa Nội'}
               </Tag>
-              <Tag color="green" icon={<CheckCircleOutlined />} style={{ fontSize: 13, padding: '3px 12px' }}>
+              <Tag color="green" icon={<CheckCircleOutlined />} style={{ fontSize: 13, padding: '3px 12px', backgroundColor: 'rgba(16,185,129,0.2)', color: '#a7f3d0', borderColor: 'rgba(16,185,129,0.3)' }}>
                 Tài khoản Đã xác thực Y tế
               </Tag>
               <Button
-                type="dashed"
                 size="small"
                 icon={<CameraOutlined />}
                 onClick={() => setIsAvatarModalOpen(true)}
-                style={{ color: '#0284c7', borderColor: '#0284c7' }}
+                className="medical-hero-btn-secondary rounded-lg font-medium"
               >
                 Đổi Ảnh đại diện
               </Button>
             </Space>
 
-            <div style={{ marginTop: 10, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                <MedicineBoxOutlined style={{ color: '#0284c7', marginRight: 6 }} />
-                Chuyên khoa: <strong>{user?.chuyenKhoa || 'Khoa Nội Tổng Hợp'}</strong>
-              </Text>
-              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                <IdcardOutlined style={{ color: '#0284c7', marginRight: 6 }} />
-                Mã CCHN: <strong>001234/BYT-CCHN</strong>
-              </Text>
-              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                <MailOutlined style={{ color: '#0284c7', marginRight: 6 }} />
-                {user?.email || 'thanhduy.md@hospital-ai.vn'}
-              </Text>
+            <div style={{ marginTop: 12, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+              <span className="text-sky-100 text-sm">
+                <MedicineBoxOutlined style={{ color: '#bae6fd', marginRight: 6 }} />
+                Chuyên khoa: <strong className="text-white font-semibold">{user?.chuyenKhoa || 'Khoa Nội Tổng Hợp'}</strong>
+              </span>
+              <span className="text-sky-100 text-sm">
+                <IdcardOutlined style={{ color: '#bae6fd', marginRight: 6 }} />
+                Mã CCHN: <strong className="text-white font-semibold">001234/BYT-CCHN</strong>
+              </span>
+              <span className="text-sky-100 text-sm">
+                <MailOutlined style={{ color: '#bae6fd', marginRight: 6 }} />
+                <strong className="text-white font-semibold">{user?.email || 'thanhduy.md@hospital-ai.vn'}</strong>
+              </span>
             </div>
           </Col>
         </Row>
-      </Card>
+      </div>
 
       {/* Main Tabs Details */}
       <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
