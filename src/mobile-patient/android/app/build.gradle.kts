@@ -19,6 +19,7 @@ android {
         applicationId = "com.example.hospital_ai_patient"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // minSdk 23+ required by local_auth (biometric authentication)
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

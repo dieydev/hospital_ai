@@ -22,6 +22,8 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   String? _selectedDoctor;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String? _selectedTimeSlot;
+  final TextEditingController _symptomsController = TextEditingController();
+  String? _lastCreatedAppointmentId;
 
   @override
   void initState() {
@@ -89,8 +91,8 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEFF6FF),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.person_add_alt_1_rounded, size: 48, color: AppTheme.primary),
@@ -177,9 +179,9 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppTheme.surface,
-          border: const Border(top: BorderSide(color: AppTheme.borderSubtle)),
+          border: Border(top: BorderSide(color: AppTheme.borderSubtle)),
         ),
         child: Row(
           children: [
@@ -641,6 +643,41 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               'Thời gian hẹn:',
               '${_selectedTimeSlot ?? ''} - ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
             ),
+            const SizedBox(height: 16),
+            // Symptoms / Reason input
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.edit_note_rounded, size: 20, color: AppTheme.textSecondary),
+                    const SizedBox(width: 12),
+                    Text('Triệu chứng / Lý do khám:', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _symptomsController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Mô tả triệu chứng hoặc lý do khám (không bắt buộc)...',
+                    hintStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary.withValues(alpha: 0.6)),
+                    filled: true,
+                    fillColor: AppTheme.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.borderSubtle),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textPrimary),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
@@ -695,34 +732,50 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       'doctorName': _selectedDoctor,
       'appointmentDate': '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
       'appointmentTime': _selectedTimeSlot!.split(' - ')[0],
-      'symptomsReason': 'Đặt lịch hẹn khám trực tuyến từ Mobile Patient App',
+      'symptomsReason': _symptomsController.text.trim().isNotEmpty
+          ? _symptomsController.text.trim()
+          : 'Đặt lịch hẹn khám trực tuyến qua ứng dụng D-Medical',
       'status': 'Pending',
       'sourceApp': 'Flutter Mobile App',
     };
 
     final provider = context.read<AppointmentProvider>();
+    String? vnpayUrl;
+    String? createdId;
+
     try {
-      await provider.bookAppointment(appointmentData);
+      // 1. Gửi đặt lịch hẹn
+      final result = await provider.bookAppointment(appointmentData);
+      createdId = result?['id']?.toString();
+      _lastCreatedAppointmentId = createdId;
+
+      // 2. Thử lấy link thanh toán VNPay (nếu dịch vụ thanh toán sẵn sàng)
+      try {
+        vnpayUrl = await provider.getVnPayUrl(150000, 'Thanh toan phi kham benh ${user.hoTen}');
+      } catch (_) {
+        // Nếu cổng VNPay chưa cấu hình hoặc bận, tiếp tục quy trình thanh toán tại quầy
+      }
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context); // Luôn đóng loading dialog nếu lỗi
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lỗi: Không thể kết nối tới máy chủ! Vui lòng thử lại.'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Lỗi: ${e.toString().replaceAll("Exception: ", "")}'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
-    // Call VNPay URL
-    final vnpayUrl = await provider.getVnPayUrl(150000, 'Thanh toan phi kham benh ${user.hoTen}');
     if (!mounted) return;
-    Navigator.pop(context); // Close loading dialog
+    Navigator.pop(context); // Luôn đóng loading dialog thành công!
 
-    if (vnpayUrl != null) {
+    if (vnpayUrl != null && vnpayUrl.isNotEmpty) {
       // Navigate to VNPay WebView
       final isSuccess = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VnPayPaymentView(paymentUrl: vnpayUrl),
+          builder: (context) => VnPayPaymentView(paymentUrl: vnpayUrl!),
         ),
       );
 
@@ -731,13 +784,11 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       if (isSuccess == true) {
         _showFinalSuccessDialog('Thanh toán VNPay thành công. Hệ thống đã xác nhận lịch khám!');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thanh toán VNPay thất bại hoặc bị hủy.'), backgroundColor: Colors.red),
-        );
+        _showFinalSuccessDialog('Đã ghi nhận đặt lịch thành công. Quý khách có thể thanh toán viện phí trực tiếp tại quầy tiếp nhận.');
       }
     } else {
       if (!mounted) return;
-      _showFinalSuccessDialog('Đã ghi nhận lịch hẹn nhưng hệ thống thanh toán đang gián đoạn. Vui lòng thanh toán tại quầy.');
+      _showFinalSuccessDialog('Đã ghi nhận đặt lịch thành công! Quý khách vui lòng thanh toán viện phí tại quầy tiếp nhận.');
     }
   }
 
@@ -758,9 +809,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Mã phiếu hẹn: LH${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
+            Text(
+              'Mã phiếu hẹn: ${_lastCreatedAppointmentId ?? 'LH${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}'}',
+              style: GoogleFonts.inter(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 6),
-            Text('STT dự kiến: #105 (Phòng 102 - $_selectedDepartment)', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
+            Text('Khoa: $_selectedDepartment', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
             const SizedBox(height: 6),
             Text('Bác sĩ: $_selectedDoctor', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
             const SizedBox(height: 12),
@@ -795,6 +849,8 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 _selectedDoctor = null;
                 _selectedTimeSlot = null;
                 _selectedDate = DateTime.now().add(const Duration(days: 1));
+                _symptomsController.clear();
+                _lastCreatedAppointmentId = null;
               });
             },
             child: Text('Về Trang Chủ', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),

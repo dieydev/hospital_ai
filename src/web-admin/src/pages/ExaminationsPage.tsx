@@ -46,6 +46,7 @@ import {
   ServiceOrderItem,
 } from '../services/examinationService';
 import { patientService, Patient } from '../services/patientService';
+import { queueService } from '../services/queueService';
 import { signalrService } from '../services/signalrService';
 import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
 
@@ -163,8 +164,6 @@ export const ExaminationsPage: React.FC = () => {
   const fetchExaminations = useCallback(async () => {
     setLoading(true);
     try {
-      // Import queueService động để tránh lỗi biên dịch nếu quên import ở top level
-      const { queueService } = await import('../services/queueService');
       const [examRes, patientRes, queueRes] = await Promise.all([
         examinationService.getExaminations(searchText),
         patientService.getPatients(),
@@ -263,7 +262,6 @@ export const ExaminationsPage: React.FC = () => {
 
       // Cập nhật trạng thái phiếu khám thành 'Finished' để xóa khỏi hàng đợi
       if (values.ticketId) {
-        const { queueService } = await import('../services/queueService');
         await queueService.updateQueueTicketStatus(values.ticketId, 'Finished');
       }
 

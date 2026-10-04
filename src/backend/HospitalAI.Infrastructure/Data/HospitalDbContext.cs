@@ -200,6 +200,14 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.FullName).HasColumnName("HoTen").HasMaxLength(100);
             entity.Property(e => e.Title).HasColumnName("ChucDanh").HasMaxLength(50);
             entity.Property(e => e.IsAvailable).HasColumnName("TrangThaiSanSang");
+
+            entity.HasOne(s => s.Department)
+                  .WithMany()
+                  .HasForeignKey(s => s.DepartmentId);
+
+            entity.HasOne(s => s.User)
+                  .WithMany()
+                  .HasForeignKey(s => s.UserId);
         });
 
         modelBuilder.Entity<PatientAllergy>(entity =>

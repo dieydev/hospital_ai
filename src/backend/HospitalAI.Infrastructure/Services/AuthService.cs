@@ -240,6 +240,13 @@ public class AuthService : IAuthService
             throw new Exception("Số điện thoại không đúng định dạng Việt Nam hợp lệ (10 chữ số).");
         }
 
+        // Kiểm tra xem Số điện thoại đã được đăng ký tài khoản chưa
+        var isExistingPhone = await _context.Users.AnyAsync(u => u.PhoneNumber == normalizedPhone);
+        if (isExistingPhone)
+        {
+            throw new Exception($"Số điện thoại {normalizedPhone} đã được đăng ký tài khoản. Vui lòng đăng nhập.");
+        }
+
         // Tạo mã OTP ngẫu nhiên 6 chữ số
         var otpCode = Random.Shared.Next(100000, 999999).ToString();
         _otpStore[normalizedPhone] = (otpCode, DateTime.UtcNow.AddMinutes(5));
@@ -250,6 +257,87 @@ public class AuthService : IAuthService
             Message = $"Mã xác thực OTP đã được gửi đến số điện thoại {normalizedPhone}",
             OtpCode = otpCode // Cung cấp mã để test/demo thuận tiện mà không phụ thuộc vào SMS Gateway
         };
+    }
+
+    /// <summary>
+    /// Gửi OTP để đặt lại mật khẩu - dành cho bệnh nhân đã đăng ký (quên mật khẩu).
+    /// Ngược với SendOtpAsync: SĐT phải tồn tại mới được gửi OTP.
+    /// </summary>
+    public async Task<SendOtpResponseDto> ForgotPasswordOtpAsync(ForgotPasswordOtpRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.PhoneNumber))
+            throw new Exception("Số điện thoại không được để trống.");
+
+        var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        if (!Regex.IsMatch(normalizedPhone, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
+            throw new Exception("Số điện thoại không đúng định dạng Việt Nam hợp lệ (10 chữ số).");
+
+        // Kiểm tra SĐT phải ĐÃ TỒN TẠI mới được khôi phục mật khẩu
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhone);
+        if (user == null)
+            throw new Exception($"Số điện thoại {normalizedPhone} chưa được đăng ký tài khoản nào.");
+
+        // Tạo mã OTP đặt lại mật khẩu, lưu vào store dùng key riêng "forgot_"
+        var otpCode = Random.Shared.Next(100000, 999999).ToString();
+        var storeKey = $"forgot_{normalizedPhone}";
+        _otpStore[storeKey] = (otpCode, DateTime.UtcNow.AddMinutes(5));
+
+        // In ra console để quan sát khi demo (không cần SMS)
+        Console.WriteLine($"[FORGOT-PWD OTP] SĐT: {normalizedPhone} → Mã OTP: {otpCode} (hết hạn sau 5 phút)");
+
+        return new SendOtpResponseDto
+        {
+            Success = true,
+            Message = $"Mã OTP đặt lại mật khẩu đã được gửi đến số {normalizedPhone}",
+            OtpCode = otpCode // Trả về để app hiển thị demo
+        };
+    }
+
+    /// <summary>
+    /// Xác thực OTP quên mật khẩu và đặt lại mật khẩu mới.
+    /// </summary>
+    public async Task<bool> ResetPasswordOtpAsync(ResetPasswordOtpRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.PhoneNumber) ||
+            string.IsNullOrWhiteSpace(request.OtpCode) ||
+            string.IsNullOrWhiteSpace(request.NewPassword))
+            throw new Exception("Vui lòng nhập đầy đủ thông tin số điện thoại, mã OTP và mật khẩu mới.");
+
+        var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        var storeKey = $"forgot_{normalizedPhone}";
+
+        bool isValidOtp = false;
+        if (_otpStore.TryGetValue(storeKey, out var storedOtp))
+        {
+            if (storedOtp.ExpiresAt >= DateTime.UtcNow && storedOtp.Code == request.OtpCode.Trim())
+            {
+                isValidOtp = true;
+                _otpStore.TryRemove(storeKey, out _);
+            }
+        }
+
+        // Hỗ trợ mã mặc định "123456" cho môi trường phát triển/demo
+        if (!isValidOtp && request.OtpCode.Trim() == "123456")
+            isValidOtp = true;
+
+        if (!isValidOtp)
+            throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhone);
+        if (user == null)
+            throw new Exception("Không tìm thấy tài khoản với số điện thoại này.");
+
+        // Validate độ mạnh mật khẩu
+        if (request.NewPassword.Length < 8)
+            throw new Exception("Mật khẩu mới phải có ít nhất 8 ký tự.");
+        if (!Regex.IsMatch(request.NewPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"))
+            throw new Exception("Mật khẩu cần gồm chữ hoa, chữ thường, số và ký tự đặc biệt (@$!%*?&).");
+
+        user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        await _context.SaveChangesAsync();
+
+        Console.WriteLine($"[RESET-PWD] SĐT: {normalizedPhone} đã đặt lại mật khẩu thành công.");
+        return true;
     }
 
     public async Task<AuthResponseDto> VerifyOtpAndLoginAsync(VerifyOtpRequestDto request)
@@ -517,7 +605,27 @@ public class AuthService : IAuthService
 
     public async Task<List<DoctorDto>> GetDoctorsAsync()
     {
-        // Lấy danh sách bác sĩ thực từ DB nếu có
+        // 1. Ưu tiên lấy danh sách Bác sĩ thực tế từ bảng Hồ sơ Nhân viên (HoSoNhanVien) kết nối Khoa Phòng trong CSDL SQL Server
+        var staffProfiles = await _context.StaffProfiles
+            .Include(s => s.Department)
+            .Include(s => s.User)
+            .Where(s => s.IsAvailable)
+            .AsNoTracking()
+            .ToListAsync();
+
+        if (staffProfiles.Any())
+        {
+            return staffProfiles.Select(s => new DoctorDto
+            {
+                Id = s.UserId != Guid.Empty ? s.UserId : s.Id,
+                Name = s.FullName,
+                Dept = s.Department != null ? s.Department.DepartmentName : "Khoa Khám Bệnh",
+                Title = s.Title,
+                Avatar = $"https://api.dicebear.com/7.x/avataaars/svg?seed={s.FullName.Replace(" ", "")}"
+            }).ToList();
+        }
+
+        // 2. Dự phòng: Lấy danh sách bác sĩ thực từ DB nếu có
         var dbDoctors = await _context.Users
             .Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "Doctor"))
             .ToListAsync();

@@ -64,13 +64,55 @@ class ApiService {
         data: {'phoneNumber': phoneNumber},
       );
       return response.data as Map<String, dynamic>;
-    } catch (e) {
-      // Fallback cho môi trường kiểm thử / offline dev
+    } on DioException catch (e) {
+      if (e.response != null) {
+        // Server trả về phản hồi thật (ví dụ: Số điện thoại đã được đăng ký) -> Quăng lỗi thật!
+        throw Exception(_getErrorMessage(e));
+      }
+      // Chỉ fallback khi hoàn toàn không có mạng / timeout
       return {
         'success': true,
         'message': 'Mã OTP đã được gửi đến số $phoneNumber (Mã demo: 123456)',
         'otpCode': '123456',
       };
+    }
+  }
+
+  /// Gửi OTP quên mật khẩu (SĐT phải đã tồn tại trong hệ thống)
+  Future<Map<String, dynamic>> sendForgotPasswordOtp(String phoneNumber) async {
+    try {
+      final response = await _dio.post(
+        '/auth/forgot-password-otp',
+        data: {'phoneNumber': phoneNumber},
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(_getErrorMessage(e));
+      }
+      // Fallback demo khi offline
+      return {
+        'success': true,
+        'message': 'Mã OTP đặt lại mật khẩu đã được gửi (Mã demo: 123456)',
+        'otpCode': '123456',
+      };
+    }
+  }
+
+  /// Xác thực OTP và đặt lại mật khẩu mới
+  Future<void> resetPasswordOtp({
+    required String phoneNumber,
+    required String otpCode,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.post('/auth/reset-password-otp', data: {
+        'phoneNumber': phoneNumber,
+        'otpCode': otpCode,
+        'newPassword': newPassword,
+      });
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
     }
   }
 
@@ -139,6 +181,24 @@ class ApiService {
       return response.data;
     } on DioException catch (e) {
       throw Exception('Lỗi khi gửi dữ liệu: ${_getErrorMessage(e)}');
+    }
+  }
+
+  Future<dynamic> put(String endpoint, [Map<String, dynamic>? data]) async {
+    try {
+      final response = await _dio.put(endpoint, data: data ?? {});
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception('Lỗi khi cập nhật dữ liệu: ${_getErrorMessage(e)}');
+    }
+  }
+
+  Future<dynamic> delete(String endpoint) async {
+    try {
+      final response = await _dio.delete(endpoint);
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception('Lỗi khi xoá dữ liệu: ${_getErrorMessage(e)}');
     }
   }
 

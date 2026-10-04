@@ -275,11 +275,12 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> bookAppointment(Map<String, dynamic> appointmentData) async {
+  Future<Map<String, dynamic>?> bookAppointment(Map<String, dynamic> appointmentData) async {
     _isLoading = true;
     notifyListeners();
     try {
-      await _apiService.post('/appointments', appointmentData);
+      final res = await _apiService.post('/appointments', appointmentData);
+      return res is Map<String, dynamic> ? res : null;
     } catch (e) {
       rethrow;
     } finally {

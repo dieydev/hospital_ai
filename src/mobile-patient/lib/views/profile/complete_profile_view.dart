@@ -104,8 +104,8 @@ class _CompleteProfileViewState extends State<CompleteProfileView> {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: const [
+          content: const Row(
+            children: [
               Icon(Icons.warning_amber_rounded, color: Colors.white),
               SizedBox(width: 8),
               Expanded(

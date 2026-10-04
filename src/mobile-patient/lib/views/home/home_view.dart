@@ -183,9 +183,7 @@ class _HomeViewState extends State<HomeView> {
           badgeColor: const Color(0xFFF97316),
         ),
         'onTap': () {
-          ProfileGuard.check(context, onAllowed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const QueueStatusView()));
-          });
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const QueueStatusView()));
         },
       },
       {

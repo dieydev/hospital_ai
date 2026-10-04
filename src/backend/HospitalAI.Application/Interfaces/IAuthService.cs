@@ -10,6 +10,8 @@ public interface IAuthService
     Task<UserProfileDto> RegisterAsync(RegisterRequestDto request);
     Task<SendOtpResponseDto> SendOtpAsync(SendOtpRequestDto request);
     Task<AuthResponseDto> VerifyOtpAndLoginAsync(VerifyOtpRequestDto request);
+    Task<SendOtpResponseDto> ForgotPasswordOtpAsync(ForgotPasswordOtpRequestDto request);
+    Task<bool> ResetPasswordOtpAsync(ResetPasswordOtpRequestDto request);
     Task<UserProfileDto> CompleteProfileAsync(string usernameOrPhone, CompleteProfileRequestDto request);
     Task<UserProfileDto> GetUserProfileAsync(string username);
     Task<bool> ChangePasswordAsync(string username, ChangePasswordDto request);

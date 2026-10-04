@@ -68,6 +68,20 @@ public class VerifyOtpRequestDto
     public string OtpCode { get; set; } = string.Empty;
 }
 
+/// <summary>Gửi OTP cho luồng Quên mật khẩu (Bệnh nhân đã đăng ký)</summary>
+public class ForgotPasswordOtpRequestDto
+{
+    public string PhoneNumber { get; set; } = string.Empty;
+}
+
+/// <summary>Đặt lại mật khẩu sau khi xác thực OTP quên mật khẩu</summary>
+public class ResetPasswordOtpRequestDto
+{
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string OtpCode { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
 public class CompleteProfileRequestDto
 {
     public string? PhoneNumber { get; set; }

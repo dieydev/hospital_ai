@@ -96,9 +96,9 @@ class AllFeaturesView extends StatelessWidget {
                         'desc': 'Xem số thứ tự và ước tính thời gian chờ',
                         'icon': Icons.queue_rounded,
                         'color': const Color(0xFF06B6D4),
-                        'onTap': (BuildContext ctx) => ProfileGuard.check(ctx, onAllowed: () {
+                        'onTap': (BuildContext ctx) {
                           Navigator.push(ctx, MaterialPageRoute(builder: (_) => const QueueStatusView()));
-                        }),
+                        },
                       },
                     ],
                   ),

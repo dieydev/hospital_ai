@@ -338,45 +338,131 @@ INSERT INTO dbo.VaiTro (Id, TenVaiTro, MoTa) VALUES
 (@RoleIdDoctor, 'Doctor', N'Bác sĩ Khám chữa bệnh'),
 (@RoleIdNurse, 'Nurse', N'Điều dưỡng, Lễ tân tiếp nhận');
 
--- 2. THÊM KHOA PHÒNG
-DECLARE @DeptNoi1Id UNIQUEIDENTIFIER = NEWID();
+-- 2. THÊM ĐẦY ĐỦ 12 KHOA PHÒNG CHUYÊN KHOA
 DECLARE @DeptNoiTongHopId UNIQUEIDENTIFIER = NEWID();
-DECLARE @DeptXNId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptNhiId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptMatId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptTMHId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptTimMachId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptTieuHoaId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptNgoaiId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptRHMId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptDaLieuId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptSanId UNIQUEIDENTIFIER = NEWID();
+DECLARE @DeptCapCuuId UNIQUEIDENTIFIER = NEWID();
 DECLARE @DeptXQId UNIQUEIDENTIFIER = NEWID();
 
 INSERT INTO dbo.KhoaPhong (Id, TenKhoaPhong, ViTri, LoaiPhong) VALUES 
-(@DeptNoi1Id, N'Phòng Khám Nội 1', N'Tầng 1, Khu A', 'Clinical'),
 (@DeptNoiTongHopId, N'Khoa Nội Tổng Hợp', N'Phòng 102 - Tầng 1', 'Clinical'),
-(@DeptXNId, N'Phòng Xét Nghiệm Huyết Học', N'Tầng 2, Khu B', 'Lab'),
-(@DeptXQId, N'Phòng Chụp X-Quang', N'Tầng 1, Khu B', 'Lab');
+(@DeptNhiId, N'Khoa Nhi', N'Phòng 105 - Tầng 1', 'Clinical'),
+(@DeptMatId, N'Khoa Mắt', N'Phòng 201 - Tầng 2', 'Clinical'),
+(@DeptTMHId, N'Khoa Tai Mũi Họng', N'Phòng 205 - Tầng 2', 'Clinical'),
+(@DeptTimMachId, N'Khoa Tim Mạch', N'Phòng 301 - Tầng 3', 'Clinical'),
+(@DeptTieuHoaId, N'Khoa Tiêu Hóa', N'Phòng 305 - Tầng 3', 'Clinical'),
+(@DeptNgoaiId, N'Khoa Ngoại Tổng Quát', N'Phòng 401 - Tầng 4', 'Clinical'),
+(@DeptRHMId, N'Khoa Răng Hàm Mặt', N'Phòng 203 - Tầng 2', 'Clinical'),
+(@DeptDaLieuId, N'Khoa Da Liễu', N'Phòng 208 - Tầng 2', 'Clinical'),
+(@DeptSanId, N'Khoa Sản Phụ Khoa', N'Phòng 308 - Tầng 3', 'Clinical'),
+(@DeptCapCuuId, N'Khoa Cấp Cứu & Hồi Sức', N'Tầng Trệt - Khu A', 'Emergency'),
+(@DeptXQId, N'Phòng Chẩn Đoán Hình Ảnh (X-Quang)', N'Tầng 1 - Khu B', 'Lab');
 
--- 3. THÊM TÀI KHOẢN VÀ NHÂN VIÊN
--- Bác sĩ Nguyễn Văn A
-DECLARE @AccBsA_Id UNIQUEIDENTIFIER = NEWID();
-DECLARE @StaffBsA_Id UNIQUEIDENTIFIER = NEWID();
+-- 3. THÊM TÀI KHOẢN VÀ BÁC SĨ CHUYÊN KHOA
+DECLARE @DefaultPwd VARCHAR(255) = 'nN8J3R3gKj7b1r+7y5sP8s5z2z4j2v7e1w9r6t3y4u5i6o7p8a9s0d1f2g3h4j5k6l7z8x9c0v1b2n3m';
+
+-- Lễ tân Trần Thị Hương
+DECLARE @AccLt_Id UNIQUEIDENTIFIER = NEWID();
 INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) 
-VALUES (@AccBsA_Id, 'bs.nguyenvana', 'hashed_password_123', 'bsca@hospital.vn', '0901234567');
-INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsA_Id, @RoleIdDoctor);
+VALUES (@AccLt_Id, 'receptionist', @DefaultPwd, 'letan@hospital.vn', '0912345678');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccLt_Id, @RoleIdNurse);
 INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) 
-VALUES (@StaffBsA_Id, @AccBsA_Id, @DeptNoi1Id, N'Nguyễn Văn A', N'BS.CKI Nội khoa');
+VALUES (NEWID(), @AccLt_Id, @DeptNoiTongHopId, N'Trần Thị Hương', N'Điều dưỡng / Lễ tân');
 
--- Lễ tân Trần Thị B
-DECLARE @AccLtB_Id UNIQUEIDENTIFIER = NEWID();
-DECLARE @StaffLtB_Id UNIQUEIDENTIFIER = NEWID();
-INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) 
-VALUES (@AccLtB_Id, 'lt.tranthib', 'hashed_password_456', 'letan@hospital.vn', '0912345678');
-INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccLtB_Id, @RoleIdNurse);
-INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) 
-VALUES (@StaffLtB_Id, @AccLtB_Id, @DeptNoi1Id, N'Trần Thị B', N'Điều dưỡng');
-
--- Bác sĩ Nguyễn Thanh Duy
+-- Bác sĩ Nguyễn Thanh Duy (Khoa Nội)
 DECLARE @AccBsDuy_Id UNIQUEIDENTIFIER = NEWID();
 DECLARE @StaffBsDuy_Id UNIQUEIDENTIFIER = NEWID();
 INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) 
-VALUES (@AccBsDuy_Id, 'dr.duy', '$2a$11$qRz4cQk2...', 'thanhduy.md@hospital.vn', '0336022526');
+VALUES (@AccBsDuy_Id, 'dr.duy', @DefaultPwd, 'thanhduy.md@hospital.vn', '0336022526');
 INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsDuy_Id, @RoleIdDoctor);
 INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) 
-VALUES (@StaffBsDuy_Id, @AccBsDuy_Id, @DeptNoiTongHopId, N'BS. CKII. Nguyễn Thanh Duy', N'Trưởng Khoa Nội');
+VALUES (@StaffBsDuy_Id, @AccBsDuy_Id, @DeptNoiTongHopId, N'BS. CKII. Nguyễn Thanh Duy', N'Trưởng Khoa Nội • 15 năm KN');
+
+-- Bác sĩ Thu Hà (Khoa Nội)
+DECLARE @AccBsHa_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsHa_Id, 'dr.ha', @DefaultPwd, 'thuha.md@hospital.vn', '0912345001');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsHa_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsHa_Id, @DeptNoiTongHopId, N'ThS. BS. Trần Thị Thu Hà', N'Bác sĩ Nội khoa • 8 năm KN');
+
+-- Bác sĩ Phạm Minh Đức (Khoa Nhi)
+DECLARE @AccBsDuc_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsDuc_Id, 'dr.duc', @DefaultPwd, 'minhduc.md@hospital.vn', '0912345999');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsDuc_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsDuc_Id, @DeptNhiId, N'BS. CKI. Phạm Minh Đức', N'Trưởng Khoa Nhi • Chuyên khoa Sơ sinh');
+
+-- Bác sĩ Đặng Hồng Hạnh (Khoa Nhi)
+DECLARE @AccBsHanh_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsHanh_Id, 'dr.hanh', @DefaultPwd, 'honghanh.md@hospital.vn', '0988776002');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsHanh_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsHanh_Id, @DeptNhiId, N'BS. Đặng Hồng Hạnh', N'Bác sĩ Nhi khoa • Tiêm chủng');
+
+-- Bác sĩ Trần Ngọc Mai (Khoa Mắt)
+DECLARE @AccBsMai_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsMai_Id, 'dr.mai', @DefaultPwd, 'ngocmai.md@hospital.vn', '0988776655');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsMai_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsMai_Id, @DeptMatId, N'BS. CKI. Trần Ngọc Mai', N'Trưởng Khoa Mắt • Phẫu thuật Phaco');
+
+-- Bác sĩ Vũ Hoàng Long (Khoa Mắt)
+DECLARE @AccBsLong_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsLong_Id, 'dr.long', @DefaultPwd, 'hoanglong.md@hospital.vn', '0988776003');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsLong_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsLong_Id, @DeptMatId, N'BS. Vũ Hoàng Long', N'Nhãn khoa & Khúc xạ thị giác');
+
+-- Bác sĩ Lê Văn Tuấn (Khoa TMH)
+DECLARE @AccBsTuan_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsTuan_Id, 'dr.tuan', @DefaultPwd, 'vantuan.md@hospital.vn', '0903112233');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsTuan_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsTuan_Id, @DeptTMHId, N'BS. CKII. Lê Văn Tuấn', N'Trưởng Khoa TMH • Nội soi vi phẫu');
+
+-- Bác sĩ Huỳnh Quốc Dũng (Khoa Tim Mạch)
+DECLARE @AccBsDung_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsDung_Id, 'dr.dung', @DefaultPwd, 'quocdung.md@hospital.vn', '0909445566');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsDung_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsDung_Id, @DeptTimMachId, N'TS. BS. Huỳnh Quốc Dũng', N'Trưởng Khoa Tim Mạch • Can thiệp tim');
+
+-- Bác sĩ Đinh Khắc Vương (Khoa Tiêu Hóa)
+DECLARE @AccBsVuong_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsVuong_Id, 'dr.vuong', @DefaultPwd, 'khacvuong.md@hospital.vn', '0918776655');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsVuong_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsVuong_Id, @DeptTieuHoaId, N'BS. CKII. Đinh Khắc Vương', N'Trưởng Khoa Tiêu Hóa • Nội soi can thiệp');
+
+-- Bác sĩ Đỗ Hoàng Giang (Khoa Ngoại)
+DECLARE @AccBsGiang_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsGiang_Id, 'dr.giang', @DefaultPwd, 'hoanggiang.md@hospital.vn', '0977889900');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsGiang_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsGiang_Id, @DeptNgoaiId, N'BS. CKII. Đỗ Hoàng Giang', N'Trưởng Khoa Ngoại • Phẫu thuật nội soi');
+
+-- Bác sĩ Hoàng Trọng Nghĩa (Khoa RHM)
+DECLARE @AccBsNghia_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsNghia_Id, 'dr.nghia', @DefaultPwd, 'trongnghia.md@hospital.vn', '0933221100');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsNghia_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsNghia_Id, @DeptRHMId, N'BS. CKI. Hoàng Trọng Nghĩa', N'Chuyên gia Chỉnh nha & Cấy Implant');
+
+-- Bác sĩ Nguyễn Phương Anh (Khoa Da Liễu)
+DECLARE @AccBsPA_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsPA_Id, 'dr.phuonganh', @DefaultPwd, 'phuonganh.md@hospital.vn', '0944556677');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsPA_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsPA_Id, @DeptDaLieuId, N'BS. CKI. Nguyễn Phương Anh', N'Da liễu & Laser Thẩm mỹ da');
+
+-- Bác sĩ Lê Thị Kim Phượng (Khoa Sản)
+DECLARE @AccBsPhuong_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsPhuong_Id, 'dr.phuong', @DefaultPwd, 'kimphuong.md@hospital.vn', '0966778899');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsPhuong_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsPhuong_Id, @DeptSanId, N'BS. CKII. Lê Thị Kim Phượng', N'Trưởng Khoa Sản • Quản lý thai kỳ');
+
+-- Bác sĩ Trịnh Văn Thành (Khoa Cấp Cứu)
+DECLARE @AccBsThanh_Id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai) VALUES (@AccBsThanh_Id, 'dr.thanh', @DefaultPwd, 'vanthanh.md@hospital.vn', '0911223344');
+INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccBsThanh_Id, @RoleIdDoctor);
+INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) VALUES (NEWID(), @AccBsThanh_Id, @DeptCapCuuId, N'BS. CKI. Trịnh Văn Thành', N'Trưởng kíp Cấp cứu 24/7');
 
 -- 4. THÊM 21 BỆNH NHÂN (Bao gồm BN20260001 Nguyễn Văn An và 20 BN khác)
 DECLARE @PatientAnId UNIQUEIDENTIFIER = NEWID();

@@ -294,7 +294,7 @@ class _HelpCenterViewState extends State<HelpCenterView> {
                                 : () {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Cảm ơn! Phản hồi "${_selectedFeedbackCategory}" đã được ghi nhận.'),
+                                        content: Text('Cảm ơn! Phản hồi "$_selectedFeedbackCategory" đã được ghi nhận.'),
                                         backgroundColor: const Color(0xFF10B981),
                                       ),
                                     );

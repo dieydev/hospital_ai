@@ -70,6 +70,75 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Gửi mã OTP xác thực số điện thoại
+    /// </summary>
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.SendOtpAsync(request);
+            return Ok(result);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Xác thực mã OTP và cấp token
+    /// </summary>
+    [HttpPost("verify-otp")]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.VerifyOtpAndLoginAsync(request);
+            return Ok(result);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Gửi OTP đặt lại mật khẩu (Luồng Quên mật khẩu - SĐT phải đã đăng ký)
+    /// </summary>
+    [HttpPost("forgot-password-otp")]
+    public async Task<IActionResult> ForgotPasswordOtp([FromBody] ForgotPasswordOtpRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.ForgotPasswordOtpAsync(request);
+            return Ok(result);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Xác thực OTP quên mật khẩu và đặt lại mật khẩu mới
+    /// </summary>
+    [HttpPost("reset-password-otp")]
+    public async Task<IActionResult> ResetPasswordOtp([FromBody] ResetPasswordOtpRequestDto request)
+    {
+        try
+        {
+            var success = await _authService.ResetPasswordOtpAsync(request);
+            if (success) return Ok(new { message = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại." });
+            return BadRequest(new { message = "Đặt lại mật khẩu thất bại." });
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Lấy thông tin tài khoản đang đăng nhập (Yêu cầu JWT Token)
     /// </summary>
     [HttpGet("me")]

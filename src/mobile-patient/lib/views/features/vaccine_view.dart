@@ -269,8 +269,8 @@ class _VaccineViewState extends State<VaccineView> with SingleTickerProviderStat
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFEF3C7),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.vaccines_rounded, color: Color(0xFFD97706), size: 20),

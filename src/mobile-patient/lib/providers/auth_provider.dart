@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
 import '../models/patient_model.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   final _storage = const FlutterSecureStorage();
-  
+  final _localAuth = LocalAuthentication();
+
   bool _isAuthenticated = false;
   String? _token;
   PatientModel? _user;
+  bool _biometricsEnabled = false;
+  bool _biometricsAvailable = false;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;
   PatientModel? get user => _user;
   bool get isProfileComplete => _user != null && _user!.isComplete;
+  bool get biometricsEnabled => _biometricsEnabled;
+  bool get biometricsAvailable => _biometricsAvailable;
 
   AuthProvider() {
     _loadUserFromPrefs();
@@ -23,11 +29,21 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadUserFromPrefs() async {
     _token = await _storage.read(key: 'auth_token');
     final savedUserJson = await _storage.read(key: 'saved_user_profile');
+    final bioFlag = await _storage.read(key: 'biometrics_enabled');
+    _biometricsEnabled = bioFlag == 'true';
+
+    // Kiểm tra thiết bị có hỗ trợ sinh trắc học không
+    try {
+      _biometricsAvailable = await _localAuth.canCheckBiometrics ||
+          await _localAuth.isDeviceSupported();
+    } catch (_) {
+      _biometricsAvailable = false;
+    }
+
     if (_token != null) {
       _isAuthenticated = true;
       if (savedUserJson != null) {
         try {
-          // Parse saved user
           final Map<String, dynamic> jsonMap = Map<String, dynamic>.from(
             Uri.splitQueryString(savedUserJson),
           );
@@ -71,12 +87,12 @@ class AuthProvider extends ChangeNotifier {
       final response = await _apiService.login(username, password);
       final token = response['token'];
       final userJson = response['user'];
-      
+
       if (token != null) {
         _isAuthenticated = true;
         _token = token;
         _user = PatientModel.fromJson(userJson ?? {});
-        
+
         await _storage.write(key: 'auth_token', value: token);
         await _persistUser(_user!);
         notifyListeners();
@@ -88,7 +104,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Gửi mã OTP về số điện thoại
+  /// Gửi mã OTP về số điện thoại (Luồng Đăng ký mới - SĐT chưa tồn tại)
   Future<Map<String, dynamic>> sendOtp(String phoneNumber) async {
     try {
       return await _apiService.sendOtp(phoneNumber);
@@ -97,34 +113,76 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Đăng ký / Xác thực bằng Số điện thoại + OTP
-  Future<void> registerWithPhoneOtp(String phoneNumber, String otpCode) async {
+  /// Gửi OTP quên mật khẩu (Luồng Bệnh nhân cũ - SĐT phải đã tồn tại)
+  Future<Map<String, dynamic>> sendForgotPasswordOtp(String phoneNumber) async {
     try {
-      final response = await _apiService.verifyOtpAndLogin(phoneNumber, otpCode);
-      final token = response['token'];
-      final userJson = response['user'];
-
-      if (token != null) {
-        _isAuthenticated = true;
-        _token = token;
-        _user = PatientModel.fromJson(userJson ?? {
-          'phoneNumber': phoneNumber,
-          'fullName': 'Bệnh nhân mới',
-          'isProfileComplete': false,
-        });
-
-        await _storage.write(key: 'auth_token', value: token);
-        await _persistUser(_user!);
-        notifyListeners();
-      } else {
-        throw Exception('Không nhận được phiên đăng nhập hợp lệ.');
-      }
+      return await _apiService.sendForgotPasswordOtp(phoneNumber);
     } catch (e) {
       rethrow;
     }
   }
 
-  /// Hoàn thiện đầy đủ hồ sơ bệnh nhân (Bắt buộc trước khi thao tác trong app)
+  /// Xác thực OTP quên mật khẩu, đặt lại mật khẩu mới, sau đó tự động đăng nhập
+  Future<void> resetPasswordOtp({
+    required String phoneNumber,
+    required String otpCode,
+    required String newPassword,
+  }) async {
+    await _apiService.resetPasswordOtp(
+      phoneNumber: phoneNumber,
+      otpCode: otpCode,
+      newPassword: newPassword,
+    );
+    // Tự động đăng nhập với mật khẩu mới vừa đặt
+    await login(phoneNumber, newPassword);
+  }
+
+  /// Đăng ký tài khoản với Số điện thoại + Mật khẩu (sau khi xác thực OTP thành công)
+  Future<void> registerWithPassword(String phoneNumber, String password, String otpCode) async {
+    await _apiService.register({
+      'username': phoneNumber,
+      'phoneNumber': phoneNumber,
+      'password': password,
+      'fullName': 'Bệnh nhân mới',
+      'role': 'Patient',
+    });
+    await login(phoneNumber, password);
+  }
+
+  // ── BIOMETRICS ────────────────────────────────────────────────────────────
+
+  /// Kích hoạt / Tắt đăng nhập sinh trắc học (FaceID / Vân tay)
+  Future<void> setBiometricsEnabled(bool enabled) async {
+    _biometricsEnabled = enabled;
+    await _storage.write(key: 'biometrics_enabled', value: enabled ? 'true' : 'false');
+    notifyListeners();
+  }
+
+  /// Thực hiện xác thực sinh trắc học. Trả về true nếu thành công.
+  Future<bool> authenticateWithBiometrics() async {
+    try {
+      if (!_biometricsAvailable) return false;
+      return await _localAuth.authenticate(
+        localizedReason: 'Đăng nhập D-Medical bằng vân tay hoặc Face ID của bạn',
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+        ),
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Kiểm tra điều kiện cho phép auto-login bằng sinh trắc học
+  Future<bool> canBiometricAutoLogin() async {
+    if (!_biometricsEnabled || !_biometricsAvailable) return false;
+    final storedToken = await _storage.read(key: 'auth_token');
+    return storedToken != null && storedToken.isNotEmpty;
+  }
+
+  // ── COMPLETE PROFILE ──────────────────────────────────────────────────────
+
   Future<void> completeProfile({
     required String fullName,
     required String cccd,
@@ -219,6 +277,7 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     await _storage.delete(key: 'auth_token');
     await _storage.delete(key: 'saved_user_profile');
+    // Giữ lại cờ biometrics_enabled để lần sau vẫn nhận ra
     notifyListeners();
   }
 }

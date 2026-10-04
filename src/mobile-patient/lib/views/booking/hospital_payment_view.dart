@@ -116,8 +116,8 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
                 children: [
                   Container(
                     padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEFF6FF),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.credit_card_rounded, size: 52, color: AppTheme.primary),
@@ -333,8 +333,14 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
                   children: [
                     const Icon(Icons.local_hospital_rounded, color: Color(0xFF64748B), size: 14),
                     const SizedBox(width: 6),
-                    Text('${bill['department']} • ${bill['doctor']}',
-                        style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF475569))),
+                    Expanded(
+                      child: Text(
+                        '${bill['department']} • ${bill['doctor']}',
+                        style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF475569)),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -343,12 +349,19 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
                 ...services.map((s) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(s['name'] as String,
-                          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF334155))),
-                      Text(_formatCurrency(s['price'] as int),
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
+                      Expanded(
+                        child: Text(
+                          s['name'] as String,
+                          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF334155)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _formatCurrency(s['price'] as int),
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+                      ),
                     ],
                   ),
                 )),
@@ -360,18 +373,25 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
 
                 // Total
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Tổng cộng:', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF334155))),
+                    Expanded(
+                      child: Text('Tổng cộng:', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF334155))),
+                    ),
                     Text(_formatCurrency(total), style: GoogleFonts.sora(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                   ],
                 ),
                 if (coverage > 0) ...[
                   const SizedBox(height: 4),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('BHYT chi trả (${(coverage * 100).round()}%):', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF10B981))),
+                      Expanded(
+                        child: Text(
+                          'BHYT chi trả (${(coverage * 100).round()}%):',
+                          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF10B981)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text('-${_formatCurrency((total * coverage).round())}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
                     ],
                   ),
@@ -385,9 +405,14 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
                     border: Border.all(color: const Color(0xFFBAE6FD)),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Bệnh nhân thanh toán:', style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1))),
+                      Expanded(
+                        child: Text(
+                          'Bệnh nhân thanh toán:',
+                          style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(_formatCurrency(patientPay), style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.primary)),
                     ],
                   ),
@@ -508,11 +533,14 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
               ),
               const SizedBox(height: 10),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Đã thanh toán:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF475569))),
-                  Text(_formatCurrency(bill['paidAmount'] as int),
-                      style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
+                  Expanded(
+                    child: Text('\u0110\u00e3 thanh to\u00e1n:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF475569))),
+                  ),
+                  Text(
+                    _formatCurrency(bill['paidAmount'] as int),
+                    style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF10B981)),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -584,19 +612,19 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
               decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(14)),
               child: Column(
                 children: [
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Tài khoản:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
-                    Text('Bệnh viện D-Medical', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                  Row(children: [
+                    Expanded(child: Text('Tài khoản:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)))),
+                    Flexible(child: Text('Bệnh viện D-Medical', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                   ]),
                   const SizedBox(height: 6),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Số tiền:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
+                  Row(children: [
+                    Expanded(child: Text('Số tiền:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)))),
                     Text(_formatCurrency(amount), style: GoogleFonts.sora(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary)),
                   ]),
                   const SizedBox(height: 6),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Nội dung:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
-                    Text('TT ${bill['billId']}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                  Row(children: [
+                    Expanded(child: Text('Nội dung:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)))),
+                    Flexible(child: Text('TT ${bill['billId']}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
                   ]),
                 ],
               ),

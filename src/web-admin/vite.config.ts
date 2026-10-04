@@ -14,4 +14,18 @@ export default defineConfig({
     port: 3000,
     open: true,
   },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom', 'zustand'],
+          'vendor-antd-core': ['antd'],
+          'vendor-antd-icons': ['@ant-design/icons'],
+          'vendor-charts': ['recharts'],
+          'vendor-signalr': ['@microsoft/signalr'],
+        },
+      },
+    },
+  },
 });

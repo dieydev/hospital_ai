@@ -20,7 +20,13 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
   final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
-  int _step = 1; // 1: Nhập SĐT, 2: Nhập OTP
+  // Password step controllers
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  int _step = 1; // 1: Nhập SĐT, 2: Nhập OTP, 3: Thiết lập Mật khẩu
   bool _isLoading = false;
   bool _agreeTerms = true;
   String? _demoOtp;
@@ -33,11 +39,11 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
 
   @override
   void initState() {
-    super.initState();
-    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-    _fadeController.forward();
-  }
+  super.initState();
+  _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+  _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+  _fadeController.forward();
+}
 
   @override
   void dispose() {
@@ -48,6 +54,8 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     for (var f in _otpFocusNodes) {
       f.dispose();
     }
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _countdownTimer?.cancel();
     _fadeController.dispose();
     super.dispose();
@@ -65,6 +73,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     });
   }
 
+  // ── BƯỚC 1: GỬI OTP ──────────────────────────────────────────────
   Future<void> _handleSendOtp() async {
     final phone = _phoneController.text.trim().replaceAll(' ', '');
     if (phone.isEmpty) {
@@ -93,7 +102,6 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
       _fadeController.reset();
       _fadeController.forward();
 
-      // Focus ô đầu tiên
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted && _otpFocusNodes[0].canRequestFocus) {
           _otpFocusNodes[0].requestFocus();
@@ -103,14 +111,91 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
       _showToast(res['message'] ?? 'Đã gửi mã OTP đến số điện thoại');
     } catch (e) {
       if (!mounted) return;
-      _showToast(e.toString().replaceAll('Exception: ', ''), isError: true);
+      final errMsg = e.toString().replaceAll('Exception: ', '');
+
+      // Nếu SĐT đã đăng ký -> Hỏi người dùng có muốn chuyển sang Đăng nhập không
+      if (errMsg.contains('đã được đăng ký') || errMsg.contains('Vui lòng đăng nhập')) {
+        _showSwitchToLoginDialog(phone, errMsg);
+      } else {
+        _showToast(errMsg, isError: true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  /// Hiển thị dialog hỏi người dùng chuyển sang luồng Đăng nhập
+  void _showSwitchToLoginDialog(String phone, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F2FE),
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: const Icon(Icons.person_outline_rounded,
+                  color: Color(0xFF0284c7), size: 32),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Số điện thoại đã có tài khoản',
+              style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w700,
+                color: Color(0xFF0f172a),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'SĐT $phone đã được đăng ký trong hệ thống D-Medical.\n\nBạn có muốn chuyển sang trang Đăng nhập không?',
+              style: const TextStyle(fontSize: 13.5, color: Color(0xFF64748b), height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Nhập SĐT khác',
+                style: TextStyle(color: Color(0xFF64748b))),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              // Chuyển sang LoginView và truyền số điện thoại để tự điền
+              Navigator.of(context).pushReplacement(
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => LoginView(prefillPhone: phone),
+                  transitionDuration: const Duration(milliseconds: 400),
+                  transitionsBuilder: (_, anim, __, child) =>
+                      FadeTransition(opacity: anim, child: child),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0284c7),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Đăng nhập ngay'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── BƯỚC 2: XÁC THỰC OTP & CHUYỂN SANG TẠO MẬT KHẨU ──────────────
   Future<void> _handleVerifyOtp() async {
-    final phone = _phoneController.text.trim().replaceAll(' ', '');
     final otp = _otpControllers.map((c) => c.text).join().trim();
 
     if (otp.length != 6) {
@@ -118,14 +203,54 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
       return;
     }
 
+    // Kiểm tra OTP hợp lệ (Demo OTP hoặc 123456)
+    if (_demoOtp != null && otp != _demoOtp && otp != '123456') {
+      _showToast('Mã OTP không chính xác. Vui lòng nhập: $_demoOtp', isError: true);
+      return;
+    }
+
+    setState(() {
+      _step = 3; // Chuyển sang bước 3: Thiết lập mật khẩu
+    });
+    _fadeController.reset();
+    _fadeController.forward();
+    _showToast('Xác thực OTP thành công! Vui lòng thiết lập mật khẩu đăng nhập.');
+  }
+
+  // ── BƯỚC 3: THIẾT LẬP MẬT KHẨU & HOÀN TẤT ĐĂNG KÝ ───────────────
+  Future<void> _handleSetPasswordAndRegister() async {
+    final phone = _phoneController.text.trim().replaceAll(' ', '');
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+    final otp = _otpControllers.map((c) => c.text).join().trim();
+
+    if (password.isEmpty) {
+      _showToast('Vui lòng nhập mật khẩu mới', isError: true);
+      return;
+    }
+    if (password.length < 8) {
+      _showToast('Mật khẩu phải dài tối thiểu 8 ký tự', isError: true);
+      return;
+    }
+    final strongPasswordRegex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$');
+    if (!strongPasswordRegex.hasMatch(password)) {
+      _showToast('Mật khẩu cần gồm chữ hoa, thường, số và ký tự đặc biệt (ví dụ: MatKhau123@)', isError: true);
+      return;
+    }
+    if (password != confirmPassword) {
+      _showToast('Mật khẩu xác nhận không trùng khớp', isError: true);
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthProvider>().registerWithPhoneOtp(phone, otp);
+      // Đăng ký tài khoản với SĐT và Mật khẩu
+      await context.read<AuthProvider>().registerWithPassword(phone, password, otp.isNotEmpty ? otp : '123456');
       if (!mounted) return;
 
-      _showToast('Xác thực số điện thoại thành công! Vui lòng hoàn thiện hồ sơ.');
+      _showToast('Đăng ký tài khoản thành công!');
 
-      // BẮT BUỘC: Điều hướng ngay sang màn hình Hoàn thiện hồ sơ bệnh nhân
+      // Điều hướng sang màn hình Hoàn thiện hồ sơ bệnh nhân (CCCD, Ngày sinh, BHYT)
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
           pageBuilder: (_, __, ___) => const CompleteProfileView(isDismissible: false),
@@ -184,13 +309,15 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top bar: Back to Login
+                // Top bar: Back
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     InkWell(
                       onTap: () {
-                        if (_step == 2) {
+                        if (_step == 3) {
+                          setState(() => _step = 2);
+                        } else if (_step == 2) {
                           setState(() => _step = 1);
                         } else {
                           Navigator.of(context).pop();
@@ -224,15 +351,15 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
 
                 // Medical Logo & Header
                 Center(
                   child: Column(
                     children: [
                       Container(
-                        width: 76,
-                        height: 76,
+                        width: 72,
+                        height: 72,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -251,56 +378,83 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                           fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       Text(
-                        _step == 1 ? 'Đăng ký Bệnh nhân' : 'Xác thực OTP',
+                        _step == 1
+                            ? 'Đăng ký Bệnh nhân'
+                            : _step == 2
+                                ? 'Xác thực OTP'
+                                : 'Thiết lập Mật khẩu',
                         style: GoogleFonts.sora(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF0F172A),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         _step == 1
-                            ? 'Chỉ cần nhập số điện thoại để nhận mã kích hoạt nhanh chóng'
-                            : 'Nhập mã 6 chữ số gửi đến số ${_phoneController.text.trim()}',
+                            ? 'Bệnh viện Đa khoa Quốc tế D-Medical'
+                            : _step == 2
+                                ? 'Mã xác thực đã được gửi đến số điện thoại của bạn'
+                                : 'Tạo mật khẩu để đăng nhập vào ứng dụng những lần sau',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          fontSize: 13.5,
+                          fontSize: 13,
                           color: const Color(0xFF64748B),
-                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
 
-                const SizedBox(height: 32),
+                // 3-Step Progress Indicator
+                _buildStepProgressBar(),
+                const SizedBox(height: 24),
 
-                // Card container
+                // Main Form Card
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: const Color(0xFFBAE6FD), width: 1.2),
-                    boxShadow: [
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFBAE6FD)),
+                    boxShadow: const [
                       BoxShadow(
-                        color: AppTheme.primary.withValues(alpha: 0.08),
+                        color: Color.fromRGBO(2, 132, 199, 0.08),
                         blurRadius: 24,
-                        offset: const Offset(0, 8),
+                        offset: Offset(0, 8),
                       ),
                     ],
                   ),
-                  child: _step == 1 ? _buildStep1Phone() : _buildStep2Otp(),
+                  child: _step == 1
+                      ? _buildStep1Phone()
+                      : _step == 2
+                          ? _buildStep2Otp()
+                          : _buildStep3Password(),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
-                // Medical trust features
-                _buildTrustIndicators(),
-                const SizedBox(height: 20),
+                // Security & Privacy Badge
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.verified_user_rounded, color: AppTheme.accentMint, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Bảo mật dữ liệu y tế theo Nghị định 13/2023/NĐ-CP',
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -309,14 +463,83 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     );
   }
 
+  // ── Step Progress Bar ──────────────────────────────────────────────
+  Widget _buildStepProgressBar() {
+    return Row(
+      children: [
+        _buildStepIndicator(1, 'Số ĐT', _step >= 1),
+        _buildStepLine(_step >= 2),
+        _buildStepIndicator(2, 'Mã OTP', _step >= 2),
+        _buildStepLine(_step >= 3),
+        _buildStepIndicator(3, 'Mật khẩu', _step >= 3),
+      ],
+    );
+  }
+
+  Widget _buildStepIndicator(int stepNumber, String label, bool isActive) {
+    return Column(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: isActive ? AppTheme.primary : const Color(0xFFE2E8F0),
+            shape: BoxShape.circle,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primary.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$stepNumber',
+            style: GoogleFonts.sora(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: isActive ? Colors.white : const Color(0xFF64748B),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+            color: isActive ? AppTheme.primaryDark : const Color(0xFF94A3B8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepLine(bool isActive) {
+    return Expanded(
+      child: Container(
+        height: 2.5,
+        margin: const EdgeInsets.only(bottom: 16, left: 6, right: 6),
+        decoration: BoxDecoration(
+          color: isActive ? AppTheme.primary : const Color(0xFFE2E8F0),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  // ── Step 1: Nhập Số điện thoại ────────────────────────────────────
   Widget _buildStep1Phone() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Số điện thoại di động',
+          'Số điện thoại',
           style: GoogleFonts.inter(
-            fontSize: 13,
+            fontSize: 13.5,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF334155),
           ),
@@ -325,43 +548,19 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
         TextFormField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF0F172A),
+          ),
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(10),
           ],
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.2,
-            color: const Color(0xFF0F172A),
-          ),
           decoration: InputDecoration(
-            hintText: '0987654321',
-            hintStyle: GoogleFonts.inter(
-              fontSize: 15,
-              letterSpacing: 1,
-              color: const Color(0xFF94A3B8),
-            ),
-            prefixIcon: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.phone_iphone_rounded, color: AppTheme.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    '+84',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF475569),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(height: 20, width: 1, color: const Color(0xFFCBD5E1)),
-                ],
-              ),
-            ),
+            hintText: 'Nhập số điện thoại (ví dụ: 0912345678)',
+            hintStyle: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF94A3B8)),
+            prefixIcon: const Icon(Icons.phone_iphone_rounded, color: AppTheme.primary, size: 20),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
             border: OutlineInputBorder(
@@ -374,24 +573,24 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppTheme.primary, width: 1.6),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 1.8),
             ),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
-        // Terms check
+        // Checkbox terms
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 24,
               width: 24,
+              height: 24,
               child: Checkbox(
                 value: _agreeTerms,
-                onChanged: (v) => setState(() => _agreeTerms = v ?? true),
+                onChanged: (val) => setState(() => _agreeTerms = val ?? true),
                 activeColor: AppTheme.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
             ),
             const SizedBox(width: 10),
@@ -407,7 +606,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 22),
 
         // Submit Button
         SizedBox(
@@ -449,6 +648,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     );
   }
 
+  // ── Step 2: Nhập Mã OTP ───────────────────────────────────────────
   Widget _buildStep2Otp() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -464,20 +664,26 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.send_to_mobile_rounded, color: AppTheme.primary, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    _phoneController.text.trim(),
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0369A1),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.send_to_mobile_rounded, color: AppTheme.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        _phoneController.text.trim(),
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0369A1),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               InkWell(
                 onTap: () => setState(() => _step = 1),
                 child: Text(
@@ -494,102 +700,78 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
         // 6 OTP Digit Boxes
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(6, (index) {
-            return SizedBox(
-              width: 44,
-              height: 52,
-              child: TextFormField(
-                controller: _otpControllers[index],
-                focusNode: _otpFocusNodes[index],
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.sora(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryDark,
-                ),
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(1),
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: InputDecoration(
-                  counterText: '',
-                  contentPadding: EdgeInsets.zero,
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+            return Expanded(
+              child: Container(
+                height: 52,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                child: TextFormField(
+                  controller: _otpControllers[index],
+                  focusNode: _otpFocusNodes[index],
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.sora(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryDark,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.primary, width: 2),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(1),
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  decoration: InputDecoration(
+                    counterText: '',
+                    contentPadding: EdgeInsets.zero,
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.primary, width: 2),
+                    ),
                   ),
-                ),
-                onChanged: (value) {
-                  if (value.isNotEmpty && index < 5) {
-                    _otpFocusNodes[index + 1].requestFocus();
-                  } else if (value.isEmpty && index > 0) {
-                    _otpFocusNodes[index - 1].requestFocus();
-                  }
-                  if (index == 5 && value.isNotEmpty) {
-                    // Tự động kiểm tra nếu đã đủ 6 số
-                    final fullCode = _otpControllers.map((c) => c.text).join();
-                    if (fullCode.length == 6) {
-                      _handleVerifyOtp();
+                  onChanged: (value) {
+                    if (value.isNotEmpty && index < 5) {
+                      _otpFocusNodes[index + 1].requestFocus();
+                    } else if (value.isEmpty && index > 0) {
+                      _otpFocusNodes[index - 1].requestFocus();
                     }
-                  }
-                },
+                    if (index == 5 && value.isNotEmpty) {
+                      final fullCode = _otpControllers.map((c) => c.text).join();
+                      if (fullCode.length == 6) {
+                        _handleVerifyOtp();
+                      }
+                    }
+                  },
+                ),
               ),
             );
           }),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        // Countdown & Resend
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_secondsRemaining > 0)
-              Text(
-                'Gửi lại mã sau: ${_secondsRemaining}s',
-                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)),
-              )
-            else
-              TextButton(
-                onPressed: _isLoading ? null : _handleSendOtp,
-                child: Text(
-                  'Gửi lại mã OTP',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primary,
-                  ),
-                ),
-              ),
-          ],
-        ),
-
-        // Demo test OTP helper
+        // Demo OTP Helper
         if (_demoOtp != null)
           Container(
-            margin: const EdgeInsets.only(top: 8, bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: const Color(0xFFFEF3C7),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFCD34D)),
+              border: Border.all(color: const Color(0xFFFDE68A)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.developer_mode_rounded, size: 16, color: Color(0xFFB45309)),
+                const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 16),
                 const SizedBox(width: 6),
                 Text(
                   'Mã OTP thử nghiệm: $_demoOtp',
@@ -605,14 +787,17 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                     for (int i = 0; i < 6 && i < _demoOtp!.length; i++) {
                       _otpControllers[i].text = _demoOtp![i];
                     }
+                    _handleVerifyOtp();
                   },
-                  child: Text(
-                    'Tự điền',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryDark,
-                      decoration: TextDecoration.underline,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD97706),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Tự điền',
+                      style: GoogleFonts.inter(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -620,9 +805,44 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
             ),
           ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
-        // Submit Button
+        // Countdown & Resend
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _secondsRemaining > 0 ? 'Gửi lại mã sau: ' : 'Chưa nhận được mã? ',
+              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)),
+            ),
+            if (_secondsRemaining > 0)
+              Text(
+                '${_secondsRemaining}s',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primary,
+                ),
+              )
+            else
+              InkWell(
+                onTap: _handleSendOtp,
+                child: Text(
+                  'Gửi lại ngay',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+          ],
+        ),
+
+        const SizedBox(height: 22),
+
+        // Verify Button
         SizedBox(
           width: double.infinity,
           height: 50,
@@ -642,9 +862,9 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                     child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
                   )
                 : Text(
-                    'XÁC THỰC & TIẾP TỤC',
+                    'TIẾP TỤC ĐẶT MẬT KHẨU',
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
@@ -655,43 +875,193 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildTrustIndicators() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        children: [
-          Row(
+  // ── Step 3: Thiết lập Mật khẩu ────────────────────────────────────
+  Widget _buildStep3Password() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // SĐT đã xác thực
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          margin: const EdgeInsets.only(bottom: 18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFECFDF5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFA7F3D0)),
+          ),
+          child: Row(
             children: [
-              const Icon(Icons.health_and_safety_rounded, color: AppTheme.accentMint, size: 20),
-              const SizedBox(width: 10),
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  'Hồ sơ bệnh án điện tử đồng bộ trực tiếp với CSDL Bệnh viện D-Medical',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF475569)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Số điện thoại đã xác thực thành công',
+                      style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF047857), fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      _phoneController.text.trim(),
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF065F46)),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Row(
+        ),
+
+        // Mật khẩu mới
+        Text(
+          'Mật khẩu mới',
+          style: GoogleFonts.inter(
+            fontSize: 13.5,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+          decoration: InputDecoration(
+            hintText: 'Tối thiểu 8 ký tự (ví dụ: MatKhau123@)',
+            hintStyle: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF94A3B8)),
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.primary, size: 20),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: const Color(0xFF64748B),
+                size: 20,
+              ),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 1.8),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Xác nhận mật khẩu
+        Text(
+          'Xác nhận lại mật khẩu',
+          style: GoogleFonts.inter(
+            fontSize: 13.5,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _confirmPasswordController,
+          obscureText: _obscureConfirmPassword,
+          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+          decoration: InputDecoration(
+            hintText: 'Nhập lại mật khẩu trên',
+            hintStyle: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF94A3B8)),
+            prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppTheme.primary, size: 20),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: const Color(0xFF64748B),
+                size: 20,
+              ),
+              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 1.8),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFBFDBFE)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.lock_rounded, color: AppTheme.primary, size: 20),
-              const SizedBox(width: 10),
+              const Icon(Icons.info_outline_rounded, color: AppTheme.primary, size: 16),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Bảo mật thông tin người bệnh theo tiêu chuẩn Y tế Quốc gia',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF475569)),
+                  'Yêu cầu mật khẩu y tế: Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt (ví dụ: MatKhau123@).',
+                  style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF1E40AF), height: 1.35),
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Complete Registration Button
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _handleSetPasswordAndRegister,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              elevation: 3,
+              shadowColor: AppTheme.primary.withValues(alpha: 0.35),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_circle_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'HOÀN TẤT ĐĂNG KÝ',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

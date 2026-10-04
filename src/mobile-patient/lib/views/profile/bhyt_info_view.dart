@@ -37,8 +37,8 @@ class BhytInfoView extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        children: const [
+                      const Row(
+                        children: [
                           Icon(Icons.info_outline, color: Color(0xFF0284C7)),
                           SizedBox(width: 8),
                           Expanded(
@@ -201,20 +201,24 @@ class BhytInfoView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Image.network('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Emblem_of_Vietnam.svg/1200px-Emblem_of_Vietnam.svg.png', width: 30, height: 30, errorBuilder: (c,e,s) => const Icon(Icons.badge, color: AppTheme.primaryColor)),
-                  const SizedBox(width: 8),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.red)),
-                      Text('Độc lập - Tự do - Hạnh phúc', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ],
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.network('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Emblem_of_Vietnam.svg/1200px-Emblem_of_Vietnam.svg.png', width: 28, height: 28, errorBuilder: (c,e,s) => const Icon(Icons.badge, color: AppTheme.primaryColor)),
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.red), overflow: TextOverflow.ellipsis, maxLines: 2),
+                          Text('Độc lập - Tự do - Hạnh phúc', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
