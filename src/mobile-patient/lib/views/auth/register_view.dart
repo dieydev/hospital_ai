@@ -769,16 +769,19 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
               border: Border.all(color: const Color(0xFFFDE68A)),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 16),
                 const SizedBox(width: 6),
-                Text(
-                  'Mã OTP thử nghiệm: $_demoOtp',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFB45309),
+                Expanded(
+                  child: Text(
+                    'Mã OTP thử nghiệm: $_demoOtp',
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFB45309),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

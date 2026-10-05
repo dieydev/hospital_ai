@@ -25,6 +25,7 @@ interface Message {
   time: string;
   sources?: string[];
   icd10?: Array<{ code: string; name: string }>;
+  piiSanitized?: boolean;
 }
 
 export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => {
@@ -34,8 +35,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'ai',
-      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế Lâm sàng (D-Medical AI). Tôi sẵn sàng hỗ trợ tra cứu hồ sơ bệnh án EMR, gợi ý mã ICD-10 và rà soát tương tác thuốc chuyên sâu theo phác đồ Bộ Y Tế.',
+      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế Lâm sàng (Hospital AI Medical Engine). Tôi sẵn sàng hỗ trợ tra cứu hồ sơ bệnh án EMR, gợi ý mã ICD-10 và rà soát tương tác thuốc chuyên sâu theo phác đồ Bộ Y Tế (tuân thủ bảo mật HIPAA & NĐ 13).',
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      piiSanitized: true,
     },
   ]);
   const [inputText, setInputText] = useState('');
@@ -71,6 +73,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           sources: res.sources,
           icd10: res.icd10Suggestions,
+          piiSanitized: res.piiSanitized,
         },
       ]);
     } catch {

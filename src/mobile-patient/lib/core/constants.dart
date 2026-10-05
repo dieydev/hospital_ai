@@ -5,9 +5,9 @@ class AppConstants {
   static const String hospitalFullName = 'Hệ thống Y tế Quốc tế D-Medical';
   static const String slogan = 'Healthcare Connected';
   // Cấu hình IP máy chủ Backend API Gateway (Port 5000)
-  // - Máy tính host IP Wi-Fi hiện tại: 192.168.1.6
-  // - Máy ảo Android Emulator loopback mặc định: 10.0.2.2
-  static const String serverHostIp = '192.168.1.6';
+  // - Máy tính host IP Wi-Fi hiện tại: 192.168.100.129
+  // - Đã hỗ trợ adb reverse tcp:5000 tcp:5000 khi cắm cáp USB
+  static const String serverHostIp = '192.168.100.129';
   static const int serverPort = 5000;
 
   static String get baseUrl {

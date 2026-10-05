@@ -12,11 +12,21 @@ export const AIAssistantPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string; time: string; sources?: string[]; icd10?: Array<{ code: string; name: string }> }>>([
+  const [messages, setMessages] = useState<
+    Array<{
+      sender: 'user' | 'ai';
+      text: string;
+      time: string;
+      sources?: string[];
+      icd10?: Array<{ code: string; name: string }>;
+      piiSanitized?: boolean;
+    }>
+  >([
     {
       sender: 'ai',
-      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế (tích hợp nền tảng Hospital AI Medical Engine). Tôi có thể hỗ trợ Bác sĩ tra cứu thông tin bệnh án bằng ngôn ngữ tự nhiên, tóm tắt diễn biến EMR phức tạp, tư vấn tương tác thuốc và gợi ý mã bệnh ICD-10 chuẩn.',
+      text: 'Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế Lâm sàng (Hospital AI Medical Engine). Tôi có thể hỗ trợ Bác sĩ tra cứu thông tin bệnh án bằng ngôn ngữ tự nhiên, tóm tắt diễn biến EMR phức tạp, tư vấn an toàn tương tác thuốc và đề xuất mã ICD-10 chuẩn Bộ Y Tế. Mọi thông tin gửi đi đều được tự động khử danh tính PII/PHI tuân thủ chuẩn HIPAA & Nghị định 13/2023/NĐ-CP.',
       time: '08:00',
+      piiSanitized: true,
     },
   ]);
   const [inputText, setInputText] = useState('');
@@ -50,6 +60,7 @@ export const AIAssistantPage: React.FC = () => {
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           sources: res.sources,
           icd10: res.icd10Suggestions,
+          piiSanitized: res.piiSanitized,
         },
       ]);
     } catch {
@@ -146,14 +157,25 @@ export const AIAssistantPage: React.FC = () => {
                       )}
                     </div>
 
-                    {m.sources && (
-                      <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <Text type="secondary" style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : undefined }}>Nguồn tham chiếu RAG:</Text>
-                        {m.sources.map((s, i) => (
-                          <Tag key={i} color="cyan" style={{ fontSize: 10 }}>{s}</Tag>
-                        ))}
-                      </div>
-                    )}
+                    <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {m.piiSanitized && (
+                        <Tag color="cyan" style={{ fontSize: 10 }}>
+                          🔒 Đã bảo vệ PII/PHI (HIPAA & NĐ 13)
+                        </Tag>
+                      )}
+                      {m.sources && (
+                        <>
+                          <Text type="secondary" style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : undefined }}>
+                            Nguồn tham chiếu:
+                          </Text>
+                          {m.sources.map((s, i) => (
+                            <Tag key={i} color="blue" style={{ fontSize: 10 }}>
+                              {s}
+                            </Tag>
+                          ))}
+                        </>
+                      )}
+                    </div>
 
                     <Text type="secondary" style={{ fontSize: 10, display: 'block', textAlign: m.sender === 'user' ? 'right' : 'left', marginTop: 4, color: isDarkMode ? '#94a3b8' : undefined }}>
                       {m.time}

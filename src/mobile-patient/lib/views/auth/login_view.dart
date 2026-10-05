@@ -764,7 +764,7 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -884,11 +884,14 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
                   const Icon(Icons.lightbulb_outline_rounded,
                       color: Color(0xFFF97316), size: 16),
                   const SizedBox(width: 8),
-                  Text('Demo OTP: $_forgotDemoOtp',
-                      style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: const Color(0xFF9a3412),
-                          fontWeight: FontWeight.w600)),
+                  Expanded(
+                    child: Text('Demo OTP: $_forgotDemoOtp',
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: const Color(0xFF9a3412),
+                            fontWeight: FontWeight.w600)),
+                  ),
                 ]),
               ),
             const SizedBox(height: 16),
@@ -1014,47 +1017,54 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
   // ── Ô nhập OTP ────────────────────────────────────────────────────
   Widget _buildOtpBoxes() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(6, (i) => Container(
-        width: 46,
-        height: 54,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        child: TextFormField(
-          controller: _otpControllers[i],
-          focusNode: _otpFocusNodes[i],
-          keyboardType: TextInputType.number,
-          textAlign: TextAlign.center,
-          maxLength: 1,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF0f172a)),
-          decoration: InputDecoration(
-            counterText: '',
-            filled: true,
-            fillColor: const Color(0xFFF0F9FF),
-            contentPadding: EdgeInsets.zero,
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: Color(0xFFBAE6FD))),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: Color(0xFFBAE6FD))),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                    color: Color(0xFF0284c7), width: 2)),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(6, (i) => Expanded(
+        child: Container(
+          height: 52,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          child: TextFormField(
+            controller: _otpControllers[i],
+            focusNode: _otpFocusNodes[i],
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            maxLength: 1,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0f172a)),
+            decoration: InputDecoration(
+              counterText: '',
+              filled: true,
+              fillColor: const Color(0xFFF0F9FF),
+              contentPadding: EdgeInsets.zero,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFBAE6FD))),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFBAE6FD))),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                      color: Color(0xFF0284c7), width: 2)),
+            ),
+            onChanged: (v) {
+              if (v.isNotEmpty && i < 5) {
+                _otpFocusNodes[i + 1].requestFocus();
+              } else if (v.isEmpty && i > 0) {
+                _otpFocusNodes[i - 1].requestFocus();
+              }
+              if (i == 5 && v.isNotEmpty) {
+                final fullCode = _otpControllers.map((c) => c.text).join();
+                if (fullCode.length == 6) {
+                  _handleForgotVerifyOtp();
+                }
+              }
+            },
           ),
-          onChanged: (v) {
-            if (v.isNotEmpty && i < 5) {
-              _otpFocusNodes[i + 1].requestFocus();
-            } else if (v.isEmpty && i > 0) {
-              _otpFocusNodes[i - 1].requestFocus();
-            }
-          },
         ),
       )),
     );

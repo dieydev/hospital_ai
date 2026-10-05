@@ -78,7 +78,7 @@ class ApiService {
     }
   }
 
-  /// Gửi OTP quên mật khẩu (SĐT phải đã tồn tại trong hệ thống)
+  /// Gửi OTP quên mật khẩu (Bắt buộc SĐT phải đã tồn tại trong hệ thống)
   Future<Map<String, dynamic>> sendForgotPasswordOtp(String phoneNumber) async {
     try {
       final response = await _dio.post(
@@ -87,15 +87,7 @@ class ApiService {
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      if (e.response != null) {
-        throw Exception(_getErrorMessage(e));
-      }
-      // Fallback demo khi offline
-      return {
-        'success': true,
-        'message': 'Mã OTP đặt lại mật khẩu đã được gửi (Mã demo: 123456)',
-        'otpCode': '123456',
-      };
+      throw Exception(_getErrorMessage(e));
     }
   }
 
@@ -203,8 +195,13 @@ class ApiService {
   }
 
   String _getErrorMessage(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-      return 'Kết nối mạng quá hạn';
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return 'Kết nối mạng quá hạn. Vui lòng thử lại.';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối mạng.';
     }
     if (e.response != null && e.response?.data != null) {
       if (e.response?.data is Map) {
@@ -212,6 +209,6 @@ class ApiService {
       }
       return 'Lỗi hệ thống (${e.response?.statusCode})';
     }
-    return e.message ?? 'Lỗi không xác định';
+    return 'Lỗi không xác định. Vui lòng thử lại.';
   }
 }
