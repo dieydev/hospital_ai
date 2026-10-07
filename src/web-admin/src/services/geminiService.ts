@@ -240,6 +240,9 @@ QUY TẮC BẢO MẬT & ĐỊNH DANH BẮT BUỘC:
           console.warn(`Model ${modelName} error or rate limited:`, err?.response?.status || err.message);
         }
       }
+      if (lastError) {
+        console.warn('All Gemini models cascade failed, last error was:', lastError?.message || lastError);
+      }
     }
 
     // Step 3: Offline / Intranet Clinical Medical Decision Engine Fallback
