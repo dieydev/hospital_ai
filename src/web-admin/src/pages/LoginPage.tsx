@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Checkbox, Typography, Alert, Select, Divider } from 'antd';
+import { Card, Form, Input, Button, Checkbox, Typography, Alert, Divider } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../services/api';
-import { showToast, showErrorAlert, showSuccessAlert } from '../utils/sweetAlert';
+import { showToast, showErrorAlert } from '../utils/sweetAlert';
 import { useThemeStore } from '../store/useThemeStore';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 // Google Logo Component
 const GoogleIcon: React.FC = () => (
@@ -33,16 +32,12 @@ const GoogleIcon: React.FC = () => (
 );
 
 export const LoginPage: React.FC = () => {
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
-  const [registerLoading, setRegisterLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const { isDarkMode } = useThemeStore();
-
-  const [registerForm] = Form.useForm();
 
   // Handle Login Submit
   const onLoginFinish = async (values: { username: string; password: string }) => {
@@ -137,33 +132,6 @@ export const LoginPage: React.FC = () => {
     googleLoginTrigger();
   };
 
-  // Handle Register Submit
-  const onRegisterFinish = async (values: any) => {
-    setRegisterLoading(true);
-    setErrorMsg('');
-
-    try {
-      await api.post('/auth/register', {
-        username: values.username,
-        password: values.password,
-        fullName: values.fullName,
-        email: values.email,
-        phoneNumber: values.phoneNumber,
-        roleName: values.roleName || 'Patient',
-      });
-
-      showSuccessAlert('Đăng ký thành công!', 'Tài khoản của bạn đã được khởi tạo. Vui lòng đăng nhập.');
-      setRegisterLoading(false);
-      setIsRegisterMode(false);
-      registerForm.resetFields();
-    } catch (err: any) {
-      setRegisterLoading(false);
-      const apiError = err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
-      setErrorMsg(apiError);
-      showErrorAlert('Đăng ký thất bại', apiError);
-    }
-  };
-
   return (
     <div
       style={{
@@ -198,222 +166,93 @@ export const LoginPage: React.FC = () => {
             D-MEDICAL <span style={{ color: '#0284c7' }}>AI</span>
           </Title>
           <Text type="secondary" style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#64748b' }}>
-            {isRegisterMode ? 'Đăng ký tài khoản hệ thống mới' : 'Hệ thống Quản lý Khám chữa bệnh & Bệnh án Điện tử EMR'}
+            Hệ thống Quản lý Khám chữa bệnh & Bệnh án Điện tử EMR
           </Text>
         </div>
 
         {errorMsg && <Alert message={errorMsg} type="error" showIcon style={{ marginBottom: 16, borderRadius: 8 }} />}
 
-        {!isRegisterMode ? (
-          /* FORM ĐĂNG NHẬP */
-          <div>
-            <Form
-              name="login"
-              initialValues={{ remember: true }}
-              onFinish={onLoginFinish}
-              layout="vertical"
+        {/* FORM ĐĂNG NHẬP */}
+        <div>
+          <Form
+            name="login"
+            initialValues={{ remember: true }}
+            onFinish={onLoginFinish}
+            layout="vertical"
+          >
+            <Form.Item
+              name="username"
+              label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Tên đăng nhập / Email</span>}
+              rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
             >
-              <Form.Item
-                name="username"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Tên đăng nhập / Email</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
-              >
-                <Input placeholder="Nhập tên đăng nhập..." size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
+              <Input placeholder="Nhập tên đăng nhập..." size="large" style={{ borderRadius: 8 }} />
+            </Form.Item>
 
-              <Form.Item
-                name="password"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-              >
-                <Input.Password placeholder="Nhập mật khẩu..." size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                <Form.Item name="remember" valuePropName="checked" noStyle>
-                  <Checkbox style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Ghi nhớ đăng nhập</Checkbox>
-                </Form.Item>
-                <a style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontSize: 13, fontWeight: 500 }}>Quên mật khẩu?</a>
-              </div>
-
-              <Form.Item style={{ marginBottom: 12 }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  block
-                  loading={loginLoading}
-                  style={{
-                    height: 46,
-                    borderRadius: 8,
-                    fontWeight: 700,
-                    fontSize: 15,
-                    background: '#0284c7',
-                    borderColor: '#0284c7',
-                  }}
-                >
-                  Đăng nhập Hệ thống
-                </Button>
-              </Form.Item>
-            </Form>
-
-            <Divider style={{ margin: '16px 0', fontSize: 13, color: isDarkMode ? '#94a3b8' : undefined }}>Hoặc</Divider>
-
-            <Button
-              size="large"
-              block
-              icon={<GoogleIcon />}
-              loading={googleLoading}
-              onClick={handleGoogleLogin}
-              style={{
-                height: 44,
-                borderRadius: 8,
-                fontWeight: 600,
-                color: isDarkMode ? '#f8fafc' : '#334155',
-                borderColor: isDarkMode ? '#334155' : '#cbd5e1',
-                background: isDarkMode ? '#0f172a' : '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+            <Form.Item
+              name="password"
+              label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu</span>}
+              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
             >
-              Đăng nhập nhanh với Google
-            </Button>
+              <Input.Password placeholder="Nhập mật khẩu..." size="large" style={{ borderRadius: 8 }} />
+            </Form.Item>
 
-            <div style={{ textAlign: 'center', marginTop: 20 }}>
-              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#64748b', fontSize: 14 }}>
-                Chưa có tài khoản?{' '}
-                <a
-                  style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontWeight: 700 }}
-                  onClick={() => {
-                    setErrorMsg('');
-                    setIsRegisterMode(true);
-                  }}
-                >
-                  Đăng ký ngay
-                </a>
-              </Text>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+              <Form.Item name="remember" valuePropName="checked" noStyle>
+                <Checkbox style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Ghi nhớ đăng nhập</Checkbox>
+              </Form.Item>
+              <a style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Quên mật khẩu?</a>
             </div>
+
+            <Form.Item style={{ marginBottom: 12 }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                block
+                loading={loginLoading}
+                style={{
+                  height: 46,
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 15,
+                  background: '#0284c7',
+                  borderColor: '#0284c7',
+                }}
+              >
+                Đăng nhập Hệ thống
+              </Button>
+            </Form.Item>
+          </Form>
+
+          <Divider style={{ margin: '16px 0', fontSize: 13, color: isDarkMode ? '#94a3b8' : undefined }}>Hoặc</Divider>
+
+          <Button
+            size="large"
+            block
+            icon={<GoogleIcon />}
+            loading={googleLoading}
+            onClick={handleGoogleLogin}
+            style={{
+              height: 44,
+              borderRadius: 8,
+              fontWeight: 600,
+              color: isDarkMode ? '#f8fafc' : '#334155',
+              borderColor: isDarkMode ? '#334155' : '#cbd5e1',
+              background: isDarkMode ? '#0f172a' : '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            Đăng nhập nhanh với Google
+          </Button>
+
+          <div style={{ textAlign: 'center', marginTop: 20, padding: '10px 12px', background: isDarkMode ? '#0f172a' : '#f0f9ff', borderRadius: 8, border: isDarkMode ? '1px solid #334155' : '1px dashed #bae6fd' }}>
+            <Text style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 12.5 }}>
+              🔒 Tài khoản Y bác sĩ & Cán bộ y tế được cấp nội bộ bởi Quản trị viên hệ thống.
+            </Text>
           </div>
-        ) : (
-          /* FORM ĐĂNG KÝ */
-          <div>
-            <Form form={registerForm} name="register" onFinish={onRegisterFinish} layout="vertical">
-              <Form.Item
-                name="fullName"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Họ và Tên</span>}
-                rules={[{ required: true, message: 'Nhập họ tên!' }]}
-              >
-                <Input placeholder="Ví dụ: Nguyễn Văn An" size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
-
-              <Form.Item
-                name="username"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Tên đăng nhập</span>}
-                rules={[{ required: true, message: 'Nhập tên đăng nhập!' }]}
-              >
-                <Input placeholder="Tên đăng nhập mới..." size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
-
-              <Form.Item
-                name="email"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Địa chỉ Email</span>}
-                rules={[
-                  { required: true, message: 'Nhập email!' },
-                  { type: 'email', message: 'Email không hợp lệ!' },
-                ]}
-              >
-                <Input placeholder="email@domain.com" size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
-
-              <Form.Item
-                name="phoneNumber"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Số điện thoại</span>}
-                rules={[{ required: true, message: 'Nhập SĐT!' }]}
-              >
-                <Input placeholder="09xxxxxxxx" size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
-
-              <Form.Item
-                name="roleName"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Vai trò hệ thống</span>}
-                initialValue="Patient"
-              >
-                <Select size="large">
-                  <Option value="Patient">Bệnh nhân (Patient)</Option>
-                  <Option value="Doctor">Bác sĩ (Doctor)</Option>
-                  <Option value="Nurse">Y tá / Điều dưỡng (Nurse)</Option>
-                  <Option value="Receptionist">Lễ tân (Receptionist)</Option>
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                name="password"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu</span>}
-                rules={[
-                  { required: true, message: 'Nhập mật khẩu!' },
-                  { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, message: 'Mật khẩu phải >= 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.' }
-                ]}
-              >
-                <Input.Password placeholder="Mật khẩu mạnh (>= 8 ký tự, hoa, thường, số, đặc biệt)" size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
-
-              <Form.Item
-                name="confirmPassword"
-                label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Xác nhận Mật khẩu</span>}
-                dependencies={['password']}
-                rules={[
-                  { required: true, message: 'Xác nhận mật khẩu!' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue('password') === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error('Mật khẩu nhập lại không khớp!'));
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password placeholder="Nhập lại mật khẩu..." size="large" style={{ borderRadius: 8 }} />
-              </Form.Item>
-
-              <Form.Item style={{ marginBottom: 12, marginTop: 20 }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  block
-                  loading={registerLoading}
-                  style={{
-                    height: 46,
-                    borderRadius: 8,
-                    fontWeight: 700,
-                    fontSize: 15,
-                    background: '#0284c7',
-                    borderColor: '#0284c7',
-                  }}
-                >
-                  Đăng ký tài khoản
-                </Button>
-              </Form.Item>
-            </Form>
-
-            <div style={{ textAlign: 'center', marginTop: 16 }}>
-              <Text style={{ color: isDarkMode ? '#cbd5e1' : '#64748b', fontSize: 14 }}>
-                Đã có tài khoản?{' '}
-                <a
-                  style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontWeight: 700 }}
-                  onClick={() => {
-                    setErrorMsg('');
-                    setIsRegisterMode(false);
-                  }}
-                >
-                  Đăng nhập ngay
-                </a>
-              </Text>
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: 20, borderTop: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9', paddingTop: 14 }}>
