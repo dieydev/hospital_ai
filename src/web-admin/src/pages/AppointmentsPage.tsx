@@ -102,22 +102,43 @@ export const AppointmentsPage: React.FC = () => {
 
   const handleIssueQueueTicket = async (item: OnlineAppointmentItem) => {
     await appointmentService.updateStatus(item.id, 'Completed');
-    
-    // Tự động tạo một Bệnh nhân thật trong DB để lấy GUID hợp lệ
-    const newPatient = await patientService.createPatient({
-      fullName: item.patientName,
-      gender: item.patientGender === 'Nam' ? 'Male' : 'Female',
-      dateOfBirth: '1990-01-01',
-      identityCardNumber: `038090${Date.now().toString().slice(-6)}`,
-      phoneNumber: item.patientPhone,
-      address: 'TP.HCM'
-    });
 
+    // 1. Kiểm tra bệnh nhân đã tồn tại trong CSDL chưa theo số điện thoại
+    let patientId = '';
+    try {
+      const existing = await patientService.getPatients(item.patientPhone);
+      if (existing && existing.items && existing.items.length > 0) {
+        patientId = existing.items[0].id;
+      }
+    } catch {
+      // Bỏ qua lỗi tra cứu, tiếp tục tạo mới
+    }
+
+    if (!patientId) {
+      const newPatient = await patientService.createPatient({
+        fullName: item.patientName,
+        gender: item.patientGender === 'Nam' ? 'Male' : 'Female',
+        dateOfBirth: '1990-01-01',
+        identityCardNumber: `038090${Date.now().toString().slice(-6)}`,
+        phoneNumber: item.patientPhone,
+        address: 'TP.HCM',
+      });
+      patientId = newPatient.id;
+    }
+
+    // 2. Lấy danh sách chuyên khoa và map đúng khoa bệnh nhân đã chọn
     const depts = await queueService.getDepartments();
-    const targetDeptId = depts.length > 0 ? depts[0].id : '';
+    const cleanDeptName = item.departmentName.trim().toLowerCase();
+    const matchedDept =
+      depts.find(
+        (d) =>
+          d.departmentName.toLowerCase().includes(cleanDeptName) ||
+          cleanDeptName.includes(d.departmentName.toLowerCase())
+      ) || depts[0];
+    const targetDeptId = matchedDept ? matchedDept.id : '';
 
     const newTicket = await queueService.issueQueueTicket({
-      patientId: newPatient.id,
+      patientId: patientId,
       departmentId: targetDeptId,
       priority: 'Normal',
       patientName: item.patientName,
@@ -128,7 +149,7 @@ export const AppointmentsPage: React.FC = () => {
     fetchAppointments();
     showSuccessAlert(
       'Cấp Số thứ tự thành công!',
-      `Đã chuyển lịch hẹn thành Số thứ tự #${newTicket.sequenceNumber} tại Khoa khám.`
+      `Đã chuyển lịch hẹn thành Số #${newTicket.sequenceNumber} tại ${matchedDept?.departmentName || 'Khoa khám'}.`
     );
   };
 
