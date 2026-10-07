@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Table, Tabs, Button, Tag, Typography, Modal, Form, Input, Select, InputNumber } from 'antd';
 import { PlusOutlined, AppstoreOutlined, MedicineBoxOutlined, TeamOutlined, ReadOutlined } from '@ant-design/icons';
 import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
+import api from '../services/api';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -53,6 +54,28 @@ export const CatalogsPage: React.FC = () => {
     { code: 'I10', name: 'Bệnh cao huyết áp vô căn (nguyên phát)', category: 'Bệnh hệ tuần hoàn (I00-I99)' },
     { code: 'E11.9', name: 'Bệnh đái tháo đường tuýp 2 không có biến chứng', category: 'Bệnh nội tiết & chuyển hóa (E00-E90)' },
   ]);
+
+  useEffect(() => {
+    api
+      .get('/auth/doctors')
+      .then((res) => {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          const apiDocs = res.data.map((doc: any, index: number) => ({
+            id: doc.id || String(index + 1),
+            maNV: `NV${String(index + 1).padStart(3, '0')}`,
+            hoTen: doc.name || doc.hoTen,
+            chuyenKhoa: doc.dept || doc.chuyenKhoa || 'Khoa Nội Tổng Hợp',
+            chucVu: doc.title || doc.chucVu || 'Bác sĩ Điều trị',
+            soDienThoai: doc.phone || doc.soDienThoai || '0901234567',
+            trangThai: 'Hoạt động',
+          }));
+          setDoctorsData(apiDocs);
+        }
+      })
+      .catch(() => {
+        // Fallback giu nguyen doctorsData mac dinh
+      });
+  }, []);
 
   const handleOpenAddModal = () => {
     form.resetFields();
