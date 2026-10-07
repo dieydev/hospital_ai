@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Tabs, Button, Tag, Typography, Modal, Form, Input, Select, InputNumber } from 'antd';
-import { PlusOutlined, AppstoreOutlined, MedicineBoxOutlined, TeamOutlined, ReadOutlined } from '@ant-design/icons';
+import { PlusOutlined, AppstoreOutlined, MedicineBoxOutlined, TeamOutlined, ReadOutlined, ApartmentOutlined } from '@ant-design/icons';
 import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
@@ -10,10 +10,25 @@ const { Text } = Typography;
 const { Option } = Select;
 
 export const CatalogsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('doctors');
+  const [activeTab, setActiveTab] = useState('departments');
   const { isDarkMode } = useThemeStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
+
+  const [departmentsData, setDepartmentsData] = useState([
+    { id: 'dept-01', maKhoa: 'KNOI', tenKhoa: 'Khoa Nội Tổng Hợp', viTri: 'Phòng 102 - Tầng 1', truongKhoa: 'BS. CKII. Nguyễn Thanh Duy', soBacSi: 6, trangThai: 'Hoạt động' },
+    { id: 'dept-02', maKhoa: 'KNHI', tenKhoa: 'Khoa Nhi', viTri: 'Phòng 108 - Tầng 1', truongKhoa: 'BS. CKI. Phạm Minh Đức', soBacSi: 4, trangThai: 'Hoạt động' },
+    { id: 'dept-03', maKhoa: 'KMAT', tenKhoa: 'Khoa Mắt', viTri: 'Phòng 201 - Tầng 2', truongKhoa: 'BS. CKI. Trần Ngọc Mai', soBacSi: 3, trangThai: 'Hoạt động' },
+    { id: 'dept-04', maKhoa: 'KTMH', tenKhoa: 'Khoa Tai Mũi Họng', viTri: 'Phòng 204 - Tầng 2', truongKhoa: 'BS. CKII. Lê Văn Tuấn', soBacSi: 4, trangThai: 'Hoạt động' },
+    { id: 'dept-05', maKhoa: 'KTIM', tenKhoa: 'Khoa Tim Mạch', viTri: 'Phòng 208 - Tầng 2', truongKhoa: 'TS. BS. Huỳnh Quốc Dũng', soBacSi: 5, trangThai: 'Hoạt động' },
+    { id: 'dept-06', maKhoa: 'KTHOA', tenKhoa: 'Khoa Tiêu Hóa', viTri: 'Phòng 212 - Tầng 2', truongKhoa: 'BS. CKII. Đinh Khắc Vương', soBacSi: 4, trangThai: 'Hoạt động' },
+    { id: 'dept-07', maKhoa: 'KNGOAI', tenKhoa: 'Khoa Ngoại Tổng Quát', viTri: 'Phòng 301 - Tầng 3', truongKhoa: 'BS. CKII. Đỗ Hoàng Giang', soBacSi: 6, trangThai: 'Hoạt động' },
+    { id: 'dept-08', maKhoa: 'KRHM', tenKhoa: 'Khoa Răng Hàm Mặt', viTri: 'Phòng 215 - Tầng 2', truongKhoa: 'BS. CKI. Hoàng Trọng Nghĩa', soBacSi: 3, trangThai: 'Hoạt động' },
+    { id: 'dept-09', maKhoa: 'KDL', tenKhoa: 'Khoa Da Liễu', viTri: 'Phòng 305 - Tầng 3', truongKhoa: 'BS. CKI. Nguyễn Phương Anh', soBacSi: 3, trangThai: 'Hoạt động' },
+    { id: 'dept-10', maKhoa: 'KSAN', tenKhoa: 'Khoa Sản Phụ Khoa', viTri: 'Phòng 308 - Tầng 3', truongKhoa: 'BS. CKII. Lê Thị Kim Phượng', soBacSi: 5, trangThai: 'Hoạt động' },
+    { id: 'dept-11', maKhoa: 'KCC', tenKhoa: 'Khoa Cấp Cứu & Hồi Sức', viTri: 'Tầng Trệt - Khu A', truongKhoa: 'BS. CKI. Trịnh Văn Thành', soBacSi: 8, trangThai: 'Hoạt động 24/7' },
+    { id: 'dept-12', maKhoa: 'KCDHA', tenKhoa: 'Khoa Chẩn Đoán Hình Ảnh', viTri: 'Phòng 110 - Tầng 1', truongKhoa: 'ThS. BS. Phan Hoàng Nam', soBacSi: 4, trangThai: 'Hoạt động' },
+  ]);
 
   const [doctorsData, setDoctorsData] = useState([
     { id: '1', maNV: 'NV001', hoTen: 'BS. CKII. Nguyễn Thanh Duy', chuyenKhoa: 'Khoa Nội Tổng Hợp', chucVu: 'Trưởng Khoa', soDienThoai: '0336022526', trangThai: 'Hoạt động' },
@@ -56,6 +71,7 @@ export const CatalogsPage: React.FC = () => {
   ]);
 
   useEffect(() => {
+    // 1. Đồng bộ bác sĩ từ API
     api
       .get('/auth/doctors')
       .then((res) => {
@@ -72,9 +88,29 @@ export const CatalogsPage: React.FC = () => {
           setDoctorsData(apiDocs);
         }
       })
-      .catch(() => {
-        // Fallback giu nguyen doctorsData mac dinh
-      });
+      .catch(() => {});
+
+    // 2. Đồng bộ danh mục khoa phòng từ Queue Service
+    api
+      .get('/queue/departments')
+      .then((res) => {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          const apiDepts = res.data.map((d: any, index: number) => ({
+            id: d.id || `dept-${String(index + 1).padStart(2, '0')}`,
+            maKhoa: d.departmentCode || `K${String(index + 1).padStart(2, '0')}`,
+            tenKhoa: d.departmentName || d.tenKhoa,
+            viTri: d.location || `Phòng ${101 + index} - Tầng 1`,
+            truongKhoa: d.headDoctor || 'Bác sĩ Trưởng Khoa',
+            soBacSi: d.doctorCount || 4,
+            trangThai: 'Hoạt động',
+          }));
+          // Giữ các khoa chuẩn nếu API ít hơn
+          if (apiDepts.length >= departmentsData.length) {
+            setDepartmentsData(apiDepts);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleOpenAddModal = () => {
@@ -83,7 +119,19 @@ export const CatalogsPage: React.FC = () => {
   };
 
   const handleCreateSubmit = (values: any) => {
-    if (activeTab === 'doctors') {
+    if (activeTab === 'departments') {
+      const newDept = {
+        id: `dept-${Date.now()}`,
+        maKhoa: values.maKhoa || `K${String(departmentsData.length + 1).padStart(2, '0')}`,
+        tenKhoa: values.tenKhoa,
+        viTri: values.viTri || 'Tầng 1 - Khu Khám bệnh',
+        truongKhoa: values.truongKhoa || 'Đang cập nhật',
+        soBacSi: values.soBacSi || 3,
+        trangThai: 'Hoạt động',
+      };
+      setDepartmentsData([newDept, ...departmentsData]);
+      showSuccessAlert('Thêm Khoa/Phòng thành công', `Đã thêm ${values.tenKhoa} vào danh mục chuyên khoa`);
+    } else if (activeTab === 'doctors') {
       const newDoc = {
         id: String(Date.now()),
         maNV: `NV${String(doctorsData.length + 1).padStart(3, '0')}`,
@@ -139,14 +187,14 @@ export const CatalogsPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
-              <span className="status-dot-active bg-emerald-400" /> Danh Mục Master Data • Bác Sĩ, Thuốc, CLS & ICD-10
+              <span className="status-dot-active bg-emerald-400" /> Danh Mục Master Data • Khoa Phòng, Bác Sĩ, Thuốc, CLS & ICD-10
             </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight margin-0">
             Quản trị Danh mục Hệ thống (System Catalogs)
           </h1>
           <p className="text-sky-100 text-xs md:text-sm mt-1">
-            Danh mục Bác sĩ/Nhân viên, Thuốc dược phẩm, Dịch vụ kỹ thuật y tế và Bộ mã chuẩn đoán quốc tế ICD-10
+            Danh mục Khoa/Phòng khám, Bác sĩ/Nhân viên, Thuốc dược phẩm, Dịch vụ kỹ thuật y tế và Bộ mã chuẩn đoán quốc tế ICD-10
           </p>
         </div>
         <Button
@@ -156,6 +204,7 @@ export const CatalogsPage: React.FC = () => {
           className="medical-hero-btn-primary rounded-lg font-semibold flex items-center gap-1.5"
           onClick={handleOpenAddModal}
         >
+          {activeTab === 'departments' && 'Thêm Khoa / Phòng mới'}
           {activeTab === 'doctors' && 'Thêm Bác sĩ mới'}
           {activeTab === 'medicines' && 'Thêm Thuốc mới'}
           {activeTab === 'services' && 'Thêm Dịch vụ mới'}
@@ -168,6 +217,24 @@ export const CatalogsPage: React.FC = () => {
           activeKey={activeTab}
           onChange={setActiveTab}
           items={[
+            {
+              key: 'departments',
+              label: (<span><ApartmentOutlined /> Khoa / Phòng Khám</span>),
+              children: (
+                <Table
+                  dataSource={departmentsData}
+                  columns={[
+                    { title: 'Mã Khoa', dataIndex: 'maKhoa', key: 'maKhoa', render: (c: string) => <Tag color="cyan" style={{ fontWeight: 700 }}>{c}</Tag> },
+                    { title: 'Tên Khoa / Phòng', dataIndex: 'tenKhoa', key: 'tenKhoa', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
+                    { title: 'Vị trí phòng khám', dataIndex: 'viTri', key: 'viTri' },
+                    { title: 'Trưởng Khoa', dataIndex: 'truongKhoa', key: 'truongKhoa', render: (tk: string) => <Tag color="blue">{tk}</Tag> },
+                    { title: 'Nhân sự', dataIndex: 'soBacSi', key: 'soBacSi', render: (cnt: number) => `${cnt} Bác sĩ` },
+                    { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', render: (s: string) => <Tag color="green">{s}</Tag> },
+                  ]}
+                  rowKey="id"
+                />
+              ),
+            },
             {
               key: 'doctors',
               label: (<span><TeamOutlined /> Đội ngũ Y bác sĩ</span>),
@@ -244,6 +311,7 @@ export const CatalogsPage: React.FC = () => {
       <Modal
         title={
           <span style={{ color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+            {activeTab === 'departments' && 'Thêm Khoa / Phòng Khám Mới'}
             {activeTab === 'doctors' && 'Thêm Bác sĩ / Nhân viên mới'}
             {activeTab === 'medicines' && 'Thêm Thuốc mới vào Danh mục'}
             {activeTab === 'services' && 'Thêm Dịch vụ Y tế mới'}
@@ -257,6 +325,26 @@ export const CatalogsPage: React.FC = () => {
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical" onFinish={handleCreateSubmit} style={{ marginTop: 16 }}>
+          {activeTab === 'departments' && (
+            <>
+              <Form.Item label="Tên Khoa / Phòng" name="tenKhoa" rules={[{ required: true, message: 'Vui lòng nhập tên khoa/phòng' }]}>
+                <Input placeholder="Ví dụ: Khoa Phục Hồi Chức Năng" />
+              </Form.Item>
+              <Form.Item label="Mã Khoa" name="maKhoa" rules={[{ required: true, message: 'Vui lòng nhập mã khoa' }]}>
+                <Input placeholder="Ví dụ: KPHCN" />
+              </Form.Item>
+              <Form.Item label="Vị trí phòng khám" name="viTri" rules={[{ required: true, message: 'Vui lòng nhập vị trí' }]}>
+                <Input placeholder="Ví dụ: Phòng 205 - Tầng 2" />
+              </Form.Item>
+              <Form.Item label="Trưởng Khoa phụ trách" name="truongKhoa">
+                <Input placeholder="BS. CKII. ..." />
+              </Form.Item>
+              <Form.Item label="Số lượng Bác sĩ" name="soBacSi" initialValue={4}>
+                <InputNumber min={1} max={50} style={{ width: '100%' }} />
+              </Form.Item>
+            </>
+          )}
+
           {activeTab === 'doctors' && (
             <>
               <Form.Item label="Họ và Tên Bác sĩ" name="hoTen" rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
