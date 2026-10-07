@@ -287,6 +287,22 @@ class AuthProvider extends ChangeNotifier {
   Future<void> updateProfile(PatientModel updatedUser) async {
     _user = updatedUser;
     await _persistUser(updatedUser);
+    try {
+      if (updatedUser.id.isNotEmpty && !updatedUser.id.startsWith('pat_')) {
+        await _apiService.put('/patients/${updatedUser.id}', {
+          'fullName': updatedUser.hoTen,
+          'gender': updatedUser.gioiTinh,
+          'dateOfBirth': updatedUser.ngaySinh.isNotEmpty ? updatedUser.ngaySinh : DateTime.now().toIso8601String(),
+          'identityCardNumber': updatedUser.soCCCD ?? '',
+          'healthInsuranceNumber': updatedUser.maTheBHYT ?? '',
+          'phoneNumber': updatedUser.soDienThoai ?? '',
+          'email': updatedUser.email ?? '',
+          'address': updatedUser.diaChi ?? '',
+        });
+      }
+    } catch (_) {
+      // Giữ fallback local nếu server offline hoặc token hết hạn
+    }
     notifyListeners();
   }
 
