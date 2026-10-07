@@ -4,6 +4,7 @@ import '../../core/theme.dart';
 import '../../widgets/profile_guard.dart';
 import '../appointment/book_appointment_view.dart';
 import '../appointment/medical_history_view.dart';
+import '../appointment/my_appointments_view.dart';
 import '../booking/hospital_payment_view.dart';
 import '../features/health_monitor_view.dart';
 import '../features/vaccine_view.dart';
@@ -243,16 +244,16 @@ class _HomeViewState extends State<HomeView> {
         },
       },
       {
-        'title': 'Lịch hẹn nội\ntrú',
+        'title': 'Lịch hẹn\nđã đặt',
         'iconWidget': _buildDualIcon(
-          Icons.hotel_rounded,
-          badgeIcon: Icons.add_circle_rounded,
+          Icons.calendar_month_rounded,
+          badgeIcon: Icons.check_circle_rounded,
           iconColor: const Color(0xFF0284C7),
-          badgeColor: const Color(0xFFEF4444),
+          badgeColor: const Color(0xFF10B981),
         ),
         'onTap': () {
           ProfileGuard.check(context, onAllowed: () {
-            _showServiceModal('Lịch hẹn điều trị nội trú', 'Thông tin khoa/phòng, giường bệnh và kế hoạch điều trị nội trú tại bệnh viện.');
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAppointmentsView()));
           });
         },
       },

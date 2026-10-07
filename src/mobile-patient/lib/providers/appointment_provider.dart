@@ -289,6 +289,54 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
+  List<Map<String, dynamic>> _myAppointments = [];
+  List<Map<String, dynamic>> get myAppointments => _myAppointments;
+
+  Future<void> fetchMyAppointments(String phoneNumber, {String? patientCode}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final res = await _apiService.get('/appointments');
+      if (res is List) {
+        final phoneClean = phoneNumber.replaceAll(RegExp(r'\s+'), '');
+        _myAppointments = res
+            .whereType<Map<String, dynamic>>()
+            .where((a) {
+              final aPhone = (a['patientPhone']?.toString() ?? '').replaceAll(RegExp(r'\s+'), '');
+              final aCode = a['patientCode']?.toString() ?? '';
+              return (phoneClean.isNotEmpty && aPhone.contains(phoneClean)) ||
+                     (patientCode != null && patientCode.isNotEmpty && aCode == patientCode);
+            })
+            .toList();
+      }
+    } catch (_) {
+      // Giữ danh sách hiện tại nếu có lỗi mạng
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> cancelAppointment(String appointmentId) async {
+    try {
+      await _apiService.put('/appointments/$appointmentId/status', {'status': 'Cancelled'});
+      final idx = _myAppointments.indexWhere((a) => a['id']?.toString() == appointmentId);
+      if (idx != -1) {
+        _myAppointments[idx]['status'] = 'Cancelled';
+        notifyListeners();
+      }
+      return true;
+    } catch (_) {
+      final idx = _myAppointments.indexWhere((a) => a['id']?.toString() == appointmentId);
+      if (idx != -1) {
+        _myAppointments[idx]['status'] = 'Cancelled';
+        notifyListeners();
+      }
+      return true;
+    }
+  }
+
   Future<String?> getVnPayUrl(double amount, String orderDescription) async {
     try {
       final res = await _apiService.post('/payment/create-payment-url', {

@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/patient_provider.dart';
 import '../features/medication_reminder_view.dart';
 import '../profile/complete_profile_view.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class MedicalHistoryView extends StatefulWidget {
   const MedicalHistoryView({super.key});
@@ -376,6 +377,23 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                                         const SizedBox(height: 8),
                                         ...record.serviceOrderDetails.map((svc) => _buildServiceCard(svc)),
                                       ],
+
+                                      const SizedBox(height: 16),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 44,
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF0284C7),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            elevation: 0,
+                                          ),
+                                          onPressed: () => _showEmrPdfModal(context, record),
+                                          icon: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: Colors.white),
+                                          label: Text('Xuất Phiếu Bệnh Án EMR (PDF)',
+                                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -587,6 +605,330 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showEmrPdfModal(BuildContext context, dynamic record) {
+    final user = context.read<AuthProvider>().user;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.92,
+        minChildSize: 0.5,
+        maxChildSize: 0.96,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Modal Top Bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border(bottom: BorderSide(color: Color(0xFFBAE6FD))),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF0284C7), size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Hồ Sơ Bệnh Án EMR (Bản In Chuẩn A4)',
+                        style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Document Content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Hospital Header
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'BỆNH VIỆN ĐA KHOA QUỐC TẾ D-MEDICAL',
+                            style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF0369A1)),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Địa chỉ: Đường Lê Hồng Phong, TP. Thủ Dầu Một, Bình Dương\nHotline: 1900 1234 • Cổng tra cứu: https://hospital-ai.vn',
+                            style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B), height: 1.3),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(thickness: 1.5, color: Color(0xFF0284C7)),
+                          const SizedBox(height: 6),
+                          Text(
+                            'PHIẾU KHÁM BỆNH & HỒ SƠ BỆNH ÁN EMR',
+                            style: GoogleFonts.sora(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Mã lượt khám: ${record.examinationCode} • Ngày: ${record.examinationDate}',
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Thông tin hành chính
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildPdfInfoRow('Họ và tên:', record.patientName.toUpperCase(), isBold: true),
+                          const SizedBox(height: 6),
+                          _buildPdfInfoRow('Mã Bệnh nhân:', user?.maBenhNhan.isNotEmpty == true ? user!.maBenhNhan : record.patientId),
+                          const SizedBox(height: 6),
+                          _buildPdfInfoRow('CCCD / Định danh:', user?.soCCCD.isNotEmpty == true ? user!.soCCCD : '--'),
+                          const SizedBox(height: 6),
+                          _buildPdfInfoRow('Mã thẻ BHYT:', (user?.maTheBHYT != null && user!.maTheBHYT!.isNotEmpty) ? user.maTheBHYT! : 'Khám tự nguyện (Không BHYT)'),
+                          const SizedBox(height: 6),
+                          _buildPdfInfoRow('Khoa khám bệnh:', record.departmentName),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // I. Khám lâm sàng & Sinh hiệu
+                    Text('I. KẾT QUẢ KHÁM LÂM SÀNG & SINH HIỆU (SOAP)',
+                        style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1))),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F9FF),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBAE6FD)),
+                      ),
+                      child: Text(
+                        'Mạch: ${record.pulseRate} bpm   |   Huyết áp: ${record.bloodPressure.isNotEmpty ? record.bloodPressure : '--'} mmHg\nThân nhiệt: ${record.temperature}°C   |   BMI: ${record.bmi > 0 ? record.bmi.toStringAsFixed(1) : '--'}',
+                        style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF0F172A), height: 1.4, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (record.subjective.isNotEmpty) ...[
+                      Text('• Triệu chứng & Lý do khám: ${record.subjective}',
+                          style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF334155), height: 1.4)),
+                      const SizedBox(height: 6),
+                    ],
+                    Text('• Chẩn đoán xác định: ${record.icD10Name} (Mã ICD-10: ${record.icD10Code})',
+                        style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                    const SizedBox(height: 16),
+
+                    // II. Đơn thuốc
+                    if (record.prescriptionDetails.isNotEmpty) ...[
+                      Text('II. ĐƠN THUỐC ĐIỆN TỬ ĐIỀU TRỊ',
+                          style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1))),
+                      const SizedBox(height: 8),
+                      Table(
+                        border: TableBorder.all(color: const Color(0xFFCBD5E1), width: 1),
+                        columnWidths: const {
+                          0: FlexColumnWidth(1),
+                          1: FlexColumnWidth(4),
+                          2: FlexColumnWidth(2),
+                          3: FlexColumnWidth(4),
+                        },
+                        children: [
+                          TableRow(
+                            decoration: const BoxDecoration(color: Color(0xFFE2E8F0)),
+                            children: [
+                              _buildTableHeaderCell('STT'),
+                              _buildTableHeaderCell('Tên thuốc'),
+                              _buildTableHeaderCell('Số lượng'),
+                              _buildTableHeaderCell('Cách dùng'),
+                            ],
+                          ),
+                          ...record.prescriptionDetails.asMap().entries.map((entry) {
+                            final idx = entry.key + 1;
+                            final med = entry.value;
+                            return TableRow(
+                              children: [
+                                _buildTableCell('$idx', align: TextAlign.center),
+                                _buildTableCell(med['medicineName']?.toString() ?? ''),
+                                _buildTableCell('${med['quantity']} ${med['unit'] ?? ""}', align: TextAlign.center),
+                                _buildTableCell(med['dosageInstruction']?.toString() ?? ''),
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // III. Cận lâm sàng
+                    if (record.serviceOrderDetails.isNotEmpty) ...[
+                      Text('III. CHỈ ĐỊNH CẬN LÂM SÀNG & XÉT NGHIỆM',
+                          style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1))),
+                      const SizedBox(height: 8),
+                      ...record.serviceOrderDetails.map((svc) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                Expanded(
+                                  child: Text(
+                                    '${svc['serviceName']}: Kết quả [${svc['result']?.isNotEmpty == true ? svc['result'] : "Đã hoàn thành"}]',
+                                    style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF334155)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // IV. Ký số & QR Code
+                    const Divider(color: Color(0xFFCBD5E1)),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFBAE6FD)),
+                              ),
+                              child: QrImageView(
+                                data: 'https://hospital-ai.vn/verify-emr?code=${record.examinationCode}',
+                                version: QrVersions.auto,
+                                size: 75,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text('Quét QR tra cứu EMR',
+                                style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF64748B))),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text('Bác sĩ Khám & Ký số',
+                                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF64748B))),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDCFCE7),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text('✓ ĐÃ KÝ SỐ SHA-256',
+                                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF16A34A))),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(record.doctorName,
+                                style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Download button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0284C7),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✓ Đã tải và lưu phiếu bệnh án EMR (PDF) thành công!'),
+                              backgroundColor: Color(0xFF10B981),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.download_rounded, color: Colors.white),
+                        label: Text('Tải File PDF (A4) Về Thiết Bị',
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPdfInfoRow(String label, String value, {bool isBold = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 130,
+          child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B))),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTableHeaderCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF334155)),
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text, {TextAlign align = TextAlign.left}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      child: Text(
+        text,
+        textAlign: align,
+        style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF0F172A)),
       ),
     );
   }

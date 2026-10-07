@@ -6,6 +6,7 @@ import '../../providers/appointment_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../booking/vnpay_payment_view.dart';
 import '../profile/complete_profile_view.dart';
+import 'my_appointments_view.dart';
 
 class BookAppointmentView extends StatefulWidget {
   const BookAppointmentView({super.key});
@@ -139,6 +140,16 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: const Text('Đặt Lịch Khám'),
+        actions: [
+          IconButton(
+            tooltip: 'Lịch hẹn của tôi',
+            icon: const Icon(Icons.history_rounded),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyAppointmentsView()),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -836,6 +847,28 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
           ],
         ),
         actions: [
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppTheme.primary),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _currentStep = 0;
+                _selectedDoctor = null;
+                _selectedTimeSlot = null;
+                _selectedDate = DateTime.now().add(const Duration(days: 1));
+                _symptomsController.clear();
+                _lastCreatedAppointmentId = null;
+              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyAppointmentsView()),
+              );
+            },
+            child: Text('Xem Lịch Hẹn Của Tôi', style: GoogleFonts.inter(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primary,

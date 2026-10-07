@@ -8,6 +8,7 @@ import 'bhyt_info_view.dart';
 import 'help_center_view.dart';
 import 'complete_profile_view.dart';
 import '../onboarding/onboarding_view.dart';
+import '../appointment/my_appointments_view.dart';
 
 class AccountProfileView extends StatelessWidget {
   const AccountProfileView({super.key});
@@ -244,6 +245,14 @@ class AccountProfileView extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
+                        _buildMenuItem(
+                          icon: Icons.calendar_today_outlined,
+                          title: 'Lịch hẹn khám của tôi',
+                          subtitle: 'Quản lý phiếu hẹn & Hủy lịch',
+                          color: AppTheme.primary,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAppointmentsView())),
+                        ),
+                        _buildDivider(indent: 64),
                         _buildMenuItem(
                           icon: Icons.badge_outlined,
                           title: 'Thẻ BHYT & CCCD',
