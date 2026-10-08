@@ -108,6 +108,21 @@ class ApiService {
     }
   }
 
+  /// Đổi mật khẩu tài khoản (yêu cầu mật khẩu cũ & mật khẩu mới)
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.post('/auth/change-password', data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
+    }
+  }
+
   Future<Map<String, dynamic>> verifyOtpAndLogin(String phoneNumber, String otpCode) async {
     try {
       final response = await _dio.post(

@@ -3,8 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/appointment_provider.dart';
+import '../../providers/queue_provider.dart';
 import '../appointment/book_appointment_view.dart';
 import '../appointment/medical_history_view.dart';
+import '../appointment/my_appointments_view.dart';
 
 class NotificationsView extends StatefulWidget {
   const NotificationsView({super.key});
@@ -16,12 +19,21 @@ class NotificationsView extends StatefulWidget {
 class _NotificationsViewState extends State<NotificationsView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final Set<int> _readItems = {};
+  final Set<String> _readItems = {};
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        context.read<AppointmentProvider>().fetchMyAppointments(
+              user.soDienThoai,
+              patientCode: user.maBenhNhan,
+            );
+      }
+    });
   }
 
   @override
@@ -87,19 +99,57 @@ class _NotificationsViewState extends State<NotificationsView>
     },
   ];
 
-  List<Map<String, dynamic>> get _appointments =>
-      _allNotifications.where((n) => n['type'] == 'appointment' || n['type'] == 'medical').toList();
-
-  List<Map<String, dynamic>> get _systemNotifications =>
-      _allNotifications.where((n) => n['type'] == 'system' || n['type'] == 'hospital' || n['type'] == 'payment' || n['type'] == 'medication').toList();
-
-  int get _unreadCount => _allNotifications.asMap().entries
-      .where((e) => !_readItems.contains(e.key))
-      .length;
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final aptProvider = context.watch<AppointmentProvider>();
+    final queueProvider = context.watch<QueueProvider>();
+
+    final List<Map<String, dynamic>> dynamicAppointmentNotifs = [];
+
+    // 1. Thông báo số thứ tự hàng chờ trực tiếp
+    if (queueProvider.currentTicket != null) {
+      final ticket = queueProvider.currentTicket!;
+      dynamicAppointmentNotifs.add({
+        'title': 'Số thứ tự khám bệnh: #${ticket.ticketNumber}',
+        'desc': 'Khoa: ${ticket.departmentName} - Phòng ${ticket.roomNumber}. Hiện có ${queueProvider.waitingAheadCount} người đang chờ trước bạn.',
+        'time': 'Thời gian thực',
+        'icon': Icons.queue_rounded,
+        'color': const Color(0xFF0284C7),
+        'type': 'appointment',
+        'priority': 'high',
+      });
+    }
+
+    // 2. Thông báo lịch hẹn thực tế của người bệnh
+    for (final apt in aptProvider.myAppointments) {
+      final status = apt['status']?.toString() ?? 'Pending';
+      final statusText = status == 'Confirmed'
+          ? 'Đã được bệnh viện duyệt & xác nhận'
+          : status == 'Cancelled'
+              ? 'Đã hủy lịch hẹn'
+              : 'Đã tạo phiếu - Chờ tiếp nhận';
+      final color = status == 'Confirmed'
+          ? const Color(0xFF10B981)
+          : status == 'Cancelled'
+              ? const Color(0xFFEF4444)
+              : const Color(0xFF0284C7);
+
+      dynamicAppointmentNotifs.add({
+        'title': 'Lịch khám: ${apt['departmentName'] ?? 'Chuyên khoa'}',
+        'desc': 'Bác sĩ: ${apt['doctorName'] ?? 'Bác sĩ chuyên khoa'}. Thời gian: ${apt['appointmentTime'] ?? ''} ngày ${apt['appointmentDate'] ?? ''}. Trạng thái: $statusText.',
+        'time': 'Phiếu hẹn trực tuyến',
+        'icon': Icons.calendar_month_rounded,
+        'color': color,
+        'type': 'appointment',
+        'priority': 'high',
+      });
+    }
+
+    final allItems = [...dynamicAppointmentNotifs, ..._allNotifications];
+    final appointments = allItems.where((n) => n['type'] == 'appointment' || n['type'] == 'medical').toList();
+    final systemNotifications = allItems.where((n) => n['type'] == 'system' || n['type'] == 'hospital' || n['type'] == 'payment' || n['type'] == 'medication').toList();
+    final unreadCount = allItems.where((e) => !_readItems.contains(e['title'] as String)).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FA),
@@ -134,9 +184,9 @@ class _NotificationsViewState extends State<NotificationsView>
                                   color: Colors.white,
                                 ),
                               ),
-                              if (_unreadCount > 0)
+                              if (unreadCount > 0)
                                 Text(
-                                  '$_unreadCount thông báo chưa đọc',
+                                  '$unreadCount thông báo chưa đọc',
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
                                     color: Colors.white.withValues(alpha: 0.8),
@@ -149,8 +199,8 @@ class _NotificationsViewState extends State<NotificationsView>
                         TextButton.icon(
                           onPressed: () {
                             setState(() {
-                              for (int i = 0; i < _allNotifications.length; i++) {
-                                _readItems.add(i);
+                              for (final item in allItems) {
+                                _readItems.add(item['title'] as String);
                               }
                             });
                           },
@@ -196,7 +246,7 @@ class _NotificationsViewState extends State<NotificationsView>
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                '${_appointments.length}',
+                                '${appointments.length}',
                                 style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             ),
@@ -216,9 +266,9 @@ class _NotificationsViewState extends State<NotificationsView>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildNotificationList(_allNotifications, auth),
-                _buildNotificationList(_appointments, auth),
-                _buildNotificationList(_systemNotifications, auth),
+                _buildNotificationList(allItems, auth),
+                _buildNotificationList(appointments, auth),
+                _buildNotificationList(systemNotifications, auth),
               ],
             ),
           ),
@@ -248,12 +298,12 @@ class _NotificationsViewState extends State<NotificationsView>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        final globalIndex = _allNotifications.indexOf(items[index]);
         final item = items[index];
-        final isUnread = !_readItems.contains(globalIndex);
+        final title = item['title'] as String;
+        final isUnread = !_readItems.contains(title);
 
         return Dismissible(
-          key: Key('notif_${globalIndex}_${item['title']}'),
+          key: Key('notif_${index}_$title'),
           direction: DismissDirection.endToStart,
           background: Container(
             alignment: Alignment.centerRight,
@@ -268,11 +318,12 @@ class _NotificationsViewState extends State<NotificationsView>
           onDismissed: (_) {
             setState(() {
               _allNotifications.remove(item);
+              _readItems.add(title);
             });
           },
           child: GestureDetector(
             onTap: () {
-              setState(() => _readItems.add(globalIndex));
+              setState(() => _readItems.add(title));
               _handleNotificationTap(context, item, auth);
             },
             child: AnimatedContainer(
@@ -392,7 +443,7 @@ class _NotificationsViewState extends State<NotificationsView>
   void _handleNotificationTap(BuildContext context, Map<String, dynamic> item, AuthProvider auth) {
     final type = item['type'] as String;
     if (type == 'appointment') {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const BookAppointmentView()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAppointmentsView()));
     } else if (type == 'medical') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
     }

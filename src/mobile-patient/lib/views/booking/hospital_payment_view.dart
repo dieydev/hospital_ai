@@ -6,7 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../profile/complete_profile_view.dart';
 
 class HospitalPaymentView extends StatefulWidget {
-  const HospitalPaymentView({super.key});
+  final int initialIndex;
+  const HospitalPaymentView({super.key, this.initialIndex = 0});
 
   @override
   State<HospitalPaymentView> createState() => _HospitalPaymentViewState();
@@ -75,7 +76,7 @@ class _HospitalPaymentViewState extends State<HospitalPaymentView> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialIndex.clamp(0, 1));
   }
 
   @override

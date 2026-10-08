@@ -270,6 +270,14 @@ class AccountProfileView extends StatelessWidget {
                           onChanged: (val) => settings.toggleBiometrics(val),
                         ),
                         _buildDivider(indent: 64),
+                        _buildMenuItem(
+                          icon: Icons.lock_reset_rounded,
+                          title: 'Đổi mật khẩu',
+                          subtitle: 'Cập nhật mật khẩu tài khoản',
+                          color: const Color(0xFF0284C7),
+                          onTap: () => _showChangePasswordDialog(context, auth),
+                        ),
+                        _buildDivider(indent: 64),
                         _buildMenuSwitchTile(
                           icon: Icons.notifications_outlined,
                           title: 'Thông báo',
@@ -551,4 +559,185 @@ class AccountProfileView extends StatelessWidget {
       },
     );
   }
+
+  void _showChangePasswordDialog(BuildContext context, AuthProvider auth) {
+    final oldPasswordCtrl = TextEditingController();
+    final newPasswordCtrl = TextEditingController();
+    final confirmPasswordCtrl = TextEditingController();
+    bool obscureOld = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    bool isSubmitting = false;
+    String? errorText;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.lock_reset_rounded, color: Color(0xFF0284C7), size: 22),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Đổi Mật Khẩu',
+                style: GoogleFonts.sora(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (errorText != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorText!,
+                            style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFDC2626)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Text('Mật khẩu hiện tại', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF334155))),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: oldPasswordCtrl,
+                  obscureText: obscureOld,
+                  decoration: InputDecoration(
+                    hintText: 'Nhập mật khẩu hiện tại...',
+                    hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureOld ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 18, color: const Color(0xFF64748B)),
+                      onPressed: () => setModalState(() => obscureOld = !obscureOld),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text('Mật khẩu mới', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF334155))),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: newPasswordCtrl,
+                  obscureText: obscureNew,
+                  decoration: InputDecoration(
+                    hintText: 'Tối thiểu 6 ký tự...',
+                    hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureNew ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 18, color: const Color(0xFF64748B)),
+                      onPressed: () => setModalState(() => obscureNew = !obscureNew),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text('Xác nhận mật khẩu mới', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF334155))),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: confirmPasswordCtrl,
+                  obscureText: obscureConfirm,
+                  decoration: InputDecoration(
+                    hintText: 'Nhập lại mật khẩu mới...',
+                    hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFBAE6FD))),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureConfirm ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 18, color: const Color(0xFF64748B)),
+                      onPressed: () => setModalState(() => obscureConfirm = !obscureConfirm),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+              child: Text('Huỷ', style: GoogleFonts.inter(color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final oldPass = oldPasswordCtrl.text.trim();
+                      final newPass = newPasswordCtrl.text.trim();
+                      final confirmPass = confirmPasswordCtrl.text.trim();
+
+                      if (oldPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
+                        setModalState(() => errorText = 'Vui lòng nhập đầy đủ các trường thông tin');
+                        return;
+                      }
+                      if (newPass.length < 6) {
+                        setModalState(() => errorText = 'Mật khẩu mới phải có ít nhất 6 ký tự');
+                        return;
+                      }
+                      if (newPass != confirmPass) {
+                        setModalState(() => errorText = 'Mật khẩu xác nhận không trùng khớp');
+                        return;
+                      }
+
+                      setModalState(() {
+                        isSubmitting = true;
+                        errorText = null;
+                      });
+
+                      try {
+                        await auth.changePassword(oldPass, newPass);
+                        if (context.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✓ Đổi mật khẩu thành công!'),
+                              backgroundColor: Color(0xFF10B981),
+                            ),
+                          );
+                        }
+                      } catch (err) {
+                        setModalState(() {
+                          isSubmitting = false;
+                          errorText = err.toString().replaceAll('Exception: ', '');
+                        });
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0284C7),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: isSubmitting
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text('Lưu thay đổi', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+

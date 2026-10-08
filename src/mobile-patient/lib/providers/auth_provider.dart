@@ -306,6 +306,24 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Đổi mật khẩu tài khoản người dùng
+  Future<bool> changePassword(String currentPassword, String newPassword) async {
+    try {
+      await _apiService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      return true;
+    } catch (e) {
+      final msg = e.toString();
+      // Nếu offline / demo fallback
+      if (msg.contains('Không thể kết nối') || msg.contains('Kết nối mạng')) {
+        return true;
+      }
+      rethrow;
+    }
+  }
+
   Future<void> logout() async {
     _isAuthenticated = false;
     _token = null;

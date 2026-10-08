@@ -211,7 +211,7 @@ class _HomeViewState extends State<HomeView> {
         ),
         'onTap': () {
           ProfileGuard.check(context, onAllowed: () {
-            _showServiceModal('Hoá đơn điện tử', 'Tra cứu và tải hóa đơn GTGT điện tử khám chữa bệnh của người bệnh theo mã BN.');
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const HospitalPaymentView(initialIndex: 1)));
           });
         },
       },
