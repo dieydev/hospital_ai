@@ -26,15 +26,16 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
     final user = context.read<AuthProvider>().user;
     if (user != null) {
       context.read<AppointmentProvider>().fetchMyAppointments(
-            user.soDienThoai,
+            user.soDienThoai ?? '',
             patientCode: user.maBenhNhan,
           );
     }
   }
 
-  void _showCancelDialog(BuildContext context, String appointmentId, String doctorName) {
+  void _showCancelDialog(BuildContext parentContext, String appointmentId, String doctorName) {
+    final messenger = ScaffoldMessenger.of(parentContext);
     showDialog(
-      context: context,
+      context: parentContext,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
@@ -60,16 +61,14 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              final provider = context.read<AppointmentProvider>();
+              final provider = parentContext.read<AppointmentProvider>();
               final success = await provider.cancelAppointment(appointmentId);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(success ? 'Đã hủy lịch hẹn thành công!' : 'Hủy lịch hẹn không thành công.'),
-                    backgroundColor: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                  ),
-                );
-              }
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(success ? 'Đã hủy lịch hẹn thành công!' : 'Hủy lịch hẹn không thành công.'),
+                  backgroundColor: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                ),
+              );
             },
             child: Text('Xác nhận hủy', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
           ),
@@ -176,7 +175,6 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
 
   Widget _buildAppointmentCard(BuildContext context, Map<String, dynamic> item) {
     final id = item['id']?.toString() ?? '';
-    final code = item['patientCode']?.toString() ?? '';
     final doctor = item['doctorName']?.toString() ?? 'Bác sĩ chuyên khoa';
     final dept = item['departmentName']?.toString() ?? 'Khoa Khám Bệnh';
     final date = item['appointmentDate']?.toString() ?? '';
