@@ -2,8 +2,8 @@
 
 **Tên đề tài:** Hệ thống Quản lý Quá trình Khám chữa bệnh & Hồ sơ Bệnh án Điện tử (EMR) Tích hợp Trí tuệ Nhân tạo cho Bệnh viện Đa khoa Quốc tế D-Medical  
 **Sinh viên thực hiện:** Nguyễn Thành Duy  
-**Ngày cập nhật:** 26/09/2026  
-**Trạng thái chung:** **Đã hoàn thành ~95% khối lượng công việc toàn dự án**
+**Ngày cập nhật:** 08/10/2026  
+**Trạng thái chung:** **Đã hoàn thành ~98% khối lượng công việc toàn dự án (Toàn bộ 15 nhóm chức năng phần mềm đã hoàn tất 100%)**
 
 ---
 
@@ -14,11 +14,11 @@
 | 1 | Khảo sát quy trình y tế & Thiết kế CSDL | **100%** | 🟢 Hoàn thành | Đã chuẩn hóa bảng CSDL SQL Server 2022 |
 | 2 | Kiến trúc Hệ thống Backend Microservices | **100%** | 🟢 Hoàn thành | .NET 9 Microservices + Docker Compose 7 Containers |
 | 3 | API Gateway & Phân quyền Security | **100%** | 🟢 Hoàn thành | YARP Reverse Proxy + Bearer JWT Token |
-| 4 | Web Admin Portal (Bác sĩ, Lễ tân, Quản trị) | **95%** | 🟢 Hoàn thành | Đã hoàn thiện 13 màn hình nghiệp vụ chính |
-| 5 | Mobile Patient App (Flutter Bệnh nhân) | **95%** | 🟢 Hoàn thành | Đầy đủ luồng Đặt khám, Hàng chờ, EMR, Viện phí, Nhắc thuốc |
+| 4 | Web Admin Portal (Bác sĩ, Lễ tân, Quản trị) | **100%** | 🟢 Hoàn thành | Đã hoàn thiện toàn diện 13 màn hình nghiệp vụ chính |
+| 5 | Mobile Patient App (Flutter Bệnh nhân) | **100%** | 🟢 Hoàn thành | Đầy đủ luồng Đặt khám, Hàng chờ, EMR, Viện phí, Nhắc thuốc, Đổi mật khẩu, Thông báo động |
 | 6 | Đóng gói Docker & Docker Compose | **100%** | 🟢 Hoàn thành | 7 Containers hoạt động ổn định trên Docker Desktop |
-| 7 | Tích hợp Trợ lý Y tế AI (Google Gemini) | **92%** | 🟢 Hoàn thành | Hỗ trợ gợi ý phác đồ SOAP, chuẩn đoán ICD-10 & tương tác thuốc |
-| 8 | Viết Quyển Báo cáo Đồ án Tốt nghiệp | **85%** | 🟡 Đang hoàn thiện | Đã soạn thảo các chương 1-4, cập nhật các màn hình mới |
+| 7 | Tích hợp Trợ lý Y tế AI (Google Gemini) | **100%** | 🟢 Hoàn thành | Hỗ trợ gợi ý phác đồ SOAP, chuẩn đoán ICD-10 & tương tác thuốc |
+| 8 | Viết Quyển Báo cáo Đồ án Tốt nghiệp | **88%** | 🟡 Đang hoàn thiện | Đang cập nhật ảnh chụp các luồng mới vào quyển báo cáo Word |
 
 ---
 
