@@ -121,8 +121,12 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
     _usernameController.dispose();
     _passwordController.dispose();
     _forgotPhoneController.dispose();
-    for (var c in _otpControllers) c.dispose();
-    for (var f in _otpFocusNodes) f.dispose();
+    for (var c in _otpControllers) {
+      c.dispose();
+    }
+    for (var f in _otpFocusNodes) {
+      f.dispose();
+    }
     _newPasswordController.dispose();
     _confirmNewPasswordController.dispose();
     _countdownTimer?.cancel();
@@ -775,7 +779,9 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
                 _isForgotPasswordMode = false;
                 _forgotStep = 1;
                 _countdownTimer?.cancel();
-                for (var c in _otpControllers) c.clear();
+                for (var c in _otpControllers) {
+                  c.clear();
+                }
                 _newPasswordController.clear();
                 _confirmNewPasswordController.clear();
               }),

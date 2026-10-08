@@ -5,7 +5,6 @@ import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/appointment_provider.dart';
 import '../../providers/queue_provider.dart';
-import '../appointment/book_appointment_view.dart';
 import '../appointment/medical_history_view.dart';
 import '../appointment/my_appointments_view.dart';
 
@@ -29,7 +28,7 @@ class _NotificationsViewState extends State<NotificationsView>
       final user = context.read<AuthProvider>().user;
       if (user != null) {
         context.read<AppointmentProvider>().fetchMyAppointments(
-              user.soDienThoai,
+              user.soDienThoai ?? '',
               patientCode: user.maBenhNhan,
             );
       }
@@ -108,11 +107,11 @@ class _NotificationsViewState extends State<NotificationsView>
     final List<Map<String, dynamic>> dynamicAppointmentNotifs = [];
 
     // 1. Thông báo số thứ tự hàng chờ trực tiếp
-    if (queueProvider.currentTicket != null) {
-      final ticket = queueProvider.currentTicket!;
+    if (queueProvider.myTicket != null) {
+      final ticket = queueProvider.myTicket!;
       dynamicAppointmentNotifs.add({
-        'title': 'Số thứ tự khám bệnh: #${ticket.ticketNumber}',
-        'desc': 'Khoa: ${ticket.departmentName} - Phòng ${ticket.roomNumber}. Hiện có ${queueProvider.waitingAheadCount} người đang chờ trước bạn.',
+        'title': 'Số thứ tự khám bệnh: #${ticket.sequenceNumber}',
+        'desc': 'Khoa: ${ticket.departmentName} - ${ticket.location}. Hiện có ${queueProvider.remainingAhead} người đang chờ trước bạn.',
         'time': 'Thời gian thực',
         'icon': Icons.queue_rounded,
         'color': const Color(0xFF0284C7),

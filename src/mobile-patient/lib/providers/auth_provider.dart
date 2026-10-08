@@ -293,7 +293,7 @@ class AuthProvider extends ChangeNotifier {
           'fullName': updatedUser.hoTen,
           'gender': updatedUser.gioiTinh,
           'dateOfBirth': updatedUser.ngaySinh.isNotEmpty ? updatedUser.ngaySinh : DateTime.now().toIso8601String(),
-          'identityCardNumber': updatedUser.soCCCD ?? '',
+          'identityCardNumber': updatedUser.soCCCD,
           'healthInsuranceNumber': updatedUser.maTheBHYT ?? '',
           'phoneNumber': updatedUser.soDienThoai ?? '',
           'email': updatedUser.email ?? '',
