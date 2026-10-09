@@ -26,6 +26,113 @@
 
 ---
 
+## 📊 BÁO CÁO TIẾN ĐỘ ĐỀ TÀI TỐT NGHIỆP (BCTN STATUS REPORT)
+
+> **Thông tin đề tài:**
+> - **Đề tài:** Hệ thống Quản lý Quá trình Khám chữa bệnh & Hồ sơ Bệnh án Điện tử (EMR) Tích hợp Trí tuệ Nhân tạo (Clinical AI) cho Bệnh viện Đa khoa Quốc tế D-Medical
+> - **Sinh viên thực hiện:** Nguyễn Thành Duy (Mã đề tài: 15)
+> - **Thời điểm cập nhật:** Tháng 10/2026
+> - **Đánh giá tổng quan:** **Hoàn thành ~98% khối lượng công việc** *(Phần mềm hoàn tất 100%, Quyển báo cáo Word đạt ~88%)*
+
+---
+
+### 1️⃣ Báo cáo Tiến độ & Sản phẩm BCTN Đã Làm Được
+
+#### 📌 Bảng Tổng Hợp Tiến Độ Các Hạng Mục:
+
+| STT | Phân hệ / Hạng mục công việc | Tỷ lệ HT | Trạng thái | Chi tiết sản phẩm & Công nghệ |
+| :---: | :--- | :---: | :---: | :--- |
+| **1** | **Khảo sát quy trình y tế & Thiết kế CSDL** | **100%** | 🟢 Hoàn thành | Đã chuẩn hóa SQL Server 2022 (`docs/HospitalAI_DB.sql`) + MongoDB 7.0 (Audit log). |
+| **2** | **Kiến trúc Backend Microservices** | **100%** | 🟢 Hoàn thành | .NET 9, Clean Architecture, CQRS, Docker Compose 7 containers độc lập. |
+| **3** | **API Gateway & Bảo mật dữ liệu y tế** | **100%** | 🟢 Hoàn thành | .NET 9 YARP Reverse Proxy, Rate Limiting, JWT Bearer Token, chuẩn bảo mật HIPAA/PII. |
+| **4** | **Web Admin Portal (D-Medical)** | **100%** | 🟢 Hoàn thành | React 18 + Vite + TS + Ant Design 5 (Hoàn thiện đầy đủ 13 màn hình nghiệp vụ). |
+| **5** | **Mobile Patient App (Flutter)** | **100%** | 🟢 Hoàn thành | Flutter 3 (Bốc số, Hàng chờ, EMR, Viện phí VNPay/VietQR, Sinh hiệu, Nhắc thuốc). |
+| **6** | **Tích hợp Trợ lý Y tế AI (Clinical AI)** | **100%** | 🟢 Hoàn thành | Google Gemini Pro/Flash + Clinical Decision Rule Engine (ICD-10, tương tác thuốc). |
+| **7** | **Thanh toán Viện phí Đa kênh** | **100%** | 🟢 Hoàn thành | Tích hợp cổng VNPay Sandbox & VietQR tự động, trừ giảm BHYT 80%. |
+| **8** | **Quyển Báo cáo Đồ án Tốt nghiệp (Word)** | **88%** | 🟡 Đang hoàn thiện | Đã hoàn thành cấu trúc các chương (`docs/15_NguyenThanhDuy.docx`), đang cập nhật ảnh chụp các luồng mới. |
+
+#### 🚀 Chi Tiết Sản Phẩm & Tính Năng Đã Hoàn Thiện:
+
+1. **Hạ tầng Backend Microservices (.NET 9 & Docker Compose 7 Containers):**
+   - **`hospitalai-sqlserver` (Port 14333):** Lưu trữ dữ liệu quan hệ (bệnh nhân, bác sĩ, lịch hẹn, bệnh án, đơn thuốc, hóa đơn).
+   - **`hospitalai-mongodb` (Port 27017):** Lưu trữ Audit Log thao tác người dùng và nhật ký phản hồi của Clinical AI.
+   - **`hospitalai-api-gateway` (Port 5000):** API Gateway tập trung (.NET 9 YARP) định tuyến request động, cân bằng tải và kiểm soát JWT.
+   - **`hospitalai-identity-service` (Port 5001):** Xác thực, phân quyền đa vai trò (Quản trị viên, Bác sĩ, Lễ tân/Điều dưỡng, Bệnh nhân).
+   - **`hospitalai-patient-service` (Port 5002):** Quản lý hồ sơ bệnh nhân, định danh CCCD, BHYT, tiền sử bệnh và dị ứng.
+   - **`hospitalai-queue-service` (Port 5003):** Tiếp nhận bệnh nhân, cấp số tự động theo phòng khám và điều phối hàng chờ.
+   - **`hospitalai-examination-service` (Port 5004):** Thăm khám lâm sàng chuẩn SOAP, gợi ý mã bệnh ICD-10, kê đơn thuốc điện tử, tính viện phí.
+   - **`hospitalai-web-admin` (Port 3000):** Đóng gói Nginx chạy ứng dụng quản trị Web.
+
+2. **Web Admin Portal (React 18 + TypeScript + Ant Design 5):**
+   - Tuân thủ bộ màu chuẩn y tế số (`#0284c7`, `#0369a1`).
+   - Đầy đủ 13 màn hình nghiệp vụ: **Dashboard** biểu đồ thời gian thực, **Tiếp nhận & Cấp số** in phiếu QR, **Phòng khám SOAP** (nhập sinh hiệu, chẩn đoán ICD-10, kê đơn có cảnh báo tương tác thuốc), **Bệnh án điện tử EMR** (xuất tóm tắt PDF), **Quản lý lịch hẹn**, **Thanh toán Viện phí** (VietQR, VNPay, BHYT 80%), **Trợ lý AI Y tế lâm sàng**, **Quản lý danh mục & Nhật ký hệ thống**.
+
+3. **Mobile Patient App (Flutter 3):**
+   - **Onboarding & Khảo sát thông minh:** Phân luồng Bệnh nhân cũ (đồng bộ EMR theo CCCD) và Bệnh nhân mới (cấp mã BN).
+   - **Bốc số & Hàng chờ Trực tuyến (Queue Tracker):** Theo dõi số người đang chờ thời gian thực phía trước phòng khám.
+   - **Sổ Bệnh án EMR di động:** Xem lại lịch sử các đợt khám, đơn thuốc hướng dẫn uống Sáng/Trưa/Chiều/Tối.
+   - **Thanh toán Viện phí Trực tuyến:** Tích hợp Cổng VNPay Sandbox & quét mã VietQR tự động.
+   - **Tính năng mở rộng:** Theo dõi sinh hiệu cá nhân (biểu đồ Huyết áp, Đường huyết, BMI), Nhắc uống thuốc tự động từ đơn EMR, Sổ tiêm chủng vắc xin và Phím bấm gọi Cấp cứu 115 khẩn cấp.
+
+---
+
+### 2️⃣ Thầy Góp Ý Bổ Sung, Chỉnh Sửa (Nội Dung Xin Ý Kiến & Dự Kiến Phản Biện)
+
+#### 🎯 Các Điểm Trọng Tâm Cần Chủ Động Xin Ý Kiến Thầy:
+1. **Quy trình Khám SOAP & Bệnh án EMR:**
+   - Xin ý kiến Thầy về việc luồng kết thúc khám có cần bổ sung thêm chữ ký số (Digital Signature) của Bác sĩ vào file PDF bệnh án hay chỉ cần mã định danh Bác sĩ (Doctor License Number) là đạt yêu cầu đề tài.
+2. **Cơ chế Trợ lý Y tế AI Lâm sàng:**
+   - Báo cáo Thầy về định hướng AI: Mô hình Google Gemini Pro/Flash đóng vai trò *“Gợi ý và Hỗ trợ tham khảo”* (Clinical Decision Support), quyền quyết định cuối cùng thuộc về Bác sĩ (Human-in-the-loop) để đảm bảo an toàn y khoa.
+3. **Đánh giá Hiệu năng & Kiểm thử Tải:**
+   - Xin định hướng của Thầy về các kịch bản kiểm thử tải bổ sung với k6/Locust (ví dụ: mô phỏng 500 bệnh nhân cùng bốc số đầu giờ sáng qua Gateway).
+
+#### 💬 Dự Kiến Câu Hỏi Phản Biện Của Thầy & Định Hướng Trả Lời:
+
+| Câu hỏi dự kiến | Định hướng trả lời thuyết phục |
+| :--- | :--- |
+| **Tại sao chọn Kiến trúc Microservices thay vì Monolith?** | *"Hệ thống y tế có tính phân hóa lưu lượng cao: dịch vụ bốc số hàng chờ (Queue) có lượng truy cập đột biến đầu ca khám, trong khi dịch vụ khám SOAP cần độ ổn định tuyệt đối. Tách riêng các microservices giúp scale độc lập và đảm bảo tính sẵn sàng cao."* |
+| **Nếu AI gợi ý sai đơn thuốc hoặc chẩn đoán thì sao?** | *"Hệ thống áp dụng cơ chế 2 lớp: AI chỉ mang tính tham khảo (Bác sĩ phải xác nhận mới lưu vào bệnh án), kết hợp bộ Fallback Rule Engine offline đối chiếu với danh mục chống chỉ định Bộ Y tế. Toàn bộ prompt và kết quả AI đều được ghi audit log vào MongoDB."* |
+| **Hàng chờ giữa Mobile và Web đồng bộ như thế nào?** | *"Queue Service quản lý trạng thái tập trung. Khi Bác sĩ nhấn gọi số tiếp theo trên Web Admin, dữ liệu được cập nhật tức thì trên Database và Mobile App bệnh nhân nhận thông báo trạng thái cập nhật."* |
+
+#### 📝 Khung Ghi Nhận Ý Kiến Đóng Góp Của Thầy:
+- **Góp ý về Nội dung Quyển Báo cáo:** ............................................................................................................
+- **Góp ý về Giao diện & Trải nghiệm (UI/UX):** .................................................................................................
+- **Góp ý về Logic Nghiệp vụ & Module AI:** ....................................................................................................
+- **Chỉ đạo trọng tâm cho buổi Bảo vệ Tốt nghiệp:** .........................................................................................
+
+---
+
+### 3️⃣ Định Hướng Và Kế Hoạch Cho Những Công Việc Tiếp Theo
+
+```mermaid
+gantt
+    title KẾ HOẠCH NƯỚC RÚT ĐỒ ÁN TỐT NGHIỆP
+    dateFormat  YYYY-MM-DD
+    section Quyển Báo Cáo
+    Tiếp thu ý kiến Thầy & Hiệu chỉnh Word       :active, a1, 2026-10-10, 3d
+    Cập nhật hình ảnh thực tế & Bảng CSDL         :a2, after a1, 3d
+    In ấn & Nộp duyệt sơ khảo                     :a3, after a2, 2d
+    section Kiểm Thử & Tinh Chỉnh
+    Chạy Load Testing k6 cho Gateway & Services   :b1, 2026-10-12, 3d
+    Rà soát bảo mật JWT & Phân quyền Role        :b2, after b1, 2d
+    section Chuẩn Bị Bảo Vệ
+    Soạn Slide PowerPoint Thuyết trình            :c1, 2026-10-16, 4d
+    Luyện tập Kịch bản Live Demo 2 Chiều Web-App  :c2, after c1, 3d
+    Bảo vệ chính thức trước Hội đồng              :milestone, m1, after c2, 1d
+```
+
+#### 📋 Các Đầu Việc Cụ Thể:
+1. **Hoàn thiện 100% Quyển Báo cáo Word (`docs/15_NguyenThanhDuy.docx`):**
+   - Tiếp thu trọn vẹn các ý kiến góp ý của Thầy vào bản thảo.
+   - Bổ sung hình ảnh giao diện thực tế đầy đủ của Web Admin và Flutter Mobile App.
+   - Cập nhật số liệu đo kiểm hiệu năng và biểu đồ luồng nghiệp vụ.
+2. **Xây dựng Kịch bản Live Demo Song Song (2 Chiều):**
+   - Chuẩn bị luồng trình chiếu thực tế: Bệnh nhân đặt lịch & bốc số trên Mobile ➔ Lễ tân tiếp nhận trên Web ➔ Bác sĩ khám SOAP, AI gợi ý đơn thuốc trên Web ➔ Bệnh nhân nhận đơn thuốc và quét mã thanh toán VNPay/VietQR trên Mobile.
+3. **Thiết kế Slide Báo cáo PowerPoint:**
+   - Soạn thảo 15 - 20 slides súc tích: Đặt vấn đề ➔ Kiến trúc Microservices & Công nghệ ➔ Điểm nổi bật về Clinical AI ➔ Video/Demo thực tế ➔ Kết luận & Hướng phát triển.
+
+---
+
 ## 🏗️ Kiến trúc Hệ thống (Microservices Architecture)
 
 Hệ thống được thiết kế theo **Kiến trúc Microservices** hiện đại, đóng gói và vận hành qua **Docker Desktop & Docker Compose** gồm 7 containers độc lập:

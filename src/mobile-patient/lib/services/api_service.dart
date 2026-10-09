@@ -25,8 +25,39 @@ class ApiService {
           }
           return handler.next(options);
         },
-        onError: (DioException e, handler) {
-          // Log or handle specific errors here (e.g. 401 Unauthorized)
+        onError: (DioException e, handler) async {
+          // Tự động thử lại với 127.0.0.1 (qua adb reverse USB) nếu baseUrl WiFi gặp lỗi kết nối
+          if (e.type == DioExceptionType.connectionError &&
+              e.requestOptions.extra['retried_fallback'] != true) {
+            final isUsbCurrent = _dio.options.baseUrl.contains('127.0.0.1');
+            final fallbackBaseUrl = isUsbCurrent
+                ? 'http://${AppConstants.serverHostIp}:${AppConstants.serverPort}/api'
+                : 'http://127.0.0.1:${AppConstants.serverPort}/api';
+
+            try {
+              final newOptions = e.requestOptions;
+              newOptions.extra['retried_fallback'] = true;
+              final retryDio = Dio(
+                BaseOptions(
+                  baseUrl: fallbackBaseUrl,
+                  connectTimeout: const Duration(seconds: 4),
+                  receiveTimeout: const Duration(seconds: 10),
+                  headers: newOptions.headers,
+                ),
+              );
+              final res = await retryDio.request(
+                newOptions.path,
+                data: newOptions.data,
+                queryParameters: newOptions.queryParameters,
+                options: Options(method: newOptions.method),
+              );
+              // Lưu baseUrl thành công để các request sau dùng luôn
+              _dio.options.baseUrl = fallbackBaseUrl;
+              return handler.resolve(res);
+            } catch (_) {
+              // Bỏ qua nếu fallback cũng lỗi, trả về lỗi gốc
+            }
+          }
           return handler.next(e);
         },
       ),
@@ -57,24 +88,28 @@ class ApiService {
     }
   }
 
+  /// Kiểm tra số điện thoại đã tồn tại tài khoản hay chưa
+  Future<Map<String, dynamic>> checkPhone(String phoneNumber) async {
+    try {
+      final response = await _dio.get(
+        '/auth/check-phone',
+        queryParameters: {'phoneNumber': phoneNumber.trim()},
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
+    }
+  }
+
   Future<Map<String, dynamic>> sendOtp(String phoneNumber) async {
     try {
       final response = await _dio.post(
         '/auth/send-otp',
-        data: {'phoneNumber': phoneNumber},
+        data: {'phoneNumber': phoneNumber.trim()},
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      if (e.response != null) {
-        // Server trả về phản hồi thật (ví dụ: Số điện thoại đã được đăng ký) -> Quăng lỗi thật!
-        throw Exception(_getErrorMessage(e));
-      }
-      // Chỉ fallback khi hoàn toàn không có mạng / timeout
-      return {
-        'success': true,
-        'message': 'Mã OTP đã được gửi đến số $phoneNumber (Mã demo: 123456)',
-        'otpCode': '123456',
-      };
+      throw Exception(_getErrorMessage(e));
     }
   }
 

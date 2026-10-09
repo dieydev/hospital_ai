@@ -16,12 +16,14 @@ public class PatientDto
     public string PhoneNumber { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string Address { get; set; } = string.Empty;
+    public string? Profession { get; set; }
     public string? MedicalHistory { get; set; }
     public string? DrugAllergies { get; set; }
     public string? BloodType { get; set; }
     public string? EmergencyContactName { get; set; }
     public string? EmergencyContactPhone { get; set; }
     public string? EmergencyContactRelation { get; set; }
+    public string? EmergencyContactAddress { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }
@@ -36,12 +38,14 @@ public class CreatePatientDto
     public string PhoneNumber { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string Address { get; set; } = string.Empty;
+    public string? Profession { get; set; }
     public string? MedicalHistory { get; set; }
     public string? DrugAllergies { get; set; }
     public string? BloodType { get; set; }
     public string? EmergencyContactName { get; set; }
     public string? EmergencyContactPhone { get; set; }
     public string? EmergencyContactRelation { get; set; }
+    public string? EmergencyContactAddress { get; set; }
 }
 
 public class UpdatePatientDto : CreatePatientDto

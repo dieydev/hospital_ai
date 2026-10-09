@@ -13,9 +13,11 @@ public class Patient
     public string IdentityCardNumber { get; set; } = string.Empty; // CCCD
     public string? HealthInsuranceNumber { get; set; } // Mã BHYT
     public string Address { get; set; } = string.Empty;
+    public string? Profession { get; set; } // NgheNghiep
     public string? EmergencyContactName { get; set; } // Người thân liên hệ khẩn cấp
     public string? EmergencyContactPhone { get; set; } // SĐT người thân
     public string? EmergencyContactRelation { get; set; } // Mối quan hệ (Vợ, Chồng, Cha, Mẹ, Con...)
+    public string? EmergencyContactAddress { get; set; } // DiaChiNguoiThan
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public Guid? UserId { get; set; }

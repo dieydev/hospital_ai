@@ -10,8 +10,25 @@ import 'complete_profile_view.dart';
 import '../onboarding/onboarding_view.dart';
 import '../appointment/my_appointments_view.dart';
 
-class AccountProfileView extends StatelessWidget {
+class AccountProfileView extends StatefulWidget {
   const AccountProfileView({super.key});
+
+  @override
+  State<AccountProfileView> createState() => _AccountProfileViewState();
+}
+
+class _AccountProfileViewState extends State<AccountProfileView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      if (auth.user == null || auth.user?.hoTen.isEmpty == true || auth.user?.maBenhNhan.isEmpty == true) {
+        auth.refreshProfile();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +42,12 @@ class AccountProfileView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: SingleChildScrollView(
-        child: Column(
+      body: RefreshIndicator(
+        onRefresh: () => auth.refreshProfile(),
+        color: AppTheme.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
           children: [
             // ── Gradient Header ──────────────────────────────────
             Stack(
@@ -371,8 +392,9 @@ class AccountProfileView extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDivider({double indent = 20}) {
     return Divider(height: 1, indent: indent, color: AppTheme.borderSubtle);

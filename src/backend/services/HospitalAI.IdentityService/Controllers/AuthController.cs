@@ -87,6 +87,35 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Kiểm tra số điện thoại đã tồn tại tài khoản hay chưa
+    /// </summary>
+    [HttpGet("check-phone")]
+    public async Task<IActionResult> CheckPhone([FromQuery] string phoneNumber)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+            {
+                return BadRequest(new { message = "Vui lòng cung cấp số điện thoại cần kiểm tra." });
+            }
+
+            var exists = await _authService.CheckPhoneExistsAsync(phoneNumber);
+            return Ok(new
+            {
+                exists = exists,
+                phoneNumber = phoneNumber,
+                message = exists
+                    ? $"Số điện thoại {phoneNumber} đã tồn tại trong hệ thống. Vui lòng đăng nhập."
+                    : $"Số điện thoại {phoneNumber} chưa được đăng ký."
+            });
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Xác thực mã OTP và cấp token
     /// </summary>
     [HttpPost("verify-otp")]

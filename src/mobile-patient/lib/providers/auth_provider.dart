@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
@@ -44,10 +45,14 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = true;
       if (savedUserJson != null) {
         try {
-          final Map<String, dynamic> jsonMap = Map<String, dynamic>.from(
-            Uri.splitQueryString(savedUserJson),
-          );
-          _user = PatientModel.fromJson(jsonMap);
+          if (savedUserJson.trim().startsWith('{')) {
+            _user = PatientModel.fromJson(jsonDecode(savedUserJson));
+          } else {
+            final Map<String, dynamic> jsonMap = Map<String, dynamic>.from(
+              Uri.splitQueryString(savedUserJson),
+            );
+            _user = PatientModel.fromJson(jsonMap);
+          }
         } catch (_) {}
       }
 
@@ -65,21 +70,22 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshProfile() async {
+    try {
+      final profile = await _apiService.get('/auth/me');
+      if (profile != null) {
+        _user = PatientModel.fromJson(profile);
+        await _persistUser(_user!);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   Future<void> _persistUser(PatientModel user) async {
-    // Store simple serialized format
-    final queryStr = Uri(queryParameters: {
-      'id': user.id,
-      'fullName': user.hoTen,
-      'phoneNumber': user.soDienThoai ?? '',
-      'patientCode': user.maBenhNhan,
-      'identityCardNumber': user.soCCCD,
-      'gender': user.gioiTinh,
-      'dateOfBirth': user.ngaySinh,
-      'address': user.diaChi ?? '',
-      'healthInsuranceNumber': user.maTheBHYT ?? '',
-      'isProfileComplete': user.isProfileComplete ? 'true' : 'false',
-    }).query;
-    await _storage.write(key: 'saved_user_profile', value: queryStr);
+    try {
+      final jsonStr = jsonEncode(user.toJson());
+      await _storage.write(key: 'saved_user_profile', value: jsonStr);
+    } catch (_) {}
   }
 
   Future<void> login(String username, String password) async {
@@ -99,6 +105,16 @@ class AuthProvider extends ChangeNotifier {
       } else {
         throw Exception('Không nhận được token từ server.');
       }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Kiểm tra số điện thoại đã tồn tại tài khoản hay chưa
+  Future<bool> checkPhoneExists(String phoneNumber) async {
+    try {
+      final res = await _apiService.checkPhone(phoneNumber);
+      return res['exists'] == true;
     } catch (e) {
       rethrow;
     }
@@ -156,16 +172,78 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Đăng ký tài khoản với Số điện thoại + Mật khẩu (sau khi xác thực OTP thành công)
-  Future<void> registerWithPassword(String phoneNumber, String password, String otpCode) async {
-    await _apiService.register({
+  /// Đăng ký tài khoản Bệnh nhân với đầy đủ thông tin định danh y tế
+  Future<void> registerPatient({
+    required String phoneNumber,
+    required String password,
+    required String fullName,
+    required String identityCardNumber,
+    required String dateOfBirth,
+    required String gender,
+    required String address,
+  }) async {
+    DateTime? dob;
+    try {
+      if (dateOfBirth.contains('/')) {
+        final parts = dateOfBirth.split('/');
+        if (parts.length == 3) {
+          dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+        }
+      } else if (dateOfBirth.isNotEmpty) {
+        dob = DateTime.tryParse(dateOfBirth);
+      }
+    } catch (_) {}
+
+    final regRes = await _apiService.register({
       'username': phoneNumber,
       'phoneNumber': phoneNumber,
       'password': password,
-      'fullName': 'Bệnh nhân mới',
+      'fullName': fullName.trim(),
+      'identityCardNumber': identityCardNumber.trim(),
+      'dateOfBirth': dob?.toIso8601String(),
+      'gender': gender,
+      'address': address.trim(),
       'role': 'Patient',
     });
+    if (regRes.isNotEmpty) {
+      _user = PatientModel.fromJson(regRes);
+      await _persistUser(_user!);
+      notifyListeners();
+    }
     await login(phoneNumber, password);
+  }
+
+  /// Đăng ký tài khoản với Số điện thoại + Mật khẩu (sau khi xác thực OTP thành công)
+  Future<void> registerWithPassword(
+    String phoneNumber,
+    String password,
+    String otpCode, {
+    String? fullName,
+    String? cccd,
+    String? dob,
+    String? gender,
+    String? address,
+  }) async {
+    if (fullName != null && cccd != null) {
+      await registerPatient(
+        phoneNumber: phoneNumber,
+        password: password,
+        fullName: fullName,
+        identityCardNumber: cccd,
+        dateOfBirth: dob ?? '',
+        gender: gender ?? 'Nam',
+        address: address ?? 'Chưa cập nhật',
+      );
+    } else {
+      await _apiService.register({
+        'username': phoneNumber,
+        'phoneNumber': phoneNumber,
+        'password': password,
+        'fullName': 'Bệnh nhân mới',
+        'role': 'Patient',
+      });
+      await login(phoneNumber, password);
+    }
   }
 
   // ── BIOMETRICS ────────────────────────────────────────────────────────────

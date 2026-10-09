@@ -21,6 +21,8 @@ public class RegisterRequestDto
     public string? Title { get; set; }
     public string? IdentityCardNumber { get; set; }
     public string? Gender { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? Address { get; set; }
 }
 
 public class AuthResponseDto

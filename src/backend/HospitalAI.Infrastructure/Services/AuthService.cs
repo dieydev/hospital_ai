@@ -46,6 +46,34 @@ public class AuthService : IAuthService
         var (token, expiresAt) = _tokenGenerator.GenerateToken(user, roles);
 
         var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
+        if (patient == null && roles.Contains("Patient"))
+        {
+            var currentYear = DateTime.Now.Year;
+            var prefix = $"BN{currentYear}";
+            var count = await _context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
+            var newPatientCode = $"{prefix}{(count + 1):D6}";
+            var cccd = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber.Trim() : $"CD{(count + 1):D9}";
+            if (await _context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd))
+            {
+                cccd = $"P{DateTime.UtcNow.Ticks % 1000000000000:D12}";
+            }
+
+            patient = new Patient
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                PatientCode = newPatientCode,
+                FullName = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : ("Bệnh nhân " + (user.PhoneNumber ?? "mới")),
+                Gender = "Nam",
+                DateOfBirth = DateTime.UtcNow.AddYears(-20),
+                IdentityCardNumber = cccd,
+                Address = "Chưa cập nhật",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Patients.Add(patient);
+            await _context.SaveChangesAsync();
+        }
+
         bool isComplete = patient != null &&
             !string.IsNullOrWhiteSpace(patient.IdentityCardNumber) &&
             patient.FullName != "Bệnh nhân mới" &&
@@ -61,13 +89,13 @@ public class AuthService : IAuthService
             {
                 Id = user.Id,
                 Username = user.Username,
-                FullName = user.FullName,
+                FullName = (patient != null && !string.IsNullOrWhiteSpace(patient.FullName)) ? patient.FullName : (!string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : "Bệnh nhân"),
                 Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
+                PhoneNumber = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber : (patient?.IdentityCardNumber ?? string.Empty),
                 Specialty = user.Specialty,
                 Title = user.Title,
                 Roles = roles,
-                AvatarUrl = user.AvatarUrl,
+                AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(patient?.FullName ?? user.Username)}",
                 PatientCode = patient?.PatientCode,
                 IdentityCardNumber = patient?.IdentityCardNumber,
                 Gender = patient?.Gender,
@@ -117,6 +145,7 @@ public class AuthService : IAuthService
         if (!roles.Any()) roles.Add("Patient");
 
         var (token, expiresAt) = _tokenGenerator.GenerateToken(user, roles);
+        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
 
         return new AuthResponseDto
         {
@@ -126,13 +155,20 @@ public class AuthService : IAuthService
             {
                 Id = user.Id,
                 Username = user.Username,
-                FullName = user.FullName,
+                FullName = (patient != null && !string.IsNullOrWhiteSpace(patient.FullName)) ? patient.FullName : (!string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : "Bệnh nhân"),
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 Specialty = user.Specialty,
                 Title = user.Title,
                 Roles = roles,
-                AvatarUrl = user.AvatarUrl
+                AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(patient?.FullName ?? user.Username)}",
+                PatientCode = patient?.PatientCode,
+                IdentityCardNumber = patient?.IdentityCardNumber,
+                Gender = patient?.Gender,
+                DateOfBirth = patient?.DateOfBirth,
+                Address = patient?.Address,
+                HealthInsuranceNumber = patient?.HealthInsuranceNumber,
+                IsProfileComplete = patient != null && !string.IsNullOrWhiteSpace(patient.IdentityCardNumber) && !string.IsNullOrWhiteSpace(patient.FullName)
             }
         };
     }
@@ -141,16 +177,20 @@ public class AuthService : IAuthService
     {
         ValidatePasswordStrong(request.Password);
 
-        var existingUser = await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
+        var normalizedPhone = string.IsNullOrWhiteSpace(request.PhoneNumber)
+            ? request.Username.Trim().Replace(" ", "").Replace("-", "")
+            : request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+
+        var existingUser = await _context.Users.AnyAsync(u =>
+            u.PhoneNumber == normalizedPhone ||
+            u.Username.ToLower() == request.Username.ToLower() ||
+            u.Username.ToLower() == normalizedPhone.ToLower() ||
+            (normalizedPhone.StartsWith("0") && u.PhoneNumber == "+84" + normalizedPhone.Substring(1)) ||
+            (normalizedPhone.StartsWith("+84") && u.PhoneNumber == "0" + normalizedPhone.Substring(3)));
+
         if (existingUser)
         {
-            throw new Exception("Tên đăng nhập đã tồn tại trong hệ thống.");
-        }
-
-        var existingPhone = await _context.Users.AnyAsync(u => u.PhoneNumber == request.PhoneNumber);
-        if (existingPhone)
-        {
-            throw new Exception("Số điện thoại này đã được đăng ký tài khoản.");
+            throw new Exception($"Số điện thoại {normalizedPhone} đã tồn tại trong hệ thống. Vui lòng đăng nhập.");
         }
 
         var roleName = string.IsNullOrWhiteSpace(request.Role) ? "Patient" : request.Role;
@@ -180,33 +220,56 @@ public class AuthService : IAuthService
         _context.Users.Add(newUser);
 
         string? patientCode = null;
+        string? savedCccd = null;
 
-        if (roleName == "Patient" && !string.IsNullOrWhiteSpace(request.IdentityCardNumber))
+        if (roleName == "Patient")
         {
-            var existingCCCD = await _context.Patients.AnyAsync(p => p.IdentityCardNumber == request.IdentityCardNumber.Trim());
-            if (existingCCCD)
-            {
-                throw new Exception($"Số CCCD {request.IdentityCardNumber} đã tồn tại trong hệ thống!");
-            }
-
             var currentYear = DateTime.Now.Year;
             var prefix = $"BN{currentYear}";
             var count = await _context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
             patientCode = $"{prefix}{(count + 1):D6}";
+
+            var cccd = !string.IsNullOrWhiteSpace(request.IdentityCardNumber)
+                ? request.IdentityCardNumber.Trim()
+                : (!string.IsNullOrWhiteSpace(newUser.PhoneNumber) ? newUser.PhoneNumber.Trim() : $"CD{(count + 1):D9}");
+
+            if (!string.IsNullOrWhiteSpace(request.IdentityCardNumber))
+            {
+                var existingCCCD = await _context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd);
+                if (existingCCCD)
+                {
+                    throw new Exception($"Số CCCD {cccd} đã tồn tại trong hệ thống!");
+                }
+            }
+            else
+            {
+                // Nếu cccd tạm bằng SĐT đã có trong bảng Patients (do sync trước đó), sinh mã unique
+                var existingCCCD = await _context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd);
+                if (existingCCCD)
+                {
+                    cccd = $"P{DateTime.UtcNow.Ticks % 1000000000000:D12}";
+                }
+            }
+            savedCccd = cccd;
+
+            var fullName = !string.IsNullOrWhiteSpace(request.FullName) && request.FullName.Trim() != "Bệnh nhân mới"
+                ? request.FullName.Trim()
+                : (!string.IsNullOrWhiteSpace(newUser.PhoneNumber) ? $"Bệnh nhân {newUser.PhoneNumber}" : "Bệnh nhân mới");
 
             var patient = new Patient
             {
                 Id = Guid.NewGuid(),
                 UserId = newUser.Id,
                 PatientCode = patientCode,
-                FullName = request.FullName.Trim(),
+                FullName = fullName,
                 Gender = request.Gender ?? "Nam",
-                DateOfBirth = DateTime.UtcNow.AddYears(-20), // Default DateOfBirth if not provided
-                IdentityCardNumber = request.IdentityCardNumber.Trim(),
-                Address = "Chưa cập nhật",
+                DateOfBirth = request.DateOfBirth ?? DateTime.UtcNow.AddYears(-20),
+                IdentityCardNumber = cccd,
+                Address = !string.IsNullOrWhiteSpace(request.Address) ? request.Address.Trim() : "Chưa cập nhật",
                 CreatedAt = DateTime.UtcNow
             };
             _context.Patients.Add(patient);
+            newUser.FullName = fullName;
         }
 
         await _context.SaveChangesAsync();
@@ -223,7 +286,11 @@ public class AuthService : IAuthService
             Roles = new List<string> { role.Name },
             AvatarUrl = newUser.AvatarUrl,
             PatientCode = patientCode,
-            IdentityCardNumber = request.IdentityCardNumber?.Trim()
+            IdentityCardNumber = request.IdentityCardNumber?.Trim() ?? savedCccd,
+            Gender = request.Gender ?? "Nam",
+            DateOfBirth = request.DateOfBirth ?? DateTime.UtcNow.AddYears(-20),
+            Address = request.Address ?? "Chưa cập nhật",
+            IsProfileComplete = !string.IsNullOrWhiteSpace(request.IdentityCardNumber) && !string.IsNullOrWhiteSpace(request.FullName)
         };
     }
 
@@ -241,10 +308,10 @@ public class AuthService : IAuthService
         }
 
         // Kiểm tra xem Số điện thoại đã được đăng ký tài khoản chưa
-        var isExistingPhone = await _context.Users.AnyAsync(u => u.PhoneNumber == normalizedPhone);
+        var isExistingPhone = await CheckPhoneExistsAsync(normalizedPhone);
         if (isExistingPhone)
         {
-            throw new Exception($"Số điện thoại {normalizedPhone} đã được đăng ký tài khoản. Vui lòng đăng nhập.");
+            throw new Exception($"Số điện thoại {normalizedPhone} đã tồn tại trong hệ thống. Vui lòng đăng nhập.");
         }
 
         // Tạo mã OTP ngẫu nhiên 6 chữ số
@@ -257,6 +324,19 @@ public class AuthService : IAuthService
             Message = $"Mã xác thực OTP đã được gửi đến số điện thoại {normalizedPhone}",
             OtpCode = otpCode // Cung cấp mã để test/demo thuận tiện mà không phụ thuộc vào SMS Gateway
         };
+    }
+
+    public async Task<bool> CheckPhoneExistsAsync(string phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return false;
+
+        var normalizedPhone = phoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        return await _context.Users.AnyAsync(u =>
+            u.PhoneNumber == normalizedPhone ||
+            u.Username.ToLower() == normalizedPhone.ToLower() ||
+            (normalizedPhone.StartsWith("0") && u.PhoneNumber == "+84" + normalizedPhone.Substring(1)) ||
+            (normalizedPhone.StartsWith("+84") && u.PhoneNumber == "0" + normalizedPhone.Substring(3)));
     }
 
     /// <summary>
@@ -568,13 +648,13 @@ public class AuthService : IAuthService
         {
             Id = user.Id,
             Username = user.Username,
-            FullName = user.FullName,
+            FullName = (patient != null && !string.IsNullOrWhiteSpace(patient.FullName)) ? patient.FullName : (!string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : "Bệnh nhân"),
             Email = user.Email,
-            PhoneNumber = user.PhoneNumber,
+            PhoneNumber = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber : (patient?.IdentityCardNumber ?? string.Empty),
             Specialty = user.Specialty,
             Title = user.Title,
             Roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList(),
-            AvatarUrl = user.AvatarUrl,
+            AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(patient?.FullName ?? user.Username)}",
             PatientCode = patient?.PatientCode,
             IdentityCardNumber = patient?.IdentityCardNumber,
             Gender = patient?.Gender,

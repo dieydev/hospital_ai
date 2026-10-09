@@ -108,7 +108,18 @@ public class ExaminationService : IExaminationService
             ICD10Name = dto.ICD10Name,
             Plan = dto.Plan,
             Status = string.IsNullOrWhiteSpace(dto.Status) ? "Hoàn thành" : dto.Status,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ReasonForAdmission = dto.ReasonForAdmission,
+            PathologicalProcess = dto.PathologicalProcess,
+            GeneralExamination = dto.GeneralExamination,
+            InitialDiagnosis = dto.InitialDiagnosis,
+            PreliminaryDiagnosis = dto.PreliminaryDiagnosis,
+            DifferentialDiagnosis = dto.DifferentialDiagnosis,
+            DischargeStatus = dto.DischargeStatus,
+            NextTreatmentPlan = dto.NextTreatmentPlan,
+            DietaryAdvice = dto.DietaryAdvice,
+            FollowUpAppointment = dto.FollowUpAppointment,
+            DigitalSignature = dto.DigitalSignature
         };
 
         if (dto.PrescriptionDetails != null && dto.PrescriptionDetails.Any())
@@ -176,6 +187,18 @@ public class ExaminationService : IExaminationService
         exam.ICD10Name = dto.ICD10Name;
         exam.Plan = dto.Plan;
         exam.Status = dto.Status;
+
+        exam.ReasonForAdmission = dto.ReasonForAdmission;
+        exam.PathologicalProcess = dto.PathologicalProcess;
+        exam.GeneralExamination = dto.GeneralExamination;
+        exam.InitialDiagnosis = dto.InitialDiagnosis;
+        exam.PreliminaryDiagnosis = dto.PreliminaryDiagnosis;
+        exam.DifferentialDiagnosis = dto.DifferentialDiagnosis;
+        exam.DischargeStatus = dto.DischargeStatus;
+        exam.NextTreatmentPlan = dto.NextTreatmentPlan;
+        exam.DietaryAdvice = dto.DietaryAdvice;
+        exam.FollowUpAppointment = dto.FollowUpAppointment;
+        exam.DigitalSignature = dto.DigitalSignature;
 
         // Update Prescriptions
         _context.PrescriptionDetails.RemoveRange(exam.PrescriptionDetails);
@@ -252,6 +275,17 @@ public class ExaminationService : IExaminationService
             Plan = e.Plan,
             Status = e.Status,
             CreatedAt = e.CreatedAt,
+            ReasonForAdmission = e.ReasonForAdmission,
+            PathologicalProcess = e.PathologicalProcess,
+            GeneralExamination = e.GeneralExamination,
+            InitialDiagnosis = e.InitialDiagnosis,
+            PreliminaryDiagnosis = e.PreliminaryDiagnosis,
+            DifferentialDiagnosis = e.DifferentialDiagnosis,
+            DischargeStatus = e.DischargeStatus,
+            NextTreatmentPlan = e.NextTreatmentPlan,
+            DietaryAdvice = e.DietaryAdvice,
+            FollowUpAppointment = e.FollowUpAppointment,
+            DigitalSignature = e.DigitalSignature,
             PrescriptionDetails = e.PrescriptionDetails.Select(p => new PrescriptionDetailDto
             {
                 Id = p.Id,

@@ -295,5 +295,45 @@ public static class DataSeeder
                 await context.SaveChangesAsync();
             }
         }
+
+        // 7. Tự động đồng bộ các tài khoản Patient chưa có bản ghi trong bảng BenhNhan
+        var patientUsersWithoutProfile = await context.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "Patient"))
+            .Where(u => !context.Patients.Any(p => p.UserId == u.Id))
+            .ToListAsync();
+
+        foreach (var u in patientUsersWithoutProfile)
+        {
+            var currentYear = DateTime.Now.Year;
+            var prefix = $"BN{currentYear}";
+            var count = await context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
+            var pCode = $"{prefix}{(count + 1):D6}";
+            var cccd = !string.IsNullOrWhiteSpace(u.PhoneNumber) ? u.PhoneNumber.Trim() : $"CD{(count + 1):D9}";
+            if (await context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd))
+            {
+                cccd = $"P{DateTime.UtcNow.Ticks % 1000000000000:D12}";
+            }
+
+            context.Patients.Add(new Patient
+            {
+                Id = Guid.NewGuid(),
+                UserId = u.Id,
+                PatientCode = pCode,
+                FullName = !string.IsNullOrWhiteSpace(u.FullName) && u.FullName != "Bệnh nhân mới"
+                    ? u.FullName
+                    : (!string.IsNullOrWhiteSpace(u.PhoneNumber) ? $"Bệnh nhân {u.PhoneNumber}" : "Bệnh nhân mới"),
+                Gender = "Nam",
+                DateOfBirth = DateTime.UtcNow.AddYears(-20),
+                IdentityCardNumber = cccd,
+                Address = "Chưa cập nhật",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        if (patientUsersWithoutProfile.Any())
+        {
+            await context.SaveChangesAsync();
+        }
     }
 }

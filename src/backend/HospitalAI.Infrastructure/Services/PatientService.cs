@@ -30,7 +30,8 @@ public class PatientService : IPatientService
                 p.FullName.ToLower().Contains(search) ||
                 p.PatientCode.ToLower().Contains(search) ||
                 p.IdentityCardNumber.Contains(search) ||
-                (p.HealthInsuranceNumber != null && p.HealthInsuranceNumber.ToLower().Contains(search))
+                (p.HealthInsuranceNumber != null && p.HealthInsuranceNumber.ToLower().Contains(search)) ||
+                (p.User != null && p.User.PhoneNumber != null && p.User.PhoneNumber.Contains(search))
             );
         }
 
@@ -95,9 +96,11 @@ public class PatientService : IPatientService
             IdentityCardNumber = dto.IdentityCardNumber.Trim(),
             HealthInsuranceNumber = dto.HealthInsuranceNumber?.Trim(),
             Address = dto.Address?.Trim() ?? string.Empty,
+            Profession = dto.Profession?.Trim(),
             EmergencyContactName = dto.EmergencyContactName?.Trim(),
             EmergencyContactPhone = dto.EmergencyContactPhone?.Trim(),
             EmergencyContactRelation = dto.EmergencyContactRelation?.Trim(),
+            EmergencyContactAddress = dto.EmergencyContactAddress?.Trim(),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -133,9 +136,11 @@ public class PatientService : IPatientService
         patient.IdentityCardNumber = dto.IdentityCardNumber.Trim();
         patient.HealthInsuranceNumber = dto.HealthInsuranceNumber?.Trim();
         patient.Address = dto.Address?.Trim() ?? string.Empty;
+        patient.Profession = dto.Profession?.Trim();
         patient.EmergencyContactName = dto.EmergencyContactName?.Trim();
         patient.EmergencyContactPhone = dto.EmergencyContactPhone?.Trim();
         patient.EmergencyContactRelation = dto.EmergencyContactRelation?.Trim();
+        patient.EmergencyContactAddress = dto.EmergencyContactAddress?.Trim();
 
         // Sync PhoneNumber and Email back to linked User (TaiKhoan) table
         if (patient.User != null)
@@ -185,9 +190,11 @@ public class PatientService : IPatientService
             PhoneNumber = p.User?.PhoneNumber ?? string.Empty,
             Email = p.User?.Email,
             Address = p.Address,
+            Profession = p.Profession,
             EmergencyContactName = p.EmergencyContactName,
             EmergencyContactPhone = p.EmergencyContactPhone,
             EmergencyContactRelation = p.EmergencyContactRelation,
+            EmergencyContactAddress = p.EmergencyContactAddress,
             CreatedAt = p.CreatedAt
         };
     }

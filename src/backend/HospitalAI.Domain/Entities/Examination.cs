@@ -37,6 +37,19 @@ public class Examination
     public string Status { get; set; } = "Hoàn thành"; // Đang khám, Chờ CLS, Hoàn thành
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Các trường EMR mở rộng chuẩn Bộ Y tế
+    public string? ReasonForAdmission { get; set; } // LyDoVaoVien
+    public string? PathologicalProcess { get; set; } // QuaTrinhBenhLy
+    public string? GeneralExamination { get; set; } // KhamToanThan
+    public string? InitialDiagnosis { get; set; } // ChanDoanVaoVien
+    public string? PreliminaryDiagnosis { get; set; } // ChanDoanSoBo
+    public string? DifferentialDiagnosis { get; set; } // ChanDoanPhanBiet
+    public string? DischargeStatus { get; set; } // TinhTrangRaVien
+    public string? NextTreatmentPlan { get; set; } // HuongDieuTri
+    public string? DietaryAdvice { get; set; } // CheDoDinhDuong
+    public string? FollowUpAppointment { get; set; } // LichTaiKham
+    public string? DigitalSignature { get; set; } // ChuKySo
+
     public ICollection<PrescriptionDetail> PrescriptionDetails { get; set; } = new List<PrescriptionDetail>();
     public ICollection<ServiceOrderDetail> ServiceOrderDetails { get; set; } = new List<ServiceOrderDetail>();
 }

@@ -27,12 +27,14 @@ export interface Patient {
   soDienThoai: string;
   email?: string;
   diaChi: string;
+  ngheNghiep?: string;
   tienSuBenh?: string;
   diUngThuoc?: string;
   nhomMau?: string;
   tenNguoiThan?: string;
   soDienThoaiNguoiThan?: string;
   quanHeNguoiThan?: string;
+  diaChiNguoiThan?: string;
   isConsentData?: boolean; // NĐ 13/2023/NĐ-CP
   ngayTao?: string;
   ngayCapNhat?: string;

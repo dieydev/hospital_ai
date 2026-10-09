@@ -139,9 +139,11 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.IdentityCardNumber).HasColumnName("SoCCCD").HasMaxLength(20).IsRequired();
             entity.Property(e => e.HealthInsuranceNumber).HasColumnName("MaTheBHYT").HasMaxLength(20);
             entity.Property(e => e.Address).HasColumnName("DiaChi").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Profession).HasColumnName("NgheNghiep").HasMaxLength(100);
             entity.Property(e => e.EmergencyContactName).HasColumnName("TenNguoiThan").HasMaxLength(100);
             entity.Property(e => e.EmergencyContactRelation).HasColumnName("QuanHeNguoiThan").HasMaxLength(50);
             entity.Property(e => e.EmergencyContactPhone).HasColumnName("SoDienThoaiNguoiThan").HasMaxLength(20);
+            entity.Property(e => e.EmergencyContactAddress).HasColumnName("DiaChiNguoiThan").HasMaxLength(255);
             entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
 
             entity.Property(e => e.UserId).HasColumnName("TaiKhoanId");
@@ -162,6 +164,18 @@ public class HospitalDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.ExaminationCode).HasColumnName("MaLuotKham");
             entity.Property(e => e.ExaminationDate).HasColumnName("ThoiGianTiepNhan");
+
+            entity.Property(e => e.ReasonForAdmission).HasColumnName("LyDoVaoVien").HasMaxLength(500);
+            entity.Property(e => e.PathologicalProcess).HasColumnName("QuaTrinhBenhLy");
+            entity.Property(e => e.GeneralExamination).HasColumnName("KhamToanThan");
+            entity.Property(e => e.InitialDiagnosis).HasColumnName("ChanDoanVaoVien").HasMaxLength(255);
+            entity.Property(e => e.PreliminaryDiagnosis).HasColumnName("ChanDoanSoBo").HasMaxLength(255);
+            entity.Property(e => e.DifferentialDiagnosis).HasColumnName("ChanDoanPhanBiet").HasMaxLength(255);
+            entity.Property(e => e.DischargeStatus).HasColumnName("TinhTrangRaVien").HasMaxLength(255);
+            entity.Property(e => e.NextTreatmentPlan).HasColumnName("HuongDieuTri").HasMaxLength(500);
+            entity.Property(e => e.DietaryAdvice).HasColumnName("CheDoDinhDuong").HasMaxLength(500);
+            entity.Property(e => e.FollowUpAppointment).HasColumnName("LichTaiKham").HasMaxLength(255);
+            entity.Property(e => e.DigitalSignature).HasColumnName("ChuKySo").HasMaxLength(255);
 
             entity.HasOne(e => e.Patient)
                   .WithMany(p => p.Examinations)

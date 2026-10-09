@@ -39,6 +39,19 @@ public class ExaminationDto
     public string Status { get; set; } = "Hoàn thành"; // Đang khám, Chờ CLS, Hoàn thành
     public DateTime CreatedAt { get; set; }
 
+    // Các trường EMR mở rộng chuẩn Bộ Y tế
+    public string? ReasonForAdmission { get; set; }
+    public string? PathologicalProcess { get; set; }
+    public string? GeneralExamination { get; set; }
+    public string? InitialDiagnosis { get; set; }
+    public string? PreliminaryDiagnosis { get; set; }
+    public string? DifferentialDiagnosis { get; set; }
+    public string? DischargeStatus { get; set; }
+    public string? NextTreatmentPlan { get; set; }
+    public string? DietaryAdvice { get; set; }
+    public string? FollowUpAppointment { get; set; }
+    public string? DigitalSignature { get; set; }
+
     public List<PrescriptionDetailDto> PrescriptionDetails { get; set; } = new();
     public List<ServiceOrderDetailDto> ServiceOrderDetails { get; set; } = new();
 }
@@ -63,6 +76,19 @@ public class CreateExaminationDto
     public string ICD10Name { get; set; } = "Viêm họng cấp tính";
     public string Plan { get; set; } = string.Empty;
     public string Status { get; set; } = "Hoàn thành";
+
+    // EMR mở rộng
+    public string? ReasonForAdmission { get; set; }
+    public string? PathologicalProcess { get; set; }
+    public string? GeneralExamination { get; set; }
+    public string? InitialDiagnosis { get; set; }
+    public string? PreliminaryDiagnosis { get; set; }
+    public string? DifferentialDiagnosis { get; set; }
+    public string? DischargeStatus { get; set; }
+    public string? NextTreatmentPlan { get; set; }
+    public string? DietaryAdvice { get; set; }
+    public string? FollowUpAppointment { get; set; }
+    public string? DigitalSignature { get; set; }
 
     public List<PrescriptionDetailDto> PrescriptionDetails { get; set; } = new();
     public List<ServiceOrderDetailDto> ServiceOrderDetails { get; set; } = new();

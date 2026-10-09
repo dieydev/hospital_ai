@@ -76,10 +76,12 @@ CREATE TABLE dbo.BenhNhan (
     SoCCCD VARCHAR(20) NOT NULL,         
     MaTheBHYT VARCHAR(20) NULL,
     DiaChi NVARCHAR(255) NOT NULL,
+    NgheNghiep NVARCHAR(100) NULL,
     
     TenNguoiThan NVARCHAR(100) NULL,
     QuanHeNguoiThan NVARCHAR(50) NULL,
     SoDienThoaiNguoiThan VARCHAR(20) NULL,
+    DiaChiNguoiThan NVARCHAR(255) NULL,
     
     NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_BenhNhan PRIMARY KEY (Id),
@@ -154,6 +156,20 @@ CREATE TABLE dbo.LuotKhamBenh (
     PhieuHangChoId UNIQUEIDENTIFIER NOT NULL,
     NgayKham DATETIME NOT NULL DEFAULT GETDATE(),
     TrangThaiLuotKham VARCHAR(20) NOT NULL DEFAULT 'Examining', 
+    
+    -- Các trường EMR mở rộng chuẩn Bộ Y tế
+    LyDoVaoVien NVARCHAR(500) NULL,
+    QuaTrinhBenhLy NVARCHAR(MAX) NULL,
+    KhamToanThan NVARCHAR(MAX) NULL,
+    ChanDoanVaoVien NVARCHAR(255) NULL,
+    ChanDoanSoBo NVARCHAR(255) NULL,
+    ChanDoanPhanBiet NVARCHAR(255) NULL,
+    TinhTrangRaVien NVARCHAR(255) NULL,
+    HuongDieuTri NVARCHAR(500) NULL,
+    CheDoDinhDuong NVARCHAR(500) NULL,
+    LichTaiKham NVARCHAR(255) NULL,
+    ChuKySo NVARCHAR(255) NULL,
+
     CONSTRAINT PK_LuotKhamBenh PRIMARY KEY (Id),
     CONSTRAINT FK_LuotKhamBenh_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id),
     CONSTRAINT FK_LuotKhamBenh_BacSi FOREIGN KEY (BacSiId) REFERENCES dbo.HoSoNhanVien(Id),

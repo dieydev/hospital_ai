@@ -15,6 +15,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   final _formKey = GlobalKey<FormState>();
   
   late TextEditingController _fullNameController;
+  late TextEditingController _cccdController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
   late TextEditingController _addressController;
@@ -28,6 +29,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     super.initState();
     final user = context.read<AuthProvider>().user;
     _fullNameController = TextEditingController(text: user?.hoTen ?? '');
+    _cccdController = TextEditingController(text: user?.soCCCD ?? '');
     _phoneController = TextEditingController(text: user?.soDienThoai ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
     _addressController = TextEditingController(text: user?.diaChi ?? '');
@@ -38,6 +40,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   @override
   void dispose() {
     _fullNameController.dispose();
+    _cccdController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _addressController.dispose();
@@ -61,6 +64,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     if (currentUser != null) {
       final updatedUser = currentUser.copyWith(
         hoTen: _fullNameController.text.trim(),
+        soCCCD: _cccdController.text.trim(),
         soDienThoai: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         diaChi: _addressController.text.trim(),
@@ -143,6 +147,20 @@ class _EditProfileViewState extends State<EditProfileView> {
                   icon: Icons.person_outline,
                   hint: 'Nhập họ và tên',
                   validator: (val) => val == null || val.isEmpty ? 'Vui lòng nhập họ tên' : null,
+                ),
+                const SizedBox(height: 16),
+
+                _buildLabel('Số Căn cước công dân (CCCD - 12 số)'),
+                _buildTextField(
+                  controller: _cccdController,
+                  icon: Icons.badge_outlined,
+                  hint: 'Nhập 12 số CCCD',
+                  keyboardType: TextInputType.number,
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'Vui lòng nhập số CCCD';
+                    if (val.trim().length != 12) return 'CCCD phải có đúng 12 chữ số';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
