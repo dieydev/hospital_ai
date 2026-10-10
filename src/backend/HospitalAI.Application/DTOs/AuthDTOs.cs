@@ -50,6 +50,7 @@ public class UserProfileDto
     public string? Address { get; set; }
     public string? HealthInsuranceNumber { get; set; }
     public bool IsProfileComplete { get; set; }
+    public string? Token { get; set; }
 }
 
 public class SendOtpRequestDto

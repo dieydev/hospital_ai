@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/appointment_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -262,17 +263,38 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 // Info Rows
                 _buildInfoRow(Icons.event_rounded, 'Ngày khám:', date.isNotEmpty ? date : 'Chưa xếp ngày'),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.access_time_rounded, 'Khung giờ:', time.isNotEmpty ? time : 'Theo thứ tự tiếp nhận'),
+                _buildInfoRow(Icons.access_time_rounded, 'Khung giờ:', time.isNotEmpty ? time : 'Theo lịch hẹn'),
                 if (symptoms.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   _buildInfoRow(Icons.medical_information_outlined, 'Lý do khám:', symptoms),
                 ],
 
+                const SizedBox(height: 14),
+
+                // Button: Mã QR Check-in Tiếp Nhận (Thay thế STT)
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0284C7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: () => _showQrCodeBottomSheet(context, item),
+                    icon: const Icon(Icons.qr_code_2_rounded, size: 20, color: Colors.white),
+                    label: Text(
+                      'MÃ QR CHECK-IN TIẾP NHẬN',
+                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ),
+
                 if (isCancelable) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    height: 40,
+                    height: 38,
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFFECACA)),
@@ -280,8 +302,8 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () => _showCancelDialog(context, id, doctor),
-                      icon: const Icon(Icons.cancel_outlined, size: 18, color: Color(0xFFEF4444)),
-                      label: Text('Hủy lịch hẹn này', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFFEF4444))),
+                      icon: const Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFEF4444)),
+                      label: Text('Hủy lịch hẹn này', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700, color: const Color(0xFFEF4444))),
                     ),
                   ),
                 ],
@@ -290,6 +312,151 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showQrCodeBottomSheet(BuildContext parentContext, Map<String, dynamic> item) {
+    final user = parentContext.read<AuthProvider>().user;
+    final id = item['id']?.toString() ?? '';
+    final doctor = item['doctorName']?.toString() ?? 'Bác sĩ chuyên khoa';
+    final dept = item['departmentName']?.toString() ?? 'Khoa Khám Bệnh';
+    final date = item['appointmentDate']?.toString() ?? '';
+    final time = item['appointmentTime']?.toString() ?? '';
+    final qrData = item['qrCode']?.toString().isNotEmpty == true
+        ? item['qrCode'].toString()
+        : 'MEDQR|$id|${user?.maBenhNhan ?? ''}|$date|$time';
+
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 44,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFCBD5E1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            Text(
+              'PHIẾU KHÁM ĐIỆN TỬ',
+              style: GoogleFonts.sora(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Mã tiếp nhận: $id',
+              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+
+            // QR Code Box
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFBAE6FD), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: QrImageView(
+                data: qrData,
+                version: QrVersions.auto,
+                size: 180,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF0369A1)),
+                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF0284C7)),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Info rows
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F9FF),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
+              ),
+              child: Column(
+                children: [
+                  _buildDetailRowModal('Bệnh nhân:', user?.hoTen ?? ''),
+                  const SizedBox(height: 8),
+                  _buildDetailRowModal('Chuyên khoa:', dept),
+                  const SizedBox(height: 8),
+                  _buildDetailRowModal('Bác sĩ:', doctor),
+                  const SizedBox(height: 8),
+                  _buildDetailRowModal('Thời gian:', '$time - $date'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // QR Check-in Notice
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFFD97706), size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Quý khách chỉ cần xuất trình mã QR này tại quầy tiếp nhận để vào khám (Không cần bốc số thứ tự STT giấy).',
+                      style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF92400E), height: 1.35),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('ĐÓNG', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRowModal(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF64748B))),
+        Text(value, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+      ],
     );
   }
 

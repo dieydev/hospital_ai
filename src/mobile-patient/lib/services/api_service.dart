@@ -10,7 +10,7 @@ class ApiService {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 6),
         receiveTimeout: const Duration(seconds: 15),
         headers: {'Content-Type': 'application/json'},
       ),
@@ -26,8 +26,12 @@ class ApiService {
           return handler.next(options);
         },
         onError: (DioException e, handler) async {
-          // Tự động thử lại với 127.0.0.1 (qua adb reverse USB) nếu baseUrl WiFi gặp lỗi kết nối
-          if (e.type == DioExceptionType.connectionError &&
+          // Tự động thử lại giữa IP Wi-Fi và 127.0.0.1 (qua adb reverse USB) nếu gặp lỗi kết nối hoặc quá hạn timeout
+          final isNetworkIssue = e.type == DioExceptionType.connectionError ||
+              e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.sendTimeout;
+
+          if (isNetworkIssue &&
               e.requestOptions.extra['retried_fallback'] != true) {
             final isUsbCurrent = _dio.options.baseUrl.contains('127.0.0.1');
             final fallbackBaseUrl = isUsbCurrent
@@ -40,7 +44,7 @@ class ApiService {
               final retryDio = Dio(
                 BaseOptions(
                   baseUrl: fallbackBaseUrl,
-                  connectTimeout: const Duration(seconds: 4),
+                  connectTimeout: const Duration(seconds: 5),
                   receiveTimeout: const Duration(seconds: 10),
                   headers: newOptions.headers,
                 ),

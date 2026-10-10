@@ -14,26 +14,42 @@ import { AuditLogPage } from '../pages/AuditLogPage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { AppointmentsPage } from '../pages/AppointmentsPage';
+import { PatientBookingPage } from '../pages/PatientBookingPage';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const AppRoutes: React.FC = () => {
   const user = useAuthStore((state) => state.user);
 
+  // Kiểm tra vai trò: Cán bộ y tế & Quản trị viên nội bộ mới được vào hệ thống quản lý nội bộ
+  const isStaffOrAdmin = user?.vaiTro?.some((r) =>
+    ['Admin', 'Doctor', 'Nurse', 'Receptionist'].includes(r)
+  );
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      
+      {/* Public Patient Booking Portal Routes (Dành cho bệnh nhân đặt lịch & tra cứu) */}
+      <Route path="/booking" element={<PatientBookingPage />} />
+      <Route path="/dat-lich" element={<PatientBookingPage />} />
 
-      {/* Protected Routes */}
+      {/* Protected Routes dành cho Quản trị viên & Cán bộ y tế */}
       <Route
         path="/*"
         element={
-          user ? (
+          !user ? (
+            <Navigate to="/login" replace />
+          ) : !isStaffOrAdmin ? (
+            // Nếu người dùng chỉ có quyền Patient, tự động chuyển hướng đến Cổng đặt khám bệnh nhân
+            <Navigate to="/booking" replace />
+          ) : (
             <MainLayout>
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/reception" element={<ReceptionPage />} />
                 <Route path="/appointments" element={<AppointmentsPage />} />
+                <Route path="/booking" element={<PatientBookingPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/examinations" element={<ExaminationsPage />} />
                 <Route path="/cls-pacs" element={<ExaminationsPage />} />
@@ -49,8 +65,6 @@ export const AppRoutes: React.FC = () => {
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </MainLayout>
-          ) : (
-            <Navigate to="/login" replace />
           )
         }
       />

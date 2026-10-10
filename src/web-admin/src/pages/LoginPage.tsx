@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Checkbox, Typography, Alert, Divider } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { Card, Form, Input, Button, Checkbox, Typography, Alert, Divider, Tabs, Radio } from 'antd';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
+import {
+  UserOutlined,
+  LockOutlined,
+  PhoneOutlined,
+  IdcardOutlined,
+  CheckCircleOutlined,
+  ArrowLeftOutlined,
+  LoginOutlined,
+  UserAddOutlined,
+} from '@ant-design/icons';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../services/api';
-import { showToast, showErrorAlert } from '../utils/sweetAlert';
+import { showToast, showErrorAlert, showSuccessAlert } from '../utils/sweetAlert';
 import { useThemeStore } from '../store/useThemeStore';
+import { isStrictMode } from '../utils/modeHelper';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // Google Logo Component
 const GoogleIcon: React.FC = () => (
@@ -32,53 +43,236 @@ const GoogleIcon: React.FC = () => (
 );
 
 export const LoginPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  
+  const [loginForm] = Form.useForm();
+  const [registerForm] = Form.useForm();
+
   const navigate = useNavigate();
+  const location = useLocation();
   const setAuth = useAuthStore((state) => state.setAuth);
   const { isDarkMode } = useThemeStore();
 
-  // Handle Login Submit
+  // Helper check URL search param redirect
+  const getRedirectUrl = () => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('redirect');
+  };
+
+  // Helper: Dispatch successful authentication & Route based on ROLE
+  const handleAuthSuccess = (user: any, token: string, customMessage?: string) => {
+    const roles: string[] = user.roles || user.vaiTro || [];
+    const isStaffOrAdmin = roles.some((r: string) =>
+      ['Admin', 'Doctor', 'Nurse', 'Receptionist'].includes(r)
+    );
+
+    setAuth(
+      {
+        id: user.id,
+        tenDangNhap: user.username || user.tenDangNhap,
+        hoTen: user.fullName || user.hoTen,
+        email: user.email,
+        soDienThoai: user.phoneNumber || user.soDienThoai,
+        vaiTro: roles as any,
+        chuyenKhoa: user.specialty,
+        chucDanh: user.title,
+        trangThaiKichHoat: true,
+        avatarUrl: user.avatarUrl,
+      },
+      token
+    );
+
+    const redirectUrl = getRedirectUrl();
+
+    if (isStaffOrAdmin) {
+      showToast(
+        customMessage || `Đăng nhập thành công! Chào mừng cán bộ ${user.fullName || user.username}`,
+        'success'
+      );
+      // Admin / Staff redirects to Dashboard unless specified otherwise
+      navigate(redirectUrl && redirectUrl !== '/booking' ? redirectUrl : '/dashboard');
+    } else {
+      // Patient Role ALWAYS redirects to Patient Booking Portal
+      showToast(
+        customMessage || `Đăng nhập thành công! Chào mừng Bệnh nhân ${user.fullName || user.username}`,
+        'success'
+      );
+      navigate('/booking');
+    }
+  };
+
+  // 1. Xử lý Đăng nhập (Sign In)
   const onLoginFinish = async (values: { username: string; password: string }) => {
     setLoginLoading(true);
     setErrorMsg('');
 
     try {
       const response = await api.post('/auth/login', {
-        username: values.username,
+        username: values.username.trim(),
         password: values.password,
       });
 
       const { token, user } = response.data;
-      setAuth(
-        {
-          id: user.id,
-          tenDangNhap: user.username,
-          hoTen: user.fullName,
-          email: user.email,
-          soDienThoai: user.phoneNumber,
-          vaiTro: user.roles,
-          chuyenKhoa: user.specialty,
-          chucDanh: user.title,
-          trangThaiKichHoat: true,
-          avatarUrl: user.avatarUrl,
-        },
-        token
-      );
-
-      showToast(`Đăng nhập thành công! Chào mừng ${user.fullName}`, 'success');
+      handleAuthSuccess(user, token);
       setLoginLoading(false);
-      navigate('/dashboard');
     } catch (err: any) {
-      const apiError = err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng.';
+      // Offline / Local fallback nếu Docker/Backend chưa chạy và strictMode = false
+      if (!isStrictMode()) {
+        const u = values.username.trim().toLowerCase();
+        if (u === 'admin' && values.password === '123456') {
+          handleAuthSuccess(
+            {
+              id: 'admin-001',
+              username: 'admin',
+              fullName: 'Quản trị viên Hệ thống',
+              roles: ['Admin'],
+              phoneNumber: '0900000001',
+            },
+            'mock_admin_token'
+          );
+          setLoginLoading(false);
+          return;
+        }
+        if (u === 'dr.duy' && values.password === '123456') {
+          handleAuthSuccess(
+            {
+              id: 'doc-001',
+              username: 'dr.duy',
+              fullName: 'BS. CKII. Nguyễn Thanh Duy',
+              roles: ['Doctor', 'Admin'],
+              phoneNumber: '0336022526',
+            },
+            'mock_doctor_token'
+          );
+          setLoginLoading(false);
+          return;
+        }
+        if (u === 'patient01' && values.password === '123456') {
+          handleAuthSuccess(
+            {
+              id: 'pat-001',
+              username: 'patient01',
+              fullName: 'Nguyễn Văn An',
+              roles: ['Patient'],
+              phoneNumber: '0987654321',
+            },
+            'mock_patient_token'
+          );
+          setLoginLoading(false);
+          return;
+        }
+      }
+
+      const apiError =
+        err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.';
       setErrorMsg(apiError);
       showErrorAlert('Đăng nhập thất bại', apiError);
       setLoginLoading(false);
     }
   };
 
-  // Real Google OAuth Popup Login Hook
+  // 2. Xử lý Đăng ký Bệnh nhân (Patient Self-Registration)
+  const onRegisterFinish = async (values: {
+    fullName: string;
+    phoneNumber: string;
+    username?: string;
+    password: string;
+    confirmPassword: string;
+    gender?: string;
+    identityCardNumber?: string;
+    address?: string;
+  }) => {
+    setRegisterLoading(true);
+    setErrorMsg('');
+
+    const cleanPhone = values.phoneNumber.trim().replace(/\s+/g, '');
+    const finalUsername = values.username?.trim() || cleanPhone;
+
+    const payload = {
+      username: finalUsername,
+      password: values.password,
+      fullName: values.fullName.trim(),
+      phoneNumber: cleanPhone,
+      email: `${finalUsername}@hospital-ai.vn`,
+      role: 'Patient', // Bắt buộc cố định quyền Bệnh nhân
+      gender: values.gender || 'Nam',
+      identityCardNumber: values.identityCardNumber?.trim() || '',
+      address: values.address?.trim() || '',
+    };
+
+    try {
+      const response = await api.post('/auth/register', payload);
+      const data = response.data;
+
+      // Nếu backend trả về Token & Profile -> Đăng nhập tự động luôn
+      if (data && data.token) {
+        handleAuthSuccess(
+          {
+            id: data.id,
+            username: data.username,
+            fullName: data.fullName,
+            phoneNumber: data.phoneNumber,
+            roles: ['Patient'],
+          },
+          data.token,
+          `Đăng ký tài khoản thành công! Chào mừng Bệnh nhân ${data.fullName}`
+        );
+      } else {
+        // Hoặc tự động gọi login
+        try {
+          const loginRes = await api.post('/auth/login', {
+            username: finalUsername,
+            password: values.password,
+          });
+          const { token, user } = loginRes.data;
+          handleAuthSuccess(
+            user,
+            token,
+            `Đăng ký tài khoản thành công! Chào mừng Bệnh nhân ${user.fullName || values.fullName}`
+          );
+        } catch {
+          // Nếu không auto-login được thì chuyển sang tab Đăng nhập
+          showSuccessAlert(
+            'Đăng ký tài khoản Bệnh nhân thành công!',
+            `Tài khoản ${finalUsername} đã được tạo với quyền Bệnh nhân. Vui lòng đăng nhập để bắt đầu đặt lịch khám.`
+          );
+          setActiveTab('login');
+          loginForm.setFieldsValue({ username: finalUsername });
+        }
+      }
+      setRegisterLoading(false);
+    } catch (err: any) {
+      // Mock Fallback offline nếu server không kết nối
+      if (!isStrictMode()) {
+        const mockNewUser = {
+          id: `pat-mock-${Date.now()}`,
+          username: finalUsername,
+          fullName: values.fullName.trim(),
+          phoneNumber: cleanPhone,
+          roles: ['Patient'],
+        };
+        handleAuthSuccess(
+          mockNewUser,
+          'mock_patient_registered_token',
+          `Đăng ký tài khoản thành công! Chào mừng Bệnh nhân ${values.fullName}`
+        );
+        setRegisterLoading(false);
+        return;
+      }
+
+      const apiError =
+        err.response?.data?.message || 'Đăng ký tài khoản thất bại. Vui lòng kiểm tra lại thông tin.';
+      setErrorMsg(apiError);
+      showErrorAlert('Đăng ký không thành công', apiError);
+      setRegisterLoading(false);
+    }
+  };
+
+  // 3. Đăng nhập Google OAuth (Tự động gán quyền Patient nếu người dùng mới)
   const googleLoginTrigger = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -96,24 +290,8 @@ export const LoginPage: React.FC = () => {
         });
 
         const { token, user } = response.data;
-        setAuth(
-          {
-            id: user.id,
-            tenDangNhap: user.username,
-            hoTen: user.fullName,
-            email: user.email,
-            soDienThoai: user.phoneNumber,
-            vaiTro: user.roles,
-            chuyenKhoa: user.specialty,
-            chucDanh: user.title,
-            trangThaiKichHoat: true,
-            avatarUrl: user.avatarUrl || googleUser.picture,
-          },
-          token
-        );
-        showToast(`Đăng nhập Google thành công! Chào mừng ${googleUser.name || googleUser.email}`, 'success');
+        handleAuthSuccess(user, token, `Đăng nhập Google thành công! Chào mừng ${user.fullName}`);
         setGoogleLoading(false);
-        navigate('/dashboard');
       } catch (err: any) {
         const apiError = err.response?.data?.message || 'Đăng nhập Google thất bại. Vui lòng thử lại.';
         showErrorAlert('Đăng nhập thất bại', apiError);
@@ -142,122 +320,452 @@ export const LoginPage: React.FC = () => {
         background: isDarkMode
           ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)'
           : 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%)',
-        padding: 20,
+        padding: '24px 16px',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       }}
     >
       <Card
         style={{
-          width: 460,
-          borderRadius: 16,
-          boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(2, 132, 199, 0.1)',
+          width: 500,
+          maxWidth: '100%',
+          borderRadius: 20,
+          boxShadow: isDarkMode ? '0 12px 36px rgba(0, 0, 0, 0.45)' : '0 12px 36px rgba(2, 132, 199, 0.12)',
           border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-          padding: '16px 16px',
           background: isDarkMode ? '#1e293b' : '#ffffff',
+          overflow: 'hidden',
         }}
+        bodyStyle={{ padding: '28px 24px' }}
       >
-        {/* Header Logo & Title */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <img
-            src="/logo_icon.png"
-            alt="D-Medical Logo"
-            style={{ height: 60, objectFit: 'contain', marginBottom: 12, filter: 'drop-shadow(0 4px 14px rgba(2, 132, 199, 0.25))' }}
-          />
-          <Title level={3} style={{ margin: '0 0 4px', fontWeight: 800, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-            D-MEDICAL <span style={{ color: '#0284c7' }}>AI</span>
-          </Title>
-          <Text type="secondary" style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#64748b' }}>
-            Hệ thống Quản lý Khám chữa bệnh & Bệnh án Điện tử EMR
-          </Text>
-        </div>
-
-        {errorMsg && <Alert message={errorMsg} type="error" showIcon style={{ marginBottom: 16, borderRadius: 8 }} />}
-
-        {/* FORM ĐĂNG NHẬP */}
-        <div>
-          <Form
-            name="login"
-            initialValues={{ remember: true }}
-            onFinish={onLoginFinish}
-            layout="vertical"
-          >
-            <Form.Item
-              name="username"
-              label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Tên đăng nhập / Email</span>}
-              rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
-            >
-              <Input placeholder="Nhập tên đăng nhập..." size="large" style={{ borderRadius: 8 }} />
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              label={<span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>Mật khẩu</span>}
-              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-            >
-              <Input.Password placeholder="Nhập mật khẩu..." size="large" style={{ borderRadius: 8 }} />
-            </Form.Item>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox style={{ color: isDarkMode ? '#cbd5e1' : undefined }}>Ghi nhớ đăng nhập</Checkbox>
-              </Form.Item>
-              <a style={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Quên mật khẩu?</a>
-            </div>
-
-            <Form.Item style={{ marginBottom: 12 }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                block
-                loading={loginLoading}
-                style={{
-                  height: 46,
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  fontSize: 15,
-                  background: '#0284c7',
-                  borderColor: '#0284c7',
-                }}
-              >
-                Đăng nhập Hệ thống
-              </Button>
-            </Form.Item>
-          </Form>
-
-          <Divider style={{ margin: '16px 0', fontSize: 13, color: isDarkMode ? '#94a3b8' : undefined }}>Hoặc</Divider>
-
+        {/* Nút quay lại Cổng Đặt Khám */}
+        <div style={{ marginBottom: 12 }}>
           <Button
-            size="large"
-            block
-            icon={<GoogleIcon />}
-            loading={googleLoading}
-            onClick={handleGoogleLogin}
+            type="link"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/booking')}
             style={{
-              height: 44,
-              borderRadius: 8,
+              padding: 0,
+              color: isDarkMode ? '#38bdf8' : '#0284c7',
               fontWeight: 600,
-              color: isDarkMode ? '#f8fafc' : '#334155',
-              borderColor: isDarkMode ? '#334155' : '#cbd5e1',
-              background: isDarkMode ? '#0f172a' : '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              fontSize: 13,
             }}
           >
-            Đăng nhập nhanh với Google
+            Quay lại Cổng Đặt Khám Bệnh Nhân
           </Button>
-
-          <div style={{ textAlign: 'center', marginTop: 20, padding: '10px 12px', background: isDarkMode ? '#0f172a' : '#f0f9ff', borderRadius: 8, border: isDarkMode ? '1px solid #334155' : '1px dashed #bae6fd' }}>
-            <Text style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 12.5 }}>
-              🔒 Tài khoản Y bác sĩ & Cán bộ y tế được cấp nội bộ bởi Quản trị viên hệ thống.
-            </Text>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div style={{ textAlign: 'center', marginTop: 20, borderTop: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9', paddingTop: 14 }}>
+        {/* Brand Header */}
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <img
+            src={isDarkMode ? '/logo_white.png' : '/logo.png'}
+            alt="D-Medical Healthcare Connected"
+            style={{
+              height: 58,
+              maxWidth: '85%',
+              objectFit: 'contain',
+              marginBottom: 4,
+              filter: isDarkMode ? 'none' : 'drop-shadow(0 4px 12px rgba(2, 132, 199, 0.18))',
+            }}
+          />
+        </div>
+
+        {errorMsg && (
+          <Alert
+            message={errorMsg}
+            type="error"
+            showIcon
+            closable
+            onClose={() => setErrorMsg('')}
+            style={{ marginBottom: 16, borderRadius: 10 }}
+          />
+        )}
+
+        {/* Tabs: Đăng nhập & Đăng ký */}
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => {
+            setActiveTab(key as 'login' | 'register');
+            setErrorMsg('');
+          }}
+          centered
+          tabBarStyle={{ marginBottom: 20 }}
+          items={[
+            {
+              key: 'login',
+              label: (
+                <span style={{ fontSize: 15, fontWeight: 700, padding: '0 8px' }}>
+                  <LoginOutlined style={{ marginRight: 6 }} />
+                  Đăng Nhập
+                </span>
+              ),
+            },
+            {
+              key: 'register',
+              label: (
+                <span style={{ fontSize: 15, fontWeight: 700, padding: '0 8px' }}>
+                  <UserAddOutlined style={{ marginRight: 6 }} />
+                  Đăng Ký Bệnh Nhân
+                </span>
+              ),
+            },
+          ]}
+        />
+
+        {/* ================= TAB 1: ĐĂNG NHẬP ================= */}
+        {activeTab === 'login' && (
+          <div>
+            <Form
+              form={loginForm}
+              name="login"
+              initialValues={{ remember: true }}
+              onFinish={onLoginFinish}
+              layout="vertical"
+              requiredMark={false}
+            >
+              <Form.Item
+                name="username"
+                label={
+                  <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                    Tên đăng nhập / Số điện thoại
+                  </span>
+                }
+                rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập hoặc số điện thoại!' }]}
+              >
+                <Input
+                  prefix={<UserOutlined style={{ color: '#94a3b8' }} />}
+                  placeholder="Nhập tên đăng nhập hoặc SĐT..."
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="password"
+                label={
+                  <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                    Mật khẩu
+                  </span>
+                }
+                rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+                  placeholder="Nhập mật khẩu..."
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 20,
+                }}
+              >
+                <Form.Item name="remember" valuePropName="checked" noStyle>
+                  <Checkbox style={{ color: isDarkMode ? '#cbd5e1' : '#475569', fontSize: 13 }}>
+                    Ghi nhớ đăng nhập
+                  </Checkbox>
+                </Form.Item>
+                <a
+                  style={{
+                    color: isDarkMode ? '#38bdf8' : '#0284c7',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() =>
+                    showToast('Vui lòng liên hệ hotline 1900 6868 để được cấp lại mật khẩu.', 'info')
+                  }
+                >
+                  Quên mật khẩu?
+                </a>
+              </div>
+
+              <Form.Item style={{ marginBottom: 12 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  block
+                  loading={loginLoading}
+                  style={{
+                    height: 46,
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    backgroundColor: '#0284c7',
+                    borderColor: '#0284c7',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                  }}
+                >
+                  Đăng Nhập Vào Hệ Thống
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <Divider style={{ margin: '14px 0', fontSize: 13, color: isDarkMode ? '#94a3b8' : undefined }}>
+              Hoặc
+            </Divider>
+
+            <Button
+              size="large"
+              block
+              icon={<GoogleIcon />}
+              loading={googleLoading}
+              onClick={handleGoogleLogin}
+              style={{
+                height: 44,
+                borderRadius: 10,
+                fontWeight: 600,
+                color: isDarkMode ? '#f8fafc' : '#334155',
+                borderColor: isDarkMode ? '#334155' : '#cbd5e1',
+                background: isDarkMode ? '#0f172a' : '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              Đăng nhập nhanh với Google
+            </Button>
+
+
+
+            <div style={{ textAlign: 'center', marginTop: 14 }}>
+              <Text style={{ fontSize: 13, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                Chưa có tài khoản bệnh nhân?{' '}
+                <a
+                  style={{ color: '#0284c7', fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => setActiveTab('register')}
+                >
+                  Đăng ký ngay
+                </a>
+              </Text>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 2: ĐĂNG KÝ BỆNH NHÂN ================= */}
+        {activeTab === 'register' && (
+          <div>
+
+            <Form
+              form={registerForm}
+              name="register"
+              onFinish={onRegisterFinish}
+              layout="vertical"
+              requiredMark={false}
+              initialValues={{ gender: 'Nam' }}
+            >
+              <Form.Item
+                name="fullName"
+                label={
+                  <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                    Họ và tên bệnh nhân <span style={{ color: '#ef4444' }}>*</span>
+                  </span>
+                }
+                rules={[
+                  { required: true, message: 'Vui lòng nhập họ và tên của bạn!' },
+                  { min: 3, message: 'Họ và tên phải có ít nhất 3 ký tự!' },
+                ]}
+              >
+                <Input
+                  prefix={<UserOutlined style={{ color: '#94a3b8' }} />}
+                  placeholder="Ví dụ: Nguyễn Văn An"
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="phoneNumber"
+                label={
+                  <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                    Số điện thoại <span style={{ color: '#ef4444' }}>*</span>
+                  </span>
+                }
+                rules={[
+                  { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                  {
+                    pattern: /(84|0[3|5|7|8|9])+([0-9]{8})\b/,
+                    message: 'Số điện thoại không đúng định dạng (10 số)!',
+                  },
+                ]}
+              >
+                <Input
+                  prefix={<PhoneOutlined style={{ color: '#94a3b8' }} />}
+                  placeholder="Ví dụ: 0912345678"
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="username"
+                label={
+                  <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                    Tên đăng nhập <span style={{ color: '#94a3b8', fontSize: 12 }}>(Tùy chọn, mặc định theo SĐT)</span>
+                  </span>
+                }
+              >
+                <Input
+                  prefix={<UserOutlined style={{ color: '#94a3b8' }} />}
+                  placeholder="Để trống sẽ dùng số điện thoại..."
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <Form.Item
+                  name="password"
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Mật khẩu <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                  }
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập mật khẩu!' },
+                    { min: 6, message: 'Mật khẩu phải dài ít nhất 6 ký tự!' },
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+                    placeholder="Tối thiểu 6 ký tự"
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="confirmPassword"
+                  dependencies={['password']}
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Xác nhận mật khẩu <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                  }
+                  rules={[
+                    { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue('password') === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+                    placeholder="Nhập lại mật khẩu"
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                  />
+                </Form.Item>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <Form.Item
+                  name="gender"
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Giới tính
+                    </span>
+                  }
+                >
+                  <Radio.Group style={{ width: '100%', display: 'flex' }}>
+                    <Radio.Button value="Nam" style={{ flex: 1, textAlign: 'center' }}>
+                      Nam
+                    </Radio.Button>
+                    <Radio.Button value="Nữ" style={{ flex: 1, textAlign: 'center' }}>
+                      Nữ
+                    </Radio.Button>
+                  </Radio.Group>
+                </Form.Item>
+
+                <Form.Item
+                  name="identityCardNumber"
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Số CCCD <span style={{ color: '#94a3b8', fontSize: 12 }}>(Tùy chọn)</span>
+                    </span>
+                  }
+                >
+                  <Input
+                    prefix={<IdcardOutlined style={{ color: '#94a3b8' }} />}
+                    placeholder="Số thẻ CCCD..."
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                  />
+                </Form.Item>
+              </div>
+
+              <Form.Item
+                name="address"
+                label={
+                  <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                    Địa chỉ cư trú <span style={{ color: '#94a3b8', fontSize: 12 }}>(Tùy chọn)</span>
+                  </span>
+                }
+              >
+                <Input
+                  placeholder="Quận/Huyện, Tỉnh/TP..."
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <Form.Item style={{ marginTop: 20, marginBottom: 12 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  block
+                  loading={registerLoading}
+                  icon={<CheckCircleOutlined />}
+                  style={{
+                    height: 48,
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    backgroundColor: '#0284c7',
+                    borderColor: '#0284c7',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                  }}
+                >
+                  Đăng Ký Tài Khoản Bệnh Nhân
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <div style={{ textAlign: 'center', marginTop: 14 }}>
+              <Text style={{ fontSize: 13, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                Đã có tài khoản?{' '}
+                <a
+                  style={{ color: '#0284c7', fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => setActiveTab('login')}
+                >
+                  Đăng nhập ngay
+                </a>
+              </Text>
+            </div>
+          </div>
+        )}
+
+        {/* Footer Copyright */}
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: 22,
+            borderTop: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9',
+            paddingTop: 14,
+          }}
+        >
           <Text type="secondary" style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : '#94a3b8' }}>
-            © 2026 Bệnh viện Đa khoa Hospital AI
+            © 2026 Bệnh viện Đa khoa Quốc tế D-Medical AI • Nền tảng Y tế Số Thông minh
           </Text>
         </div>
       </Card>

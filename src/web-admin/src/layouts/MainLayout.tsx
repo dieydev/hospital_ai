@@ -26,6 +26,7 @@ import {
   ApartmentOutlined,
   ExperimentOutlined,
   SafetyCertificateOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -187,8 +188,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           icon: <CalendarOutlined style={{ fontSize: 17 }} />,
           label: (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Lịch hẹn Online</span>
+              <span>Lịch hẹn & Khung giờ</span>
               <span className="sidebar-badge">18 mới</span>
+            </div>
+          ),
+        },
+        {
+          key: '/booking',
+          icon: <GlobalOutlined style={{ fontSize: 17, color: '#0284c7' }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, color: '#0284c7' }}>Web Đặt Khám (Portal)</span>
+              <span className="sidebar-badge" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>24/7</span>
             </div>
           ),
         },
@@ -582,6 +593,27 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   {strictMode ? 'Strict API' : 'Fallback'}
                 </Tag>
               </Tag>
+            </Tooltip>
+
+            {/* Quick Link to Web Booking Portal */}
+            <Tooltip title="Mở Cổng Đặt Khám Bệnh Trực Tuyến 24/7 (Bệnh nhân đặt khám & nhận Mã QR)">
+              <Button
+                type="primary"
+                icon={<GlobalOutlined />}
+                style={{
+                  backgroundColor: '#0284c7',
+                  borderColor: '#0284c7',
+                  borderRadius: 12,
+                  fontWeight: 600,
+                  fontSize: 12.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+                onClick={() => window.open('/booking', '_blank')}
+              >
+                Cổng Đặt Khám (Web)
+              </Button>
             </Tooltip>
 
             {/* Theme Toggle Button */}

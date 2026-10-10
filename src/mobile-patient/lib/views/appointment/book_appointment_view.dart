@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/appointment_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -31,6 +32,9 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<AppointmentProvider>();
+      final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+      provider.fetchTimeSlotsWithCapacity(dateStr);
+
       if (provider.departments.isNotEmpty) {
         setState(() {
           _selectedDepartment = provider.departments.first;
@@ -495,7 +499,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   },
                 );
                 if (picked != null) {
-                  setState(() => _selectedDate = picked);
+                  setState(() {
+                    _selectedDate = picked;
+                    _selectedTimeSlot = null;
+                  });
+                  final dateStr = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                  context.read<AppointmentProvider>().fetchTimeSlotsWithCapacity(dateStr);
                 }
               },
               child: Container(
@@ -529,10 +538,16 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             ),
 
             const SizedBox(height: 24),
-            Text('Khung giờ trống:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.textPrimary)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Khung giờ đặt khám:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.textPrimary)),
+                Text('(Đã đồng bộ giới hạn)', style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF0284C7), fontWeight: FontWeight.w500)),
+              ],
+            ),
             const SizedBox(height: 16),
 
-            // Time Slot Grid
+            // Time Slot Grid with Capacity & Lock Detection
             LayoutBuilder(
               builder: (context, constraints) {
                 final provider = context.watch<AppointmentProvider>();
@@ -542,19 +557,67 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   runSpacing: 8,
                   children: provider.timeSlots.map((slot) {
                     final isSelected = _selectedTimeSlot == slot;
+
+                    // Tra cứu quota thực tế của khung giờ này từ Admin
+                    final slotStartTime = slot.split(' - ')[0].trim();
+                    final slotInfo = provider.slotQuotas.firstWhere(
+                      (q) {
+                        final qSlot = q['timeSlot']?.toString() ?? '';
+                        return qSlot == slot || qSlot.startsWith(slotStartTime) || slotStartTime.startsWith(qSlot.split('-')[0].trim());
+                      },
+                      orElse: () => <String, dynamic>{},
+                    );
+
+                    final isLocked = slotInfo['isLocked'] == true;
+                    final maxCapacity = (slotInfo['maxCapacity'] as num?)?.toInt() ?? 5;
+                    final bookedCount = (slotInfo['bookedCount'] as num?)?.toInt() ?? 0;
+                    final isFull = slotInfo['isFull'] == true || bookedCount >= maxCapacity;
+                    final isBlocked = isLocked || isFull;
+                    final remaining = maxCapacity - bookedCount;
+
                     return InkWell(
-                      onTap: () => setState(() => _selectedTimeSlot = slot),
+                      onTap: () {
+                        if (isLocked) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('🔒 Khung giờ này đang bị tạm khóa bởi Bệnh viện. Quý khách vui lòng chọn giờ khác!'),
+                              backgroundColor: Color(0xFFEF4444),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+                        if (isFull) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('⚠️ Khung giờ này đã đủ số lượng khám ($bookedCount/$maxCapacity). Vui lòng chọn giờ khác!'),
+                              backgroundColor: const Color(0xFFD97706),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+                        setState(() => _selectedTimeSlot = slot);
+                      },
                       borderRadius: BorderRadius.circular(12),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         width: chipWidth,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primary : AppTheme.surface,
+                          color: isBlocked
+                              ? const Color(0xFFF1F5F9)
+                              : isSelected
+                                  ? AppTheme.primary
+                                  : AppTheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? AppTheme.primary : AppTheme.borderSubtle,
-                            width: 1,
+                            color: isBlocked
+                                ? const Color(0xFFE2E8F0)
+                                : isSelected
+                                    ? AppTheme.primary
+                                    : AppTheme.borderSubtle,
+                            width: isSelected ? 2 : 1,
                           ),
                         ),
                         child: Column(
@@ -564,11 +627,58 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                               slot,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
-                                color: isSelected ? Colors.white : AppTheme.textPrimary,
+                                color: isBlocked
+                                    ? const Color(0xFF94A3B8)
+                                    : isSelected
+                                        ? Colors.white
+                                        : AppTheme.textPrimary,
                                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 12,
+                                decoration: isBlocked ? TextDecoration.lineThrough : null,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            if (isLocked)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'ĐÃ KHÓA',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              )
+                            else if (isFull)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'HẾT CHỖ',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFD97706),
+                                  ),
+                                ),
+                              )
+                            else
+                              Text(
+                                'Còn $remaining chỗ',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: isSelected ? Colors.white70 : const Color(0xFF0284C7),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -804,89 +914,164 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   }
 
   void _showFinalSuccessDialog(String paymentMessage) {
+    final user = context.read<AuthProvider>().user;
+    final aptId = _lastCreatedAppointmentId ?? 'LH${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}';
+    final qrData = 'MEDQR|$aptId|${user?.maBenhNhan ?? 'BN'}|${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}|${_selectedTimeSlot ?? ''}';
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: AppTheme.surface,
-        title: Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+        title: Column(
           children: [
-            const Icon(Icons.check_circle, color: AppTheme.accentMint, size: 28),
-            const SizedBox(width: 8),
-            Expanded(child: Text('ĐẶT LỊCH THÀNH CÔNG', style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Mã phiếu hẹn: ${_lastCreatedAppointmentId ?? 'LH${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}'}',
-              style: GoogleFonts.inter(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            Text('Khoa: $_selectedDepartment', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
-            const SizedBox(height: 6),
-            Text('Bác sĩ: $_selectedDoctor', style: GoogleFonts.inter(color: AppTheme.textPrimary)),
-            const SizedBox(height: 12),
-            Text(paymentMessage, style: GoogleFonts.inter(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13)),
-            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppTheme.accentMint.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                children: [
-                  const Icon(Icons.cloud_done, color: AppTheme.accentMint, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text('Đã đồng bộ trực tiếp lên hệ thống Bệnh viện D-Medical!', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.accentMint, fontWeight: FontWeight.bold)),
-                  ),
-                ],
+              decoration: const BoxDecoration(
+                color: Color(0xFFE0F2FE),
+                shape: BoxShape.circle,
               ),
+              child: const Icon(Icons.check_circle_rounded, color: AppTheme.primary, size: 36),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'ĐẶT LỊCH THÀNH CÔNG',
+              style: GoogleFonts.sora(fontSize: 16.5, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
-        actions: [
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppTheme.primary),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                _currentStep = 0;
-                _selectedDoctor = null;
-                _selectedTimeSlot = null;
-                _selectedDate = DateTime.now().add(const Duration(days: 1));
-                _symptomsController.clear();
-                _lastCreatedAppointmentId = null;
-              });
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MyAppointmentsView()),
-              );
-            },
-            child: Text('Xem Lịch Hẹn Của Tôi', style: GoogleFonts.inter(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Mã phiếu hẹn: $aptId',
+                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primary),
+              ),
+              const SizedBox(height: 12),
+
+              // QR Code Container (Thay thế STT)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFBAE6FD), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: QrImageView(
+                  data: qrData,
+                  version: QrVersions.auto,
+                  size: 145,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.primaryDark),
+                  dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.primary),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'MÃ QR CHECK-IN ĐIỆN TỬ',
+                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                paymentMessage,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF0F172A), fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Khi đến bệnh viện, quý khách xuất trình mã QR này tại quầy tiếp nhận để vào khám ngay (Hệ thống đã bỏ cấp số thứ tự STT giấy).',
+                        style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF0369A1), height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 0,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                _currentStep = 0;
-                _selectedDoctor = null;
-                _selectedTimeSlot = null;
-                _selectedDate = DateTime.now().add(const Duration(days: 1));
-                _symptomsController.clear();
-                _lastCreatedAppointmentId = null;
-              });
-            },
-            child: Text('Về Trang Chủ', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _currentStep = 0;
+                      _selectedDoctor = null;
+                      _selectedTimeSlot = null;
+                      _selectedDate = DateTime.now().add(const Duration(days: 1));
+                      _symptomsController.clear();
+                      _lastCreatedAppointmentId = null;
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MyAppointmentsView()),
+                    );
+                  },
+                  child: Text('Xem Lịch Của Tôi', style: GoogleFonts.inter(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _currentStep = 0;
+                      _selectedDoctor = null;
+                      _selectedTimeSlot = null;
+                      _selectedDate = DateTime.now().add(const Duration(days: 1));
+                      _symptomsController.clear();
+                      _lastCreatedAppointmentId = null;
+                    });
+                  },
+                  child: Text('Về Trang Chủ', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

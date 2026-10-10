@@ -25,10 +25,13 @@ import {
   ReloadOutlined,
   ForwardOutlined,
   CheckCircleOutlined,
+  ScanOutlined,
+  QrcodeOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { queueService, DepartmentItem, QueueTicketItem } from '../services/queueService';
 import { patientService, Patient } from '../services/patientService';
+import { appointmentService } from '../services/appointmentService';
 import { signalrService } from '../services/signalrService';
 import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
 
@@ -51,6 +54,33 @@ export const ReceptionPage: React.FC = () => {
   // Ticket Thermal Print State
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [ticketToPrint, setTicketToPrint] = useState<QueueTicketItem | null>(null);
+
+  // QR Scan State for App Check-in (Bỏ cấp STT)
+  const [isQrScanOpen, setIsQrScanOpen] = useState(false);
+  const [qrInputCode, setQrInputCode] = useState('');
+  const [qrProcessing, setQrProcessing] = useState(false);
+
+  const handleQrScanSubmit = async () => {
+    if (!qrInputCode.trim()) {
+      showToast('Vui lòng quét hoặc nhập mã QR tiếp nhận!', 'warning');
+      return;
+    }
+    setQrProcessing(true);
+    try {
+      const apt = await appointmentService.checkInWithQr(qrInputCode.trim());
+      setIsQrScanOpen(false);
+      setQrInputCode('');
+      fetchData();
+      showSuccessAlert(
+        'Check-in Thành Công Bằng Mã QR!',
+        `Đã tiếp nhận bệnh nhân: ${apt.patientName} (${apt.patientCode})\nChuyên khoa: ${apt.departmentName}\nKhung giờ hẹn: ${apt.appointmentTime} - ${apt.appointmentDate}`
+      );
+    } catch (err: any) {
+      showErrorAlert('Không tìm thấy lịch hẹn', err.message || 'Mã QR không hợp lệ hoặc không có trong hệ thống.');
+    } finally {
+      setQrProcessing(false);
+    }
+  };
 
   // Fetch queue and departments
   const fetchData = useCallback(async () => {
@@ -331,6 +361,16 @@ export const ReceptionPage: React.FC = () => {
         <Space wrap>
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} className="medical-hero-btn-secondary rounded-lg font-medium">
             Làm mới
+          </Button>
+          <Button
+            type="primary"
+            icon={<ScanOutlined />}
+            size="large"
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            className="rounded-lg font-semibold flex items-center gap-1.5 shadow-md"
+            onClick={() => setIsQrScanOpen(true)}
+          >
+            Quét QR Tiếp Nhận (App)
           </Button>
           <Button
             type="primary"
@@ -657,6 +697,40 @@ export const ReceptionPage: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Modal Quét Mã QR Tiếp Nhận (App Mobile - Bỏ STT) */}
+      <Modal
+        title={
+          <Space>
+            <ScanOutlined style={{ color: '#0284c7' }} />
+            <span>Tiếp Nhận Điện Tử Bằng Mã QR (Bệnh Nhân App)</span>
+          </Space>
+        }
+        open={isQrScanOpen}
+        onCancel={() => setIsQrScanOpen(false)}
+        onOk={handleQrScanSubmit}
+        confirmLoading={qrProcessing}
+        okText="Xác Nhận Tiếp Nhận"
+        cancelText="Đóng"
+        width={450}
+        centered
+      >
+        <div style={{ padding: '8px 0' }}>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+            Bệnh nhân đã đặt lịch trên Mobile App chỉ cần đưa mã QR để quét (không cần bốc số thứ tự STT giấy):
+          </p>
+          <Input
+            size="large"
+            prefix={<QrcodeOutlined style={{ color: '#0284c7' }} />}
+            placeholder="Quét mã QR hoặc nhập: MEDQR|apt-... hoặc Mã BN"
+            value={qrInputCode}
+            onChange={(e) => setQrInputCode(e.target.value)}
+            onPressEnter={handleQrScanSubmit}
+            autoFocus
+            style={{ borderRadius: 10, fontFamily: 'monospace' }}
+          />
+        </div>
       </Modal>
     </div>
   );

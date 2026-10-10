@@ -193,11 +193,13 @@ public class AuthService : IAuthService
             throw new Exception($"Số điện thoại {normalizedPhone} đã tồn tại trong hệ thống. Vui lòng đăng nhập.");
         }
 
-        var roleName = string.IsNullOrWhiteSpace(request.Role) ? "Patient" : request.Role;
+        // Đăng ký tài khoản công khai luôn cố định vai trò là 'Patient' (Bệnh nhân)
+        // Quyền 'Admin', 'Doctor', 'Receptionist' phải do Bệnh viện tự cấp phát nội bộ
+        var roleName = "Patient";
         var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
         if (role == null)
         {
-            role = new Role { Name = roleName, Description = $"Vai trò {roleName}" };
+            role = new Role { Name = roleName, Description = $"Vai trò {roleName} hệ thống" };
             _context.Roles.Add(role);
             await _context.SaveChangesAsync();
         }
@@ -274,6 +276,8 @@ public class AuthService : IAuthService
 
         await _context.SaveChangesAsync();
 
+        var (token, _) = _tokenGenerator.GenerateToken(newUser, new List<string> { role.Name });
+
         return new UserProfileDto
         {
             Id = newUser.Id,
@@ -290,7 +294,8 @@ public class AuthService : IAuthService
             Gender = request.Gender ?? "Nam",
             DateOfBirth = request.DateOfBirth ?? DateTime.UtcNow.AddYears(-20),
             Address = request.Address ?? "Chưa cập nhật",
-            IsProfileComplete = !string.IsNullOrWhiteSpace(request.IdentityCardNumber) && !string.IsNullOrWhiteSpace(request.FullName)
+            IsProfileComplete = !string.IsNullOrWhiteSpace(request.IdentityCardNumber) && !string.IsNullOrWhiteSpace(request.FullName),
+            Token = token
         };
     }
 
@@ -879,10 +884,9 @@ public class AuthService : IAuthService
 
     private void ValidatePasswordStrong(string password)
     {
-        if (string.IsNullOrWhiteSpace(password) || 
-            !Regex.IsMatch(password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"))
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
         {
-            throw new Exception("Mật khẩu phải dài ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
+            throw new Exception("Mật khẩu phải có độ dài tối thiểu 6 ký tự.");
         }
     }
 }

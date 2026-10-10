@@ -43,6 +43,21 @@ class AppointmentProvider extends ChangeNotifier {
   ];
   List<String> get timeSlots => _timeSlots;
 
+  List<Map<String, dynamic>> _slotQuotas = [];
+  List<Map<String, dynamic>> get slotQuotas => _slotQuotas;
+
+  Future<void> fetchTimeSlotsWithCapacity(String date, {String? department}) async {
+    try {
+      final res = await _apiService.get('/appointments/slots?date=$date');
+      if (res is List) {
+        _slotQuotas = List<Map<String, dynamic>>.from(res);
+        notifyListeners();
+      }
+    } catch (_) {
+      // Fallback: giữ danh sách hiện tại
+    }
+  }
+
   // Danh mục Bác sĩ chuyên khoa chuẩn của từng Khoa phòng tại Bệnh viện D-Medical
   static final Map<String, List<Map<String, dynamic>>> _specialistDoctorsCatalog = {
     'Khoa Nội Tổng Hợp': [
