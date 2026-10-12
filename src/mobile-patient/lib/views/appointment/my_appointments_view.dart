@@ -15,6 +15,8 @@ class MyAppointmentsView extends StatefulWidget {
 }
 
 class _MyAppointmentsViewState extends State<MyAppointmentsView> {
+  int _filterTypeIndex = 0; // 0: Tất cả, 1: Khám mới, 2: Tái khám
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +85,18 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
     final appointmentProvider = context.watch<AppointmentProvider>();
     final appointments = appointmentProvider.myAppointments;
     final isLoading = appointmentProvider.isLoading;
+    final followUpCount = appointments.where((a) =>
+        a['appointmentType'] == 'FollowUp' ||
+        (a['symptomsReason']?.toString().toLowerCase().contains('tái khám') ?? false)).length;
+    final newCount = appointments.length - followUpCount;
+
+    final displayedAppointments = appointments.where((item) {
+      final isFollowUp = item['appointmentType'] == 'FollowUp' ||
+          (item['symptomsReason']?.toString().toLowerCase().contains('tái khám') ?? false);
+      if (_filterTypeIndex == 1) return !isFollowUp;
+      if (_filterTypeIndex == 2) return isFollowUp;
+      return true;
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -111,16 +125,72 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
         onRefresh: () async => _loadAppointments(),
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : appointments.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                    itemCount: appointments.length,
-                    itemBuilder: (context, index) {
-                      final item = appointments[index];
-                      return _buildAppointmentCard(context, item);
-                    },
+            : Column(
+                children: [
+                  // Filter Chips
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFilterChip(0, 'Tất cả (${appointments.length})'),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(1, 'Khám Mới ($newCount)'),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(2, '🔄 Lịch Tái Khám ($followUpCount)', isSpecial: true),
+                        ],
+                      ),
+                    ),
                   ),
+
+                  // Appointment List
+                  Expanded(
+                    child: displayedAppointments.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
+                            itemCount: displayedAppointments.length,
+                            itemBuilder: (context, index) {
+                              final item = displayedAppointments[index];
+                              return _buildAppointmentCard(context, item);
+                            },
+                          ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(int index, String label, {bool isSpecial = false}) {
+    final isSelected = _filterTypeIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _filterTypeIndex = index),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isSpecial ? const Color(0xFF7C3AED) : const Color(0xFF0284C7))
+              : (isSpecial ? const Color(0xFFF5F3FF) : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? (isSpecial ? const Color(0xFF7C3AED) : const Color(0xFF0284C7))
+                : (isSpecial ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            color: isSelected
+                ? Colors.white
+                : (isSpecial ? const Color(0xFF6D28D9) : const Color(0xFF334155)),
+          ),
+        ),
       ),
     );
   }
@@ -186,13 +256,15 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
     final isCancelable = status.toLowerCase() != 'cancelled' &&
         status.toLowerCase() != 'completed' &&
         status.toLowerCase() != 'đã hủy';
+    final isFollowUp = item['appointmentType'] == 'FollowUp' ||
+        symptoms.toLowerCase().contains('tái khám');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFBAE6FD)),
+        border: Border.all(color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF0284C7).withValues(alpha: 0.08),
@@ -207,18 +279,44 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
           // Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: isFollowUp ? const Color(0xFFFAF5FF) : const Color(0xFFF0F9FF),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF0284C7)),
+                Icon(
+                  isFollowUp ? Icons.repeat_rounded : Icons.assignment_outlined,
+                  size: 18,
+                  color: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   id.isNotEmpty ? 'Phiếu hẹn: $id' : 'Phiếu hẹn khám',
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                  ),
                 ),
+                if (isFollowUp) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'TÁI KHÁM',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF7C3AED),
+                      ),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 _buildStatusTag(status),
               ],
@@ -268,6 +366,10 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   const SizedBox(height: 8),
                   _buildInfoRow(Icons.medical_information_outlined, 'Lý do khám:', symptoms),
                 ],
+                if (item['previousRecordCode'] != null && item['previousRecordCode'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildInfoRow(Icons.folder_shared_outlined, 'Hồ sơ khám trước:', item['previousRecordCode'].toString()),
+                ],
 
                 const SizedBox(height: 14),
 
@@ -277,24 +379,56 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   height: 42,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0284C7),
+                      backgroundColor: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                     onPressed: () => _showQrCodeBottomSheet(context, item),
                     icon: const Icon(Icons.qr_code_2_rounded, size: 20, color: Colors.white),
                     label: Text(
-                      'MÃ QR CHECK-IN TIẾP NHẬN',
+                      isFollowUp ? 'MÃ QR TIẾP NHẬN TÁI KHÁM' : 'MÃ QR CHECK-IN TIẾP NHẬN',
                       style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),
                 ),
 
+                // Nút Đặt lịch tái khám nhanh với cùng bác sĩ
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 38,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFDDD6FE)),
+                      backgroundColor: const Color(0xFFFAF5FF),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BookAppointmentView(
+                            isFollowUp: true,
+                            initialDepartment: dept,
+                            initialDoctor: doctor,
+                            previousRecordCode: id,
+                          ),
+                        ),
+                      ).then((_) => _loadAppointments());
+                    },
+                    icon: const Icon(Icons.event_repeat_rounded, size: 16, color: Color(0xFF7C3AED)),
+                    label: Text(
+                      'Đặt lịch tái khám với Bác sĩ này',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
+                    ),
+                  ),
+                ),
+
                 if (isCancelable) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
-                    height: 38,
+                    height: 36,
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFFECACA)),
@@ -302,8 +436,8 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () => _showCancelDialog(context, id, doctor),
-                      icon: const Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFEF4444)),
-                      label: Text('Hủy lịch hẹn này', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700, color: const Color(0xFFEF4444))),
+                      icon: const Icon(Icons.cancel_outlined, size: 15, color: Color(0xFFEF4444)),
+                      label: Text('Hủy lịch hẹn này', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFFEF4444))),
                     ),
                   ),
                 ],
@@ -322,9 +456,12 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
     final dept = item['departmentName']?.toString() ?? 'Khoa Khám Bệnh';
     final date = item['appointmentDate']?.toString() ?? '';
     final time = item['appointmentTime']?.toString() ?? '';
+    final isFollowUp = item['appointmentType'] == 'FollowUp' ||
+        (item['symptomsReason']?.toString().toLowerCase().contains('tái khám') ?? false);
+    final prevRecord = item['previousRecordCode']?.toString() ?? '';
     final qrData = item['qrCode']?.toString().isNotEmpty == true
         ? item['qrCode'].toString()
-        : 'MEDQR|$id|${user?.maBenhNhan ?? ''}|$date|$time';
+        : 'MEDQR|$id|${user?.maBenhNhan ?? ''}|$date|$time${isFollowUp ? '|FOLLOWUP' : ''}';
 
     showModalBottomSheet(
       context: parentContext,
@@ -350,9 +487,32 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
               ),
             ),
 
+            if (isFollowUp) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDE9FE),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '🔄 LỊCH TÁI KHÁM ĐỊNH KỲ',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF7C3AED),
+                  ),
+                ),
+              ),
+            ],
+
             Text(
-              'PHIẾU KHÁM ĐIỆN TỬ',
-              style: GoogleFonts.sora(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
+              isFollowUp ? 'PHIẾU HẸN TÁI KHÁM' : 'PHIẾU KHÁM ĐIỆN TỬ',
+              style: GoogleFonts.sora(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -367,10 +527,13 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFBAE6FD), width: 1.5),
+                border: Border.all(
+                  color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD),
+                  width: 1.5,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                    color: (isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7)).withValues(alpha: 0.1),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -381,8 +544,14 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 version: QrVersions.auto,
                 size: 180,
                 backgroundColor: Colors.white,
-                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF0369A1)),
-                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF0284C7)),
+                eyeStyle: QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                ),
+                dataModuleStyle: QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -391,9 +560,11 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F9FF),
+                color: isFollowUp ? const Color(0xFFFAF5FF) : const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFBAE6FD)),
+                border: Border.all(
+                  color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD),
+                ),
               ),
               child: Column(
                 children: [
@@ -404,6 +575,10 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   _buildDetailRowModal('Bác sĩ:', doctor),
                   const SizedBox(height: 8),
                   _buildDetailRowModal('Thời gian:', '$time - $date'),
+                  if (prevRecord.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _buildDetailRowModal('Mã hồ sơ cũ:', prevRecord),
+                  ],
                 ],
               ),
             ),

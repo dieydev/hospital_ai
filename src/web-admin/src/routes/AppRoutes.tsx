@@ -15,6 +15,9 @@ import { ReportsPage } from '../pages/ReportsPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { AppointmentsPage } from '../pages/AppointmentsPage';
 import { PatientBookingPage } from '../pages/PatientBookingPage';
+import { AboutPage } from '../pages/AboutPage';
+import { NewsPage } from '../pages/NewsPage';
+import { GuidePage } from '../pages/GuidePage';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const AppRoutes: React.FC = () => {
@@ -29,9 +32,15 @@ export const AppRoutes: React.FC = () => {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       
-      {/* Public Patient Booking Portal Routes (Dành cho bệnh nhân đặt lịch & tra cứu) */}
+      {/* Public Patient Booking & Information Portal Routes */}
       <Route path="/booking" element={<PatientBookingPage />} />
       <Route path="/dat-lich" element={<PatientBookingPage />} />
+      <Route path="/gioi-thieu" element={<AboutPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/tin-tuc" element={<NewsPage />} />
+      <Route path="/news" element={<NewsPage />} />
+      <Route path="/huong-dan" element={<GuidePage />} />
+      <Route path="/guide" element={<GuidePage />} />
 
       {/* Protected Routes dành cho Quản trị viên & Cán bộ y tế */}
       <Route

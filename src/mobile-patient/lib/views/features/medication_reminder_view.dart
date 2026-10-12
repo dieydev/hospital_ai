@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../appointment/book_appointment_view.dart';
+import '../appointment/my_appointments_view.dart';
 
 class MedicationReminderView extends StatefulWidget {
   const MedicationReminderView({super.key});
@@ -599,41 +601,124 @@ class _MedicationReminderViewState extends State<MedicationReminderView> {
                           color: const Color(0xFFF0FDF4),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: const Color(0xFFBBF7D0)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDCFCE7),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(Icons.event_repeat_rounded, color: Color(0xFF16A34A), size: 24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF16A34A).withValues(alpha: 0.06),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Lịch Hẹn Tái Khám',
-                                    style: GoogleFonts.sora(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF166534),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDCFCE7),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.event_repeat_rounded, color: Color(0xFF16A34A), size: 24),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Lịch Hẹn Tái Khám',
+                                            style: GoogleFonts.sora(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF166534),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFEDE9FE),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              'TÁI KHÁM',
+                                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '08:30 • Thứ Hai, 05/10/2026\nKhoa Nội Tổng Hợp - BS. Lê Văn C',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: const Color(0xFF15803D),
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF16A34A),
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const MyAppointmentsView()),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.qr_code_2_rounded, size: 16, color: Colors.white),
+                                    label: Text(
+                                      'Xem Thẻ & QR Khám',
+                                      style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.white),
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '08:30 • Thứ Hai, 05/10/2026\nKhoa Nội Tổng Hợp - BS. Lê Văn C',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: const Color(0xFF15803D),
-                                      height: 1.4,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(color: Color(0xFF7C3AED)),
+                                      backgroundColor: const Color(0xFFFAF5FF),
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const BookAppointmentView(
+                                            isFollowUp: true,
+                                            initialDepartment: 'Khoa Nội Tổng Hợp',
+                                            initialDoctor: 'BS. Lê Văn C',
+                                            previousRecordCode: 'EMR2026-0015',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.event_available_rounded, size: 16, color: Color(0xFF7C3AED)),
+                                    label: Text(
+                                      'Đặt Lại Hẹn Mới',
+                                      style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

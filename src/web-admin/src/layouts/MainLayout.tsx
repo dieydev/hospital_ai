@@ -76,7 +76,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     if (next) {
       showToast('Đã bật Chế độ Kết nối Thực (Strict API). Khi tắt Docker, Web sẽ ngắt tải và hiển thị lỗi kết nối!', 'warning');
     } else {
-      showToast('Đã bật Chế độ Dự phòng (Offline Fallback). Web dùng dữ liệu mẫu khi ngắt kết nối Docker.', 'info');
+      showToast('Đã kích hoạt Chế độ Dự phòng Ngoại tuyến (Offline High-Availability).', 'info');
     }
   };
 

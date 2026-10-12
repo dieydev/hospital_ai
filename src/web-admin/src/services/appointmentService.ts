@@ -18,6 +18,11 @@ export interface OnlineAppointmentItem {
   qrCode?: string;
   checkInStatus?: 'PendingQR' | 'CheckedInQR';
   checkedInAt?: string;
+  cancelReason?: string;
+  rescheduledAt?: string;
+  appointmentType?: 'New' | 'FollowUp';
+  previousRecordCode?: string;
+  followUpNotes?: string;
 }
 
 export interface TimeSlotQuotaItem {
@@ -195,6 +200,68 @@ export const appointmentService = {
         return item;
       }
       throw new Error('Không tìm thấy lịch hẹn với mã QR này');
+    }
+  },
+
+  async cancelAppointment(id: string, reason?: string): Promise<OnlineAppointmentItem> {
+    try {
+      const response = await api.put(`/appointments/${id}/cancel`, { reason });
+      return response.data;
+    } catch {
+      const item = localAppointments.find((a) => a.id === id);
+      if (item) {
+        item.status = 'Cancelled';
+        item.cancelReason = reason || 'Bệnh nhân chủ động hủy lịch';
+        return { ...item };
+      }
+      throw new Error('Không tìm thấy lịch hẹn');
+    }
+  },
+
+  async rescheduleAppointment(
+    id: string,
+    newDate: string,
+    newTime: string,
+    reason?: string
+  ): Promise<OnlineAppointmentItem> {
+    try {
+      const response = await api.put(`/appointments/${id}/reschedule`, {
+        newDate,
+        newTime,
+        reason,
+      });
+      return response.data;
+    } catch {
+      const item = localAppointments.find((a) => a.id === id);
+      if (item) {
+        const oldDate = item.appointmentDate;
+        const oldTime = item.appointmentTime;
+        item.appointmentDate = newDate;
+        item.appointmentTime = newTime;
+        item.status = 'Pending';
+        item.rescheduledAt = new Date().toISOString();
+        item.qrCode = `MEDQR|${item.id}|${item.patientCode}|${newDate}|${newTime}`;
+        if (reason) {
+          item.symptomsReason += ` [Đổi lịch từ ${oldTime} ${oldDate}: ${reason}]`;
+        }
+        return { ...item };
+      }
+      throw new Error('Không tìm thấy lịch hẹn');
+    }
+  },
+
+  async getFollowUpAppointments(patientCodeOrPhone: string): Promise<OnlineAppointmentItem[]> {
+    try {
+      const response = await api.get(`/appointments/followups/${patientCodeOrPhone}`);
+      return response.data || [];
+    } catch {
+      const all = await this.getAppointments();
+      const q = patientCodeOrPhone.trim().toLowerCase();
+      return all.filter(
+        (a) =>
+          (a.patientPhone.includes(q) || a.patientCode.toLowerCase().includes(q)) &&
+          (a.appointmentType === 'FollowUp' || a.symptomsReason.toLowerCase().includes('tái khám'))
+      );
     }
   },
 };

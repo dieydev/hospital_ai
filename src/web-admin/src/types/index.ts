@@ -13,6 +13,17 @@ export interface UserAccount {
   chucDanh?: string;
   trangThaiKichHoat: boolean;
   avatarUrl?: string;
+  // Patient specific profile fields
+  maBenhNhan?: string;
+  soCCCD?: string;
+  ngaySinh?: string;
+  namSinh?: string | number;
+  gioiTinh?: 'Nam' | 'Nữ' | 'Khác';
+  diaChi?: string;
+  maTheBHYT?: string;
+  tienSuBenh?: string;
+  diUngThuoc?: string;
+  isProfileComplete?: boolean;
 }
 
 export interface Patient {

@@ -67,6 +67,7 @@ export const AppointmentsPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedDept, setSelectedDept] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [prevLength, setPrevLength] = useState<number>(0);
 
   // Time Slots Management State
@@ -162,7 +163,7 @@ export const AppointmentsPage: React.FC = () => {
       okType: 'danger',
       cancelText: 'Quay lại',
       onOk: async () => {
-        await appointmentService.updateStatus(item.id, 'Cancelled');
+        await appointmentService.cancelAppointment(item.id, 'Quản trị viên / Bác sĩ hủy lịch hẹn');
         fetchAppointments();
         fetchTimeSlots();
         showToast('Đã hủy lịch hẹn khám thành công!', 'info');
@@ -237,9 +238,14 @@ export const AppointmentsPage: React.FC = () => {
       item.patientCode.toLowerCase().includes(searchText.toLowerCase()) ||
       item.patientPhone.includes(searchText) ||
       (item.qrCode && item.qrCode.toLowerCase().includes(searchText.toLowerCase()));
+    const isFollowUp = item.appointmentType === 'FollowUp' || item.symptomsReason?.toLowerCase().includes('tái khám');
+    const matchType =
+      typeFilter === 'ALL' ||
+      (typeFilter === 'FollowUp' && isFollowUp) ||
+      (typeFilter === 'New' && !isFollowUp);
     const matchStatus = statusFilter === 'ALL' || item.status === statusFilter;
     const matchDept = selectedDept === 'ALL' || item.departmentName === selectedDept;
-    return matchSearch && matchStatus && matchDept;
+    return matchType && matchSearch && matchStatus && matchDept;
   });
 
   // Table Columns: Appointments
@@ -270,6 +276,30 @@ export const AppointmentsPage: React.FC = () => {
           </div>
         </div>
       ),
+    },
+    {
+      title: 'Hình thức khám',
+      key: 'appointmentType',
+      width: 140,
+      render: (record: OnlineAppointmentItem) => {
+        const isFollowUp = record.appointmentType === 'FollowUp' || record.symptomsReason?.toLowerCase().includes('tái khám');
+        return isFollowUp ? (
+          <div>
+            <Tag color="purple" style={{ fontWeight: 700, borderRadius: 8 }}>
+              🔄 Tái Khám
+            </Tag>
+            {record.previousRecordCode && (
+              <div style={{ fontSize: 11, color: '#7c3aed', marginTop: 2, fontFamily: 'monospace' }}>
+                HS: {record.previousRecordCode}
+              </div>
+            )}
+          </div>
+        ) : (
+          <Tag color="blue" style={{ fontWeight: 600, borderRadius: 8 }}>
+            Khám Mới
+          </Tag>
+        );
+      },
     },
     {
       title: 'Mã BN & SĐT',
@@ -347,7 +377,7 @@ export const AppointmentsPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 170,
-      render: (status: OnlineAppointmentItem['status']) => {
+      render: (status: OnlineAppointmentItem['status'], record: OnlineAppointmentItem) => {
         let color = 'default';
         let text = 'Chờ xử lý';
         if (status === 'Pending') {
@@ -364,9 +394,21 @@ export const AppointmentsPage: React.FC = () => {
           text = 'Đã hủy';
         }
         return (
-          <Tag color={color} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
-            {text}
-          </Tag>
+          <div>
+            <Tag color={color} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
+              {text}
+            </Tag>
+            {record.cancelReason && (
+              <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>
+                {record.cancelReason}
+              </div>
+            )}
+            {record.rescheduledAt && (
+              <div style={{ fontSize: 11, color: '#8b5cf6', marginTop: 2, fontWeight: 600 }}>
+                🔄 Đã đổi lịch
+              </div>
+            )}
+          </div>
         );
       },
     },
@@ -648,7 +690,19 @@ export const AppointmentsPage: React.FC = () => {
                 />
               </Col>
 
-              <Col xs={12} sm={6} md={5}>
+              <Col xs={12} sm={6} md={4}>
+                <Select
+                  style={{ width: '100%' }}
+                  value={typeFilter}
+                  onChange={(val) => setTypeFilter(val)}
+                >
+                  <Option value="ALL">Tất cả hình thức</Option>
+                  <Option value="New">Khám mới</Option>
+                  <Option value="FollowUp">🔄 Tái khám</Option>
+                </Select>
+              </Col>
+
+              <Col xs={12} sm={6} md={4}>
                 <Select
                   style={{ width: '100%' }}
                   value={statusFilter}
@@ -678,16 +732,17 @@ export const AppointmentsPage: React.FC = () => {
                 </Select>
               </Col>
 
-              <Col xs={24} sm={24} md={6} style={{ textAlign: 'right' }}>
+              <Col xs={24} sm={24} md={4} style={{ textAlign: 'right' }}>
                 <Button
                   icon={<ReloadOutlined />}
                   onClick={() => {
                     setSearchText('');
+                    setTypeFilter('ALL');
                     setStatusFilter('ALL');
                     setSelectedDept('ALL');
                   }}
                 >
-                  Làm mới bộ lọc
+                  Làm mới
                 </Button>
               </Col>
             </Row>
@@ -806,6 +861,10 @@ export const AppointmentsPage: React.FC = () => {
       <Modal
         open={qrModalVisible}
         onCancel={() => setQrModalVisible(false)}
+        width={480}
+        style={{ maxWidth: '95vw', margin: '16px auto' }}
+        styles={{ body: { maxHeight: '80vh', overflowY: 'auto' } }}
+        centered
         footer={[
           <Button key="print" icon={<PrinterOutlined />} onClick={() => window.print()}>
             In Phiếu Khám QR
@@ -825,8 +884,6 @@ export const AppointmentsPage: React.FC = () => {
             Xác Nhận Tiếp Nhận Bằng QR
           </Button>,
         ]}
-        width={440}
-        centered
       >
         {selectedAptForQr && (
           <div style={{ textAlign: 'center', padding: '16px 8px' }}>
@@ -927,6 +984,8 @@ export const AppointmentsPage: React.FC = () => {
         okText="Xác Nhận Tiếp Nhận"
         cancelText="Đóng"
         width={460}
+        style={{ maxWidth: '95vw', margin: '16px auto' }}
+        styles={{ body: { maxHeight: '80vh', overflowY: 'auto' } }}
         centered
       >
         <div style={{ padding: '8px 0' }}>
@@ -975,6 +1034,8 @@ export const AppointmentsPage: React.FC = () => {
         okText="Lưu Cấu Hình"
         cancelText="Hủy"
         width={420}
+        style={{ maxWidth: '95vw', margin: '16px auto' }}
+        styles={{ body: { maxHeight: '80vh', overflowY: 'auto' } }}
         centered
       >
         <Form form={slotForm} layout="vertical" style={{ marginTop: 16 }}>

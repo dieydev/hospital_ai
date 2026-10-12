@@ -34,6 +34,13 @@ namespace HospitalAI.QueueService.Controllers
         public string QrCode { get; set; } = string.Empty;
         public string CheckInStatus { get; set; } = "PendingQR"; // PendingQR, CheckedInQR
         public string? CheckedInAt { get; set; }
+        public string? CancelReason { get; set; }
+        public string? RescheduledAt { get; set; }
+
+        // Phân loại Lịch khám: "New" (Khám mới) | "FollowUp" (Tái khám)
+        public string AppointmentType { get; set; } = "New";
+        public string? PreviousRecordCode { get; set; } // Mã bệnh án EMR / Mã phiếu khám trước
+        public string? FollowUpNotes { get; set; } // Lời dặn hoặc chỉ định tái khám của Bác sĩ
     }
 
     public class TimeSlotQuotaItem
@@ -64,6 +71,18 @@ namespace HospitalAI.QueueService.Controllers
     public class UpdateStatusDto
     {
         public string Status { get; set; } = string.Empty;
+    }
+
+    public class CancelAppointmentDto
+    {
+        public string? Reason { get; set; }
+    }
+
+    public class RescheduleAppointmentDto
+    {
+        public string NewDate { get; set; } = string.Empty;
+        public string NewTime { get; set; } = string.Empty;
+        public string? Reason { get; set; }
     }
 
     [ApiController]
@@ -145,7 +164,29 @@ namespace HospitalAI.QueueService.Controllers
                             Status = "Pending",
                             CreatedAt = DateTime.UtcNow.AddHours(-1).ToString("o"),
                             QrCode = "MEDQR|apt-002|BN20260016|2026-08-12|09:15",
-                            CheckInStatus = "PendingQR"
+                            CheckInStatus = "PendingQR",
+                            AppointmentType = "New"
+                        },
+                        new OnlineAppointmentItem
+                        {
+                            Id = "apt-003",
+                            PatientCode = "BN20260015",
+                            PatientName = "Trần Văn Nam",
+                            PatientPhone = "0987654321",
+                            PatientGender = "Nam",
+                            PatientAge = 29,
+                            DepartmentName = "Khoa Nội Tổng Hợp",
+                            DoctorName = "BS. CKII. Nguyễn Thanh Duy",
+                            AppointmentDate = DateTime.UtcNow.AddDays(7).ToString("yyyy-MM-dd"),
+                            AppointmentTime = "08:00 - 08:30",
+                            SymptomsReason = "Tái khám sau 7 ngày điều trị viêm amidan theo lời dặn Bác sĩ",
+                            Status = "Confirmed",
+                            CreatedAt = DateTime.UtcNow.ToString("o"),
+                            QrCode = "MEDQR|apt-003|BN20260015|FOLLOWUP",
+                            CheckInStatus = "PendingQR",
+                            AppointmentType = "FollowUp",
+                            PreviousRecordCode = "EMR2026-0015",
+                            FollowUpNotes = "Kiểm tra lại vùng amidan, nội soi họng và đánh giá đáp ứng kháng sinh"
                         }
                     };
                     SaveToFile();
@@ -228,6 +269,30 @@ namespace HospitalAI.QueueService.Controllers
             {
                 var sortedList = _cachedAppointments!.OrderByDescending(a => a.CreatedAt).ToList();
                 return Ok(sortedList);
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách lịch hẹn tái khám của bệnh nhân
+        /// </summary>
+        [HttpGet("followups/{patientCodeOrPhone}")]
+        public IActionResult GetPatientFollowUps(string patientCodeOrPhone)
+        {
+            EnsureDataLoaded();
+            if (string.IsNullOrWhiteSpace(patientCodeOrPhone))
+            {
+                return Ok(new List<OnlineAppointmentItem>());
+            }
+
+            var query = patientCodeOrPhone.Trim().ToLower();
+            lock (_lock)
+            {
+                var list = _cachedAppointments!
+                    .Where(a => (a.PatientCode.ToLower().Contains(query) || a.PatientPhone.Contains(query)) &&
+                                (a.AppointmentType == "FollowUp" || a.SymptomsReason.ToLower().Contains("tái khám")))
+                    .OrderByDescending(a => a.AppointmentDate)
+                    .ToList();
+                return Ok(list);
             }
         }
 
@@ -395,6 +460,10 @@ namespace HospitalAI.QueueService.Controllers
             {
                 model.SourceApp = "Flutter Patient App";
             }
+            if (string.IsNullOrEmpty(model.AppointmentType))
+            {
+                model.AppointmentType = "New";
+            }
 
             lock (_lock)
             {
@@ -540,6 +609,133 @@ namespace HospitalAI.QueueService.Controllers
             catch (Exception hubEx)
             {
                 Console.WriteLine($"[SignalR Warning] Appointment status broadcast failed: {hubEx.Message}");
+            }
+
+            return Ok(appointment);
+        }
+
+        /// <summary>
+        /// Bệnh nhân hoặc nhân viên hủy lịch hẹn (Tự động hoàn trả Quota chỗ trống)
+        /// </summary>
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> CancelAppointment(string id, [FromBody] CancelAppointmentDto? dto)
+        {
+            EnsureDataLoaded();
+            EnsureSlotsLoaded();
+            OnlineAppointmentItem? appointment;
+            lock (_lock)
+            {
+                appointment = _cachedAppointments!.FirstOrDefault(a => a.Id == id);
+                if (appointment == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy lịch hẹn cần hủy." });
+                }
+
+                if (appointment.Status == "Completed")
+                {
+                    return BadRequest(new { message = "Lịch hẹn đã được check-in khám tại bệnh viện, không thể hủy." });
+                }
+
+                appointment.Status = "Cancelled";
+                appointment.CancelReason = dto?.Reason ?? "Bệnh nhân chủ động hủy lịch";
+                SaveToFile();
+            }
+
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", appointment);
+                await _hubContext.Clients.All.SendAsync("ReceiveAppointmentCancelled", appointment);
+            }
+            catch (Exception hubEx)
+            {
+                Console.WriteLine($"[SignalR Warning] Cancel appointment broadcast failed: {hubEx.Message}");
+            }
+
+            return Ok(appointment);
+        }
+
+        /// <summary>
+        /// Bệnh nhân đổi lịch khám sang ngày/giờ khác (Tự động kiểm tra & cập nhật Quota chỗ trống)
+        /// </summary>
+        [HttpPut("{id}/reschedule")]
+        public async Task<IActionResult> RescheduleAppointment(string id, [FromBody] RescheduleAppointmentDto dto)
+        {
+            EnsureDataLoaded();
+            EnsureSlotsLoaded();
+
+            if (string.IsNullOrWhiteSpace(dto.NewDate) || string.IsNullOrWhiteSpace(dto.NewTime))
+            {
+                return BadRequest(new { message = "Vui lòng chọn ngày và khung giờ khám mới hợp lệ." });
+            }
+
+            var newDate = dto.NewDate.Trim();
+            var newTime = dto.NewTime.Trim();
+            var slotStartTime = newTime.Split('-')[0].Trim();
+
+            OnlineAppointmentItem? appointment;
+            lock (_lock)
+            {
+                appointment = _cachedAppointments!.FirstOrDefault(a => a.Id == id);
+                if (appointment == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy lịch hẹn cần đổi." });
+                }
+
+                if (appointment.Status == "Completed")
+                {
+                    return BadRequest(new { message = "Lịch hẹn đã được tiếp nhận tại quầy khám, không thể đổi lịch." });
+                }
+
+                // Kiểm tra khung giờ mới có bị khóa hoặc hết chỗ không
+                var matchedSlot = _cachedSlots!.FirstOrDefault(s =>
+                    s.TimeSlot == newTime ||
+                    s.TimeSlot.StartsWith(slotStartTime) ||
+                    slotStartTime.StartsWith(s.TimeSlot.Split('-')[0].Trim()));
+
+                if (matchedSlot != null)
+                {
+                    if (matchedSlot.IsLocked)
+                    {
+                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} hiện đang bị tạm khóa bởi Bệnh viện. Quý khách vui lòng chọn giờ khác!" });
+                    }
+
+                    var count = _cachedAppointments!
+                        .Where(a => a.Id != id &&
+                                    a.AppointmentDate == newDate &&
+                                    a.Status != "Cancelled" &&
+                                    (a.AppointmentTime == slotStartTime || a.AppointmentTime == matchedSlot.TimeSlot || a.AppointmentTime.StartsWith(slotStartTime)))
+                        .Count();
+
+                    if (count >= matchedSlot.MaxCapacity)
+                    {
+                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} vào ngày {newDate} đã hết chỗ ({count}/{matchedSlot.MaxCapacity}). Vui lòng chọn khung giờ khác!" });
+                    }
+                }
+
+                var oldDate = appointment.AppointmentDate;
+                var oldTime = appointment.AppointmentTime;
+
+                appointment.AppointmentDate = newDate;
+                appointment.AppointmentTime = newTime;
+                appointment.Status = "Pending";
+                appointment.RescheduledAt = DateTime.UtcNow.ToString("o");
+                appointment.QrCode = $"MEDQR|{appointment.Id}|{appointment.PatientCode}|{newDate}|{newTime}";
+                if (!string.IsNullOrWhiteSpace(dto.Reason))
+                {
+                    appointment.SymptomsReason += $" [Đổi lịch từ {oldTime} {oldDate}: {dto.Reason}]";
+                }
+
+                SaveToFile();
+            }
+
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", appointment);
+                await _hubContext.Clients.All.SendAsync("ReceiveAppointmentRescheduled", appointment);
+            }
+            catch (Exception hubEx)
+            {
+                Console.WriteLine($"[SignalR Warning] Reschedule broadcast failed: {hubEx.Message}");
             }
 
             return Ok(appointment);

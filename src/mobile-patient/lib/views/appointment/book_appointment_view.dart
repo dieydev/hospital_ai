@@ -10,7 +10,18 @@ import '../profile/complete_profile_view.dart';
 import 'my_appointments_view.dart';
 
 class BookAppointmentView extends StatefulWidget {
-  const BookAppointmentView({super.key});
+  final bool isFollowUp;
+  final String? initialDepartment;
+  final String? initialDoctor;
+  final String? previousRecordCode;
+
+  const BookAppointmentView({
+    super.key,
+    this.isFollowUp = false,
+    this.initialDepartment,
+    this.initialDoctor,
+    this.previousRecordCode,
+  });
 
   @override
   State<BookAppointmentView> createState() => _BookAppointmentViewState();
@@ -25,29 +36,46 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String? _selectedTimeSlot;
   final TextEditingController _symptomsController = TextEditingController();
+  final TextEditingController _previousRecordController = TextEditingController();
+  final TextEditingController _followUpNotesController = TextEditingController();
+  bool _isFollowUp = false;
   String? _lastCreatedAppointmentId;
 
   @override
   void initState() {
     super.initState();
+    _isFollowUp = widget.isFollowUp;
+    if (widget.previousRecordCode != null) {
+      _previousRecordController.text = widget.previousRecordCode!;
+    }
+    if (widget.initialDepartment != null) {
+      _selectedDepartment = widget.initialDepartment;
+    }
+    if (widget.initialDoctor != null) {
+      _selectedDoctor = widget.initialDoctor;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<AppointmentProvider>();
       final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
       provider.fetchTimeSlotsWithCapacity(dateStr);
 
-      if (provider.departments.isNotEmpty) {
+      if (_selectedDepartment == null && provider.departments.isNotEmpty) {
         setState(() {
           _selectedDepartment = provider.departments.first;
         });
+      }
+
+      if (_selectedDepartment != null) {
         provider.fetchDoctors(_selectedDepartment!).then((_) {
-          if (provider.doctors.isNotEmpty) {
+          if (_selectedDoctor == null && provider.doctors.isNotEmpty) {
             setState(() {
               _selectedDoctor = provider.doctors.first['name'];
             });
           }
         });
       }
-      if (provider.timeSlots.isNotEmpty) {
+      if (provider.timeSlots.isNotEmpty && _selectedTimeSlot == null) {
         setState(() {
           _selectedTimeSlot = provider.timeSlots.first;
         });
@@ -765,6 +793,117 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               '${_selectedTimeSlot ?? ''} - ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
             ),
             const SizedBox(height: 16),
+
+            // Chọn Hình thức khám: Khám Mới vs Tái Khám
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFF0F9FF),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _isFollowUp ? Icons.history_rounded : Icons.medical_services_outlined,
+                        size: 20,
+                        color: _isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Hình thức khám bệnh:',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setState(() => _isFollowUp = false),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: !_isFollowUp ? const Color(0xFF0284C7) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: !_isFollowUp ? const Color(0xFF0284C7) : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '🩺 Khám Mới',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: !_isFollowUp ? Colors.white : const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setState(() => _isFollowUp = true),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _isFollowUp ? const Color(0xFF7C3AED) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '🔄 Tái Khám',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isFollowUp ? Colors.white : const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_isFollowUp) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _previousRecordController,
+                      decoration: InputDecoration(
+                        labelText: 'Mã Bệnh Án (EMR) / Đơn thuốc trước',
+                        hintText: 'Ví dụ: EMR2026-0015',
+                        prefixIcon: const Icon(Icons.folder_shared_outlined, color: Color(0xFF7C3AED), size: 20),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      style: GoogleFonts.inter(fontSize: 13),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
             // Symptoms / Reason input
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -855,9 +994,14 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       'appointmentTime': _selectedTimeSlot!.split(' - ')[0],
       'symptomsReason': _symptomsController.text.trim().isNotEmpty
           ? _symptomsController.text.trim()
-          : 'Đặt lịch hẹn khám trực tuyến qua ứng dụng D-Medical',
+          : (_isFollowUp
+              ? 'Tái khám định kỳ theo hẹn của Bác sĩ ${_previousRecordController.text.trim().isNotEmpty ? '[Mã EMR: ${_previousRecordController.text.trim()}]' : ''}'
+              : 'Đặt lịch hẹn khám trực tuyến qua ứng dụng D-Medical'),
       'status': 'Pending',
       'sourceApp': 'Flutter Mobile App',
+      'appointmentType': _isFollowUp ? 'FollowUp' : 'New',
+      'previousRecordCode': _isFollowUp ? _previousRecordController.text.trim() : null,
+      'followUpNotes': _isFollowUp ? _followUpNotesController.text.trim() : null,
     };
 
     final provider = context.read<AppointmentProvider>();
@@ -916,7 +1060,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
   void _showFinalSuccessDialog(String paymentMessage) {
     final user = context.read<AuthProvider>().user;
     final aptId = _lastCreatedAppointmentId ?? 'LH${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}';
-    final qrData = 'MEDQR|$aptId|${user?.maBenhNhan ?? 'BN'}|${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}|${_selectedTimeSlot ?? ''}';
+    final qrData = 'MEDQR|$aptId|${user?.maBenhNhan ?? 'BN'}|${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}|${_selectedTimeSlot ?? ''}${_isFollowUp ? '|FOLLOWUP' : ''}';
 
     showDialog(
       context: context,
@@ -981,12 +1125,17 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2FE),
+                  color: _isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFE0F2FE),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
                 ),
                 child: Text(
-                  'MÃ QR CHECK-IN ĐIỆN TỬ',
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                  _isFollowUp ? '🔄 PHIẾU HẸN TÁI KHÁM ĐỊNH KỲ' : 'MÃ QR CHECK-IN ĐIỆN TỬ',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primaryDark,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
