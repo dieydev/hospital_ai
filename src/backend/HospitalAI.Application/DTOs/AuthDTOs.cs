@@ -90,7 +90,7 @@ public class CompleteProfileRequestDto
     public string? PhoneNumber { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string IdentityCardNumber { get; set; } = string.Empty;
-    public DateTime DateOfBirth { get; set; }
+    public DateTime? DateOfBirth { get; set; }
     public string Gender { get; set; } = "Nam";
     public string Address { get; set; } = string.Empty;
     public string? HealthInsuranceNumber { get; set; }

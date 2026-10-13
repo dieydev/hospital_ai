@@ -551,13 +551,15 @@ public class AuthService : IAuthService
         }
 
         var cccd = request.IdentityCardNumber.Trim();
-        var duplicateCCCD = await _context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd && p.UserId != user.Id);
+        var duplicateCCCD = await _context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd && p.UserId != user.Id && p.UserId != null);
         if (duplicateCCCD)
         {
             throw new Exception($"Số CCCD {cccd} đã được đăng ký bởi bệnh nhân khác.");
         }
 
-        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id)
+            ?? await _context.Patients.FirstOrDefaultAsync(p => p.IdentityCardNumber == cccd && p.UserId == null);
+
         if (patient == null)
         {
             var currentYear = DateTime.Now.Year;
@@ -572,7 +574,7 @@ public class AuthService : IAuthService
                 PatientCode = patientCode,
                 FullName = request.FullName.Trim(),
                 Gender = request.Gender ?? "Nam",
-                DateOfBirth = request.DateOfBirth == default ? DateTime.UtcNow.AddYears(-25) : request.DateOfBirth,
+                DateOfBirth = (request.DateOfBirth == null || request.DateOfBirth == default) ? DateTime.UtcNow.AddYears(-25) : request.DateOfBirth.Value,
                 IdentityCardNumber = cccd,
                 Address = request.Address.Trim(),
                 HealthInsuranceNumber = request.HealthInsuranceNumber?.Trim(),
@@ -585,9 +587,13 @@ public class AuthService : IAuthService
         }
         else
         {
+            patient.UserId = user.Id;
             patient.FullName = request.FullName.Trim();
             patient.Gender = request.Gender ?? "Nam";
-            if (request.DateOfBirth != default) patient.DateOfBirth = request.DateOfBirth;
+            if (request.DateOfBirth != null && request.DateOfBirth != default)
+            {
+                patient.DateOfBirth = request.DateOfBirth.Value;
+            }
             patient.IdentityCardNumber = cccd;
             patient.Address = request.Address.Trim();
             patient.HealthInsuranceNumber = request.HealthInsuranceNumber?.Trim();
@@ -598,7 +604,7 @@ public class AuthService : IAuthService
         }
 
         user.FullName = request.FullName.Trim();
-        if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && string.IsNullOrWhiteSpace(user.PhoneNumber))
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
         {
             user.PhoneNumber = request.PhoneNumber.Trim();
         }

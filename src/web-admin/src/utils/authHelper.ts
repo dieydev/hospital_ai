@@ -35,21 +35,26 @@ export const isPatientProfileComplete = (user: UserAccount | null): boolean => {
   // Nếu là cán bộ y tế thì không áp dụng ràng buộc hồ sơ bệnh nhân
   if (isStaffOrAdminUser(user)) return true;
 
-  // Nếu flag đã được đánh dấu true và có đầy đủ các trường chính
-  const hasFullName = Boolean(user.hoTen && user.hoTen.trim().length >= 2);
+  // Nếu đã được backend hoặc hệ thống xác nhận hoàn tất hồ sơ
+  if (user.isProfileComplete === true) return true;
+
+  // Kiểm tra tính đầy đủ của các trường thông tin cơ bản
+  const hasFullName = Boolean(user.hoTen && user.hoTen.trim().length >= 2 && !user.hoTen.startsWith('Bệnh nhân ('));
   const hasPhone = Boolean(user.soDienThoai && user.soDienThoai.trim().length >= 9);
-  const hasCCCD = Boolean(user.soCCCD && user.soCCCD.trim().length >= 9);
+  const hasCCCD = Boolean(
+    user.soCCCD &&
+    user.soCCCD.trim().length >= 9 &&
+    !user.soCCCD.startsWith('CD') &&
+    !user.soCCCD.startsWith('P') &&
+    user.soCCCD !== user.soDienThoai
+  );
   const hasBirth = Boolean(user.ngaySinh || user.namSinh);
   const hasGender = Boolean(user.gioiTinh);
-  const hasAddress = Boolean(user.diaChi && user.diaChi.trim().length >= 5);
-
-  return Boolean(
-    user.isProfileComplete &&
-    hasFullName &&
-    hasPhone &&
-    hasCCCD &&
-    hasBirth &&
-    hasGender &&
-    hasAddress
+  const hasAddress = Boolean(
+    user.diaChi &&
+    user.diaChi.trim().length >= 5 &&
+    user.diaChi.trim() !== 'Chưa cập nhật'
   );
+
+  return Boolean(hasFullName && hasPhone && hasCCCD && hasBirth && hasGender && hasAddress);
 };

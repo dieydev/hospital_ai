@@ -6,9 +6,15 @@ import {
   CalendarOutlined,
   ArrowRightOutlined,
   CheckCircleFilled,
+  UserOutlined,
+  MedicineBoxOutlined,
+  ApartmentOutlined,
+  SmileOutlined,
 } from '@ant-design/icons';
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
+import { CountUpNumber } from '../components/CountUpNumber';
+import './PatientBookingPage.css';
 
 const { Title, Paragraph } = Typography;
 
@@ -62,33 +68,95 @@ export const AboutPage: React.FC = () => {
 
       {/* Nội dung chính */}
       <main style={{ maxWidth: 1180, margin: '0 auto', padding: '40px 16px' }}>
-        {/* 4 Thống kê nổi bật */}
+        {/* 4 Thống kê nổi bật với hiệu ứng nhảy số tự động */}
         <Row gutter={[20, 20]} style={{ marginBottom: 48 }}>
           {[
-            { num: '50+', label: 'Bác Sĩ Chuyên Khoa', sub: 'Trưởng khoa, CKII & Giảng viên ĐHYD' },
-            { num: '500+', label: 'Giường Bệnh Nội Trú', sub: 'Phòng tiện nghi tiêu chuẩn quốc tế' },
-            { num: '9+', label: 'Khoa Lâm Sàng Kỹ Thuật Cao', sub: 'Tim mạch, Tiêu hóa, Cấp cứu 24/7' },
-            { num: '99.2%', label: 'Mức Độ Hài Lòng', sub: 'Đánh giá từ hơn 200.000 lượt khám/năm' },
+            {
+              end: 50,
+              suffix: '+',
+              label: 'Bác Sĩ Chuyên Khoa',
+              sub: 'Trưởng khoa, CKII & Giảng viên ĐHYD',
+              icon: <UserOutlined style={{ fontSize: 24, color: '#0284c7' }} />,
+              bg: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+              borderColor: '#bae6fd',
+              color: '#0284c7',
+            },
+            {
+              end: 500,
+              suffix: '+',
+              label: 'Giường Bệnh Nội Trú',
+              sub: 'Phòng tiện nghi tiêu chuẩn quốc tế',
+              icon: <MedicineBoxOutlined style={{ fontSize: 24, color: '#059669' }} />,
+              bg: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+              borderColor: '#a7f3d0',
+              color: '#059669',
+            },
+            {
+              end: 9,
+              suffix: '+',
+              label: 'Khoa Lâm Sàng Kỹ Thuật Cao',
+              sub: 'Tim mạch, Tiêu hóa, Cấp cứu 24/7',
+              icon: <ApartmentOutlined style={{ fontSize: 24, color: '#d97706' }} />,
+              bg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+              borderColor: '#fde68a',
+              color: '#d97706',
+            },
+            {
+              end: 99.2,
+              suffix: '%',
+              decimals: 1,
+              label: 'Mức Độ Hài Lòng',
+              sub: 'Đánh giá từ hơn 200.000 lượt khám/năm',
+              icon: <SmileOutlined style={{ fontSize: 24, color: '#e11d48' }} />,
+              bg: 'linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)',
+              borderColor: '#fecdd3',
+              color: '#e11d48',
+            },
           ].map((stat, idx) => (
             <Col xs={12} sm={12} md={6} key={idx}>
               <Card
+                className="about-stat-card"
                 bordered={false}
                 style={{
-                  borderRadius: 16,
+                  borderRadius: 18,
                   textAlign: 'center',
                   background: '#ffffff',
-                  border: '1.5px solid #bae6fd',
-                  boxShadow: '0 6px 20px rgba(2, 132, 199, 0.06)',
+                  border: `1.5px solid ${stat.borderColor}`,
+                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)',
                   height: '100%',
+                  transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <div style={{ fontSize: 34, fontWeight: 900, color: '#0284c7', marginBottom: 4 }}>
-                  {stat.num}
+                <div
+                  className="about-stat-icon-wrap"
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    background: stat.bg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px',
+                    transition: 'transform 0.3s ease',
+                  }}
+                >
+                  {stat.icon}
+                </div>
+                <div style={{ fontSize: 34, fontWeight: 900, color: stat.color, marginBottom: 4, letterSpacing: '-0.5px' }}>
+                  <CountUpNumber
+                    end={stat.end}
+                    suffix={stat.suffix}
+                    decimals={stat.decimals || 0}
+                    duration={2000}
+                  />
                 </div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a', marginBottom: 4 }}>
                   {stat.label}
                 </div>
-                <div style={{ fontSize: 12.5, color: '#64748b' }}>
+                <div style={{ fontSize: 12.5, color: '#64748b', lineHeight: 1.45 }}>
                   {stat.sub}
                 </div>
               </Card>

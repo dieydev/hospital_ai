@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   Card,
@@ -49,11 +49,18 @@ import {
   VideoCameraOutlined,
   ExperimentOutlined,
   AuditOutlined,
+  LeftOutlined,
   RightOutlined,
   PhoneFilled,
+  DownloadOutlined,
+  TeamOutlined,
+  CheckCircleFilled,
+  HomeOutlined,
+  ShopOutlined,
+  ScanOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import {
   appointmentService,
@@ -70,6 +77,7 @@ import {
   isPatientUser,
 } from '../utils/authHelper';
 import { AIChatDrawer } from '../components/AIChatDrawer';
+import { CountUpNumber } from '../components/CountUpNumber';
 import './PatientBookingPage.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -180,6 +188,11 @@ interface DoctorOption {
   rating: number;
   consultationFee: number;
   isSpecialist?: boolean;
+  bio?: string;
+  education?: string;
+  workingDays?: string;
+  room?: string;
+  specialties?: string[];
 }
 
 const DOCTORS_CATALOG: DoctorOption[] = [
@@ -193,6 +206,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     rating: 4.9,
     consultationFee: 300000,
     isSpecialist: true,
+    bio: 'Chuyên gia đầu ngành trong điều trị các bệnh lý nội khoa phức tạp, tăng huyết áp kháng trị, đái tháo đường biến chứng và rối loạn chuyển hóa.',
+    education: 'Tốt nghiệp Bác sĩ Chuyên khoa II - Đại học Y Dược TP.HCM. Từng công tác tại BV Chợ Rẫy.',
+    workingDays: 'Thứ 2 - Thứ 6 (07:30 - 16:30), Thứ 7 (Sáng 07:30 - 11:30)',
+    room: 'Phòng 102 - Tầng 1 Khu A',
+    specialties: ['Nội tổng quát', 'Tăng huyết áp', 'Đái tháo đường', 'Bệnh lý chuyển hóa'],
   },
   {
     id: 'doc-02',
@@ -203,6 +221,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     avatar: 'https://images.unsplash.com/photo-1594824813508-e7655cfc9b68?w=300&auto=format&fit=crop&q=80',
     rating: 4.8,
     consultationFee: 200000,
+    bio: 'Bác sĩ trẻ giàu nhiệt huyết, tận tâm trong thăm khám và tư vấn chế độ dinh dưỡng, lối sống cho bệnh nhân mắc bệnh mạn tính.',
+    education: 'Thạc sĩ Y học Nội khoa - Đại học Y Khoa Phạm Ngọc Thạch.',
+    workingDays: 'Thứ 2 - Thứ 7 (07:30 - 16:30)',
+    room: 'Phòng 103 - Tầng 1 Khu A',
+    specialties: ['Nội tiết', 'Hô hấp mạn tính', 'Tư vấn dinh dưỡng y khoa'],
   },
   {
     id: 'doc-03',
@@ -214,6 +237,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     rating: 5.0,
     consultationFee: 300000,
     isSpecialist: true,
+    bio: 'Chuyên gia giàu kinh nghiệm trong chẩn đoán và điều trị bệnh lý viêm loét dạ dày - tá tràng, trào ngược GERD, viêm gan siêu vi B/C và tầm soát ung thư đường tiêu hóa.',
+    education: 'Bác sĩ CKII Tiêu hóa - Gan mật. Chứng chỉ Nội soi nâng cao Bệnh viện Chợ Rẫy.',
+    workingDays: 'Thứ 2 - Thứ 6 (08:00 - 16:30)',
+    room: 'Phòng 201 - Tầng 2 Khu B',
+    specialties: ['Nội soi dạ dày tiền mê', 'Gan mật tụy', 'Viêm loét dạ dày', 'GERD'],
   },
   {
     id: 'doc-04',
@@ -224,6 +252,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&auto=format&fit=crop&q=80',
     rating: 4.7,
     consultationFee: 180000,
+    bio: 'Bác sĩ chuyên khoa nội soi kỹ thuật số nhuộm màu NBI phát hiện tổn thương tiền ung thư ống tiêu hóa với thao tác nhẹ nhàng, không gây đau.',
+    education: 'Bác sĩ Đa khoa - ĐHYD TP.HCM, Đào tạo chuyên sâu Nội soi can thiệp.',
+    workingDays: 'Thứ 2 - Thứ 7 (07:30 - 16:00)',
+    room: 'Phòng 202 - Tầng 2 Khu B',
+    specialties: ['Nội soi NBI', 'Vi khuẩn HP', 'Hội chứng ruột kích thích'],
   },
   {
     id: 'doc-05',
@@ -235,6 +268,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     rating: 5.0,
     consultationFee: 350000,
     isSpecialist: true,
+    bio: 'Tiến sĩ Y khoa uy tín, chuyên gia can thiệp tim mạch và siêu âm Doppler tim màu. Hơn 20 năm kinh nghiệm cứu chữa nhiều ca bệnh tim mạch nguy kịch.',
+    education: 'Tiến sĩ Tim Mạch - ĐHYD TP.HCM. Tu nghiệp Tim mạch Can thiệp tại Pháp & Singapore.',
+    workingDays: 'Thứ 3, Thứ 5, Thứ 7 (08:00 - 16:30)',
+    room: 'Phòng 301 - Tầng 3 Khu A',
+    specialties: ['Bệnh mạch vành', 'Suy tim', 'Tăng huyết áp kháng trị', 'Rối loạn nhịp tim'],
   },
   {
     id: 'doc-06',
@@ -245,6 +283,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     avatar: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=300&auto=format&fit=crop&q=80',
     rating: 4.8,
     consultationFee: 200000,
+    bio: 'Chuyên gia siêu âm tim Doppler 4D, tầm soát phình giãn mạch, bệnh van tim và dự phòng đột quỵ cho người cao tuổi.',
+    education: 'Bác sĩ Chuyên khoa I Tim mạch - ĐHYD TP.HCM.',
+    workingDays: 'Thứ 2 - Thứ 6 (07:30 - 16:30)',
+    room: 'Phòng 302 - Tầng 3 Khu A',
+    specialties: ['Siêu âm tim 4D', 'Xơ vữa động mạch', 'Bệnh lý van tim'],
   },
   {
     id: 'doc-07',
@@ -256,6 +299,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     rating: 4.9,
     consultationFee: 250000,
     isSpecialist: true,
+    bio: 'Bác sĩ Nhi khoa thân thiện, tâm lý với trẻ nhỏ, chuyên điều trị viêm tiểu phế quản, hen suyễn trẻ em, rối loạn tiêu hóa và dinh dưỡng tăng trưởng.',
+    education: 'Bác sĩ CKI Nhi khoa - ĐHYD TP.HCM. Từng công tác tại BV Nhi Đồng 1.',
+    workingDays: 'Thứ 2 - Chủ Nhật (07:30 - 17:00)',
+    room: 'Phòng 105 - Tầng 1 Khu B',
+    specialties: ['Hô hấp nhi', 'Tiêu hóa trẻ em', 'Tư vấn tiêm chủng', 'Dinh dưỡng sơ sinh'],
   },
   {
     id: 'doc-08',
@@ -267,6 +315,11 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     rating: 4.9,
     consultationFee: 280000,
     isSpecialist: true,
+    bio: 'Chuyên sâu nội soi vi phẫu tai mũi họng, nạo VA/cắt Amidan bằng công nghệ sóng cao tần Coblator không đau, phục hồi nhanh.',
+    education: 'Bác sĩ CKII Tai Mũi Họng - ĐHYD TP.HCM.',
+    workingDays: 'Thứ 2 - Thứ 7 (07:30 - 16:30)',
+    room: 'Phòng 208 - Tầng 2 Khu B',
+    specialties: ['Nội soi TMH ống mềm', 'Viêm xoang mạn tính', 'Cắt Amidan Coblator'],
   },
   {
     id: 'doc-09',
@@ -277,8 +330,14 @@ const DOCTORS_CATALOG: DoctorOption[] = [
     avatar: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=300&auto=format&fit=crop&q=80',
     rating: 4.8,
     consultationFee: 220000,
+    bio: 'Bác sĩ chuyên khoa khúc xạ thị giác, chẩn đoán glôcôm (cườm nước), thoái hóa hoàng điểm và phẫu thuật đục thủy tinh thể Phaco công nghệ cao.',
+    education: 'Bác sĩ CKI Mắt - ĐHYD TP.HCM. Chứng chỉ Phaco Quốc Tế.',
+    workingDays: 'Thứ 2 - Thứ 6 (08:00 - 16:30)',
+    room: 'Phòng 205 - Tầng 2 Khu A',
+    specialties: ['Đục thủy tinh thể', 'Khúc xạ thị giác', 'Cườm khô/cườm nước', 'Đáy mắt'],
   },
 ];
+
 
 // Danh mục Gói Khám Sức Khỏe & Tầm Soát Định Kỳ
 interface HealthPackageOption {
@@ -294,6 +353,7 @@ interface HealthPackageOption {
   departmentId: string;
   departmentName: string;
   items: string[];
+  preparation?: string[];
 }
 
 const HEALTH_PACKAGES_CATALOG: HealthPackageOption[] = [
@@ -318,6 +378,12 @@ const HEALTH_PACKAGES_CATALOG: HealthPackageOption[] = [
       'Chụp X-Quang tim phổi thẳng kỹ thuật số',
       'Điện tâm đồ (ECG 12 chuyển đạo) & Siêu âm ổ bụng tổng quát',
     ],
+    preparation: [
+      'Nhịn ăn sáng ít nhất 6-8 tiếng trước giờ lấy mẫu máu (có thể uống ít nước lọc)',
+      'Không dùng rượu, bia, cà phê, nước ngọt có ga vào buổi tối trước ngày khám',
+      'Mang theo CCCD gắn chip và thẻ BHYT / app VssID',
+      'Phụ nữ nếu có nghi ngờ mang thai vui lòng báo trước để không chụp X-Quang',
+    ],
   },
   {
     id: 'pkg-tim-mach',
@@ -338,6 +404,11 @@ const HEALTH_PACKAGES_CATALOG: HealthPackageOption[] = [
       'Bộ mỡ máu toàn phần (Cholesterol, Triglyceride, HDL, LDL)',
       'Định lượng Troponin I & Siêu âm Doppler động mạch cảnh',
       'Đánh giá thang điểm xơ vữa động mạch & nguy cơ nhồi máu cơ tim',
+    ],
+    preparation: [
+      'Nhịn ăn ít nhất 8 tiếng để xét nghiệm bộ mỡ máu và đường huyết',
+      'Mang theo tất cả các đơn thuốc tim mạch, huyết áp đang uống hàng ngày',
+      'Mặc trang phục rộng rãi, thoải mái để thuận tiện khi đo điện tim',
     ],
   },
   {
@@ -360,6 +431,11 @@ const HEALTH_PACKAGES_CATALOG: HealthPackageOption[] = [
       'Siêu âm đàn hồi mô gan (Fibroscan) phát hiện xơ gan sớm',
       'Tầm soát ung thư gan sớm AFP',
     ],
+    preparation: [
+      'Nhịn ăn hoàn toàn trước giờ nội soi ít nhất 6-8 tiếng (không uống nước màu, sữa)',
+      'Nên có người thân đi cùng nếu thực hiện nội soi tiền mê',
+      'Báo trước cho Bác sĩ nếu có tiền sử bệnh tim mạch hoặc dị ứng thuốc gây mê',
+    ],
   },
   {
     id: 'pkg-hau-covid',
@@ -380,13 +456,22 @@ const HEALTH_PACKAGES_CATALOG: HealthPackageOption[] = [
       'Định lượng D-Dimer tầm soát huyết khối tắc mạch vi thể',
       'Điện tâm đồ kiểm tra rối loạn nhịp hậu nhiễm',
     ],
+    preparation: [
+      'Không dùng thuốc giãn phế quản dạng xịt trước giờ đo chức năng hô hấp 4 tiếng',
+      'Nghỉ ngơi yên tĩnh 15 phút trước khi tiến hành đo điện tâm đồ và SpO2',
+    ],
   },
 ];
 
 export const PatientBookingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, syncCurrentUser } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Tự động đồng bộ hồ sơ Bệnh nhân thật từ CSDL SQL Server khi vào trang
+  useEffect(() => {
+    syncCurrentUser();
+  }, [syncCurrentUser]);
 
   // Modern Medical Portal Modes & Omnibar Search
   const [bookingMode, setBookingMode] = useState<'byDept' | 'byDoctor' | 'byPackage' | 'byFollowUp'>('byDept');
@@ -396,6 +481,82 @@ export const PatientBookingPage: React.FC = () => {
   const [hasBhyt, setHasBhyt] = useState(true);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
+  // Carousel Slider Ref & Active Slide Index
+  const carouselRef = useRef<any>(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+
+  // 14 Medpro Service Cards Carousel Track & Scroll Navigation
+  const cardsScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollCardsLeft, setCanScrollCardsLeft] = useState(false);
+  const [canScrollCardsRight, setCanScrollCardsRight] = useState(true);
+  const [serviceCardPageIndex, setServiceCardPageIndex] = useState(0);
+  const [isCardsSliding, setIsCardsSliding] = useState(false);
+
+  const updateCardScrollButtons = () => {
+    if (cardsScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = cardsScrollRef.current;
+      setCanScrollCardsLeft(scrollLeft > 15);
+      setCanScrollCardsRight(scrollLeft + clientWidth < scrollWidth - 15);
+      const page = scrollLeft > clientWidth / 2 ? 1 : 0;
+      setServiceCardPageIndex(page);
+    }
+  };
+
+  const handleScrollCards = (direction: 'left' | 'right') => {
+    if (cardsScrollRef.current) {
+      setIsCardsSliding(true);
+      setTimeout(() => setIsCardsSliding(false), 500);
+      const { clientWidth, scrollLeft, scrollWidth } = cardsScrollRef.current;
+      if (direction === 'left') {
+        cardsScrollRef.current.scrollTo({
+          left: Math.max(0, scrollLeft - clientWidth),
+          behavior: 'smooth',
+        });
+      } else {
+        if (scrollLeft + clientWidth >= scrollWidth - 25) {
+          cardsScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          cardsScrollRef.current.scrollTo({
+            left: scrollLeft + clientWidth,
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  };
+
+  const handleGoToCardPage = (pageIndex: number) => {
+    if (cardsScrollRef.current) {
+      setIsCardsSliding(true);
+      setTimeout(() => setIsCardsSliding(false), 500);
+      const { clientWidth } = cardsScrollRef.current;
+      cardsScrollRef.current.scrollTo({
+        left: pageIndex * clientWidth,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  useEffect(() => {
+    updateCardScrollButtons();
+    window.addEventListener('resize', updateCardScrollButtons);
+    return () => window.removeEventListener('resize', updateCardScrollButtons);
+  }, []);
+
+  // Doctor & Package Detail Modal States
+  const [viewingDoctor, setViewingDoctor] = useState<DoctorOption | null>(null);
+  const [doctorDetailModalOpen, setDoctorDetailModalOpen] = useState(false);
+  const [viewingPackage, setViewingPackage] = useState<HealthPackageOption | null>(null);
+  const [packageDetailModalOpen, setPackageDetailModalOpen] = useState(false);
+
+  // Department filter for Doctor Mode ('ALL' or department name)
+  const [doctorDeptFilter, setDoctorDeptFilter] = useState<string>('ALL');
+
+  // Past appointments for FollowUp Mode
+  const [patientPastAppointments, setPatientPastAppointments] = useState<OnlineAppointmentItem[]>([]);
+  const [pastAptLoading, setPastAptLoading] = useState(false);
+
+
   // Form selections
   const [selectedDept, setSelectedDept] = useState<DepartmentOption>(DEPARTMENTS_CATALOG[0]);
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorOption | null>(null);
@@ -404,29 +565,84 @@ export const PatientBookingPage: React.FC = () => {
   const [slots, setSlots] = useState<TimeSlotQuotaItem[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
+  // Shift filter for Step 2 ('ALL' | 'MORNING' | 'AFTERNOON')
+  const [slotShiftFilter, setSlotShiftFilter] = useState<'ALL' | 'MORNING' | 'AFTERNOON'>('ALL');
+
+  // Booking target for Step 3 ('self' | 'relative')
+  const [bookingForTarget, setBookingForTarget] = useState<'self' | 'relative'>('self');
+
   // Patient Info Form
   const [form] = Form.useForm();
   const [bookingLoading, setBookingLoading] = useState(false);
   const [createdAppointment, setCreatedAppointment] = useState<OnlineAppointmentItem | null>(null);
 
+  // URL search params sync (from Chuyên khoa, Bác sĩ, Gói khám pages)
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    const deptId = searchParams.get('deptId');
+    const doctorId = searchParams.get('doctorId');
+    const packageId = searchParams.get('packageId');
+
+    if (mode === 'byDept' || mode === 'byDoctor' || mode === 'byPackage' || mode === 'byFollowUp') {
+      setBookingMode(mode);
+    }
+
+    if (deptId) {
+      const foundDept = DEPARTMENTS_CATALOG.find((d) => d.id === deptId);
+      if (foundDept) {
+        setSelectedDept(foundDept);
+        setBookingMode('byDept');
+      }
+    }
+
+    if (doctorId) {
+      const foundDoc = DOCTORS_CATALOG.find((d) => d.id === doctorId);
+      if (foundDoc) {
+        setSelectedDoctor(foundDoc);
+        setBookingMode('byDoctor');
+        const matchedDept = DEPARTMENTS_CATALOG.find((d) => d.name === foundDoc.department);
+        if (matchedDept) setSelectedDept(matchedDept);
+      }
+    }
+
+    if (packageId) {
+      const foundPkg = HEALTH_PACKAGES_CATALOG.find((p) => p.id === packageId);
+      if (foundPkg) {
+        setSelectedPackage(foundPkg);
+        setBookingMode('byPackage');
+      }
+    }
+
+    if (deptId || doctorId || packageId || mode) {
+      setTimeout(() => {
+        const targetEl = document.querySelector('.booking-main-card') || document.querySelector('.booking-target-switch-wrap');
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 350);
+    }
+  }, [searchParams]);
+
   // Auth Guard & Profile Completion Modal States
   const [requireLoginModalOpen, setRequireLoginModalOpen] = useState(false);
   const [requireLoginActionTitle, setRequireLoginActionTitle] = useState('đặt lịch khám');
   const [completeProfileModalOpen, setCompleteProfileModalOpen] = useState(false);
-  const [completeProfileAllowClose, setCompleteProfileAllowClose] = useState(false);
+  const [completeProfileAllowClose, setCompleteProfileAllowClose] = useState(true);
 
-  // Helper: Bắt buộc đăng nhập & hoàn tất hồ sơ trước khi thực hiện bất kỳ thao tác nào
+  // Helper: Bắt buộc đăng nhập & kiểm tra hồ sơ trước khi thực hiện đặt khám
   const ensureAuthenticated = (actionName: string): boolean => {
     if (!user) {
       setRequireLoginActionTitle(actionName);
       setRequireLoginModalOpen(true);
       return false;
     }
-    // Nếu là bệnh nhân nhưng chưa hoàn thiện thông tin định danh
 
+    // Nếu là bệnh nhân nhưng chưa có thông tin cơ bản
     if (isPatientUser(user) && !isPatientProfileComplete(user)) {
       setCompleteProfileModalOpen(true);
-      setCompleteProfileAllowClose(false);
+      setCompleteProfileAllowClose(true);
       showToast('Vui lòng cập nhật đầy đủ thông tin bệnh nhân trước khi tiếp tục!', 'warning');
       return false;
     }
@@ -438,23 +654,49 @@ export const PatientBookingPage: React.FC = () => {
     if (user && isPatientUser(user)) {
       if (!isPatientProfileComplete(user)) {
         setCompleteProfileModalOpen(true);
-        setCompleteProfileAllowClose(false);
+        setCompleteProfileAllowClose(true);
       }
     }
   }, [user]);
 
-  // Auto pre-fill thông tin bệnh nhân nếu đã đăng nhập
+  // Auto pre-fill thông tin bệnh nhân nếu đã đăng nhập và đang chọn "Đặt cho bản thân"
   useEffect(() => {
-    if (user) {
+    if (user && bookingForTarget === 'self') {
       form.setFieldsValue({
         fullName: user.hoTen || user.tenDangNhap,
         phoneNumber: user.soDienThoai || '',
         gender: user.gioiTinh || 'Nam',
         birthYear: user.namSinh || (user.ngaySinh ? dayjs(user.ngaySinh).year() : ''),
-        identityNumber: user.soCCCD || '',
+        identityNumber: user.soCCCD || user.maTheBHYT || '',
       });
     }
-  }, [user, form]);
+  }, [user, bookingForTarget, form]);
+
+  // Tải danh sách các lần khám trước của Bệnh nhân cho chế độ Tái Khám
+  useEffect(() => {
+    const loadPast = async () => {
+      if (!user?.soDienThoai && !user?.maBenhNhan) return;
+      setPastAptLoading(true);
+      try {
+        const all = await appointmentService.getAppointments();
+        const userPhone = (user.soDienThoai || '').trim();
+        const userCode = (user.maBenhNhan || '').trim().toLowerCase();
+        const found = all.filter(
+          (a) =>
+            (userPhone && a.patientPhone.includes(userPhone)) ||
+            (userCode && a.patientCode.toLowerCase() === userCode)
+        );
+        setPatientPastAppointments(found);
+      } catch {
+        // ignore
+      } finally {
+        setPastAptLoading(false);
+      }
+    };
+    if (user) {
+      loadPast();
+    }
+  }, [user, bookingMode]);
 
   // Tra cứu lịch hẹn modal
   const [lookupModalOpen, setLookupModalOpen] = useState(false);
@@ -812,19 +1054,78 @@ export const PatientBookingPage: React.FC = () => {
     }
   };
 
+  // Chuyển đổi đối tượng đặt khám: Bản thân vs Người thân
+  const handleSwitchBookingTarget = (target: 'self' | 'relative') => {
+    setBookingForTarget(target);
+    if (target === 'self') {
+      if (user) {
+        form.setFieldsValue({
+          fullName: user.hoTen || user.tenDangNhap,
+          phoneNumber: user.soDienThoai || '',
+          gender: user.gioiTinh || 'Nam',
+          birthYear: user.namSinh || (user.ngaySinh ? dayjs(user.ngaySinh).year() : ''),
+          identityNumber: user.soCCCD || user.maTheBHYT || '',
+        });
+      }
+    } else {
+      form.setFieldsValue({
+        fullName: '',
+        phoneNumber: user?.soDienThoai || '',
+        gender: 'Nam',
+        birthYear: '',
+        identityNumber: '',
+      });
+    }
+  };
+
+  // Tải hình ảnh QR Tiếp Nhận về máy (Chuyển SVG thành PNG tải về)
+  const handleDownloadQrImage = () => {
+    try {
+      const svgEl = document.querySelector('#qr-ticket-card svg') as SVGSVGElement | null;
+      if (!svgEl) {
+        showToast('Không tìm thấy mã QR để tải xuống', 'error');
+        return;
+      }
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      canvas.width = 400;
+      canvas.height = 400;
+      img.onload = () => {
+        if (!ctx) return;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 20, 20, 360, 360);
+        const pngFile = canvas.toDataURL('image/png');
+        const downloadLink = document.createElement('a');
+        downloadLink.download = `Phieu_Kham_D-Medical_${createdAppointment?.id || 'QR'}.png`;
+        downloadLink.href = pngFile;
+        downloadLink.click();
+        showToast('Đã tải hình ảnh QR tiếp nhận về máy thành công!', 'success');
+      };
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    } catch {
+      showToast('Không thể xuất ảnh QR. Vui lòng sử dụng tính năng In Phiếu Khám!', 'error');
+    }
+  };
+
   // Reset booking form
   const handleResetBooking = () => {
     setCurrentStep(0);
     setSelectedDoctor(null);
     setSelectedSlot('');
     setCreatedAppointment(null);
+    setBookingForTarget('self');
+    setSlotShiftFilter('ALL');
     if (user) {
       form.setFieldsValue({
         fullName: user.hoTen || user.tenDangNhap,
         phoneNumber: user.soDienThoai || '',
         symptoms: '',
-        birthYear: '',
-        gender: 'Nam',
+        birthYear: user.namSinh || (user.ngaySinh ? dayjs(user.ngaySinh).year() : ''),
+        gender: user.gioiTinh || 'Nam',
+        identityNumber: user.soCCCD || '',
       });
     } else {
       form.resetFields();
@@ -918,6 +1219,32 @@ export const PatientBookingPage: React.FC = () => {
             )}
           </div>
 
+          {/* Quick Suggestion Search Tags */}
+          <div className="medpro-quick-tags-wrap">
+            <span className="medpro-quick-tag-label">Gợi ý tìm nhanh:</span>
+            {[
+              { label: 'Tim Mạch', query: 'tim mạch', mode: 'byDept' },
+              { label: 'Tiêu Hóa & Gan', query: 'tiêu hóa', mode: 'byDept' },
+              { label: 'Nhi Khoa', query: 'nhi', mode: 'byDept' },
+              { label: 'Gói Tổng Quát', query: 'tổng quát', mode: 'byPackage' },
+              { label: 'BS. Chuyên Khoa II', query: 'CKII', mode: 'byDoctor' },
+              { label: 'Tái Khám Theo Hẹn', query: '', mode: 'byFollowUp' },
+            ].map((tag, idx) => (
+              <span
+                key={idx}
+                className="medpro-quick-tag-pill"
+                onClick={() => {
+                  setBookingMode(tag.mode as any);
+                  setSearchQuery(tag.query);
+                  const el = document.getElementById('main-booking-flow');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                {tag.label}
+              </span>
+            ))}
+          </div>
+
           {/* 3 Green Checkmark Bullet Points (Exact Replica of Image) */}
           <div className="medpro-hero-bullet-list">
             <div className="medpro-hero-bullet-item">
@@ -1006,12 +1333,31 @@ export const PatientBookingPage: React.FC = () => {
           )}
         </div>
 
-        {/* 7 Quick Feature Action Cards (Floating Grid as in User Reference Image) */}
+        {/* 14 Quick Feature Action Cards (Floating Carousel as in Medpro Reference) */}
         <div className="medpro-cards-carousel-container">
-          <div className="medpro-cards-grid">
+          {/* Left Arrow Button (Hidden on Page 1 as in Reference Image 1) */}
+          <button
+            type="button"
+            className={`medpro-carousel-nav-btn medpro-carousel-prev-btn ${!canScrollCardsLeft ? 'is-hidden' : ''}`}
+            title="Xem các dịch vụ trước"
+            aria-label="Xem các dịch vụ trước"
+            onClick={() => handleScrollCards('left')}
+          >
+            <LeftOutlined />
+          </button>
+
+          {/* Scrollable Track with 14 Action Cards */}
+          <div
+            className={`medpro-cards-scroll-track ${isCardsSliding ? 'is-sliding' : ''}`}
+            ref={cardsScrollRef}
+            onScroll={updateCardScrollButtons}
+          >
+            {/* --- PAGE 1: 7 Dịch vụ cốt lõi --- */}
+
             {/* Card 1: Đặt khám tại cơ sở */}
             <div
               className={`medpro-service-card ${bookingMode === 'byDept' && !searchQuery ? 'card-active' : ''}`}
+              style={{ '--card-index': 1 } as React.CSSProperties}
               onClick={() => {
                 setBookingMode('byDept');
                 setSelectedPackage(null);
@@ -1029,6 +1375,7 @@ export const PatientBookingPage: React.FC = () => {
             {/* Card 2: Đặt khám chuyên khoa */}
             <div
               className={`medpro-service-card ${bookingMode === 'byDept' ? 'card-active' : ''}`}
+              style={{ '--card-index': 2 } as React.CSSProperties}
               onClick={() => {
                 setBookingMode('byDept');
                 setSelectedPackage(null);
@@ -1046,6 +1393,7 @@ export const PatientBookingPage: React.FC = () => {
             {/* Card 3: Gọi video với bác sĩ */}
             <div
               className="medpro-service-card"
+              style={{ '--card-index': 3 } as React.CSSProperties}
               onClick={() => {
                 setBookingMode('byDoctor');
                 setSelectedPackage(null);
@@ -1064,6 +1412,7 @@ export const PatientBookingPage: React.FC = () => {
             {/* Card 4: Đặt lịch xét nghiệm */}
             <div
               className="medpro-service-card"
+              style={{ '--card-index': 4 } as React.CSSProperties}
               onClick={() => {
                 setBookingMode('byDept');
                 setSearchQuery('xét nghiệm');
@@ -1081,6 +1430,7 @@ export const PatientBookingPage: React.FC = () => {
             {/* Card 5: Đặt khám ngoài giờ */}
             <div
               className="medpro-service-card"
+              style={{ '--card-index': 5 } as React.CSSProperties}
               onClick={() => {
                 setBookingMode('byDoctor');
                 showToast('Khám ngoài giờ: 17:00 - 21:00 & Thứ 7, Chủ Nhật hàng tuần', 'info');
@@ -1097,6 +1447,7 @@ export const PatientBookingPage: React.FC = () => {
             {/* Card 6: Giúp việc cá nhân & AI */}
             <div
               className="medpro-service-card"
+              style={{ '--card-index': 6 } as React.CSSProperties}
               onClick={() => setAiDrawerOpen(true)}
             >
               <div className="medpro-card-icon-wrap" style={{ background: '#fef2f2', color: '#ef4444' }}>
@@ -1108,6 +1459,7 @@ export const PatientBookingPage: React.FC = () => {
             {/* Card 7: Khám sức khỏe thông tư */}
             <div
               className={`medpro-service-card ${bookingMode === 'byPackage' ? 'card-active' : ''}`}
+              style={{ '--card-index': 7 } as React.CSSProperties}
               onClick={() => {
                 setBookingMode('byPackage');
                 setCurrentStep(0);
@@ -1120,20 +1472,165 @@ export const PatientBookingPage: React.FC = () => {
               </div>
               <div className="medpro-card-title">Khám sức khỏe thông tư</div>
             </div>
+
+            {/* --- PAGE 2: 7 Dịch vụ mở rộng --- */}
+
+            {/* Card 8: Đặt khám theo bác sĩ */}
+            <div
+              className={`medpro-service-card ${bookingMode === 'byDoctor' ? 'card-active' : ''}`}
+              style={{ '--card-index': 8 } as React.CSSProperties}
+              onClick={() => {
+                setBookingMode('byDoctor');
+                setSelectedPackage(null);
+                setCurrentStep(0);
+                const el = document.getElementById('main-booking-flow');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+                <UserOutlined style={{ fontSize: 26 }} />
+                <span className="medpro-icon-star-badge">
+                  <CheckCircleFilled />
+                </span>
+              </div>
+              <div className="medpro-card-title">Đặt khám theo bác sĩ</div>
+            </div>
+
+            {/* Card 9: Gói khám sức khỏe */}
+            <div
+              className={`medpro-service-card ${bookingMode === 'byPackage' ? 'card-active' : ''}`}
+              style={{ '--card-index': 9 } as React.CSSProperties}
+              onClick={() => {
+                setBookingMode('byPackage');
+                setCurrentStep(0);
+                const el = document.getElementById('main-booking-flow');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <div className="medpro-card-icon-wrap" style={{ background: '#eff6ff', color: '#2563eb' }}>
+                <SafetyCertificateOutlined style={{ fontSize: 26 }} />
+              </div>
+              <div className="medpro-card-title">Gói khám sức khỏe</div>
+            </div>
+
+            {/* Card 10: Y tế tại nhà */}
+            <div
+              className="medpro-service-card"
+              style={{ '--card-index': 10 } as React.CSSProperties}
+              onClick={() => {
+                showToast('Dịch vụ Chăm sóc y tế & Lấy mẫu xét nghiệm tại nhà. Tổng đài tiếp nhận: 1900 1150', 'info');
+              }}
+            >
+              <div className="medpro-card-icon-wrap" style={{ background: '#ecfeff', color: '#0891b2' }}>
+                <HomeOutlined style={{ fontSize: 26 }} />
+              </div>
+              <div className="medpro-card-title">Y tế tại nhà</div>
+            </div>
+
+            {/* Card 11: Đặt lịch tiêm chủng */}
+            <div
+              className="medpro-service-card"
+              style={{ '--card-index': 11 } as React.CSSProperties}
+              onClick={() => {
+                setBookingMode('byDept');
+                setSearchQuery('tiêm chủng');
+                setCurrentStep(0);
+                showToast('Đặt lịch tiêm chủng vắc xin phòng ngừa tại Trung tâm Tiêm chủng D-Medical', 'info');
+                const el = document.getElementById('main-booking-flow');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <div className="medpro-card-icon-wrap" style={{ background: '#f0f9ff', color: '#0284c7' }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m18 2 4 4" />
+                  <path d="m17 7 3-3" />
+                  <path d="M19 9 8.7 19.3c-.4.4-1 .6-1.6.6H3v-4.1c0-.6.2-1.2.6-1.6L14 3.9" />
+                  <path d="m9 11 4 4" />
+                  <path d="m5 19-3 3" />
+                  <path d="m14 4 6 6" />
+                </svg>
+              </div>
+              <div className="medpro-card-title">Đặt lịch tiêm chủng</div>
+            </div>
+
+            {/* Card 12: Mua thuốc tại An Khang */}
+            <div
+              className="medpro-service-card"
+              style={{ '--card-index': 12 } as React.CSSProperties}
+              onClick={() => {
+                showToast('Hệ thống Nhà thuốc liên kết An Khang - Mua thuốc theo toa bác sĩ & giao tận nhà', 'info');
+              }}
+            >
+              <div className="medpro-card-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
+                <ShopOutlined style={{ fontSize: 26 }} />
+              </div>
+              <div className="medpro-card-title">Mua thuốc tại An Khang</div>
+            </div>
+
+            {/* Card 13: Khám doanh nghiệp (với badge Mới) */}
+            <div
+              className="medpro-service-card"
+              style={{ '--card-index': 13 } as React.CSSProperties}
+              onClick={() => {
+                setBookingMode('byPackage');
+                setSearchQuery('doanh nghiệp');
+                setCurrentStep(0);
+                showToast('Khám sức khỏe định kỳ cho Doanh nghiệp, Tổ chức theo Thông tư Bộ Y Tế', 'info');
+                const el = document.getElementById('main-booking-flow');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <div className="medpro-card-icon-wrap" style={{ background: '#f0f9ff', color: '#0284c7' }}>
+                <TeamOutlined style={{ fontSize: 26 }} />
+                <span className="medpro-card-moi-badge">Mới</span>
+              </div>
+              <div className="medpro-card-title">Khám doanh nghiệp</div>
+            </div>
+
+            {/* Card 14: Đặt lịch Chụp phim & Nội soi */}
+            <div
+              className="medpro-service-card"
+              style={{ '--card-index': 14 } as React.CSSProperties}
+              onClick={() => {
+                setBookingMode('byDept');
+                setSearchQuery('nội soi');
+                setCurrentStep(0);
+                showToast('Đặt lịch Chẩn đoán hình ảnh: Chụp MRI, CT, X-Quang & Nội soi tiêu hóa không đau', 'info');
+                const el = document.getElementById('main-booking-flow');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <div className="medpro-card-icon-wrap" style={{ background: '#ecfeff', color: '#0284c7' }}>
+                <ScanOutlined style={{ fontSize: 26 }} />
+              </div>
+              <div className="medpro-card-title">Đặt lịch Chụp phim & Nội soi</div>
+            </div>
           </div>
 
-          {/* Right Chevron Navigation Button */}
+          {/* Right Arrow Button */}
           <button
             type="button"
-            className="medpro-carousel-next-btn"
-            title="Xem toàn bộ danh mục dịch vụ"
-            onClick={() => {
-              const el = document.getElementById('main-booking-flow');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
+            className="medpro-carousel-nav-btn medpro-carousel-next-btn"
+            title={canScrollCardsRight ? "Xem thêm các dịch vụ tiếp theo" : "Quay về dịch vụ ban đầu"}
+            aria-label={canScrollCardsRight ? "Xem thêm các dịch vụ tiếp theo" : "Quay về dịch vụ ban đầu"}
+            onClick={() => handleScrollCards('right')}
           >
             <RightOutlined />
           </button>
+        </div>
+
+        {/* Carousel Pagination Dots Indicator */}
+        <div className="medpro-cards-dots-indicator">
+          <span
+            className={`medpro-cards-dot ${serviceCardPageIndex === 0 ? 'active' : ''}`}
+            onClick={() => handleGoToCardPage(0)}
+            title="Trang 1: 7 dịch vụ phổ biến"
+          />
+          <span
+            className={`medpro-cards-dot ${serviceCardPageIndex === 1 ? 'active' : ''}`}
+            onClick={() => handleGoToCardPage(1)}
+            title="Trang 2: 7 dịch vụ mở rộng"
+          />
         </div>
 
         {/* Floating Orange Phone Button */}
@@ -1222,158 +1719,340 @@ export const PatientBookingPage: React.FC = () => {
 
           {/* Promotional Banner Advertising Slider (Medpro Style Carousel) */}
           {currentStep === 0 && (
-            <div className="hospital-carousel-wrap">
-              <Carousel autoplay autoplaySpeed={4500} effect="fade" pauseOnHover dots>
-                {/* Slide 1: Đặt khám theo giờ */}
-                <div className="carousel-slide-card slide-bg-1">
-                  <Row gutter={[24, 20]} className="carousel-slide-row">
-                    <Col xs={24} md={16}>
-                      <div className="carousel-slide-badge">
-                        <span>🎉 TIỆN ÍCH DÀNH CHO BỆNH NHÂN</span>
-                      </div>
-                      <div className="carousel-slide-title">
-                        Đặt Hẹn Trước Theo Giờ • Vào Khám Ngay Không Chờ Đợi
-                      </div>
-                      <div className="carousel-slide-desc">
-                        Chủ động lựa chọn Bác sĩ và khung giờ khám thuận tiện cho bạn và gia đình. Đến bệnh viện vào thẳng phòng khám, tiết kiệm 90% thời gian chờ đợi.
-                      </div>
-                      <div className="carousel-slide-highlights">
-                        <span className="carousel-slide-highlight-item">
-                          <CheckCircleOutlined /> Ưu tiên tiếp nhận đúng giờ
-                        </span>
-                        <span className="carousel-slide-highlight-item">
-                          <SafetyCertificateOutlined /> Hỗ trợ BHYT thông tuyến
-                        </span>
-                        <span className="carousel-slide-highlight-item">
-                          <ClockCircleOutlined /> Lịch khám linh hoạt T2 - CN
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="carousel-slide-btn"
-                        onClick={() => {
-                          setBookingMode('byDept');
-                          setCurrentStep(0);
-                        }}
-                      >
-                        <span>Đặt Lịch Khám Ngay</span>
-                        <ArrowRightOutlined />
-                      </button>
-                    </Col>
-                    <Col xs={0} md={8} className="carousel-slide-visual">
-                      {/* Placeholder banner visual (Có thể thay thế bằng thẻ <img src="..." /> khi có file thiết kế banner) */}
-                      <div className="carousel-visual-placeholder">
-                        <div className="carousel-visual-icon">🏥</div>
-                        <div className="carousel-visual-title">TIẾP NHẬN ĐÚNG GIỜ</div>
-                        <div className="carousel-visual-subtitle">Không lo chen chúc, bốc số</div>
-                        <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>
-                          * Đặt lịch trực tuyến 24/7
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
+            <div style={{ marginBottom: 28 }}>
+              <div className="hospital-carousel-wrap">
+                {/* Floating Navigation Arrows */}
+                <button
+                  type="button"
+                  className="carousel-arrow-btn arrow-prev"
+                  aria-label="Slide trước"
+                  onClick={() => carouselRef.current?.prev()}
+                >
+                  <LeftOutlined />
+                </button>
+                <button
+                  type="button"
+                  className="carousel-arrow-btn arrow-next"
+                  aria-label="Slide kế tiếp"
+                  onClick={() => carouselRef.current?.next()}
+                >
+                  <RightOutlined />
+                </button>
 
-                {/* Slide 2: Gói khám sức khỏe gia đình */}
-                <div className="carousel-slide-card slide-bg-2">
-                  <Row gutter={[24, 20]} className="carousel-slide-row">
-                    <Col xs={24} md={16}>
-                      <div className="carousel-slide-badge">
-                        <span>❤️ CHĂM SÓC SỨC KHỎE GIA ĐÌNH</span>
-                      </div>
-                      <div className="carousel-slide-title">
-                        Gói Tầm Soát Sức Khỏe Toàn Diện • Ưu Đãi 15% Khi Đặt Online
-                      </div>
-                      <div className="carousel-slide-desc">
-                        Kiểm tra tổng quát tim mạch, gan thận, tầm soát sớm nguy cơ đột quỵ và tiểu đường cho người thân. Bác sĩ chuyên khoa trực tiếp tư vấn kết quả 1-1 chu đáo.
-                      </div>
-                      <div className="carousel-slide-highlights">
-                        <span className="carousel-slide-highlight-item">
-                          <CheckCircleOutlined /> Đầy đủ danh mục xét nghiệm
-                        </span>
-                        <span className="carousel-slide-highlight-item">
-                          <UserOutlined /> Tư vấn tận tâm cùng Bác sĩ CKII
-                        </span>
-                        <span className="carousel-slide-highlight-item">
-                          <QrcodeOutlined /> Nhận kết quả trực tuyến tiện lợi
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="carousel-slide-btn"
-                        onClick={() => {
-                          setBookingMode('byPackage');
-                          setSelectedPackage(null);
-                          setCurrentStep(0);
-                        }}
-                      >
-                        <span>Khám Phá Gói Khám</span>
-                        <ArrowRightOutlined />
-                      </button>
-                    </Col>
-                    <Col xs={0} md={8} className="carousel-slide-visual">
-                      <div className="carousel-visual-placeholder">
-                        <div className="carousel-visual-icon">🩺</div>
-                        <div className="carousel-visual-title">GÓI SỨC KHỎE GIA ĐÌNH</div>
-                        <div className="carousel-visual-subtitle">Tầm soát toàn diện chuyên sâu</div>
-                        <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>
-                          * Giảm 15% khi đặt online
+                <Carousel
+                  ref={carouselRef}
+                  autoplay
+                  autoplaySpeed={5000}
+                  effect="fade"
+                  pauseOnHover
+                  dots={false}
+                  beforeChange={(_, next) => setCurrentSlideIndex(next)}
+                >
+                  {/* Slide 1: Đặt khám theo giờ */}
+                  <div className="carousel-slide-card slide-bg-1">
+                    <Row gutter={[24, 20]} className="carousel-slide-row">
+                      <Col xs={24} md={15}>
+                        <div className="carousel-slide-badge">
+                          <span>⚡ CÔNG NGHỆ Y TẾ SỐ 4.0</span>
                         </div>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
+                        <div className="carousel-slide-title">
+                          Đặt Hẹn Trước Theo Giờ • Quét Mã QR Vào Khám Ngay
+                        </div>
+                        <div className="carousel-slide-desc">
+                          Chủ động lựa chọn Bác sĩ và khung giờ khám thuận tiện. Không cần xếp hàng bốc số, hệ thống tiếp nhận thông minh điều phối thẳng vào phòng khám.
+                        </div>
+                        <div className="carousel-slide-highlights">
+                          <span className="carousel-slide-highlight-item">
+                            <CheckCircleOutlined /> Tiết kiệm 90% thời gian chờ
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <SafetyCertificateOutlined /> BHYT thông tuyến toàn quốc
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <ClockCircleOutlined /> Lịch khám T2 - Chủ Nhật
+                          </span>
+                        </div>
+                        <div className="carousel-slide-btn-group">
+                          <button
+                            type="button"
+                            className="carousel-slide-btn"
+                            onClick={() => {
+                              setBookingMode('byDept');
+                              setCurrentStep(0);
+                            }}
+                          >
+                            <span>Đặt Khám Theo Khoa</span>
+                            <ArrowRightOutlined />
+                          </button>
+                          <button
+                            type="button"
+                            className="carousel-slide-btn carousel-slide-btn-secondary"
+                            onClick={() => setLookupModalOpen(true)}
+                          >
+                            <span>Tra Cứu Phiếu QR</span>
+                            <SearchOutlined />
+                          </button>
+                        </div>
+                      </Col>
+                      <Col xs={0} md={9} className="carousel-slide-visual">
+                        <div className="carousel-preview-card">
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#0369a1', textTransform: 'uppercase' }}>
+                              PHIẾU KHÁM TIẾP NHẬN
+                            </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#16a34a', fontWeight: 700 }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#16a34a' }}></span>
+                              Kiosk Tiếp Nhận
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ padding: 6, backgroundColor: '#ffffff', borderRadius: 10, border: '1.5px solid #bae6fd' }}>
+                              <QRCodeSVG value="MEDQR|SAMPLE|BN2026" size={68} level="M" fgColor="#0369a1" />
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>Nguyễn Văn An</div>
+                              <div style={{ fontSize: 11, color: '#0284c7', fontWeight: 700 }}>Khoa Nội Tổng Quát</div>
+                              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Phòng 102 - Tầng 1 Khu A</div>
+                              <Tag color="cyan" style={{ margin: '4px 0 0', fontSize: 10, fontWeight: 700 }}>
+                                Giờ hẹn: 08:30 Sáng
+                              </Tag>
+                            </div>
+                          </div>
+                          <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 10, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b' }}>
+                            <span>⚡ Tốc độ Check-in: <strong>15 giây</strong></span>
+                            <span style={{ color: '#0284c7', fontWeight: 700 }}>Không chờ đợi</span>
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
 
-                {/* Slide 3: Đội ngũ Bác sĩ chuyên khoa */}
-                <div className="carousel-slide-card slide-bg-3">
-                  <Row gutter={[24, 20]} className="carousel-slide-row">
-                    <Col xs={24} md={16}>
-                      <div className="carousel-slide-badge">
-                        <span>👨‍⚕️ ĐỘI NGŨ CHUYÊN GIA Y TẾ</span>
-                      </div>
-                      <div className="carousel-slide-title">
-                        Thăm Khám Cùng Bác Sĩ Chuyên Khoa Giàu Kinh Nghiệm
-                      </div>
-                      <div className="carousel-slide-desc">
-                        Hơn 50 Bác sĩ Chuyên khoa I, II và Tiến sĩ y khoa luôn sẵn sàng lắng nghe, tư vấn và đồng hành cùng sức khỏe gia đình bạn với phong cách phục vụ ân cần.
-                      </div>
-                      <div className="carousel-slide-highlights">
-                        <span className="carousel-slide-highlight-item">
-                          <CheckCircleOutlined /> Xem trước hồ sơ & chuyên môn Bác sĩ
-                        </span>
-                        <span className="carousel-slide-highlight-item">
-                          <SafetyCertificateOutlined /> Tư vấn kỹ lưỡng, tận tình
-                        </span>
-                        <span className="carousel-slide-highlight-item">
-                          <CalendarOutlined /> Lịch khám liên tục trong tuần
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="carousel-slide-btn"
-                        onClick={() => {
-                          setBookingMode('byDoctor');
-                          setSelectedPackage(null);
-                          setCurrentStep(0);
-                        }}
-                      >
-                        <span>Chọn Bác Sĩ Khám</span>
-                        <ArrowRightOutlined />
-                      </button>
-                    </Col>
-                    <Col xs={0} md={8} className="carousel-slide-visual">
-                      <div className="carousel-visual-placeholder">
-                        <div className="carousel-visual-icon">👨‍⚕️</div>
-                        <div className="carousel-visual-title">BÁC SĨ CHUYÊN GIA</div>
-                        <div className="carousel-visual-subtitle">Tận tâm, chu đáo & uy tín</div>
-                        <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>
-                          * Trực khám T2 - Chủ Nhật
+                  {/* Slide 2: Gói khám sức khỏe gia đình */}
+                  <div className="carousel-slide-card slide-bg-2">
+                    <Row gutter={[24, 20]} className="carousel-slide-row">
+                      <Col xs={24} md={15}>
+                        <div className="carousel-slide-badge">
+                          <span>❤️ CHĂM SÓC SỨC KHỎE CHỦ ĐỘNG</span>
                         </div>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-              </Carousel>
+                        <div className="carousel-slide-title">
+                          Gói Tầm Soát Sức Khỏe Toàn Diện • Giảm 15% Khi Đặt Online
+                        </div>
+                        <div className="carousel-slide-desc">
+                          Kiểm tra tổng quát tim mạch, gan thận, tầm soát sớm nguy cơ đột quỵ và tiêu hóa. Quy trình khép kín, Bác sĩ CKII trực tiếp tư vấn kết quả chu đáo.
+                        </div>
+                        <div className="carousel-slide-highlights">
+                          <span className="carousel-slide-highlight-item">
+                            <CheckCircleOutlined /> 28 chỉ số xét nghiệm chuyên sâu
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <UserOutlined /> Nội soi tiêu hóa NBI êm ái
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <QrcodeOutlined /> Hồ sơ kết quả điện tử trọn đời
+                          </span>
+                        </div>
+                        <div className="carousel-slide-btn-group">
+                          <button
+                            type="button"
+                            className="carousel-slide-btn"
+                            onClick={() => {
+                              setBookingMode('byPackage');
+                              setSelectedPackage(null);
+                              setCurrentStep(0);
+                            }}
+                          >
+                            <span>Khám Phá Gói Khám</span>
+                            <ArrowRightOutlined />
+                          </button>
+                        </div>
+                      </Col>
+                      <Col xs={0} md={9} className="carousel-slide-visual">
+                        <div className="carousel-preview-card">
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <Tag color="error" style={{ margin: 0, fontWeight: 800, fontSize: 10, borderRadius: 10 }}>
+                              TIẾT KIỆM 450.000 đ
+                            </Tag>
+                            <span style={{ fontSize: 11, color: '#0284c7', fontWeight: 700 }}>Gói Tiêu Chuẩn VIP</span>
+                          </div>
+                          <div style={{ fontWeight: 800, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>
+                            Tầm Soát Toàn Diện Chuyên Sâu
+                          </div>
+                          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
+                            Nội soi NBI • Siêu âm tim Doppler • Xét nghiệm 28 chỉ số
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                            <span style={{ fontSize: 18, fontWeight: 900, color: '#0284c7' }}>1.850.000 đ</span>
+                            <span style={{ fontSize: 12, color: '#94a3b8', textDecoration: 'line-through' }}>2.300.000 đ</span>
+                          </div>
+                          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                            <span style={{ color: '#16a34a', fontWeight: 700 }}>✓ BHYT hỗ trợ thêm</span>
+                            <Tag color="blue" style={{ margin: 0, fontSize: 10 }}>Đang mở đăng ký</Tag>
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Slide 3: Đội ngũ Bác sĩ chuyên khoa */}
+                  <div className="carousel-slide-card slide-bg-3">
+                    <Row gutter={[24, 20]} className="carousel-slide-row">
+                      <Col xs={24} md={15}>
+                        <div className="carousel-slide-badge">
+                          <span>👨‍⚕️ CHUYÊN GIA Y TẾ TUYẾN ĐẦU</span>
+                        </div>
+                        <div className="carousel-slide-title">
+                          Thăm Khám Cùng Bác Sĩ CKII & Tiến Sĩ Giàu Kinh Nghiệm
+                        </div>
+                        <div className="carousel-slide-desc">
+                          Hơn 50 Bác sĩ Chuyên khoa hàng đầu từ các bệnh viện tuyến trung ương (Chợ Rẫy, ĐH Y Dược). Đặt hẹn đích danh Bác sĩ mong muốn với lịch khám rõ ràng.
+                        </div>
+                        <div className="carousel-slide-highlights">
+                          <span className="carousel-slide-highlight-item">
+                            <CheckCircleOutlined /> Xem trước tiểu sử & lịch trực
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <SafetyCertificateOutlined /> Tư vấn chuyên sâu 1-1
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <CalendarOutlined /> Khám liên tục tất cả các ngày
+                          </span>
+                        </div>
+                        <div className="carousel-slide-btn-group">
+                          <button
+                            type="button"
+                            className="carousel-slide-btn"
+                            onClick={() => {
+                              setBookingMode('byDoctor');
+                              setSelectedPackage(null);
+                              setCurrentStep(0);
+                            }}
+                          >
+                            <span>Chọn Bác Sĩ Khám</span>
+                            <ArrowRightOutlined />
+                          </button>
+                        </div>
+                      </Col>
+                      <Col xs={0} md={9} className="carousel-slide-visual">
+                        <div className="carousel-preview-card">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                            <Avatar src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&auto=format&fit=crop&q=80" size={50} style={{ border: '2px solid #0284c7' }} />
+                            <div>
+                              <div style={{ fontWeight: 800, fontSize: 13.5, color: '#0f172a' }}>TS. BS. Huỳnh Quốc Dũng</div>
+                              <div style={{ fontSize: 11, color: '#0284c7', fontWeight: 700 }}>Trưởng Khoa Tim Mạch</div>
+                              <div style={{ fontSize: 10.5, color: '#64748b' }}>BV Chợ Rẫy & ĐHYD</div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', backgroundColor: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd', fontSize: 11 }}>
+                            <span style={{ color: '#0369a1', fontWeight: 700 }}>⭐ 5.0 (2,450+ lượt)</span>
+                            <span style={{ color: '#334155' }}>Lịch: T2 - T7</span>
+                          </div>
+                          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b' }}>
+                            <span>Phòng 102 - Khu Kỹ Thuật Cao</span>
+                            <span style={{ color: '#0284c7', fontWeight: 700 }}>Còn 8 chỗ hôm nay</span>
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Slide 4: Cổng đặt lịch tái khám */}
+                  <div className="carousel-slide-card slide-bg-4">
+                    <Row gutter={[24, 20]} className="carousel-slide-row">
+                      <Col xs={24} md={15}>
+                        <div className="carousel-slide-badge">
+                          <span>🔄 THEO DÕI ĐIỀU TRỊ LIÊN TỤC</span>
+                        </div>
+                        <div className="carousel-slide-title">
+                          Cổng Tái Khám Điện Tử • Tự Động Kết Nối Bệnh Án Cũ
+                        </div>
+                        <div className="carousel-slide-desc">
+                          Hệ thống tự động liên kết với bệnh án điện tử (EMR) và toa thuốc đợt trước. Bác sĩ nắm rõ diễn tiến bệnh lý, không cần làm lại các xét nghiệm không cần thiết.
+                        </div>
+                        <div className="carousel-slide-highlights">
+                          <span className="carousel-slide-highlight-item">
+                            <CheckCircleOutlined /> 1-Click điền hồ sơ cũ
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <HistoryOutlined /> Giữ nguyên Bác sĩ điều trị
+                          </span>
+                          <span className="carousel-slide-highlight-item">
+                            <ClockCircleOutlined /> Nhắc hẹn tự động qua Zalo/SMS
+                          </span>
+                        </div>
+                        <div className="carousel-slide-btn-group">
+                          <button
+                            type="button"
+                            className="carousel-slide-btn"
+                            onClick={() => {
+                              setBookingMode('byFollowUp');
+                              setSelectedPackage(null);
+                              setCurrentStep(0);
+                            }}
+                          >
+                            <span>Đặt Lịch Tái Khám</span>
+                            <ArrowRightOutlined />
+                          </button>
+                        </div>
+                      </Col>
+                      <Col xs={0} md={9} className="carousel-slide-visual">
+                        <div className="carousel-preview-card">
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <Tag color="cyan" style={{ margin: 0, fontWeight: 700, fontSize: 10 }}>
+                              HỒ SƠ BỆNH ÁN EMR
+                            </Tag>
+                            <span style={{ fontSize: 11, color: '#0284c7', fontWeight: 700 }}>Liên Kết Tự Động</span>
+                          </div>
+                          <div style={{ fontWeight: 800, fontSize: 13.5, color: '#0f172a', marginBottom: 4 }}>
+                            Đợt Khám: EMR2026-0814
+                          </div>
+                          <div style={{ fontSize: 11.5, color: '#64748b', marginBottom: 8 }}>
+                            Tái khám theo phác đồ Bác sĩ điều trị. Không cần nhập lại thông tin.
+                          </div>
+                          <div style={{ padding: '6px 10px', backgroundColor: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd', fontSize: 11, color: '#0369a1', fontWeight: 600 }}>
+                            📁 Lưu trữ kết quả xét nghiệm & đơn thuốc
+                          </div>
+                          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#16a34a', fontWeight: 700 }}>
+                            <span>✓ Bác sĩ theo dõi liên tục</span>
+                            <span style={{ color: '#0284c7' }}>1-Click Tái Khám</span>
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                </Carousel>
+              </div>
+
+              {/* Bottom Quick Jump Slide Tabs */}
+              <div className="carousel-nav-tabs-wrap">
+                <button
+                  type="button"
+                  className={`carousel-nav-tab ${currentSlideIndex === 0 ? 'active' : ''}`}
+                  onClick={() => carouselRef.current?.goTo(0)}
+                >
+                  <span>🏥 Đặt Hẹn Nhanh</span>
+                </button>
+                <button
+                  type="button"
+                  className={`carousel-nav-tab ${currentSlideIndex === 1 ? 'active' : ''}`}
+                  onClick={() => carouselRef.current?.goTo(1)}
+                >
+                  <span>❤️ Gói Khám (-15%)</span>
+                </button>
+                <button
+                  type="button"
+                  className={`carousel-nav-tab ${currentSlideIndex === 2 ? 'active' : ''}`}
+                  onClick={() => carouselRef.current?.goTo(2)}
+                >
+                  <span>👨‍⚕️ Bác Sĩ Chuyên Gia</span>
+                </button>
+                <button
+                  type="button"
+                  className={`carousel-nav-tab ${currentSlideIndex === 3 ? 'active' : ''}`}
+                  onClick={() => carouselRef.current?.goTo(3)}
+                >
+                  <span>🔄 Tái Khám Theo Hẹn</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -1618,22 +2297,44 @@ export const PatientBookingPage: React.FC = () => {
                               Phí tư vấn: <strong style={{ color: '#0284c7' }}>{doc.consultationFee.toLocaleString('vi-VN')} đ</strong>
                             </div>
 
-                            <Button
-                              type="primary"
-                              style={{
-                                backgroundColor: '#0284c7',
-                                borderColor: '#0284c7',
-                                fontWeight: 700,
-                                borderRadius: 10,
-                              }}
-                              block
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSelectDoctorDirect(doc);
-                              }}
-                            >
-                              Đặt Khám Ngay
-                            </Button>
+                            <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
+                              <Button
+                                size="middle"
+                                style={{
+                                  flex: 1,
+                                  borderRadius: 8,
+                                  fontWeight: 600,
+                                  borderColor: '#bae6fd',
+                                  color: '#0369a1',
+                                  fontSize: 12.5,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingDoctor(doc);
+                                  setDoctorDetailModalOpen(true);
+                                }}
+                              >
+                                Tiểu sử
+                              </Button>
+                              <Button
+                                type="primary"
+                                size="middle"
+                                style={{
+                                  flex: 1.2,
+                                  backgroundColor: '#0284c7',
+                                  borderColor: '#0284c7',
+                                  fontWeight: 700,
+                                  borderRadius: 8,
+                                  fontSize: 12.5,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectDoctorDirect(doc);
+                                }}
+                              >
+                                Đặt Khám
+                              </Button>
+                            </div>
                           </div>
                         </Col>
                       ))}
@@ -1689,23 +2390,44 @@ export const PatientBookingPage: React.FC = () => {
                               ))}
                             </div>
 
-                            <Button
-                              type="primary"
-                              style={{
-                                backgroundColor: '#0284c7',
-                                borderColor: '#0284c7',
-                                fontWeight: 700,
-                                borderRadius: 10,
-                                marginTop: 'auto',
-                              }}
-                              block
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSelectPackage(pkg);
-                              }}
-                            >
-                              Đăng Ký Gói Này
-                            </Button>
+                            <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
+                              <Button
+                                size="middle"
+                                style={{
+                                  flex: 1,
+                                  borderRadius: 8,
+                                  fontWeight: 600,
+                                  borderColor: '#bae6fd',
+                                  color: '#0369a1',
+                                  fontSize: 12.5,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingPackage(pkg);
+                                  setPackageDetailModalOpen(true);
+                                }}
+                              >
+                                Chi tiết
+                              </Button>
+                              <Button
+                                type="primary"
+                                size="middle"
+                                style={{
+                                  flex: 1.3,
+                                  backgroundColor: '#0284c7',
+                                  borderColor: '#0284c7',
+                                  fontWeight: 700,
+                                  borderRadius: 8,
+                                  fontSize: 12.5,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectPackage(pkg);
+                                }}
+                              >
+                                Đăng Ký
+                              </Button>
+                            </div>
                           </div>
                         </Col>
                       ))}
@@ -1726,14 +2448,42 @@ export const PatientBookingPage: React.FC = () => {
                     </Text>
                   </div>
 
+                  {/* Bộ lọc chuyên khoa cho Bác sĩ */}
+                  <div className="doctor-filter-tabs-wrap">
+                    <button
+                      type="button"
+                      className={`doctor-filter-chip ${doctorDeptFilter === 'ALL' ? 'active' : ''}`}
+                      onClick={() => setDoctorDeptFilter('ALL')}
+                    >
+                      Tất Cả Chuyên Khoa ({DOCTORS_CATALOG.length})
+                    </button>
+                    {DEPARTMENTS_CATALOG.map((dept) => {
+                      const count = DOCTORS_CATALOG.filter((d) => d.department === dept.name).length;
+                      if (count === 0) return null;
+                      return (
+                        <button
+                          key={dept.id}
+                          type="button"
+                          className={`doctor-filter-chip ${doctorDeptFilter === dept.name ? 'active' : ''}`}
+                          onClick={() => setDoctorDeptFilter(dept.name)}
+                        >
+                          {dept.name} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <Row gutter={[16, 16]}>
                     {DOCTORS_CATALOG.filter((doc) => {
-                      if (!searchQuery.trim()) return true;
+                      const matchesDept = doctorDeptFilter === 'ALL' || doc.department === doctorDeptFilter;
+                      if (!searchQuery.trim()) return matchesDept;
                       const q = searchQuery.toLowerCase().trim();
                       return (
-                        doc.name.toLowerCase().includes(q) ||
-                        doc.department.toLowerCase().includes(q) ||
-                        doc.title.toLowerCase().includes(q)
+                        matchesDept &&
+                        (doc.name.toLowerCase().includes(q) ||
+                          doc.department.toLowerCase().includes(q) ||
+                          doc.title.toLowerCase().includes(q) ||
+                          doc.experience.toLowerCase().includes(q))
                       );
                     }).map((doc) => {
                       const isSelected = selectedDoctor?.id === doc.id;
@@ -1823,20 +2573,42 @@ export const PatientBookingPage: React.FC = () => {
                               </strong>
                             </div>
 
-                            <Button
-                              type={isSelected ? 'primary' : 'default'}
-                              style={{
-                                borderRadius: 10,
-                                fontWeight: 700,
-                                backgroundColor: isSelected ? '#0284c7' : undefined,
-                                borderColor: '#0284c7',
-                                color: isSelected ? '#ffffff' : '#0284c7',
-                                marginTop: 'auto',
-                              }}
-                              block
-                            >
-                              {isSelected ? 'Đã chọn bác sĩ này' : 'Đặt khám với Bác sĩ'}
-                            </Button>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                              <Button
+                                size="middle"
+                                style={{
+                                  flex: 1,
+                                  borderRadius: 10,
+                                  fontWeight: 600,
+                                  borderColor: '#bae6fd',
+                                  color: '#0369a1',
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingDoctor(doc);
+                                  setDoctorDetailModalOpen(true);
+                                }}
+                              >
+                                Tiểu sử
+                              </Button>
+                              <Button
+                                type="primary"
+                                size="middle"
+                                style={{
+                                  flex: 1.3,
+                                  borderRadius: 10,
+                                  fontWeight: 700,
+                                  backgroundColor: '#0284c7',
+                                  borderColor: '#0284c7',
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectDoctorDirect(doc);
+                                }}
+                              >
+                                {isSelected ? 'Đã chọn' : 'Đặt Khám'}
+                              </Button>
+                            </div>
                           </div>
                         </Col>
                       );
@@ -1918,21 +2690,39 @@ export const PatientBookingPage: React.FC = () => {
                               ))}
                             </ul>
 
-                            <Button
-                              type="primary"
-                              size="large"
-                              style={{
-                                backgroundColor: '#0284c7',
-                                borderColor: '#0284c7',
-                                borderRadius: 10,
-                                fontWeight: 700,
-                                marginTop: 'auto',
-                              }}
-                              onClick={() => handleSelectPackage(pkg)}
-                              block
-                            >
-                              {isSelected ? 'Đã chọn gói khám này' : 'Đăng Ký Gói Khám Này'}
-                            </Button>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                              <Button
+                                size="large"
+                                style={{
+                                  flex: 1,
+                                  borderRadius: 10,
+                                  fontWeight: 600,
+                                  borderColor: '#bae6fd',
+                                  color: '#0369a1',
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingPackage(pkg);
+                                  setPackageDetailModalOpen(true);
+                                }}
+                              >
+                                Chi tiết & Chuẩn bị
+                              </Button>
+                              <Button
+                                type="primary"
+                                size="large"
+                                style={{
+                                  flex: 1.2,
+                                  backgroundColor: '#0284c7',
+                                  borderColor: '#0284c7',
+                                  borderRadius: 10,
+                                  fontWeight: 700,
+                                }}
+                                onClick={() => handleSelectPackage(pkg)}
+                              >
+                                {isSelected ? 'Đã chọn gói' : 'Đăng Ký Gói Này'}
+                              </Button>
+                            </div>
                           </div>
                         </Col>
                       );
@@ -1943,34 +2733,27 @@ export const PatientBookingPage: React.FC = () => {
 
               {/* CHẾ ĐỘ 4: TÁI KHÁM THEO HẸN */}
               {bookingMode === 'byFollowUp' && (
-                <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-                  <div
-                    style={{
-                      padding: 24,
-                      borderRadius: 16,
-                      backgroundColor: '#f5f3ff',
-                      border: '1.5px solid #ddd6fe',
-                      marginBottom: 20,
-                    }}
-                  >
-                    <HistoryOutlined style={{ fontSize: 40, color: '#7c3aed', marginBottom: 12 }} />
-                    <Title level={3} style={{ color: '#6d28d9', margin: '0 0 8px' }}>
+                <div style={{ maxWidth: 840, margin: '0 auto' }}>
+                  <div className="followup-hero-box">
+                    <HistoryOutlined style={{ fontSize: 44, color: '#0284c7', marginBottom: 12 }} />
+                    <Title level={3} style={{ color: '#0369a1', margin: '0 0 8px', fontWeight: 800 }}>
                       Cổng Đặt Lịch Tái Khám Định Kỳ
                     </Title>
-                    <Paragraph style={{ color: '#475569', fontSize: 13.5, maxWidth: 540, margin: '0 auto 16px' }}>
-                      Bệnh nhân có lịch hẹn tái khám của Bác sĩ sau đợt điều trị nội khoa hoặc ngoại khoa. Dữ liệu sẽ được tự động liên kết với hồ sơ bệnh án điện tử (EMR) cũ.
+                    <Paragraph style={{ color: '#475569', fontSize: 13.5, maxWidth: 580, margin: '0 auto 20px', lineHeight: 1.6 }}>
+                      Dành cho người bệnh có chỉ định tái khám của Bác sĩ sau đợt điều trị. Hệ thống tự động liên kết với hồ sơ bệnh án điện tử (EMR) cũ, giúp Bác sĩ nắm rõ diễn tiến bệnh lý và kết quả xét nghiệm trước đó.
                     </Paragraph>
 
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
                       <Button
                         type="primary"
                         size="large"
-                        style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed', borderRadius: 10, fontWeight: 700 }}
+                        style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', borderRadius: 10, fontWeight: 700 }}
                         onClick={() => {
                           const noiDept = DEPARTMENTS_CATALOG[0];
                           setSelectedDept(noiDept);
                           const docs = DOCTORS_CATALOG.filter((d) => d.department === noiDept.name);
                           setSelectedDoctor(docs[0] || null);
+                          form.setFieldsValue({ appointmentType: 'FollowUp' });
                           setCurrentStep(2);
                         }}
                       >
@@ -1979,13 +2762,88 @@ export const PatientBookingPage: React.FC = () => {
                       <Button
                         size="large"
                         icon={<SearchOutlined />}
-                        style={{ borderColor: '#ddd6fe', color: '#6d28d9', borderRadius: 10, fontWeight: 600 }}
+                        style={{ borderColor: '#bae6fd', color: '#0369a1', borderRadius: 10, fontWeight: 600 }}
                         onClick={openPatientAppointments}
                       >
-                        Xem Lịch Tái Khám Cũ Của Tôi
+                        Tra Cứu Lịch Hẹn Của Tôi
                       </Button>
                     </div>
                   </div>
+
+                  {/* Danh sách các lần khám gần đây của Bệnh nhân (nếu đã đăng nhập) */}
+                  {user && (
+                    <div style={{ marginTop: 20 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                        <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <CheckCircleOutlined style={{ color: '#0284c7' }} />
+                          <span>Các Đợt Khám Trước Của Bạn ({patientPastAppointments.length}):</span>
+                        </div>
+                        {pastAptLoading && <Spin size="small" />}
+                      </div>
+
+                      {patientPastAppointments.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          {patientPastAppointments.slice(0, 3).map((past) => (
+                            <div key={past.id} className="followup-past-card">
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <strong style={{ fontSize: 14.5, color: '#0f172a' }}>{past.departmentName}</strong>
+                                  <Tag color="geekblue" style={{ fontFamily: 'monospace', margin: 0 }}>
+                                    {past.id.toUpperCase()}
+                                  </Tag>
+                                  <Tag color="cyan" style={{ margin: 0, fontSize: 11 }}>
+                                    {dayjs(past.appointmentDate).format('DD/MM/YYYY')}
+                                  </Tag>
+                                </div>
+                                <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 4 }}>
+                                  Bác sĩ: <strong>{past.doctorName}</strong> • Giờ khám: {past.appointmentTime}
+                                </div>
+                              </div>
+
+                              <Button
+                                type="primary"
+                                style={{
+                                  backgroundColor: '#0284c7',
+                                  borderColor: '#0284c7',
+                                  fontWeight: 700,
+                                  borderRadius: 8,
+                                }}
+                                onClick={() => {
+                                  const matchedDept = DEPARTMENTS_CATALOG.find((d) => past.departmentName.includes(d.name)) || DEPARTMENTS_CATALOG[0];
+                                  setSelectedDept(matchedDept);
+                                  const docs = DOCTORS_CATALOG.filter((d) => d.name === past.doctorName);
+                                  setSelectedDoctor(docs.length > 0 ? docs[0] : null);
+                                  form.setFieldsValue({
+                                    appointmentType: 'FollowUp',
+                                    previousRecordCode: past.id,
+                                    followUpNotes: `Tái khám theo đợt khám ngày ${dayjs(past.appointmentDate).format('DD/MM/YYYY')}`,
+                                  });
+                                  setCurrentStep(2);
+                                  showToast(`Đã chọn tái khám cho đợt ${past.id.toUpperCase()}. Vui lòng chọn ngày giờ!`, 'success');
+                                }}
+                              >
+                                Tái Khám Đợt Này
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : !pastAptLoading ? (
+                        <div
+                          style={{
+                            padding: 20,
+                            borderRadius: 12,
+                            backgroundColor: '#f8fafc',
+                            border: '1px dashed #cbd5e1',
+                            textAlign: 'center',
+                            color: '#64748b',
+                            fontSize: 13,
+                          }}
+                        >
+                          Chưa có lịch sử khám trước đó. Bạn có thể nhấn <strong>"Tiếp tục chọn ngày giờ tái khám"</strong> ở trên và nhập mã bệnh án nếu có!
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2162,10 +3020,30 @@ export const PatientBookingPage: React.FC = () => {
 
               {/* Time Slots Grid */}
               <div style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
-                    Khung giờ khám trong ngày:
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+                  <div className="slot-shift-tabs-wrap">
+                    <button
+                      type="button"
+                      className={`slot-shift-tab-btn ${slotShiftFilter === 'ALL' ? 'active' : ''}`}
+                      onClick={() => setSlotShiftFilter('ALL')}
+                    >
+                      Tất Cả ({slots.length})
+                    </button>
+                    <button
+                      type="button"
+                      className={`slot-shift-tab-btn ${slotShiftFilter === 'MORNING' ? 'active' : ''}`}
+                      onClick={() => setSlotShiftFilter('MORNING')}
+                    >
+                      ☀️ Ca Sáng (07:00 - 11:30)
+                    </button>
+                    <button
+                      type="button"
+                      className={`slot-shift-tab-btn ${slotShiftFilter === 'AFTERNOON' ? 'active' : ''}`}
+                      onClick={() => setSlotShiftFilter('AFTERNOON')}
+                    >
+                      ⛅ Ca Chiều (13:00 - 16:30)
+                    </button>
+                  </div>
                   <span style={{ fontSize: 12, color: '#0284c7', fontWeight: 600 }}>
                     💡 Khung giờ bị khóa hoặc hết chỗ sẽ bị vô hiệu hóa
                   </span>
@@ -2178,7 +3056,13 @@ export const PatientBookingPage: React.FC = () => {
                   </div>
                 ) : (
                   <Row gutter={[12, 12]}>
-                    {slots.map((slot) => {
+                    {slots.filter((slot) => {
+                      if (slotShiftFilter === 'ALL') return true;
+                      const hour = parseInt(slot.timeSlot.split(':')[0], 10);
+                      if (slotShiftFilter === 'MORNING') return hour < 12;
+                      if (slotShiftFilter === 'AFTERNOON') return hour >= 12;
+                      return true;
+                    }).map((slot) => {
                       const isSelected = selectedSlot === slot.timeSlot;
                       const isBlocked = slot.isLocked || slot.bookedCount >= slot.maxCapacity;
                       const remaining = slot.maxCapacity - slot.bookedCount;
@@ -2241,15 +3125,22 @@ export const PatientBookingPage: React.FC = () => {
                                   HẾT CHỖ
                                 </Tag>
                               ) : (
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    color: isSelected ? 'rgba(255,255,255,0.9)' : '#0284c7',
-                                  }}
-                                >
-                                  Còn {remaining} chỗ
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      color: isSelected ? 'rgba(255,255,255,0.9)' : '#0284c7',
+                                    }}
+                                  >
+                                    Còn {remaining} chỗ
+                                  </span>
+                                  {remaining <= 2 && (
+                                    <Tag color="orange" style={{ margin: 0, fontSize: 9, fontWeight: 800, padding: '0 4px', borderRadius: 8 }}>
+                                      SẮP ĐẦY
+                                    </Tag>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
@@ -2382,6 +3273,159 @@ export const PatientBookingPage: React.FC = () => {
                     />
                   )}
 
+                  {/* Chuyển đổi đối tượng đặt khám: Bản thân vs Người thân */}
+                  <div className="booking-target-switch-wrap">
+                    <button
+                      type="button"
+                      className={`booking-target-pill ${bookingForTarget === 'self' ? 'active' : ''}`}
+                      onClick={() => handleSwitchBookingTarget('self')}
+                    >
+                      <UserOutlined />
+                      <span>Đặt Cho Bản Thân</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`booking-target-pill ${bookingForTarget === 'relative' ? 'active' : ''}`}
+                      onClick={() => handleSwitchBookingTarget('relative')}
+                    >
+                      <TeamOutlined />
+                      <span>Đặt Cho Người Thân (Con cái, Bố mẹ...)</span>
+                    </button>
+                  </div>
+
+                  {bookingForTarget === 'relative' && (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        backgroundColor: '#f0f9ff',
+                        border: '1px solid #bae6fd',
+                        color: '#0369a1',
+                        fontSize: 12.5,
+                        marginBottom: 16,
+                      }}
+                    >
+                      👥 <strong>Lưu ý:</strong> Vui lòng điền đúng Họ tên, Giới tính và Năm sinh của <strong>người thân cần khám bệnh</strong> bên dưới. Lịch khám vẫn sẽ được quản lý trong tài khoản của bạn.
+                    </div>
+                  )}
+
+                  {/* Thẻ hiển thị thông tin Bệnh nhân thật đã lưu trong CSDL */}
+                  {user && bookingForTarget === 'self' && (
+                    <div
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: 12,
+                        backgroundColor: '#f0f9ff',
+                        border: '1.5px solid #bae6fd',
+                        marginBottom: 16,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 12,
+                        boxShadow: '0 2px 8px rgba(2, 132, 199, 0.06)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div
+                          style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: '50%',
+                            backgroundColor: '#0284c7',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 800,
+                            fontSize: 18,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {user.hoTen?.charAt(0) || 'BN'}
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 14.5 }}>
+                              {user.hoTen}
+                            </span>
+                            {user.maBenhNhan && (
+                              <span
+                                style={{
+                                  fontSize: 11.5,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  backgroundColor: '#e0f2fe',
+                                  color: '#0369a1',
+                                  fontWeight: 700,
+                                  fontFamily: 'monospace',
+                                }}
+                              >
+                                Mã BN: {user.maBenhNhan}
+                              </span>
+                            )}
+                            {isPatientProfileComplete(user) ? (
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  backgroundColor: '#ecfdf5',
+                                  color: '#059669',
+                                  border: '1px solid #a7f3d0',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                }}
+                              >
+                                <CheckCircleFilled /> Hồ sơ CSDL đã xác thực
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  backgroundColor: '#fffbeb',
+                                  color: '#d97706',
+                                  border: '1px solid #fde68a',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                ⚠️ Cần bổ sung thông tin
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
+                            SĐT: <strong>{user.soDienThoai || 'Chưa có'}</strong>
+                            {user.soCCCD ? ` • CCCD: ${user.soCCCD}` : ''}
+                            {user.ngaySinh ? ` • Sinh ngày: ${dayjs(user.ngaySinh).format('DD/MM/YYYY')}` : ''}
+                            {user.diaChi ? ` • Nơi ở: ${user.diaChi}` : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        size="small"
+                        icon={<EditOutlined />}
+                        style={{
+                          borderRadius: 8,
+                          color: '#0284c7',
+                          borderColor: '#bae6fd',
+                          backgroundColor: '#ffffff',
+                          fontWeight: 600,
+                        }}
+                        onClick={() => {
+                          setCompleteProfileModalOpen(true);
+                          setCompleteProfileAllowClose(true);
+                        }}
+                      >
+                        Sửa hồ sơ
+                      </Button>
+                    </div>
+                  )}
+
                   <Form form={form} layout="vertical">
                     <Form.Item
                       name="fullName"
@@ -2390,7 +3434,7 @@ export const PatientBookingPage: React.FC = () => {
                     >
                       <Input
                         prefix={<UserOutlined style={{ color: '#0284c7' }} />}
-                        placeholder="Ví dụ: Nguyễn Văn An"
+                        placeholder={bookingForTarget === 'relative' ? 'Nhập họ tên người thân cần khám' : 'Ví dụ: Nguyễn Văn An'}
                         size="large"
                         style={{ borderRadius: 10 }}
                       />
@@ -2460,7 +3504,7 @@ export const PatientBookingPage: React.FC = () => {
                           <Col xs={24} sm={12}>
                             <Radio.Button
                               value="FollowUp"
-                              style={{ width: '100%', textAlign: 'center', height: 42, lineHeight: '40px', borderRadius: 8, fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}
+                              style={{ width: '100%', textAlign: 'center', height: 42, lineHeight: '40px', borderRadius: 8, fontWeight: 700, color: '#0284c7', marginBottom: 8 }}
                             >
                               🔄 Tái Khám Định Kỳ
                             </Radio.Button>
@@ -2479,13 +3523,13 @@ export const PatientBookingPage: React.FC = () => {
                             style={{
                               padding: 16,
                               borderRadius: 12,
-                              backgroundColor: '#f5f3ff',
-                              border: '1px solid #ddd6fe',
+                              backgroundColor: '#f0f9ff',
+                              border: '1px solid #bae6fd',
                               marginBottom: 16,
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#6d28d9', marginBottom: 10 }}>
-                              <HistoryOutlined />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#0369a1', marginBottom: 10 }}>
+                              <HistoryOutlined style={{ color: '#0284c7' }} />
                               <span>Thông tin Tái khám theo chỉ định Bác sĩ</span>
                             </div>
                             <Row gutter={12}>
@@ -2496,7 +3540,7 @@ export const PatientBookingPage: React.FC = () => {
                                   style={{ marginBottom: 8 }}
                                 >
                                   <Input
-                                    prefix={<HistoryOutlined style={{ color: '#7c3aed' }} />}
+                                    prefix={<HistoryOutlined style={{ color: '#0284c7' }} />}
                                     placeholder="Ví dụ: EMR2026-0015"
                                     style={{ borderRadius: 8, fontFamily: 'monospace' }}
                                   />
@@ -2775,7 +3819,7 @@ export const PatientBookingPage: React.FC = () => {
                   />
                 </div>
                 {createdAppointment.appointmentType === 'FollowUp' ? (
-                  <Tag color="purple" style={{ fontSize: 12, padding: '4px 14px', borderRadius: 20, fontWeight: 800 }}>
+                  <Tag color="blue" style={{ fontSize: 12, padding: '4px 14px', borderRadius: 20, fontWeight: 800 }}>
                     🔄 PHIẾU HẸN TÁI KHÁM ĐỊNH KỲ • CHECK-IN QR
                   </Tag>
                 ) : (
@@ -2900,6 +3944,33 @@ export const PatientBookingPage: React.FC = () => {
                   style={{ fontWeight: 600, borderRadius: 10 }}
                 >
                   In Phiếu Khám QR
+                </Button>
+
+                <Button
+                  icon={<DownloadOutlined />}
+                  size="large"
+                  onClick={handleDownloadQrImage}
+                  style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600, borderRadius: 10 }}
+                >
+                  Tải Ảnh QR Về Máy
+                </Button>
+
+                <Button
+                  icon={<CalendarOutlined style={{ color: '#0284c7' }} />}
+                  size="large"
+                  style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600, borderRadius: 10 }}
+                  onClick={() => {
+                    const title = encodeURIComponent(`Lịch Khám D-Medical: ${createdAppointment.departmentName}`);
+                    const details = encodeURIComponent(
+                      `Bác sĩ: ${createdAppointment.doctorName}\nMã phiếu: ${createdAppointment.id.toUpperCase()}\nĐịa chỉ: 215 Hồng Bàng, P.11, Q.5, TP.HCM\nQuét mã QR tại Kiosk để vào khám.`
+                    );
+                    const location = encodeURIComponent('Bệnh viện Đa khoa D-Medical, 215 Hồng Bàng, Quận 5, TP.HCM');
+                    const dStr = dayjs(createdAppointment.appointmentDate).format('YYYYMMDD');
+                    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dStr}T080000Z/${dStr}T090000Z`;
+                    window.open(url, '_blank');
+                  }}
+                >
+                  Lưu Vào Google Calendar
                 </Button>
 
                 {createdAppointment.status !== 'Cancelled' && createdAppointment.status !== 'Completed' && (
@@ -3075,6 +4146,93 @@ export const PatientBookingPage: React.FC = () => {
         />
       </section>
 
+      {/* KHỐI ĐÁNH GIÁ & CẢM NHẬN CỦA NGƯỜI BỆNH (PATIENT TESTIMONIALS) */}
+      <section style={{ maxWidth: 1200, margin: '0 auto 48px', padding: '0 20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <Tag color="cyan" style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20 }}>
+            Ý KIẾN NGƯỜI BỆNH
+          </Tag>
+          <Title level={2} style={{ color: '#0f172a', fontWeight: 800, marginTop: 10, marginBottom: 6 }}>
+            Hơn <CountUpNumber end={200000} duration={2400} /> Người Bệnh Tin Tưởng & Đồng Hành
+          </Title>
+          <Paragraph style={{ color: '#64748b', fontSize: 14 }}>
+            Những chia sẻ thực tế từ bệnh nhân sau khi trải nghiệm đặt khám trực tuyến và điều trị tại Bệnh viện D-Medical.
+          </Paragraph>
+        </div>
+
+        <Row gutter={[20, 20]}>
+          {[
+            {
+              name: 'Cô Nguyễn Thị Mai (58 tuổi)',
+              location: 'Quận 5, TP.HCM',
+              dept: 'Khoa Tim Mạch • BS. Huỳnh Quốc Dũng',
+              rating: 5,
+              date: '08/10/2026',
+              comment:
+                'Tôi bị tăng huyết áp nhiều năm, đặt khám trên web chọn khung giờ 08:30 sáng. Đến bệnh viện đưa mã QR vào Kiosk quét là được hướng dẫn vào thẳng buồng khám của Tiến sĩ Dũng. Bác sĩ tư vấn rất kỹ lưỡng, giải thích chi tiết kết quả siêu âm tim Doppler và đổi toa thuốc phù hợp, hiện tại huyết áp tôi đã rất ổn định.',
+            },
+            {
+              name: 'Anh Trần Hữu Phước (36 tuổi)',
+              location: 'Bình Dương',
+              dept: 'Khoa Tiêu Hóa • Gói Tầm Soát Tiêu Hóa',
+              rating: 5,
+              date: '05/10/2026',
+              comment:
+                'Tôi đặt Gói tầm soát tiêu hóa có nội soi dạ dày tiền mê. Thủ tục check-in bằng mã QR chỉ mất chưa đầy 1 phút. Nội soi hoàn toàn êm ái, tỉnh dậy không hề có cảm giác đau hay khó chịu. Bác sĩ Vương tư vấn rất có tâm và dặn dò chế độ ăn cẩn thận.',
+            },
+            {
+              name: 'Chị Lê Thị Bích Trâm (29 tuổi)',
+              location: 'Quận 10, TP.HCM',
+              dept: 'Khoa Nhi • BS. Phạm Minh Đức',
+              rating: 5,
+              date: '02/10/2026',
+              comment:
+                'Bé nhà mình bị viêm phế quản tái đi tái lại. Đặt lịch trước với Bác sĩ Đức rất tiện vì không phải cho con ngồi chờ bốc số mệt mỏi ở bệnh viện. Bác sĩ khám nhẹ nhàng, dỗ dành bé rất khéo và giải thích cặn kẽ cho mẹ cách chăm sóc hạ sốt tại nhà.',
+            },
+          ].map((item, idx) => (
+            <Col xs={24} md={8} key={idx}>
+              <Card
+                bordered={false}
+                style={{
+                  borderRadius: 16,
+                  height: '100%',
+                  background: '#ffffff',
+                  border: '1.5px solid #bae6fd',
+                  boxShadow: '0 8px 24px rgba(2, 132, 199, 0.06)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ color: '#f59e0b', fontSize: 15 }}>
+                    {'★'.repeat(item.rating)}
+                  </div>
+                  <Tag color="cyan" style={{ margin: 0, fontSize: 11, fontWeight: 600 }}>
+                    ✓ Đã khám tại viện
+                  </Tag>
+                </div>
+
+                <p style={{ color: '#334155', fontSize: 13, lineHeight: 1.65, fontStyle: 'italic', flex: 1, margin: '0 0 16px' }}>
+                  "{item.comment}"
+                </p>
+
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 12 }}>
+                  <div style={{ fontWeight: 800, fontSize: 13.5, color: '#0f172a' }}>
+                    {item.name}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#0284c7', fontWeight: 600, marginTop: 2 }}>
+                    {item.dept}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                    {item.location} • {item.date}
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </section>
+
       {/* MODAL TRA CỨU LỊCH HẸN & XEM LẠI MÃ QR */}
       <Modal
         title={
@@ -3151,9 +4309,9 @@ export const PatientBookingPage: React.FC = () => {
                   style={{
                     borderRadius: 16,
                     fontWeight: 600,
-                    backgroundColor: lookupTypeFilter === 'FollowUp' ? '#7c3aed' : undefined,
-                    borderColor: '#7c3aed',
-                    color: lookupTypeFilter === 'FollowUp' ? '#ffffff' : '#7c3aed',
+                    backgroundColor: lookupTypeFilter === 'FollowUp' ? '#0284c7' : undefined,
+                    borderColor: '#0284c7',
+                    color: lookupTypeFilter === 'FollowUp' ? '#ffffff' : '#0284c7',
                   }}
                 >
                   🔄 Lịch Tái Khám ({lookupResults.filter((r) => r.appointmentType === 'FollowUp' || r.symptomsReason?.toLowerCase().includes('tái khám')).length})
@@ -3179,8 +4337,8 @@ export const PatientBookingPage: React.FC = () => {
                     style={{
                       padding: 18,
                       borderRadius: 16,
-                      border: isCancelled ? '1px dashed #cbd5e1' : isFollowUp ? '1px solid #ddd6fe' : '1px solid #bae6fd',
-                      backgroundColor: isCancelled ? '#f8fafc' : isFollowUp ? '#faf5ff' : '#f0f9ff',
+                      border: isCancelled ? '1px dashed #cbd5e1' : '1px solid #bae6fd',
+                      backgroundColor: isCancelled ? '#f8fafc' : '#f0f9ff',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 12,
@@ -3199,7 +4357,7 @@ export const PatientBookingPage: React.FC = () => {
                             ({item.patientCode})
                           </span>
                           {isFollowUp && (
-                            <Tag color="purple" style={{ margin: 0, fontWeight: 800, borderRadius: 12 }}>
+                            <Tag color="blue" style={{ margin: 0, fontWeight: 800, borderRadius: 12 }}>
                               🔄 Tái khám
                             </Tag>
                           )}
@@ -3230,7 +4388,7 @@ export const PatientBookingPage: React.FC = () => {
                           )}
                         </div>
 
-                        <div style={{ fontSize: 13, color: isFollowUp ? '#7c3aed' : '#0284c7', fontWeight: 700, marginTop: 4 }}>
+                        <div style={{ fontSize: 13, color: '#0284c7', fontWeight: 700, marginTop: 4 }}>
                           {item.departmentName} • {item.doctorName}
                         </div>
 
@@ -3242,7 +4400,7 @@ export const PatientBookingPage: React.FC = () => {
                         </div>
 
                         {item.previousRecordCode && (
-                          <div style={{ fontSize: 12, color: '#7c3aed', marginTop: 3, fontWeight: 600 }}>
+                          <div style={{ fontSize: 12, color: '#0284c7', marginTop: 3, fontWeight: 600 }}>
                             📁 Hồ sơ khám trước: {item.previousRecordCode}
                           </div>
                         )}
@@ -3641,6 +4799,305 @@ export const PatientBookingPage: React.FC = () => {
         open={aiDrawerOpen}
         onClose={() => setAiDrawerOpen(false)}
       />
+
+      {/* MODAL CHI TIẾT TIỂU SỬ & LỊCH TRỰC BÁC SĨ */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#0369a1', fontSize: 16 }}>
+            <UserOutlined />
+            <span>Hồ Sơ Chuyên Môn Bác Sĩ</span>
+          </div>
+        }
+        open={doctorDetailModalOpen}
+        onCancel={() => setDoctorDetailModalOpen(false)}
+        footer={null}
+        width={680}
+        style={{ maxWidth: '95vw', margin: '16px auto' }}
+        styles={{ body: { maxHeight: '80vh', overflowY: 'auto' } }}
+        centered
+        destroyOnClose
+      >
+        {viewingDoctor && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 6 }}>
+            {/* Doctor Profile Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                padding: 16,
+                borderRadius: 14,
+                backgroundColor: '#f0f9ff',
+                border: '1.5px solid #bae6fd',
+                flexWrap: 'wrap',
+              }}
+            >
+              <Avatar
+                src={viewingDoctor.avatar}
+                size={84}
+                style={{ border: '3px solid #0284c7', backgroundColor: '#e0f2fe' }}
+              />
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#0f172a' }}>
+                    {viewingDoctor.name}
+                  </h3>
+                  {viewingDoctor.isSpecialist && (
+                    <Tag color="gold" style={{ margin: 0, fontWeight: 800 }}>CHUYÊN GIA</Tag>
+                  )}
+                </div>
+                <div style={{ fontSize: 13.5, color: '#0284c7', fontWeight: 700, marginTop: 4 }}>
+                  {viewingDoctor.department}
+                </div>
+                <div style={{ fontSize: 12.5, color: '#475569', marginTop: 2 }}>
+                  {viewingDoctor.title}
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                  <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>
+                    ⭐ {viewingDoctor.rating} / 5.0 (1,240 đánh giá)
+                  </Tag>
+                  <Tag color="geekblue" style={{ margin: 0, fontWeight: 600 }}>
+                    {viewingDoctor.experience}
+                  </Tag>
+                </div>
+              </div>
+            </div>
+
+            {/* Giới thiệu & Tiểu sử */}
+            {viewingDoctor.bio && (
+              <div>
+                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 14, marginBottom: 6 }}>
+                  📝 Giới Thiệu Chuyên Môn
+                </div>
+                <div style={{ fontSize: 13.5, color: '#334155', lineHeight: 1.6, backgroundColor: '#f8fafc', padding: '12px 14px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                  {viewingDoctor.bio}
+                </div>
+              </div>
+            )}
+
+            {/* Quá trình đào tạo */}
+            {viewingDoctor.education && (
+              <div>
+                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 14, marginBottom: 6 }}>
+                  🎓 Trình Độ Học Vấn & Đào Tạo
+                </div>
+                <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6, backgroundColor: '#f8fafc', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                  {viewingDoctor.education}
+                </div>
+              </div>
+            )}
+
+            {/* Lĩnh vực điều trị thế mạnh */}
+            {viewingDoctor.specialties && viewingDoctor.specialties.length > 0 && (
+              <div>
+                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 14, marginBottom: 8 }}>
+                  🩺 Thế Mạnh Chuyên Sâu
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {viewingDoctor.specialties.map((spec, idx) => (
+                    <Tag key={idx} color="processing" style={{ borderRadius: 12, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
+                      ✓ {spec}
+                    </Tag>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lịch trực & Bảng giá khám */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 12,
+                padding: 14,
+                borderRadius: 12,
+                backgroundColor: '#f0f9ff',
+                border: '1px dashed #bae6fd',
+                fontSize: 13,
+              }}
+            >
+              <div>
+                <div style={{ color: '#64748b', fontSize: 12 }}>⏰ Lịch trực khám tại viện:</div>
+                <strong style={{ color: '#0369a1' }}>{viewingDoctor.workingDays || 'Thứ 2 - Thứ 7 (07:30 - 16:30)'}</strong>
+              </div>
+              <div>
+                <div style={{ color: '#64748b', fontSize: 12 }}>📍 Địa điểm phòng khám:</div>
+                <strong style={{ color: '#0369a1' }}>{viewingDoctor.room || 'Tầng 1 Khu Khám Bệnh'}</strong>
+              </div>
+              <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #bae6fd', paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#334155' }}>Phí khám trực tiếp:</span>
+                <span style={{ color: '#0284c7', fontSize: 16, fontWeight: 900 }}>
+                  {viewingDoctor.consultationFee.toLocaleString('vi-VN')} đ
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a', marginLeft: 6 }}>(Được BHYT hỗ trợ)</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
+              <Button size="large" onClick={() => setDoctorDetailModalOpen(false)}>
+                Đóng
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<CalendarOutlined />}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 10 }}
+                onClick={() => {
+                  setDoctorDetailModalOpen(false);
+                  handleSelectDoctorDirect(viewingDoctor);
+                }}
+              >
+                Đặt Lịch Khám Với Bác Sĩ Này
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* MODAL CHI TIẾT GÓI KHÁM SỨC KHỎE */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#0369a1', fontSize: 16 }}>
+            <ThunderboltOutlined />
+            <span>Thông Tin Chi Tiết Gói Khám Sức Khỏe</span>
+          </div>
+        }
+        open={packageDetailModalOpen}
+        onCancel={() => setPackageDetailModalOpen(false)}
+        footer={null}
+        width={720}
+        style={{ maxWidth: '95vw', margin: '16px auto' }}
+        styles={{ body: { maxHeight: '80vh', overflowY: 'auto' } }}
+        centered
+        destroyOnClose
+      >
+        {viewingPackage && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 6 }}>
+            {/* Package Banner Header */}
+            <div
+              style={{
+                padding: 18,
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%)',
+                border: '1.5px solid #bae6fd',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                <Tag color={viewingPackage.badgeColor} style={{ fontWeight: 800, padding: '3px 12px', borderRadius: 14 }}>
+                  {viewingPackage.badge}
+                </Tag>
+                <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>
+                  Khoa phụ trách: {viewingPackage.departmentName}
+                </Tag>
+              </div>
+
+              <h2 style={{ margin: '10px 0 6px', fontSize: 18, fontWeight: 900, color: '#0f172a' }}>
+                {viewingPackage.name}
+              </h2>
+              <div style={{ fontSize: 13, color: '#64748b', fontStyle: 'italic' }}>
+                Phù hợp cho: {viewingPackage.recommendedFor}
+              </div>
+
+              {/* Bảng giá tóm tắt */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 12,
+                  marginTop: 12,
+                  paddingTop: 10,
+                  borderTop: '1px solid #bae6fd',
+                }}
+              >
+                <span style={{ fontSize: 22, fontWeight: 900, color: '#0284c7' }}>
+                  {viewingPackage.discountPrice.toLocaleString('vi-VN')} đ
+                </span>
+                <span style={{ fontSize: 14, color: '#94a3b8', textDecoration: 'line-through' }}>
+                  {viewingPackage.originalPrice.toLocaleString('vi-VN')} đ
+                </span>
+                <Tag color="green" style={{ fontWeight: 700 }}>
+                  BHYT hỗ trợ: -{viewingPackage.bhytSupport.toLocaleString('vi-VN')} đ
+                </Tag>
+              </div>
+            </div>
+
+            {/* Checklist các danh mục khám */}
+            <div>
+              <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 14.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <CheckCircleOutlined style={{ color: '#0284c7' }} />
+                <span>Danh Mục Xét Nghiệm & Chẩn Đoán Hình Ảnh Bao Gồm ({viewingPackage.items.length} dịch vụ):</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {viewingPackage.items.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '8px 12px',
+                      backgroundColor: '#f8fafc',
+                      borderRadius: 8,
+                      border: '1px solid #e2e8f0',
+                      fontSize: 13,
+                      color: '#334155',
+                    }}
+                  >
+                    <CheckCircleFilled style={{ color: '#10b981', fontSize: 14, flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontWeight: 500 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Hướng dẫn chuẩn bị trước khi đến khám */}
+            {viewingPackage.preparation && viewingPackage.preparation.length > 0 && (
+              <div
+                style={{
+                  padding: 14,
+                  borderRadius: 12,
+                  backgroundColor: '#fffbeb',
+                  border: '1.5px solid #fed7aa',
+                }}
+              >
+                <div style={{ fontWeight: 800, color: '#b45309', fontSize: 13.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ⚠️ Lưu Ý & Chuẩn Bị Trước Khi Đến Khám:
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: '#78350f', lineHeight: 1.7 }}>
+                  {viewingPackage.preparation.map((prep, idx) => (
+                    <li key={idx}>{prep}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Quy trình thực hiện */}
+            <div style={{ fontSize: 12.5, color: '#64748b', lineHeight: 1.5 }}>
+              🏥 <strong>Địa điểm khám:</strong> Khu Khám Sức Khỏe Tổng Quát & Tầm Soát Kỹ Thuật Cao (Tầng 2 - Khu A). Có nhân viên điều dưỡng hướng dẫn riêng suốt quá trình khám.
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
+              <Button size="large" onClick={() => setPackageDetailModalOpen(false)}>
+                Đóng
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<ThunderboltOutlined />}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 10 }}
+                onClick={() => {
+                  setPackageDetailModalOpen(false);
+                  handleSelectPackage(viewingPackage);
+                }}
+              >
+                Đăng Ký Gói Khám Này
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Reusable Medical Portal Footer */}
       <PatientPortalFooter />

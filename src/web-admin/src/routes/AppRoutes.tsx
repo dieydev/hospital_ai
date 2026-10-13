@@ -18,6 +18,9 @@ import { PatientBookingPage } from '../pages/PatientBookingPage';
 import { AboutPage } from '../pages/AboutPage';
 import { NewsPage } from '../pages/NewsPage';
 import { GuidePage } from '../pages/GuidePage';
+import { DepartmentsPage } from '../pages/DepartmentsPage';
+import { DoctorsPage } from '../pages/DoctorsPage';
+import { PackagesPage } from '../pages/PackagesPage';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const AppRoutes: React.FC = () => {
@@ -37,6 +40,12 @@ export const AppRoutes: React.FC = () => {
       <Route path="/dat-lich" element={<PatientBookingPage />} />
       <Route path="/gioi-thieu" element={<AboutPage />} />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/chuyen-khoa" element={<DepartmentsPage />} />
+      <Route path="/departments" element={<DepartmentsPage />} />
+      <Route path="/bac-si" element={<DoctorsPage />} />
+      <Route path="/doctors" element={<DoctorsPage />} />
+      <Route path="/goi-kham" element={<PackagesPage />} />
+      <Route path="/packages" element={<PackagesPage />} />
       <Route path="/tin-tuc" element={<NewsPage />} />
       <Route path="/news" element={<NewsPage />} />
       <Route path="/huong-dan" element={<GuidePage />} />

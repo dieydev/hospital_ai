@@ -14,7 +14,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import api from '../services/api';
 import { showToast, showErrorAlert } from '../utils/sweetAlert';
 import { useThemeStore } from '../store/useThemeStore';
-import { UserRole } from '../types';
+import dayjs from 'dayjs';
+import { UserRole, UserAccount } from '../types';
 
 const { Text, Title } = Typography;
 
@@ -100,14 +101,29 @@ export const LoginPage: React.FC = () => {
       ? (rawRoles as UserRole[])
       : ['Patient'];
 
+    const dob = user.dateOfBirth || user.ngaySinh;
+    const formattedDob = dob ? dayjs(dob).format('YYYY-MM-DD') : undefined;
+    const birthYear = user.namSinh || (dob ? dayjs(dob).year() : undefined);
+
+    const cccd = user.identityCardNumber || user.soCCCD || '';
+    const address = user.address || user.diaChi || '';
+    const isAddressValid = Boolean(address && address.trim().length >= 5 && address.trim() !== 'Chưa cập nhật');
+    const isCccdValid = Boolean(
+      cccd &&
+      cccd.trim().length >= 9 &&
+      !cccd.startsWith('CD') &&
+      !cccd.startsWith('P') &&
+      cccd !== (user.phoneNumber || user.soDienThoai)
+    );
+
     // Kiểm tra tính hoàn thiện hồ sơ bệnh nhân
     const isProfileComplete = Boolean(
       isStaffOrAdmin ||
-      user.isProfileComplete ||
-      (user.soCCCD && (user.ngaySinh || user.namSinh) && user.diaChi && user.gioiTinh)
+      user.isProfileComplete === true ||
+      (isCccdValid && (formattedDob || birthYear) && isAddressValid)
     );
 
-    const authUser = {
+    const authUser: UserAccount = {
       id: user.id || `pat-${Date.now()}`,
       tenDangNhap: user.username || user.tenDangNhap || user.phoneNumber || user.soDienThoai,
       hoTen: user.fullName || user.hoTen || (isStaffOrAdmin ? 'Cán bộ Y tế' : 'Bệnh nhân'),
@@ -118,20 +134,41 @@ export const LoginPage: React.FC = () => {
       chucDanh: user.title,
       trangThaiKichHoat: true,
       avatarUrl: user.avatarUrl,
-      // Hồ sơ bệnh nhân
-      maBenhNhan: user.maBenhNhan,
-      soCCCD: user.soCCCD || user.identityCardNumber,
-      ngaySinh: user.ngaySinh,
-      namSinh: user.namSinh,
-      gioiTinh: user.gioiTinh || user.gender || 'Nam',
-      diaChi: user.diaChi || user.address || '',
-      maTheBHYT: user.maTheBHYT,
-      tienSuBenh: user.tienSuBenh,
-      diUngThuoc: user.diUngThuoc,
+      // Hồ sơ bệnh nhân liên thông đồng bộ từ CSDL SQL Server
+      maBenhNhan: user.patientCode || user.maBenhNhan || `BN-${dayjs().format('YYYY')}-${Math.floor(10000 + Math.random() * 90000)}`,
+      soCCCD: cccd,
+      ngaySinh: formattedDob,
+      namSinh: birthYear,
+      gioiTinh: (user.gender === 'Female' || user.gender === 'Nữ' || user.gioiTinh === 'Nữ') ? 'Nữ' : 'Nam',
+      diaChi: address,
+      maTheBHYT: user.healthInsuranceNumber || user.maTheBHYT || '',
+      tienSuBenh: user.tienSuBenh || user.medicalHistory || '',
+      diUngThuoc: user.diUngThuoc || user.drugAllergies || '',
       isProfileComplete: isProfileComplete,
     };
 
     setAuth(authUser, token);
+
+    // Đồng bộ vào Local Storage cho đăng nhập sau
+    try {
+      const storedUsersStr = localStorage.getItem('hospital_registered_users');
+      const userList = storedUsersStr ? JSON.parse(storedUsersStr) : [];
+      const idx = userList.findIndex(
+        (item: any) =>
+          item.username === authUser.tenDangNhap ||
+          item.tenDangNhap === authUser.tenDangNhap ||
+          item.soDienThoai === authUser.soDienThoai ||
+          item.id === authUser.id
+      );
+      if (idx >= 0) {
+        userList[idx] = { ...userList[idx], ...authUser };
+      } else {
+        userList.push(authUser);
+      }
+      localStorage.setItem('hospital_registered_users', JSON.stringify(userList));
+    } catch {
+      // ignore
+    }
 
     const redirectUrl = getRedirectUrl();
 
@@ -178,8 +215,14 @@ export const LoginPage: React.FC = () => {
       handleAuthSuccess(user, token);
       setLoading(false);
       return;
-    } catch {
-      // Nếu API báo lỗi hoặc Offline -> Tiếp tục logic kiểm tra CSDL cục bộ
+    } catch (err: any) {
+      // Nếu Backend SQL Server trả về thông báo lỗi nghiệp vụ (sai mật khẩu, tài khoản bị khóa...)
+      if (err.response?.data?.message) {
+        setErrorMsg(err.response.data.message);
+        setLoading(false);
+        return;
+      }
+      // Nếu Backend hoàn toàn Offline -> Tiếp tục logic kiểm tra CSDL cục bộ
     }
 
     // 2. KIỂM TRA TÀI KHOẢN ADMIN / CÁN BỘ Y TẾ TRONG CSDL:
@@ -400,12 +443,13 @@ export const LoginPage: React.FC = () => {
       const regRes = await api.post('/auth/register', {
         username: inputUser,
         password: inputPass,
-        phoneNumber: isPhone ? inputUser : '0912345678',
+        phoneNumber: isPhone ? inputUser : '',
         fullName: isPhone ? `Bệnh nhân (${inputUser})` : inputUser,
         role: 'Patient', // Cố định vai trò Bệnh nhân
       });
 
-      if (regRes.data?.token) {
+      const token = regRes.data?.token || regRes.data?.Token;
+      if (token) {
         handleAuthSuccess(
           {
             id: regRes.data.id,
@@ -413,15 +457,23 @@ export const LoginPage: React.FC = () => {
             fullName: regRes.data.fullName || inputUser,
             phoneNumber: regRes.data.phoneNumber || inputUser,
             roles: ['Patient'],
+            patientCode: regRes.data.patientCode,
+            identityCardNumber: regRes.data.identityCardNumber,
             isProfileComplete: false, // Chưa có hồ sơ định danh
           },
-          regRes.data.token,
-          'Đăng ký tài khoản Bệnh nhân thành công! Vui lòng hoàn tất thông tin cá nhân.'
+          token,
+          'Đăng ký tài khoản Bệnh nhân thành công vào CSDL Bệnh viện! Vui lòng hoàn tất thông tin cá nhân.'
         );
         setLoading(false);
         return;
       }
-    } catch {
+    } catch (err: any) {
+      // Hiển thị trực tiếp thông báo lỗi từ SQL Server (ví dụ: Số điện thoại đã tồn tại, mật khẩu quá ngắn...)
+      if (err.response?.data?.message) {
+        setErrorMsg(err.response.data.message);
+        setLoading(false);
+        return;
+      }
       // Fallback lưu local CSDL nếu Backend offline
     }
 

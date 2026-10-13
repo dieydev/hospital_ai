@@ -189,6 +189,42 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Cập nhật và lưu hồ sơ Bệnh nhân thật vào CSDL SQL Server
+    /// </summary>
+    [HttpPost("complete-profile")]
+    public async Task<IActionResult> CompleteProfile([FromBody] CompleteProfileRequestDto request)
+    {
+        try
+        {
+            var username = User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrEmpty(username))
+            {
+                username = !string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : null;
+            }
+            if (string.IsNullOrEmpty(username))
+            {
+                return Unauthorized(new { message = "Không xác định được danh tính người dùng. Vui lòng đăng nhập lại." });
+            }
+
+            var result = await _authService.CompleteProfileAsync(username, request);
+            return Ok(result);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Cập nhật thông tin tài khoản & hồ sơ cá nhân
+    /// </summary>
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] CompleteProfileRequestDto request)
+    {
+        return await CompleteProfile(request);
+    }
+
+    /// <summary>
     /// Đổi mật khẩu tài khoản
     /// </summary>
     [HttpPost("change-password")]

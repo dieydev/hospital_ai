@@ -54,17 +54,17 @@ export const PatientPortalFooter: React.FC = () => {
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, lineHeight: 2.1, fontSize: 13 }}>
               <li>
-                <a onClick={() => navigate('/booking?mode=byDept')} style={{ cursor: 'pointer' }}>
+                <a onClick={() => navigate('/chuyen-khoa')} style={{ cursor: 'pointer' }}>
                   Khám Chuyên Khoa
                 </a>
               </li>
               <li>
-                <a onClick={() => navigate('/booking?mode=byDoctor')} style={{ cursor: 'pointer' }}>
+                <a onClick={() => navigate('/bac-si')} style={{ cursor: 'pointer' }}>
                   Bác Sĩ Chuyên Gia
                 </a>
               </li>
               <li>
-                <a onClick={() => navigate('/booking?mode=byPackage')} style={{ cursor: 'pointer' }}>
+                <a onClick={() => navigate('/goi-kham')} style={{ cursor: 'pointer' }}>
                   Gói Tầm Soát Sức Khỏe
                 </a>
               </li>

@@ -85,18 +85,41 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
         user?.maBenhNhan ||
         `BN-${dayjs().format('YYYY')}-${Math.floor(10000 + Math.random() * 90000)}`;
 
+      // 1. Lưu trực tiếp vào CSDL Backend SQL Server qua API
+      let backendUpdatedUser: any = null;
+      try {
+        const payload = {
+          fullName: values.hoTen.trim(),
+          phoneNumber: values.soDienThoai.trim(),
+          identityCardNumber: values.soCCCD.trim(),
+          dateOfBirth: ngaySinhStr ? `${ngaySinhStr}T00:00:00Z` : undefined,
+          gender: values.gioiTinh,
+          address: values.diaChi.trim(),
+          healthInsuranceNumber: values.maTheBHYT?.trim() || null,
+        };
+
+        const res = await api.post('/auth/complete-profile', payload);
+        if (res.data) {
+          backendUpdatedUser = res.data;
+        }
+      } catch (apiErr: any) {
+        console.warn('Backend complete-profile fallback:', apiErr?.response?.data || apiErr.message);
+      }
+
+      // 2. Cập nhật state Auth & Local User
+      const updatedMaBenhNhan = backendUpdatedUser?.patientCode || user?.maBenhNhan || maBenhNhan;
       const updatedData: Partial<UserAccount> = {
-        hoTen: values.hoTen.trim(),
-        soDienThoai: values.soDienThoai.trim(),
-        soCCCD: values.soCCCD.trim(),
-        ngaySinh: ngaySinhStr,
-        namSinh: namSinhVal,
-        gioiTinh: values.gioiTinh,
-        diaChi: values.diaChi.trim(),
-        maTheBHYT: values.maTheBHYT?.trim() || undefined,
-        tienSuBenh: values.tienSuBenh?.trim() || undefined,
-        diUngThuoc: values.diUngThuoc?.trim() || undefined,
-        maBenhNhan: maBenhNhan,
+        hoTen: backendUpdatedUser?.fullName || values.hoTen.trim(),
+        soDienThoai: backendUpdatedUser?.phoneNumber || values.soDienThoai.trim(),
+        soCCCD: backendUpdatedUser?.identityCardNumber || values.soCCCD.trim(),
+        ngaySinh: backendUpdatedUser?.dateOfBirth ? dayjs(backendUpdatedUser.dateOfBirth).format('YYYY-MM-DD') : ngaySinhStr,
+        namSinh: backendUpdatedUser?.dateOfBirth ? dayjs(backendUpdatedUser.dateOfBirth).year() : namSinhVal,
+        gioiTinh: backendUpdatedUser?.gender || values.gioiTinh,
+        diaChi: backendUpdatedUser?.address || values.diaChi.trim(),
+        maTheBHYT: backendUpdatedUser?.healthInsuranceNumber || values.maTheBHYT?.trim() || '',
+        tienSuBenh: values.tienSuBenh?.trim() || '',
+        diUngThuoc: values.diUngThuoc?.trim() || '',
+        maBenhNhan: updatedMaBenhNhan,
         isProfileComplete: true,
       };
 
@@ -105,7 +128,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
       // Cập nhật lại user mới từ state
       const updatedUser: UserAccount = {
         ...(user || {
-          id: `pat-${Date.now()}`,
+          id: backendUpdatedUser?.id || `pat-${Date.now()}`,
           tenDangNhap: values.soDienThoai.trim(),
           vaiTro: ['Patient'],
           trangThaiKichHoat: true,
@@ -113,37 +136,35 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
         ...updatedData,
       } as UserAccount;
 
-      // 1. Thử lưu vào CSDL Backend nếu có kết nối
-      try {
-        await api.post('/patients', {
-          fullName: values.hoTen.trim(),
-          gender: values.gioiTinh === 'Nữ' ? 'Female' : 'Male',
-          dateOfBirth: ngaySinhStr,
-          identityCardNumber: values.soCCCD.trim(),
-          healthInsuranceNumber: values.maTheBHYT?.trim(),
-          phoneNumber: values.soDienThoai.trim(),
-          address: values.diaChi.trim(),
-          drugAllergies: values.diUngThuoc?.trim(),
-          medicalHistory: values.tienSuBenh?.trim(),
-        });
-      } catch {
-        // Fallback local nếu server chưa chạy
-      }
-
-      // 2. Lưu đồng bộ vào CSDL Bệnh nhân Local (Persistent Store)
+      // 3. Lưu đồng bộ vào CSDL Bệnh nhân Local (Persistent Store cho cả Offline)
       try {
         const storedStr = localStorage.getItem('hospital_registered_users');
         const userList = storedStr ? JSON.parse(storedStr) : [];
         const idx = userList.findIndex(
           (u: any) =>
             u.username === user?.tenDangNhap ||
+            u.tenDangNhap === user?.tenDangNhap ||
             u.phoneNumber === values.soDienThoai.trim() ||
+            u.soDienThoai === values.soDienThoai.trim() ||
             u.id === user?.id
         );
+        const persistentUserObj = {
+          ...updatedUser,
+          username: updatedUser.tenDangNhap,
+          fullName: updatedUser.hoTen,
+          phoneNumber: updatedUser.soDienThoai,
+          identityCardNumber: updatedUser.soCCCD,
+          dateOfBirth: updatedUser.ngaySinh,
+          address: updatedUser.diaChi,
+          healthInsuranceNumber: updatedUser.maTheBHYT,
+          patientCode: updatedUser.maBenhNhan,
+          isProfileComplete: true,
+        };
+
         if (idx >= 0) {
-          userList[idx] = updatedUser;
+          userList[idx] = { ...userList[idx], ...persistentUserObj };
         } else {
-          userList.push(updatedUser);
+          userList.push(persistentUserObj);
         }
         localStorage.setItem('hospital_registered_users', JSON.stringify(userList));
       } catch {
@@ -154,7 +175,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
         setLoading(false);
         showSuccessAlert(
           'Hoàn Tất Hồ Sơ Bệnh Nhân!',
-          `Hồ sơ của bạn đã được lưu vào CSDL thành công. Mã bệnh nhân: ${maBenhNhan}. Bạn có thể bắt đầu sử dụng đầy đủ các dịch vụ đặt lịch khám trực tuyến.`
+          `Hồ sơ của bạn đã được lưu vào CSDL Bệnh viện thành công. Mã bệnh nhân: ${updatedMaBenhNhan}. Thông tin của bạn đã được ghi nhận vào hệ thống Bệnh án điện tử liên thông.`
         );
         if (onSuccess) {
           onSuccess(updatedUser);
