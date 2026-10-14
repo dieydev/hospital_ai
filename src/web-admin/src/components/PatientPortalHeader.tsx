@@ -25,6 +25,7 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { ElderlyModeWidget, ELDERLY_MODE_STORAGE_KEY } from './ElderlyModeWidget';
 import { showToast } from '../utils/sweetAlert';
+import { isPatientProfileComplete } from '../utils/authHelper';
 
 interface PatientPortalHeaderProps {
   onOpenLookup?: () => void;
@@ -86,7 +87,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
 
   const isProfileComplete = (u: any): boolean => {
     if (!u) return true;
-    return Boolean(u.soCCCD && (u.ngaySinh || u.namSinh) && u.diaChi);
+    return isPatientProfileComplete(u);
   };
 
   const handleNavClick = (route: string, tab?: 'byDept' | 'byDoctor' | 'byPackage' | 'byFollowUp') => {

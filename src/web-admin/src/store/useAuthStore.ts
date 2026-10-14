@@ -67,13 +67,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const isProfileComplete = Boolean(
           isStaffOrAdmin ||
           raw.isProfileComplete === true ||
+          currentUser?.isProfileComplete === true ||
           (isCccdValid && (formattedDob || birthYear) && isAddressValid)
         );
+
+        const rawFullName = raw.fullName || currentUser?.hoTen || '';
+        let resolvedFullName = rawFullName;
+        if (!resolvedFullName || resolvedFullName === 'Bệnh nhân' || resolvedFullName.includes('nh\uFFFD') || resolvedFullName.includes('?')) {
+          if (finalRoles.includes('Admin')) {
+            resolvedFullName = 'Quản trị viên Hệ thống';
+          } else if (finalRoles.includes('Receptionist')) {
+            resolvedFullName = 'Nhân viên Lễ tân';
+          } else if (finalRoles.includes('Doctor')) {
+            resolvedFullName = raw.title || 'BS. CKII. Nguyễn Thanh Duy';
+          } else {
+            resolvedFullName = isStaffOrAdmin ? 'Cán bộ Y tế' : 'Bệnh nhân';
+          }
+        }
 
         const syncedUser: UserAccount = {
           id: raw.id || currentUser?.id || `pat-${Date.now()}`,
           tenDangNhap: raw.username || currentUser?.tenDangNhap || raw.phoneNumber || '',
-          hoTen: raw.fullName || currentUser?.hoTen || 'Bệnh nhân',
+          hoTen: resolvedFullName,
           email: raw.email || currentUser?.email || '',
           soDienThoai: raw.phoneNumber || currentUser?.soDienThoai || '',
           vaiTro: finalRoles,

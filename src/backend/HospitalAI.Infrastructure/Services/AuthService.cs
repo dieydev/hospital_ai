@@ -74,36 +74,11 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
         }
 
-        bool isComplete = patient != null &&
-            !string.IsNullOrWhiteSpace(patient.IdentityCardNumber) &&
-            patient.FullName != "Bệnh nhân mới" &&
-            !string.IsNullOrWhiteSpace(patient.FullName) &&
-            !string.IsNullOrWhiteSpace(patient.Address) &&
-            patient.Address != "Chưa cập nhật";
-
         return new AuthResponseDto
         {
             Token = token,
             ExpiresAt = expiresAt,
-            User = new UserProfileDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                FullName = (patient != null && !string.IsNullOrWhiteSpace(patient.FullName)) ? patient.FullName : (!string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : "Bệnh nhân"),
-                Email = user.Email,
-                PhoneNumber = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber : (patient?.IdentityCardNumber ?? string.Empty),
-                Specialty = user.Specialty,
-                Title = user.Title,
-                Roles = roles,
-                AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(patient?.FullName ?? user.Username)}",
-                PatientCode = patient?.PatientCode,
-                IdentityCardNumber = patient?.IdentityCardNumber,
-                Gender = patient?.Gender,
-                DateOfBirth = patient?.DateOfBirth,
-                Address = patient?.Address,
-                HealthInsuranceNumber = patient?.HealthInsuranceNumber,
-                IsProfileComplete = isComplete
-            }
+            User = await BuildUserProfileDtoAsync(user, roles, patient)
         };
     }
 
@@ -151,25 +126,7 @@ public class AuthService : IAuthService
         {
             Token = token,
             ExpiresAt = expiresAt,
-            User = new UserProfileDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                FullName = (patient != null && !string.IsNullOrWhiteSpace(patient.FullName)) ? patient.FullName : (!string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : "Bệnh nhân"),
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                Specialty = user.Specialty,
-                Title = user.Title,
-                Roles = roles,
-                AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(patient?.FullName ?? user.Username)}",
-                PatientCode = patient?.PatientCode,
-                IdentityCardNumber = patient?.IdentityCardNumber,
-                Gender = patient?.Gender,
-                DateOfBirth = patient?.DateOfBirth,
-                Address = patient?.Address,
-                HealthInsuranceNumber = patient?.HealthInsuranceNumber,
-                IsProfileComplete = patient != null && !string.IsNullOrWhiteSpace(patient.IdentityCardNumber) && !string.IsNullOrWhiteSpace(patient.FullName)
-            }
+            User = await BuildUserProfileDtoAsync(user, roles, patient)
         };
     }
 
@@ -524,13 +481,26 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<UserProfileDto> CompleteProfileAsync(string usernameOrPhone, CompleteProfileRequestDto request)
+    public async Task<UserProfileDto> CompleteProfileAsync(string userIdOrUsernameOrPhone, CompleteProfileRequestDto request)
     {
-        var phone = !string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : usernameOrPhone.Trim();
-        var user = await _context.Users
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == usernameOrPhone.ToLower() || u.PhoneNumber == phone || u.Username == phone);
+        var phone = !string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : userIdOrUsernameOrPhone.Trim();
+
+        User? user = null;
+        if (Guid.TryParse(userIdOrUsernameOrPhone, out var userIdGuid))
+        {
+            user = await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userIdGuid);
+        }
+
+        if (user == null)
+        {
+            user = await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == userIdOrUsernameOrPhone.ToLower() || u.PhoneNumber == phone || u.Username == phone);
+        }
 
         if (user == null)
         {
@@ -614,33 +584,28 @@ public class AuthService : IAuthService
         var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
         if (!roles.Any()) roles.Add("Patient");
 
-        return new UserProfileDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            FullName = user.FullName,
-            Email = user.Email,
-            PhoneNumber = user.PhoneNumber,
-            Specialty = user.Specialty,
-            Title = user.Title,
-            Roles = roles,
-            AvatarUrl = user.AvatarUrl,
-            PatientCode = patient.PatientCode,
-            IdentityCardNumber = patient.IdentityCardNumber,
-            Gender = patient.Gender,
-            DateOfBirth = patient.DateOfBirth,
-            Address = patient.Address,
-            HealthInsuranceNumber = patient.HealthInsuranceNumber,
-            IsProfileComplete = true
-        };
+        return await BuildUserProfileDtoAsync(user, roles, patient);
     }
 
     public async Task<UserProfileDto> GetUserProfileAsync(string username)
     {
-        var user = await _context.Users
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower() || u.PhoneNumber == username);
+        User? user = null;
+        if (Guid.TryParse(username, out var parsedGuid))
+        {
+            user = await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == parsedGuid);
+        }
+
+        if (user == null)
+        {
+            var phone = username.Trim().Replace(" ", "").Replace("-", "");
+            user = await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower() || u.PhoneNumber == phone || u.Username == phone);
+        }
 
         if (user == null)
         {
@@ -648,32 +613,10 @@ public class AuthService : IAuthService
         }
 
         var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
-        bool isComplete = patient != null &&
-            !string.IsNullOrWhiteSpace(patient.IdentityCardNumber) &&
-            patient.FullName != "Bệnh nhân mới" &&
-            !string.IsNullOrWhiteSpace(patient.FullName) &&
-            !string.IsNullOrWhiteSpace(patient.Address) &&
-            patient.Address != "Chưa cập nhật";
+        var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
+        if (!roles.Any()) roles.Add("Patient");
 
-        return new UserProfileDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            FullName = (patient != null && !string.IsNullOrWhiteSpace(patient.FullName)) ? patient.FullName : (!string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : "Bệnh nhân"),
-            Email = user.Email,
-            PhoneNumber = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber : (patient?.IdentityCardNumber ?? string.Empty),
-            Specialty = user.Specialty,
-            Title = user.Title,
-            Roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList(),
-            AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(patient?.FullName ?? user.Username)}",
-            PatientCode = patient?.PatientCode,
-            IdentityCardNumber = patient?.IdentityCardNumber,
-            Gender = patient?.Gender,
-            DateOfBirth = patient?.DateOfBirth,
-            Address = patient?.Address,
-            HealthInsuranceNumber = patient?.HealthInsuranceNumber,
-            IsProfileComplete = isComplete
-        };
+        return await BuildUserProfileDtoAsync(user, roles, patient);
     }
 
     public async Task<bool> ChangePasswordAsync(string username, ChangePasswordDto request)
@@ -894,5 +837,75 @@ public class AuthService : IAuthService
         {
             throw new Exception("Mật khẩu phải có độ dài tối thiểu 6 ký tự.");
         }
+    }
+
+    private async Task<UserProfileDto> BuildUserProfileDtoAsync(User user, List<string> roles, Patient? patient = null)
+    {
+        patient ??= await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var staff = await _context.StaffProfiles.Include(s => s.Department).FirstOrDefaultAsync(s => s.UserId == user.Id);
+
+        string resolvedFullName;
+        string? resolvedSpecialty = staff?.Department?.DepartmentName ?? user.Specialty;
+        string? resolvedTitle = staff?.Title ?? user.Title;
+
+        if (staff != null && !string.IsNullOrWhiteSpace(staff.FullName))
+        {
+            resolvedFullName = staff.FullName;
+        }
+        else if (roles.Contains("Admin"))
+        {
+            resolvedFullName = "Quản trị viên Hệ thống";
+            resolvedTitle ??= "Quản trị viên Cấp cao";
+        }
+        else if (roles.Contains("Receptionist"))
+        {
+            resolvedFullName = "Lễ tân Bệnh viện";
+            resolvedTitle ??= "Nhân viên Lễ tân";
+        }
+        else if (roles.Contains("Doctor"))
+        {
+            resolvedFullName = "BS. CKII. Nguyễn Thanh Duy";
+            resolvedTitle ??= "Bác sĩ Điều trị";
+        }
+        else if (patient != null && !string.IsNullOrWhiteSpace(patient.FullName))
+        {
+            resolvedFullName = patient.FullName;
+        }
+        else if (!string.IsNullOrWhiteSpace(user.FullName))
+        {
+            resolvedFullName = user.FullName;
+        }
+        else
+        {
+            resolvedFullName = "Bệnh nhân";
+        }
+
+        bool isComplete = roles.Any(r => r == "Admin" || r == "Doctor" || r == "Receptionist" || r == "Nurse") ||
+            (patient != null &&
+            !string.IsNullOrWhiteSpace(patient.IdentityCardNumber) &&
+            patient.FullName != "Bệnh nhân mới" &&
+            !string.IsNullOrWhiteSpace(patient.FullName) &&
+            !string.IsNullOrWhiteSpace(patient.Address) &&
+            patient.Address != "Chưa cập nhật");
+
+        return new UserProfileDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            FullName = resolvedFullName,
+            Email = user.Email,
+            PhoneNumber = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber : (patient?.EmergencyContactPhone ?? user.Username ?? string.Empty),
+            Specialty = resolvedSpecialty,
+            Title = resolvedTitle,
+            Roles = roles,
+            AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(resolvedFullName)}",
+            PatientCode = patient?.PatientCode,
+            IdentityCardNumber = patient?.IdentityCardNumber,
+            Gender = patient?.Gender,
+            DateOfBirth = patient?.DateOfBirth,
+            Address = patient?.Address,
+            HealthInsuranceNumber = patient?.HealthInsuranceNumber,
+            IsProfileComplete = isComplete
+        };
     }
 }

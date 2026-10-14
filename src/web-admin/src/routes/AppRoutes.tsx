@@ -34,6 +34,20 @@ export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Root path "/" — Phân luồng chính xác theo vai trò ngay từ đầu */}
+      <Route
+        path="/"
+        element={
+          !user ? (
+            <Navigate to="/booking" replace />
+          ) : isStaffOrAdmin ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <Navigate to="/booking" replace />
+          )
+        }
+      />
       
       {/* Public Patient Booking & Information Portal Routes */}
       <Route path="/booking" element={<PatientBookingPage />} />

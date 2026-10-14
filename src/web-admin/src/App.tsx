@@ -4,9 +4,19 @@ import { ConfigProvider, theme } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import { AppRoutes } from './routes/AppRoutes';
 import { useThemeStore } from './store/useThemeStore';
+import { useAuthStore } from './store/useAuthStore';
 
 export const App: React.FC = () => {
   const { isDarkMode } = useThemeStore();
+  const { syncCurrentUser } = useAuthStore();
+
+  // Tự động đồng bộ thông tin hồ sơ người dùng/bệnh nhân từ CSDL Backend khi khởi động
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      syncCurrentUser();
+    }
+  }, [syncCurrentUser]);
 
   useEffect(() => {
     if (isDarkMode) {

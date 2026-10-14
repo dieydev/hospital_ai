@@ -123,10 +123,23 @@ export const LoginPage: React.FC = () => {
       (isCccdValid && (formattedDob || birthYear) && isAddressValid)
     );
 
+    let resolvedFullName = user.fullName || user.hoTen || '';
+    if (!resolvedFullName || resolvedFullName === 'Bệnh nhân' || resolvedFullName.includes('nh\uFFFD') || resolvedFullName.includes('?')) {
+      if (finalRoles.includes('Admin')) {
+        resolvedFullName = 'Quản trị viên Hệ thống';
+      } else if (finalRoles.includes('Receptionist')) {
+        resolvedFullName = 'Nhân viên Lễ tân';
+      } else if (finalRoles.includes('Doctor')) {
+        resolvedFullName = user.title || 'BS. CKII. Nguyễn Thanh Duy';
+      } else {
+        resolvedFullName = isStaffOrAdmin ? 'Cán bộ Y tế' : 'Bệnh nhân';
+      }
+    }
+
     const authUser: UserAccount = {
       id: user.id || `pat-${Date.now()}`,
       tenDangNhap: user.username || user.tenDangNhap || user.phoneNumber || user.soDienThoai,
-      hoTen: user.fullName || user.hoTen || (isStaffOrAdmin ? 'Cán bộ Y tế' : 'Bệnh nhân'),
+      hoTen: resolvedFullName,
       email: user.email,
       soDienThoai: user.phoneNumber || user.soDienThoai || '',
       vaiTro: finalRoles,
@@ -172,6 +185,14 @@ export const LoginPage: React.FC = () => {
 
     const redirectUrl = getRedirectUrl();
 
+    // Danh sách các route công khai an toàn dành cho Bệnh nhân
+    const PATIENT_SAFE_ROUTES = [
+      '/booking', '/dat-lich', '/chuyen-khoa', '/departments',
+      '/bac-si', '/doctors', '/goi-kham', '/packages',
+      '/tin-tuc', '/news', '/huong-dan', '/guide',
+      '/gioi-thieu', '/about',
+    ];
+
     if (isStaffOrAdmin) {
       showToast(
         customMessage || `Đăng nhập thành công! Chào mừng cán bộ ${authUser.hoTen}`,
@@ -180,12 +201,17 @@ export const LoginPage: React.FC = () => {
       // Admin / Staff vào Dashboard
       navigate(redirectUrl && redirectUrl !== '/booking' ? redirectUrl : '/dashboard');
     } else {
-      // Patient vào Cổng đặt khám
+      // Bệnh nhân: CHỈ được phép vào các trang công khai dành cho bệnh nhân
+      // Tuyệt đối KHÔNG được chuyển hướng vào bất kỳ trang quản trị nội bộ nào
       showToast(
         customMessage || `Đăng nhập thành công! Chào mừng Bệnh nhân ${authUser.hoTen}`,
         'success'
       );
-      navigate(redirectUrl || '/booking');
+      const safeRedirect =
+        redirectUrl && PATIENT_SAFE_ROUTES.some((r) => redirectUrl.startsWith(r))
+          ? redirectUrl
+          : '/booking';
+      navigate(safeRedirect);
     }
   };
 

@@ -176,10 +176,15 @@ public class AuthController : ControllerBase
     {
         try
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var username = User.FindFirstValue(ClaimTypes.Name);
-            if (string.IsNullOrEmpty(username)) return Unauthorized();
+            var identifier = !string.IsNullOrEmpty(userId) 
+                ? userId 
+                : (!string.IsNullOrEmpty(username) ? username : null);
 
-            var userProfile = await _authService.GetUserProfileAsync(username);
+            if (string.IsNullOrEmpty(identifier)) return Unauthorized();
+
+            var userProfile = await _authService.GetUserProfileAsync(identifier);
             return Ok(userProfile);
         }
         catch (System.Exception ex)
@@ -196,17 +201,18 @@ public class AuthController : ControllerBase
     {
         try
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var username = User.FindFirstValue(ClaimTypes.Name);
-            if (string.IsNullOrEmpty(username))
-            {
-                username = !string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : null;
-            }
-            if (string.IsNullOrEmpty(username))
+            var identifier = !string.IsNullOrEmpty(userId) 
+                ? userId 
+                : (!string.IsNullOrEmpty(username) ? username : (!string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : null));
+
+            if (string.IsNullOrEmpty(identifier))
             {
                 return Unauthorized(new { message = "Không xác định được danh tính người dùng. Vui lòng đăng nhập lại." });
             }
 
-            var result = await _authService.CompleteProfileAsync(username, request);
+            var result = await _authService.CompleteProfileAsync(identifier, request);
             return Ok(result);
         }
         catch (System.Exception ex)

@@ -671,10 +671,31 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}>
                   <Text strong style={{ fontSize: 13.5, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.25, fontWeight: 700 }}>
-                    {user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy'}
+                    {(!user?.hoTen || user.hoTen === 'Bệnh nhân' || user.hoTen.includes('nh\uFFFD') || user.hoTen.includes('?'))
+                      ? (user?.vaiTro?.includes('Admin')
+                          ? 'Quản trị viên Hệ thống'
+                          : user?.vaiTro?.includes('Receptionist')
+                            ? 'Nhân viên Lễ tân'
+                            : user?.vaiTro?.includes('Doctor')
+                              ? 'BS. CKII. Nguyễn Thanh Duy'
+                              : 'Nhân viên Y tế')
+                      : user.hoTen
+                    }
                   </Text>
                   <Text style={{ fontSize: 11.5, color: isDarkMode ? '#94a3b8' : '#64748b', lineHeight: 1.2 }}>
-                    {user?.chucDanh || 'Bác sĩ Điều trị'} • {user?.chuyenKhoa || 'Khoa Nội'}
+                    {user?.chucDanh
+                      ? user.chucDanh
+                      : user?.vaiTro?.includes('Admin')
+                        ? 'Quản trị viên Hệ thống'
+                        : user?.vaiTro?.includes('Doctor')
+                          ? 'Bác sĩ Điều trị'
+                          : user?.vaiTro?.includes('Receptionist')
+                            ? 'Nhân viên Lễ tân Tiếp nhận'
+                            : user?.vaiTro?.includes('Nurse')
+                              ? 'Điều dưỡng viên'
+                              : 'Nhân viên Y tế'
+                    }
+                    {user?.chuyenKhoa ? ` • ${user.chuyenKhoa}` : ''}
                   </Text>
                 </div>
               </div>

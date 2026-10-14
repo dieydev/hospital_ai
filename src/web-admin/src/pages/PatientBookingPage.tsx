@@ -615,6 +615,12 @@ export const PatientBookingPage: React.FC = () => {
       }
     }
 
+    const profileParam = searchParams.get('profile');
+    if (profileParam === 'open') {
+      setCompleteProfileModalOpen(true);
+      setCompleteProfileAllowClose(true);
+    }
+
     if (deptId || doctorId || packageId || mode) {
       setTimeout(() => {
         const targetEl = document.querySelector('.booking-main-card') || document.querySelector('.booking-target-switch-wrap');
@@ -649,28 +655,21 @@ export const PatientBookingPage: React.FC = () => {
     return true;
   };
 
-  // Tự động kích hoạt Modal Cập nhật Hồ sơ nếu Bệnh nhân chưa đủ thông tin bắt buộc
-  useEffect(() => {
-    if (user && isPatientUser(user)) {
-      if (!isPatientProfileComplete(user)) {
-        setCompleteProfileModalOpen(true);
-        setCompleteProfileAllowClose(true);
-      }
-    }
-  }, [user]);
-
+  // Không tự động bung popup modal gây phiền mỗi lần người dùng mở hoặc xem trang.
+  // Hồ sơ đã lưu sẽ được hiển thị sẵn; modal chỉ mở khi người dùng bấm 'Sửa hồ sơ' hoặc khi bấm Đặt lịch mà thiếu dữ liệu.
+  
   // Auto pre-fill thông tin bệnh nhân nếu đã đăng nhập và đang chọn "Đặt cho bản thân"
   useEffect(() => {
     if (user && bookingForTarget === 'self') {
       form.setFieldsValue({
-        fullName: user.hoTen || user.tenDangNhap,
+        fullName: user.hoTen || user.tenDangNhap || '',
         phoneNumber: user.soDienThoai || '',
         gender: user.gioiTinh || 'Nam',
         birthYear: user.namSinh || (user.ngaySinh ? dayjs(user.ngaySinh).year() : ''),
         identityNumber: user.soCCCD || user.maTheBHYT || '',
       });
     }
-  }, [user, bookingForTarget, form]);
+  }, [user, bookingForTarget, currentStep, form]);
 
   // Tải danh sách các lần khám trước của Bệnh nhân cho chế độ Tái Khám
   useEffect(() => {
