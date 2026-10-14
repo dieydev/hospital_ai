@@ -8,6 +8,7 @@ import {
   Input,
   Button,
   DatePicker,
+  Steps,
   Avatar,
   Tag,
   Radio,
@@ -25,7 +26,6 @@ import {
   ClockCircleOutlined,
   UserOutlined,
   CheckCircleOutlined,
-  CheckOutlined,
   MedicineBoxOutlined,
   PhoneOutlined,
   IdcardOutlined,
@@ -1260,38 +1260,6 @@ export const PatientBookingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 4 Hero Credibility Stats Badges with CountUpNumber */}
-          <div className="hero-stats-row">
-            <div className="hero-stat-badge">
-              <span className="hero-stat-icon">👨‍⚕️</span>
-              <div>
-                <div className="hero-stat-number"><CountUpNumber end={50} suffix="+" duration={1600} /></div>
-                <div className="hero-stat-label">Bác sĩ chuyên khoa</div>
-              </div>
-            </div>
-            <div className="hero-stat-badge">
-              <span className="hero-stat-icon">❤️</span>
-              <div>
-                <div className="hero-stat-number"><CountUpNumber end={200} suffix="k+" duration={2000} /></div>
-                <div className="hero-stat-label">Lượt khám tin tưởng</div>
-              </div>
-            </div>
-            <div className="hero-stat-badge">
-              <span className="hero-stat-icon">⭐</span>
-              <div>
-                <div className="hero-stat-number"><CountUpNumber end={99} suffix="%" duration={1800} /></div>
-                <div className="hero-stat-label">Mức độ hài lòng</div>
-              </div>
-            </div>
-            <div className="hero-stat-badge">
-              <span className="hero-stat-icon">⏱️</span>
-              <div>
-                <div className="hero-stat-number"><CountUpNumber end={15} suffix=" phút" duration={1500} /></div>
-                <div className="hero-stat-label">Tiếp nhận thông minh</div>
-              </div>
-            </div>
-          </div>
-
           {/* Alert cảnh báo chưa đăng nhập (Gọn gàng trong hero) */}
           {!user && (
             <div style={{ maxWidth: 680, margin: '18px auto 0', textAlign: 'left' }}>
@@ -1674,88 +1642,6 @@ export const PatientBookingPage: React.FC = () => {
         </a>
       </section>
 
-      {/* 4 Chế Độ Đặt Khám Nổi (Floating Mode Selector Cards) */}
-      <div className="floating-mode-selector-wrap">
-        <div className="floating-mode-grid">
-          <div
-            className={`floating-mode-card ${bookingMode === 'byDept' ? 'active' : ''}`}
-            onClick={() => {
-              setBookingMode('byDept');
-              setSelectedPackage(null);
-              setCurrentStep(0);
-              const el = document.getElementById('main-booking-flow');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <div className="floating-mode-icon-box">
-              <MedicineBoxOutlined />
-            </div>
-            <div className="floating-mode-text">
-              <span className="floating-mode-title">Theo Chuyên Khoa</span>
-              <span className="floating-mode-desc">9 chuyên khoa mũi nhọn</span>
-            </div>
-          </div>
-
-          <div
-            className={`floating-mode-card ${bookingMode === 'byDoctor' ? 'active' : ''}`}
-            onClick={() => {
-              setBookingMode('byDoctor');
-              setSelectedPackage(null);
-              setCurrentStep(0);
-              const el = document.getElementById('main-booking-flow');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <div className="floating-mode-icon-box">
-              <UserOutlined />
-            </div>
-            <div className="floating-mode-text">
-              <span className="floating-mode-title">Bác Sĩ Chuyên Gia</span>
-              <span className="floating-mode-desc">Đặt đích danh TS, BSCKII</span>
-            </div>
-          </div>
-
-          <div
-            className={`floating-mode-card ${bookingMode === 'byPackage' ? 'active' : ''}`}
-            onClick={() => {
-              setBookingMode('byPackage');
-              setSelectedPackage(null);
-              setCurrentStep(0);
-              const el = document.getElementById('main-booking-flow');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <div className="floating-mode-icon-box">
-              <ThunderboltOutlined />
-            </div>
-            <div className="floating-mode-text">
-              <span className="floating-mode-title">Gói Khám Toàn Diện</span>
-              <span className="floating-mode-desc">Tầm soát chuyên sâu ưu đãi</span>
-            </div>
-          </div>
-
-          <div
-            className={`floating-mode-card ${bookingMode === 'byFollowUp' ? 'active' : ''}`}
-            onClick={() => {
-              setBookingMode('byFollowUp');
-              setSelectedPackage(null);
-              form.setFieldsValue({ appointmentType: 'FollowUp' });
-              setCurrentStep(0);
-              const el = document.getElementById('main-booking-flow');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <div className="floating-mode-icon-box">
-              <HistoryOutlined />
-            </div>
-            <div className="floating-mode-text">
-              <span className="floating-mode-title">Tái Khám Theo Hẹn</span>
-              <span className="floating-mode-desc">Liên kết tự động hồ sơ EMR</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Partner Accreditation Bar (Medpro Style) */}
       <div className="medpro-partner-bar">
         <div className="medpro-partner-label">
@@ -1781,60 +1667,54 @@ export const PatientBookingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Two-Column Asymmetric Workspace (8:4 Layout) */}
-      <main id="main-booking-flow" className="dm-booking-workspace">
-        {/* Left Column (8 cols): Main Flow */}
-        <div className="dm-booking-main-col">
-          <div className="dm-booking-main-card">
-            {/* Modern Stepper Header (4 Steps) */}
-            {currentStep < 4 && (
-              <div className="dm-booking-stepper">
-                <div
-                  className={`dm-stepper-step ${currentStep === 0 || currentStep === 1 ? 'active' : 'completed'}`}
-                  onClick={() => setCurrentStep(0)}
-                  title="Quay lại chọn Dịch vụ & Bác sĩ"
-                >
-                  <div className="dm-stepper-number">
-                    {currentStep > 1 ? <CheckOutlined style={{ fontSize: 13 }} /> : '1'}
-                  </div>
-                  <span className="dm-stepper-title">1. Dịch Vụ & Bác Sĩ</span>
-                </div>
-                <div className={`dm-stepper-line ${currentStep >= 2 ? 'completed' : ''}`} />
-
-                <div
-                  className={`dm-stepper-step ${currentStep === 2 ? 'active' : currentStep > 2 ? 'completed' : ''}`}
-                  onClick={() => {
-                    if (currentStep > 2) setCurrentStep(2);
-                  }}
-                  title="Chọn Ngày & Giờ khám"
-                >
-                  <div className="dm-stepper-number">
-                    {currentStep > 2 ? <CheckOutlined style={{ fontSize: 13 }} /> : '2'}
-                  </div>
-                  <span className="dm-stepper-title">2. Ngày & Khung Giờ</span>
-                </div>
-                <div className={`dm-stepper-line ${currentStep >= 3 ? 'completed' : ''}`} />
-
-                <div
-                  className={`dm-stepper-step ${currentStep === 3 ? 'active' : currentStep > 3 ? 'completed' : ''}`}
-                  onClick={() => {
-                    if (currentStep > 3) setCurrentStep(3);
-                  }}
-                  title="Điền hồ sơ người bệnh"
-                >
-                  <div className="dm-stepper-number">
-                    {currentStep > 3 ? <CheckOutlined style={{ fontSize: 13 }} /> : '3'}
-                  </div>
-                  <span className="dm-stepper-title">3. Hồ Sơ Bệnh Nhân</span>
-                </div>
-                <div className={`dm-stepper-line ${currentStep === 4 ? 'completed' : ''}`} />
-
-                <div className={`dm-stepper-step ${currentStep === 4 ? 'active' : ''}`} title="Xuất phiếu khám QR">
-                  <div className="dm-stepper-number">4</div>
-                  <span className="dm-stepper-title">4. Xác Nhận & Mã QR</span>
-                </div>
+      {/* Main Booking Container */}
+      <main id="main-booking-flow" className="booking-main-card">
+        <Card bordered={false} className="booking-card-inner">
+          {/* Progress Steps Header */}
+          {currentStep < 4 && (
+            <div style={{ marginBottom: 30 }}>
+              {/* Mobile Step Mini Indicator */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 12,
+                }}
+                className="sm:hidden"
+              >
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#0369a1' }}>
+                  Bước {currentStep + 1}/4:{' '}
+                  {currentStep === 0
+                    ? 'Chọn Chuyên Khoa'
+                    : currentStep === 1
+                    ? 'Chọn Bác Sĩ'
+                    : currentStep === 2
+                    ? 'Ngày & Giờ Hẹn'
+                    : 'Thông Tin & Xác Nhận'}
+                </span>
+                <Tag color="cyan" style={{ margin: 0, fontWeight: 700, borderRadius: 12 }}>
+                  Tiến trình {(currentStep + 1) * 25}%
+                </Tag>
               </div>
-            )}
+
+              <Steps
+                current={currentStep}
+                responsive
+                size="small"
+                onChange={(step) => {
+                  if (step > currentStep && !ensureAuthenticated('chuyển bước đặt khám')) return;
+                  if (step < currentStep) setCurrentStep(step);
+                }}
+                items={[
+                  { title: 'Chuyên khoa', icon: <MedicineBoxOutlined /> },
+                  { title: 'Bác sĩ', icon: <UserOutlined /> },
+                  { title: 'Ngày & Giờ', icon: <ClockCircleOutlined /> },
+                  { title: 'Thông tin & Xác nhận', icon: <CheckCircleOutlined /> },
+                ]}
+              />
+            </div>
+          )}
 
           {/* Promotional Banner Advertising Slider (Medpro Style Carousel) */}
           {currentStep === 0 && (
@@ -4134,193 +4014,8 @@ export const PatientBookingPage: React.FC = () => {
               </div>
             </div>
           )}
-          </div>
-        </div>
-
-        {/* Right Column (4 cols / 360px): Sticky Booking Summary Ticket */}
-        {currentStep < 4 && (
-          <aside className="dm-booking-sticky-col">
-            <div className="dm-booking-sticky-ticket">
-              <div className="dm-ticket-header">
-                <span className="dm-ticket-title">PHIẾU TÓM TẮT ĐẶT KHÁM</span>
-                <span className="dm-ticket-badge">Bước {currentStep + 1}/4</span>
-              </div>
-
-              <div className="dm-ticket-item">
-                <span className="dm-ticket-label">Dịch vụ / Gói:</span>
-                <span className="dm-ticket-val">
-                  {selectedPackage ? selectedPackage.name : selectedDept.name}
-                </span>
-              </div>
-
-              <div className="dm-ticket-item">
-                <span className="dm-ticket-label">Vị trí khám:</span>
-                <span className="dm-ticket-val">
-                  {selectedDoctor ? `Phòng ${selectedDoctor.room}` : selectedDept.location}
-                </span>
-              </div>
-
-              <div className="dm-ticket-item">
-                <span className="dm-ticket-label">Bác sĩ phụ trách:</span>
-                <span className="dm-ticket-val">
-                  {selectedDoctor ? selectedDoctor.name : 'BS. Chuyên khoa xếp ca'}
-                </span>
-              </div>
-
-              <div className="dm-ticket-item">
-                <span className="dm-ticket-label">Ngày khám:</span>
-                <span className="dm-ticket-val" style={{ color: '#0369a1' }}>
-                  {dayjs(selectedDate).format('DD/MM/YYYY')}
-                </span>
-              </div>
-
-              <div className="dm-ticket-item">
-                <span className="dm-ticket-label">Khung giờ:</span>
-                <span className="dm-ticket-val" style={{ color: selectedSlot ? '#0284c7' : '#94a3b8' }}>
-                  {selectedSlot || 'Chưa chọn giờ'}
-                </span>
-              </div>
-
-              <div className="dm-ticket-item">
-                <span className="dm-ticket-label">Người khám:</span>
-                <span className="dm-ticket-val">
-                  {bookingForTarget === 'self' ? (user?.hoTen || user?.tenDangNhap || 'Bản thân') : (form.getFieldValue('fullName') || 'Người thân')}
-                </span>
-              </div>
-
-              {/* Perforation Line with Ticket Punches */}
-              <div className="dm-ticket-perforation">
-                <div className="dm-ticket-punch dm-ticket-punch-left" />
-                <div className="dm-ticket-punch dm-ticket-punch-right" />
-              </div>
-
-              {(() => {
-                const pricing = calculatePricing();
-                return (
-                  <div>
-                    <div className="dm-ticket-item" style={{ marginBottom: 6 }}>
-                      <span className="dm-ticket-label">Giá niêm yết:</span>
-                      <span>{pricing.basePrice.toLocaleString('vi-VN')} đ</span>
-                    </div>
-
-                    <div className="dm-ticket-item" style={{ marginBottom: 12 }}>
-                      <span className="dm-ticket-label">Hỗ trợ BHYT:</span>
-                      <span style={{ color: hasBhyt ? '#16a34a' : '#94a3b8', fontWeight: 600 }}>
-                        {hasBhyt ? `-${pricing.effectiveBhyt.toLocaleString('vi-VN')} đ` : '0 đ'}
-                      </span>
-                    </div>
-
-                    <div className="dm-ticket-total-wrap">
-                      <span style={{ fontWeight: 800, fontSize: 13.5, color: '#0f172a' }}>TỔNG TIỀN DỰ KIẾN:</span>
-                      <span className="dm-ticket-total-price">
-                        {pricing.finalTotal.toLocaleString('vi-VN')} đ
-                      </span>
-                    </div>
-
-                    <div className="dm-ticket-kiosk-notice">
-                      🏥 <strong>Tiếp nhận & Thanh toán tại viện:</strong> Quét QR tại Kiosk tự động sảnh tầng 1 hoặc thanh toán trực tiếp tại quầy tiếp tân.
-                    </div>
-
-                    {/* Primary CTA Action Button */}
-                    {(currentStep === 0 || currentStep === 1) && (
-                      <button
-                        type="button"
-                        className="dm-ticket-cta-btn"
-                        onClick={() => {
-                          setCurrentStep(2);
-                          const el = document.getElementById('main-booking-flow');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                      >
-                        <span>Tiếp Tục Chọn Giờ Khám</span>
-                        <ArrowRightOutlined />
-                      </button>
-                    )}
-
-                    {currentStep === 2 && (
-                      <button
-                        type="button"
-                        className="dm-ticket-cta-btn"
-                        disabled={!selectedSlot}
-                        onClick={() => {
-                          if (!selectedSlot) {
-                            showToast('Vui lòng chọn một khung giờ khám còn chỗ!', 'warning');
-                            return;
-                          }
-                          if (!ensureAuthenticated('nhập hồ sơ bệnh nhân')) return;
-                          setCurrentStep(3);
-                          const el = document.getElementById('main-booking-flow');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                      >
-                        <span>Nhập Hồ Sơ Bệnh Nhân</span>
-                        <ArrowRightOutlined />
-                      </button>
-                    )}
-
-                    {currentStep === 3 && (
-                      <button
-                        type="button"
-                        className="dm-ticket-cta-btn"
-                        disabled={bookingLoading}
-                        onClick={handleCompleteBooking}
-                      >
-                        <span>{bookingLoading ? 'Đang Khởi Tạo Phiếu...' : 'Xác Nhận & Lấy Phiếu QR'}</span>
-                        <CheckCircleOutlined />
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          </aside>
-        )}
+        </Card>
       </main>
-
-      {/* Mobile Fixed Bottom Bar (< 992px) */}
-      {currentStep < 4 && (
-        <div className="dm-mobile-booking-bar">
-          <div style={{ flex: 1, marginRight: 12 }}>
-            <div style={{ fontSize: 11, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {selectedPackage ? selectedPackage.name : selectedDept.name} • {selectedSlot || 'Chưa chọn giờ'}
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: '#0284c7', fontFamily: 'Sora, sans-serif' }}>
-              {calculatePricing().finalTotal.toLocaleString('vi-VN')} đ
-            </div>
-          </div>
-          <Button
-            type="primary"
-            style={{
-              height: 42,
-              borderRadius: 10,
-              backgroundColor: '#0284c7',
-              borderColor: '#0284c7',
-              fontWeight: 700,
-              fontFamily: 'Sora, sans-serif',
-            }}
-            loading={currentStep === 3 && bookingLoading}
-            onClick={() => {
-              if (currentStep === 0 || currentStep === 1) setCurrentStep(2);
-              else if (currentStep === 2) {
-                if (!selectedSlot) {
-                  showToast('Vui lòng chọn khung giờ khám!', 'warning');
-                  return;
-                }
-                if (!ensureAuthenticated('nhập hồ sơ bệnh nhân')) return;
-                setCurrentStep(3);
-              } else if (currentStep === 3) {
-                handleCompleteBooking();
-              }
-            }}
-          >
-            {currentStep === 0 || currentStep === 1
-              ? 'Chọn Giờ'
-              : currentStep === 2
-              ? 'Nhập Hồ Sơ'
-              : 'Lấy Phiếu QR'}
-          </Button>
-        </div>
-      )}
 
       {/* KHỐI QUY TRÌNH TIẾP NHẬN BỆNH NHÂN 3 BƯỚC KHÔNG CHỜ ĐỢI */}
       <section className="patient-journey-wrap" style={{ maxWidth: 1200, margin: '36px auto 30px', padding: '32px 24px' }}>
