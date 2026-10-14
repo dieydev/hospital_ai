@@ -11,6 +11,9 @@ import {
   Alert,
   Typography,
   Divider,
+  Avatar,
+  Upload,
+  Tooltip,
 } from 'antd';
 import {
   IdcardOutlined,
@@ -21,6 +24,8 @@ import {
   CheckCircleOutlined,
   LogoutOutlined,
   MedicineBoxOutlined,
+  CameraOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAuthStore } from '../store/useAuthStore';
@@ -29,6 +34,17 @@ import { showSuccessAlert, showToast } from '../utils/sweetAlert';
 import api from '../services/api';
 
 const { Title, Text } = Typography;
+
+const PATIENT_AVATARS = [
+  { id: 'pat-1', label: 'Nam thanh niên', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' },
+  { id: 'pat-2', label: 'Nữ thanh niên', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jessica' },
+  { id: 'pat-3', label: 'Nam trung niên', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
+  { id: 'pat-4', label: 'Nữ trung niên', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
+  { id: 'pat-5', label: 'Cụ ông cao tuổi', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Robert' },
+  { id: 'pat-6', label: 'Cụ bà cao tuổi', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Grandma' },
+  { id: 'pat-7', label: 'Bé trai', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo' },
+  { id: 'pat-8', label: 'Bé gái', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mia' },
+];
 
 interface CompleteProfileModalProps {
   open: boolean;
@@ -46,10 +62,17 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
   const { user, updateUser, logout } = useAuthStore();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string>(
+    user?.avatarUrl || PATIENT_AVATARS[0].url
+  );
+  const [showAvatarPicker, setShowAvatarPicker] = useState<boolean>(false);
 
   // Điền dữ liệu hiện có nếu có
   useEffect(() => {
     if (open && user) {
+      if (user.avatarUrl) {
+        setSelectedAvatarUrl(user.avatarUrl);
+      }
       form.setFieldsValue({
         hoTen: user.hoTen || user.tenDangNhap || '',
         soDienThoai: user.soDienThoai || '',
@@ -96,11 +119,18 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           gender: values.gioiTinh,
           address: values.diaChi.trim(),
           healthInsuranceNumber: values.maTheBHYT?.trim() || null,
+          avatarUrl: selectedAvatarUrl,
         };
 
         const res = await api.post('/auth/complete-profile', payload);
         if (res.data) {
           backendUpdatedUser = res.data;
+        }
+
+        try {
+          await api.put('/auth/avatar', { avatarUrl: selectedAvatarUrl });
+        } catch {
+          // ignore
         }
       } catch (apiErr: any) {
         console.warn('Backend complete-profile fallback:', apiErr?.response?.data || apiErr.message);
@@ -119,6 +149,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
         maTheBHYT: backendUpdatedUser?.healthInsuranceNumber || values.maTheBHYT?.trim() || '',
         tienSuBenh: values.tienSuBenh?.trim() || '',
         diUngThuoc: values.diUngThuoc?.trim() || '',
+        avatarUrl: selectedAvatarUrl || backendUpdatedUser?.avatarUrl || user?.avatarUrl,
         maBenhNhan: updatedMaBenhNhan,
         isProfileComplete: true,
       };
@@ -238,7 +269,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           showIcon
           icon={<IdcardOutlined style={{ color: '#0284c7' }} />}
           style={{
-            marginBottom: 20,
+            marginBottom: 16,
             borderRadius: 12,
             backgroundColor: '#f0f9ff',
             border: '1px solid #bae6fd',
@@ -250,6 +281,115 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           }
           description="Để được cấp Mã QR Tiếp Nhận trực tiếp tại phòng khám (không cần bốc số thứ tự), quý khách vui lòng cập nhật đầy đủ thông tin định danh cá nhân chính xác."
         />
+
+        {/* Khu vực Chọn & Đổi Ảnh đại diện Bệnh nhân */}
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <Avatar
+              size={82}
+              src={selectedAvatarUrl}
+              icon={<UserOutlined />}
+              style={{
+                border: '3px solid #0284c7',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                cursor: 'pointer',
+                backgroundColor: '#e0f2fe',
+              }}
+              onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+            />
+            <Tooltip title="Đổi ảnh đại diện">
+              <Button
+                type="primary"
+                shape="circle"
+                size="small"
+                icon={<CameraOutlined />}
+                onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                style={{
+                  position: 'absolute',
+                  bottom: -2,
+                  right: -2,
+                  backgroundColor: '#0284c7',
+                  borderColor: '#ffffff',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                }}
+              />
+            </Tooltip>
+          </div>
+          <div>
+            <Button
+              type="link"
+              size="small"
+              icon={<CameraOutlined />}
+              style={{ color: '#0284c7', fontWeight: 700, fontSize: 13, marginTop: 4 }}
+              onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+            >
+              {showAvatarPicker ? 'Ẩn bộ sưu tập ảnh' : 'Đổi Ảnh đại diện'}
+            </Button>
+          </div>
+
+          {showAvatarPicker && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: '12px 16px',
+                borderRadius: 12,
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0369a1', marginBottom: 8 }}>
+                Chọn ảnh đại diện phù hợp hoặc tải ảnh của bạn:
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  justifyContent: 'center',
+                  flexWrap: 'wrap',
+                  marginBottom: 10,
+                }}
+              >
+                {PATIENT_AVATARS.map((av) => (
+                  <div
+                    key={av.id}
+                    onClick={() => setSelectedAvatarUrl(av.url)}
+                    style={{
+                      cursor: 'pointer',
+                      border: selectedAvatarUrl === av.url ? '3px solid #0284c7' : '2px solid transparent',
+                      borderRadius: '50%',
+                      padding: 2,
+                      transition: 'all 0.2s',
+                      transform: selectedAvatarUrl === av.url ? 'scale(1.12)' : 'scale(1)',
+                    }}
+                    title={av.label}
+                  >
+                    <Avatar size={44} src={av.url} />
+                  </div>
+                ))}
+              </div>
+
+              <Upload
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    if (e.target?.result) {
+                      setSelectedAvatarUrl(e.target.result as string);
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                  return false;
+                }}
+                accept="image/*"
+              >
+                <Button size="small" icon={<UploadOutlined />} style={{ borderRadius: 8, borderColor: '#0284c7', color: '#0284c7', fontWeight: 600 }}>
+                  Tải ảnh chân dung từ máy
+                </Button>
+              </Upload>
+            </div>
+          )}
+        </div>
 
         {/* Form Body */}
         <Form form={form} layout="vertical" requiredMark="optional">

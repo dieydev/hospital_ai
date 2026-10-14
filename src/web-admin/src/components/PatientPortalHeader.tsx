@@ -21,6 +21,7 @@ import {
   FileTextOutlined,
   RightOutlined,
   CheckCircleOutlined,
+  CameraOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { ElderlyModeWidget, ELDERLY_MODE_STORAGE_KEY } from './ElderlyModeWidget';
@@ -153,6 +154,20 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
         <div style={{ padding: '2px 0' }}>
           <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>Hồ sơ của tôi</div>
           <div style={{ fontSize: 11.5, color: '#64748b' }}>Cập nhật CCCD, Ngày sinh, Địa chỉ & BHYT</div>
+        </div>
+      ),
+      onClick: () => {
+        if (onOpenProfile) onOpenProfile();
+        else navigate('/booking?profile=open');
+      },
+    },
+    {
+      key: 'change-avatar',
+      icon: <CameraOutlined style={{ fontSize: 16, color: '#0284c7' }} />,
+      label: (
+        <div style={{ padding: '2px 0' }}>
+          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>Đổi ảnh đại diện</div>
+          <div style={{ fontSize: 11.5, color: '#64748b' }}>Chọn avatar mẫu hoặc tải ảnh chân dung</div>
         </div>
       ),
       onClick: () => {

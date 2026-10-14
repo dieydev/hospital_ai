@@ -97,6 +97,12 @@ public class CompleteProfileRequestDto
     public string? EmergencyContactName { get; set; }
     public string? EmergencyContactPhone { get; set; }
     public string? EmergencyContactRelation { get; set; }
+    public string? AvatarUrl { get; set; }
+}
+
+public class UpdateAvatarRequestDto
+{
+    public string AvatarUrl { get; set; } = string.Empty;
 }
 
 public class ChangePasswordDto

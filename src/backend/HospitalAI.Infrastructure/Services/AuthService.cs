@@ -578,6 +578,10 @@ public class AuthService : IAuthService
         {
             user.PhoneNumber = request.PhoneNumber.Trim();
         }
+        if (!string.IsNullOrWhiteSpace(request.AvatarUrl))
+        {
+            user.AvatarUrl = request.AvatarUrl.Trim();
+        }
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
 
@@ -632,6 +636,30 @@ public class AuthService : IAuthService
         }
 
         user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdateAvatarAsync(string userIdOrUsername, string avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl)) return false;
+
+        User? user = null;
+        if (Guid.TryParse(userIdOrUsername, out var parsedGuid))
+        {
+            user = await _context.Users.FirstOrDefaultAsync(u => u.Id == parsedGuid);
+        }
+
+        if (user == null)
+        {
+            var phone = userIdOrUsername.Trim().Replace(" ", "").Replace("-", "");
+            user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == userIdOrUsername.ToLower() || u.PhoneNumber == phone || u.Username == phone);
+        }
+
+        if (user == null) return false;
+
+        user.AvatarUrl = avatarUrl.Trim();
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
         return true;

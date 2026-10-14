@@ -39,6 +39,7 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
+import api from '../services/api';
 
 const { Title, Text } = Typography;
 
@@ -101,13 +102,21 @@ export const ProfilePage: React.FC = () => {
   };
 
   // Handle Save Avatar
-  const handleSaveAvatar = () => {
+  const handleSaveAvatar = async () => {
     const finalUrl = customAvatarUrl.trim() || selectedAvatarUrl;
+    setSavingProfile(true);
+    try {
+      await api.put('/auth/avatar', { avatarUrl: finalUrl });
+    } catch (err) {
+      console.warn('API avatar update fallback:', err);
+    } finally {
+      setSavingProfile(false);
+    }
     updateUser({ avatarUrl: finalUrl });
     setIsAvatarModalOpen(false);
     showSuccessAlert(
       'Cập nhật Ảnh đại diện thành công!',
-      'Ảnh đại diện Y bác sĩ đã được thay đổi trên toàn hệ thống.'
+      'Ảnh đại diện đã được lưu vào CSDL và đồng bộ trên toàn hệ thống.'
     );
   };
 

@@ -16,5 +16,6 @@ public interface IAuthService
     Task<UserProfileDto> GetUserProfileAsync(string username);
     Task<bool> ChangePasswordAsync(string username, ChangePasswordDto request);
     Task<bool> CheckPhoneExistsAsync(string phoneNumber);
+    Task<bool> UpdateAvatarAsync(string userIdOrUsername, string avatarUrl);
     Task<List<DoctorDto>> GetDoctorsAsync();
 }

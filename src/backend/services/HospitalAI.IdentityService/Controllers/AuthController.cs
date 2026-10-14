@@ -231,6 +231,34 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Cập nhật ảnh đại diện người dùng vào CSDL SQL Server
+    /// </summary>
+    [HttpPut("avatar")]
+    [Authorize]
+    public async Task<IActionResult> UpdateAvatar([FromBody] UpdateAvatarRequestDto request)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var username = User.FindFirstValue(ClaimTypes.Name);
+            var identifier = !string.IsNullOrEmpty(userId) ? userId : username;
+
+            if (string.IsNullOrEmpty(identifier)) return Unauthorized();
+
+            var success = await _authService.UpdateAvatarAsync(identifier, request.AvatarUrl);
+            if (success)
+            {
+                return Ok(new { message = "Cập nhật ảnh đại diện thành công!", avatarUrl = request.AvatarUrl });
+            }
+            return BadRequest(new { message = "Cập nhật ảnh đại diện thất bại." });
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Đổi mật khẩu tài khoản
     /// </summary>
     [HttpPost("change-password")]
