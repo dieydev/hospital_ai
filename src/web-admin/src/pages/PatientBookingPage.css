@@ -193,9 +193,9 @@
 /* Left & Right Doctor Flanks */
 .medpro-doctor-flank {
   position: absolute;
-  bottom: 110px;
-  height: 385px;
-  max-width: 330px;
+  bottom: 80px;
+  height: 445px;
+  max-width: 385px;
   z-index: 2;
   pointer-events: none;
   display: flex;
@@ -204,33 +204,38 @@
 }
 
 .medpro-doctor-flank.flank-left {
-  left: calc(50% - 630px);
+  left: calc(50% - 660px);
 }
 
 .medpro-doctor-flank.flank-right {
-  right: calc(50% - 590px);
+  right: calc(50% - 610px);
 }
 
 @media (max-width: 1440px) {
+  .medpro-doctor-flank {
+    height: 395px;
+    max-width: 340px;
+    bottom: 95px;
+  }
   .medpro-doctor-flank.flank-left {
-    left: calc(50% - 570px);
+    left: calc(50% - 590px);
   }
   .medpro-doctor-flank.flank-right {
-    right: calc(50% - 540px);
+    right: calc(50% - 550px);
   }
 }
 
 @media (max-width: 1250px) {
   .medpro-doctor-flank {
-    height: 310px;
-    max-width: 250px;
-    bottom: 135px;
+    height: 330px;
+    max-width: 280px;
+    bottom: 120px;
   }
   .medpro-doctor-flank.flank-left {
-    left: -10px;
+    left: -15px;
   }
   .medpro-doctor-flank.flank-right {
-    right: -10px;
+    right: -15px;
   }
 }
 
