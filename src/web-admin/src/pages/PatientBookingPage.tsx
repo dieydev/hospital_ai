@@ -1169,7 +1169,7 @@ export const PatientBookingPage: React.FC = () => {
         {/* Left Flank: Friendly Female Doctor */}
         <div className="medpro-doctor-flank flank-left">
           <img
-            src="/female_doctor_hero.jpg"
+            src="/female_doctor_hero.png"
             alt="Bác sĩ Nữ D-Medical"
             className="medpro-doctor-img"
           />
@@ -1178,7 +1178,7 @@ export const PatientBookingPage: React.FC = () => {
         {/* Right Flank: Friendly Male Doctor Pointing */}
         <div className="medpro-doctor-flank flank-right">
           <img
-            src="/male_doctor_hero.jpg"
+            src="/male_doctor_hero.png"
             alt="Bác sĩ Chuyên Khoa D-Medical"
             className="medpro-doctor-img"
           />

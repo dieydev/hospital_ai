@@ -193,41 +193,48 @@
 /* Left & Right Doctor Flanks */
 .medpro-doctor-flank {
   position: absolute;
-  bottom: 155px;
-  height: 310px;
-  max-width: 280px;
+  bottom: 110px;
+  height: 385px;
+  max-width: 330px;
   z-index: 2;
   pointer-events: none;
   display: flex;
   align-items: flex-end;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .medpro-doctor-flank.flank-left {
-  left: calc(50% - 660px);
+  left: calc(50% - 630px);
 }
 
 .medpro-doctor-flank.flank-right {
-  right: calc(50% - 660px);
+  right: calc(50% - 590px);
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1440px) {
   .medpro-doctor-flank.flank-left {
-    left: 10px;
+    left: calc(50% - 570px);
   }
   .medpro-doctor-flank.flank-right {
-    right: 10px;
+    right: calc(50% - 540px);
   }
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1250px) {
   .medpro-doctor-flank {
-    height: 240px;
-    max-width: 200px;
-    bottom: 175px;
+    height: 310px;
+    max-width: 250px;
+    bottom: 135px;
+  }
+  .medpro-doctor-flank.flank-left {
+    left: -10px;
+  }
+  .medpro-doctor-flank.flank-right {
+    right: -10px;
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 992px) {
   .medpro-doctor-flank {
     display: none;
   }
@@ -237,10 +244,9 @@
   height: 100%;
   width: auto;
   object-fit: contain;
-  mix-blend-mode: multiply;
-  filter: drop-shadow(0 6px 16px rgba(2, 132, 199, 0.12));
-  mask-image: linear-gradient(to top, transparent 0%, black 14%, black 100%);
-  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 14%, black 100%);
+  filter: drop-shadow(0 14px 28px rgba(2, 132, 199, 0.16));
+  mask-image: linear-gradient(to top, transparent 0%, black 8%, black 100%);
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 8%, black 100%);
 }
 
 /* Center Content */
