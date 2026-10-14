@@ -2578,3 +2578,617 @@ body.elderly-mode .qr-ticket-wrapper {
   }
 }
 
+/* ==========================================================================
+   CLEAN MEDICAL UI REFACTOR: TWO-COLUMN ASYMMETRIC WORKSPACE & DESIGN TOKENS
+   Strict Medical Palette: #0284c7 (Sky 600) | #0369a1 (Sky 700) | #bae6fd (Sky 200)
+   ========================================================================== */
+
+/* Topbar Quick QR Lookup Button */
+.topbar-lookup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.topbar-lookup-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Two-Column Asymmetric Workspace (Ratio 8:4 / 1fr 360px) */
+.dm-booking-workspace {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 28px;
+  max-width: 1320px;
+  margin: 32px auto 64px;
+  padding: 0 24px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .dm-booking-workspace {
+    grid-template-columns: 1fr;
+    margin: 20px auto 100px;
+    padding: 0 16px;
+  }
+}
+
+/* Left Column: Main Flow Card Container */
+.dm-booking-main-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(2, 132, 199, 0.06);
+  padding: 28px 32px;
+  transition: box-shadow 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .dm-booking-main-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+}
+
+/* Modern Stepper Header (4 Steps: Services -> Time -> Patient -> Pass) */
+.dm-booking-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dm-stepper-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.dm-stepper-number {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 2px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.dm-stepper-step.active .dm-stepper-number {
+  background-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 3px 12px rgba(2, 132, 199, 0.35);
+  border-color: #e0f2fe;
+}
+
+.dm-stepper-step.completed .dm-stepper-number {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.dm-stepper-title {
+  font-family: 'Sora', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.dm-stepper-step.active .dm-stepper-title {
+  color: #0369a1;
+  font-weight: 700;
+}
+
+.dm-stepper-step.completed .dm-stepper-title {
+  color: #0f172a;
+}
+
+.dm-stepper-line {
+  flex: 1;
+  height: 2px;
+  background-color: #e2e8f0;
+  margin: 0 12px;
+  border-radius: 2px;
+}
+
+.dm-stepper-line.completed {
+  background-color: #10b981;
+}
+
+@media (max-width: 640px) {
+  .dm-stepper-title {
+    display: none;
+  }
+}
+
+/* Right Column: Sticky Summary Ticket */
+.dm-booking-sticky-ticket {
+  position: sticky;
+  top: 96px;
+  background: #ffffff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(2, 132, 199, 0.1);
+  padding: 24px;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.dm-ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.dm-ticket-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dm-ticket-badge {
+  background-color: #e0f2fe;
+  color: #0284c7;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.dm-ticket-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.dm-ticket-label {
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.dm-ticket-val {
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+  max-width: 65%;
+}
+
+.dm-ticket-perforation {
+  position: relative;
+  border-top: 2px dashed #bae6fd;
+  margin: 18px -24px;
+  padding: 16px 24px 0;
+}
+
+.dm-ticket-punch-left,
+.dm-ticket-punch-right {
+  position: absolute;
+  top: -12px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  border-radius: 50%;
+  border: 1.5px solid #bae6fd;
+}
+
+.dm-ticket-punch-left {
+  left: -13px;
+}
+
+.dm-ticket-punch-right {
+  right: -13px;
+}
+
+.dm-ticket-total-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.dm-ticket-total-price {
+  font-family: 'Sora', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0284c7;
+}
+
+.dm-ticket-kiosk-notice {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.5;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.dm-ticket-cta-btn {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  background-color: #0284c7;
+  border: none;
+  color: #ffffff;
+  font-family: 'Sora', sans-serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+  transition: all 0.2s ease;
+}
+
+.dm-ticket-cta-btn:hover:not(:disabled) {
+  background-color: #0369a1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+}
+
+.dm-ticket-cta-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Time Slots Grid and Pills */
+.dm-timeslot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.dm-timeslot-btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid #bae6fd;
+  background-color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: #0f172a;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  position: relative;
+  user-select: none;
+}
+
+.dm-timeslot-btn:hover:not(.disabled) {
+  border-color: #0284c7;
+  background-color: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+}
+
+.dm-timeslot-btn.active {
+  border-color: #0284c7;
+  background-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.28);
+}
+
+.dm-timeslot-btn.active .dm-timeslot-quota {
+  color: #e0f2fe;
+}
+
+.dm-timeslot-btn.disabled {
+  opacity: 0.45;
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+
+.dm-timeslot-quota {
+  font-size: 11px;
+  color: #0284c7;
+  font-weight: 500;
+}
+
+/* Digital Medical Boarding Pass (Step 4 / Confirmation) */
+.dm-boarding-pass {
+  background: #ffffff;
+  border: 2px solid #bae6fd;
+  border-radius: 24px;
+  box-shadow: 0 16px 40px rgba(2, 132, 199, 0.15);
+  overflow: hidden;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.dm-boarding-pass-header {
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+  color: #ffffff;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dm-boarding-pass-body {
+  padding: 28px;
+  background: #ffffff;
+}
+
+.dm-boarding-qr-box {
+  background: #f0f9ff;
+  border: 2px solid #bae6fd;
+  border-radius: 18px;
+  padding: 18px;
+  display: inline-block;
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.1);
+}
+
+/* Mobile Fixed Bottom Bar (< 992px) */
+.dm-mobile-booking-bar {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .dm-mobile-booking-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-top: 1.5px solid #bae6fd;
+    padding: 12px 18px;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.1);
+    z-index: 980;
+  }
+  .dm-booking-sticky-ticket {
+    display: none;
+  }
+}
+
+/* Elderly Mode Specific Styles */
+body.elderly-mode .dm-stepper-title {
+  font-size: 15px !important;
+}
+body.elderly-mode .dm-timeslot-btn {
+  padding: 14px 16px !important;
+  font-size: 15px !important;
+  border-width: 2px !important;
+}
+body.elderly-mode .dm-ticket-title {
+  font-size: 17px !important;
+}
+body.elderly-mode .dm-ticket-val {
+  font-size: 15px !important;
+}
+body.elderly-mode .dm-ticket-cta-btn {
+  height: 52px !important;
+  font-size: 16px !important;
+}
+
+/* ==========================================================================
+   Hero Stats Row & Floating Mode Selector Cards
+   ========================================================================== */
+.hero-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.hero-stat-badge {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 14px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+  transition: all 0.25s ease;
+}
+
+.hero-stat-badge:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
+}
+
+.hero-stat-icon {
+  font-size: 20px;
+  color: #bae6fd;
+}
+
+.hero-stat-number {
+  font-family: 'Sora', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.hero-stat-label {
+  font-size: 11.5px;
+  color: #e0f2fe;
+  font-weight: 500;
+}
+
+/* Floating Mode Selector (4 cards floating at Hero bottom) */
+.floating-mode-selector-wrap {
+  position: relative;
+  max-width: 1200px;
+  margin: -36px auto 30px;
+  padding: 0 20px;
+  z-index: 20;
+}
+
+.floating-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 992px) {
+  .floating-mode-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .floating-mode-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.floating-mode-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.08);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.floating-mode-card:hover {
+  border-color: #0284c7;
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(2, 132, 199, 0.16);
+}
+
+.floating-mode-card.active {
+  background: #f0f9ff;
+  border-color: #0284c7;
+  border-width: 2px;
+  box-shadow: 0 10px 28px rgba(2, 132, 199, 0.2);
+}
+
+.floating-mode-card.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  background: #0284c7;
+}
+
+.floating-mode-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #f0f9ff;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.floating-mode-card.active .floating-mode-icon-box {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.floating-mode-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-mode-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.floating-mode-card.active .floating-mode-title {
+  color: #0369a1;
+}
+
+.floating-mode-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+/* Quick tags in Omnibar */
+.hero-quick-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+.hero-quick-tag {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hero-quick-tag:hover {
+  background: #ffffff;
+  color: #0284c7;
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+
+

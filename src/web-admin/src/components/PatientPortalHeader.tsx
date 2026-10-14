@@ -4,7 +4,6 @@ import { Avatar, Button, Dropdown, Tag, Drawer, Divider, Switch } from 'antd';
 import {
   PhoneOutlined,
   ClockCircleOutlined,
-  EnvironmentOutlined,
   QrcodeOutlined,
   UserOutlined,
   DownOutlined,
@@ -240,13 +239,19 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
             </div>
           </div>
           <div className="booking-top-bar-right">
-            <div className="booking-top-bar-item hide-on-mobile">
-              <EnvironmentOutlined />
-              <span>215 Hồng Bàng, P.11, Q.5, TP.HCM</span>
-            </div>
-            <Tag color="cyan" className="hide-on-tablet-mobile" style={{ margin: 0, fontWeight: 700, borderRadius: 12, fontSize: 11 }}>
-              <QrcodeOutlined /> Đặt Hẹn Trước • Khám Đúng Giờ
-            </Tag>
+            <button
+              type="button"
+              className="topbar-lookup-btn"
+              onClick={() => {
+                if (onOpenLookup) onOpenLookup();
+                else navigate('/booking?lookup=open');
+              }}
+              title="Tra cứu phiếu tiếp nhận QR đã đặt"
+            >
+              <QrcodeOutlined style={{ fontSize: 13 }} />
+              <span>Tra cứu phiếu hẹn QR</span>
+            </button>
+
             {/* Nút Bật/Tắt Chế Độ Chữ To Cho Người Cao Tuổi trên Topbar */}
             <button
               type="button"
