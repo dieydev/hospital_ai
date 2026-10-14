@@ -1156,7 +1156,7 @@ export const PatientBookingPage: React.FC = () => {
         </div>
         <div className="marquee-content-wrap">
           <div className="marquee-track">
-            🔔 Kính chào Quý người bệnh và thân nhân: Bệnh viện Đa khoa D-Medical tiếp nhận khám chữa bệnh tất cả các ngày trong tuần (kể cả Thứ 7 & Chủ Nhật) • Quý khách vui lòng đặt hẹn trước để được vào khám đúng giờ, không lo xếp hàng chờ đợi • Hỗ trợ BHYT thông tuyến toàn quốc và bảo lãnh viện phí trực tiếp • Tổng đài chăm sóc và hỗ trợ người bệnh 24/7: 1900 6868 • Cấp cứu khẩn cấp: 1900 8888.
+            🔔 Khám bệnh cả tuần (kể cả thứ Bảy, Chủ nhật) • Đặt hẹn trước để <strong>vào khám đúng giờ</strong> • Hỗ trợ BHYT toàn quốc • Tổng đài: <strong>1900 6868</strong> • Cấp cứu: <strong>1900 8888</strong>.
           </div>
         </div>
       </div>
@@ -1187,7 +1187,7 @@ export const PatientBookingPage: React.FC = () => {
         {/* Center Content Container */}
         <div className="medpro-hero-center-content">
           <h1 className="medpro-hero-main-title">
-            Kết nối Người Dân với Cơ sở & Dịch vụ Y tế hàng đầu
+            Đặt khám nhanh, vào khám đúng giờ
           </h1>
 
           {/* Omnibar Rounded Pill Search */}
@@ -1195,7 +1195,7 @@ export const PatientBookingPage: React.FC = () => {
             <SearchOutlined className="medpro-search-icon" />
             <Input
               className="medpro-search-input"
-              placeholder="Tìm kiếm chuyên khoa, bác sĩ, gói khám, triệu chứng..."
+              placeholder="Tìm chuyên khoa, bác sĩ, triệu chứng..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onPressEnter={() => {
@@ -1220,14 +1220,14 @@ export const PatientBookingPage: React.FC = () => {
 
           {/* Quick Suggestion Search Tags */}
           <div className="medpro-quick-tags-wrap">
-            <span className="medpro-quick-tag-label">Gợi ý tìm nhanh:</span>
+            <span className="medpro-quick-tag-label">Gợi ý:</span>
             {[
-              { label: 'Tim Mạch', query: 'tim mạch', mode: 'byDept' },
-              { label: 'Tiêu Hóa & Gan', query: 'tiêu hóa', mode: 'byDept' },
-              { label: 'Nhi Khoa', query: 'nhi', mode: 'byDept' },
-              { label: 'Gói Tổng Quát', query: 'tổng quát', mode: 'byPackage' },
-              { label: 'BS. Chuyên Khoa II', query: 'CKII', mode: 'byDoctor' },
-              { label: 'Tái Khám Theo Hẹn', query: '', mode: 'byFollowUp' },
+              { label: 'Tim mạch', query: 'tim mạch', mode: 'byDept' },
+              { label: 'Tiêu hóa - Gan', query: 'tiêu hóa', mode: 'byDept' },
+              { label: 'Nhi khoa', query: 'nhi', mode: 'byDept' },
+              { label: 'Khám tổng quát', query: 'tổng quát', mode: 'byPackage' },
+              { label: 'Bác sĩ CKII', query: 'CKII', mode: 'byDoctor' },
+              { label: 'Tái khám', query: '', mode: 'byFollowUp' },
             ].map((tag, idx) => (
               <span
                 key={idx}
@@ -1248,15 +1248,15 @@ export const PatientBookingPage: React.FC = () => {
           <div className="medpro-hero-bullet-list">
             <div className="medpro-hero-bullet-item">
               <span className="medpro-bullet-check">✔</span>
-              <span><strong>Đặt khám nhanh</strong> - Lấy số thứ tự trực tuyến - Tư vấn sức khỏe từ xa</span>
+              <span><strong>Lấy số trực tuyến</strong>, không cần xếp hàng</span>
             </div>
             <div className="medpro-hero-bullet-item">
               <span className="medpro-bullet-check">✔</span>
-              <span><strong>Đặt khám theo giờ</strong> - Đặt càng sớm để có thể có số thứ tự thấp nhất</span>
+              <span><strong>Chọn giờ khám</strong> linh hoạt theo lịch cá nhân</span>
             </div>
             <div className="medpro-hero-bullet-item">
               <span className="medpro-bullet-check">✔</span>
-              <span><strong>Được hoàn tiền khi hủy khám</strong> - Có cơ hội nhận ưu đãi hoàn tiền</span>
+              <span><strong>Hỗ trợ đổi hủy</strong> lịch hẹn miễn phí trước giờ khám</span>
             </div>
           </div>
 
@@ -1277,7 +1277,7 @@ export const PatientBookingPage: React.FC = () => {
                 message={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                     <div style={{ fontSize: 12.5, color: '#92400e' }}>
-                      <strong>Đăng nhập tài khoản Bệnh nhân</strong> để lưu phiếu hẹn QR và tra cứu lịch sử.
+                      Đăng nhập để <strong>lưu mã QR</strong> và tra cứu lịch khám.
                     </div>
                     <Button
                       type="primary"
@@ -1286,7 +1286,7 @@ export const PatientBookingPage: React.FC = () => {
                       style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 6 }}
                       onClick={() => navigate('/login?redirect=/booking')}
                     >
-                      Đăng nhập ngay
+                      Đăng nhập
                     </Button>
                   </div>
                 }
@@ -1311,7 +1311,7 @@ export const PatientBookingPage: React.FC = () => {
                 message={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                     <div style={{ fontSize: 12.5, color: '#92400e' }}>
-                      <strong>Hồ sơ chưa đủ CCCD / Ngày sinh.</strong> Bổ sung để sẵn sàng khám.
+                      Vui lòng bổ sung <strong>CCCD và ngày sinh</strong> trước khi đặt hẹn.
                     </div>
                     <Button
                       type="primary"
@@ -1323,7 +1323,7 @@ export const PatientBookingPage: React.FC = () => {
                         setCompleteProfileAllowClose(false);
                       }}
                     >
-                      Bổ sung ngay
+                      Cập nhật
                     </Button>
                   </div>
                 }
@@ -1353,7 +1353,7 @@ export const PatientBookingPage: React.FC = () => {
           >
             {/* --- PAGE 1: 7 Dịch vụ cốt lõi --- */}
 
-            {/* Card 1: Đặt khám tại cơ sở */}
+            {/* Card 1: Khám tại viện */}
             <div
               className={`medpro-service-card ${bookingMode === 'byDept' && !searchQuery ? 'card-active' : ''}`}
               style={{ '--card-index': 1 } as React.CSSProperties}
@@ -1368,10 +1368,10 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
                 <CalendarOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Đặt khám tại cơ sở</div>
+              <div className="medpro-card-title">Khám tại viện</div>
             </div>
 
-            {/* Card 2: Đặt khám chuyên khoa */}
+            {/* Card 2: Khám chuyên khoa */}
             <div
               className={`medpro-service-card ${bookingMode === 'byDept' ? 'card-active' : ''}`}
               style={{ '--card-index': 2 } as React.CSSProperties}
@@ -1386,10 +1386,10 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0369a1' }}>
                 <MedicineBoxOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Đặt khám chuyên khoa</div>
+              <div className="medpro-card-title">Khám chuyên khoa</div>
             </div>
 
-            {/* Card 3: Gọi video với bác sĩ */}
+            {/* Card 3: Tư vấn video từ xa */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 3 } as React.CSSProperties}
@@ -1397,7 +1397,7 @@ export const PatientBookingPage: React.FC = () => {
                 setBookingMode('byDoctor');
                 setSelectedPackage(null);
                 setCurrentStep(0);
-                showToast('Chế độ tư vấn trực tuyến từ xa với Bác sĩ D-Medical!', 'info');
+                showToast('Chế độ tư vấn video từ xa với bác sĩ D-Medical', 'info');
                 const el = document.getElementById('main-booking-flow');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
@@ -1405,10 +1405,10 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
                 <VideoCameraOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Gọi video với bác sĩ</div>
+              <div className="medpro-card-title">Tư vấn video từ xa</div>
             </div>
 
-            {/* Card 4: Đặt lịch xét nghiệm */}
+            {/* Card 4: Xét nghiệm */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 4 } as React.CSSProperties}
@@ -1423,10 +1423,10 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#ecfeff', color: '#0891b2' }}>
                 <ExperimentOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Đặt lịch xét nghiệm</div>
+              <div className="medpro-card-title">Xét nghiệm</div>
             </div>
 
-            {/* Card 5: Đặt khám ngoài giờ */}
+            {/* Card 5: Khám ngoài giờ */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 5 } as React.CSSProperties}
@@ -1440,10 +1440,10 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0369a1' }}>
                 <ClockCircleOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Đặt khám ngoài giờ</div>
+              <div className="medpro-card-title">Khám ngoài giờ</div>
             </div>
 
-            {/* Card 6: Giúp việc cá nhân & AI */}
+            {/* Card 6: Trợ lý AI y tế */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 6 } as React.CSSProperties}
@@ -1452,10 +1452,10 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#fef2f2', color: '#ef4444' }}>
                 <CustomerServiceOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Giúp việc cá nhân</div>
+              <div className="medpro-card-title">Trợ lý AI y tế</div>
             </div>
 
-            {/* Card 7: Khám sức khỏe thông tư */}
+            {/* Card 7: Khám theo thông tư */}
             <div
               className={`medpro-service-card ${bookingMode === 'byPackage' ? 'card-active' : ''}`}
               style={{ '--card-index': 7 } as React.CSSProperties}
@@ -1469,12 +1469,12 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#f0fdf4', color: '#16a34a' }}>
                 <AuditOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Khám sức khỏe thông tư</div>
+              <div className="medpro-card-title">Khám theo thông tư</div>
             </div>
 
             {/* --- PAGE 2: 7 Dịch vụ mở rộng --- */}
 
-            {/* Card 8: Đặt khám theo bác sĩ */}
+            {/* Card 8: Khám theo bác sĩ */}
             <div
               className={`medpro-service-card ${bookingMode === 'byDoctor' ? 'card-active' : ''}`}
               style={{ '--card-index': 8 } as React.CSSProperties}
@@ -1492,10 +1492,10 @@ export const PatientBookingPage: React.FC = () => {
                   <CheckCircleFilled />
                 </span>
               </div>
-              <div className="medpro-card-title">Đặt khám theo bác sĩ</div>
+              <div className="medpro-card-title">Khám theo bác sĩ</div>
             </div>
 
-            {/* Card 9: Gói khám sức khỏe */}
+            {/* Card 9: Gói khám tổng quát */}
             <div
               className={`medpro-service-card ${bookingMode === 'byPackage' ? 'card-active' : ''}`}
               style={{ '--card-index': 9 } as React.CSSProperties}
@@ -1509,7 +1509,7 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#eff6ff', color: '#2563eb' }}>
                 <SafetyCertificateOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Gói khám sức khỏe</div>
+              <div className="medpro-card-title">Gói khám tổng quát</div>
             </div>
 
             {/* Card 10: Y tế tại nhà */}
@@ -1526,7 +1526,7 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-title">Y tế tại nhà</div>
             </div>
 
-            {/* Card 11: Đặt lịch tiêm chủng */}
+            {/* Card 11: Tiêm chủng vắc xin */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 11 } as React.CSSProperties}
@@ -1549,10 +1549,10 @@ export const PatientBookingPage: React.FC = () => {
                   <path d="m14 4 6 6" />
                 </svg>
               </div>
-              <div className="medpro-card-title">Đặt lịch tiêm chủng</div>
+              <div className="medpro-card-title">Tiêm chủng vắc xin</div>
             </div>
 
-            {/* Card 12: Mua thuốc tại An Khang */}
+            {/* Card 12: Nhà thuốc online */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 12 } as React.CSSProperties}
@@ -1563,10 +1563,10 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
                 <ShopOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Mua thuốc tại An Khang</div>
+              <div className="medpro-card-title">Nhà thuốc online</div>
             </div>
 
-            {/* Card 13: Khám doanh nghiệp (với badge Mới) */}
+            {/* Card 13: Khám doanh nghiệp */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 13 } as React.CSSProperties}
@@ -1586,7 +1586,7 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-title">Khám doanh nghiệp</div>
             </div>
 
-            {/* Card 14: Đặt lịch Chụp phim & Nội soi */}
+            {/* Card 14: Chụp phim - Nội soi */}
             <div
               className="medpro-service-card"
               style={{ '--card-index': 14 } as React.CSSProperties}
@@ -1602,7 +1602,7 @@ export const PatientBookingPage: React.FC = () => {
               <div className="medpro-card-icon-wrap" style={{ background: '#ecfeff', color: '#0284c7' }}>
                 <ScanOutlined style={{ fontSize: 26 }} />
               </div>
-              <div className="medpro-card-title">Đặt lịch Chụp phim & Nội soi</div>
+              <div className="medpro-card-title">Chụp phim - Nội soi</div>
             </div>
           </div>
 
@@ -1636,7 +1636,7 @@ export const PatientBookingPage: React.FC = () => {
         <a
           href="tel:19001150"
           className="medpro-floating-hotline-btn"
-          title="Gọi ngay tổng đài cấp cứu & đặt lịch: 1900 1150"
+          title="Tổng đài hỗ trợ: 1900 1150"
         >
           <PhoneFilled style={{ fontSize: 24 }} />
         </a>
@@ -1646,23 +1646,23 @@ export const PatientBookingPage: React.FC = () => {
       <div className="medpro-partner-bar">
         <div className="medpro-partner-label">
           <SafetyCertificateOutlined style={{ color: '#0284c7' }} />
-          <span>Được Tin Tưởng Hợp Tác & Đồng Hành</span>
+          <span>Chứng nhận & Tiêu chuẩn y tế</span>
         </div>
         <div className="medpro-partner-badges">
           <span className="medpro-partner-badge-item">
-            <span style={{ color: '#ef4444' }}>🏥</span> Bộ Y Tế Việt Nam
+            <span style={{ color: '#ef4444' }}>🏥</span> Bộ Y tế
           </span>
           <span className="medpro-partner-badge-item">
-            <span style={{ color: '#0284c7' }}>🛡️</span> Bảo Hiểm Xã Hội (BHYT)
+            <span style={{ color: '#0284c7' }}>🛡️</span> Bảo hiểm Y tế (BHYT)
           </span>
           <span className="medpro-partner-badge-item">
-            <span style={{ color: '#16a34a' }}>👨‍⚕️</span> Đội Ngũ Bác Sĩ Chuyên Khoa
+            <span style={{ color: '#16a34a' }}>👨‍⚕️</span> Bác sĩ chuyên khoa hàng đầu
           </span>
           <span className="medpro-partner-badge-item">
-            <span style={{ color: '#8b5cf6' }}>⭐</span> Tiêu Chuẩn Chất Lượng Y Tế
+            <span style={{ color: '#8b5cf6' }}>⭐</span> Tiêu chuẩn chất lượng Bộ Y tế
           </span>
           <span className="medpro-partner-badge-item">
-            <span style={{ color: '#0369a1' }}>🏥</span> Cơ Sở Khám Chữa Bệnh Cấp 1
+            <span style={{ color: '#0369a1' }}>🏥</span> Bệnh viện hạng 1
           </span>
         </div>
       </div>
@@ -1752,23 +1752,23 @@ export const PatientBookingPage: React.FC = () => {
                     <Row gutter={[24, 20]} className="carousel-slide-row">
                       <Col xs={24} md={15}>
                         <div className="carousel-slide-badge">
-                          <span>⚡ CÔNG NGHỆ Y TẾ SỐ 4.0</span>
+                          <span>⚡ TIẾP NHẬN THÔNG MINH</span>
                         </div>
                         <div className="carousel-slide-title">
-                          Đặt Hẹn Trước Theo Giờ • Quét Mã QR Vào Khám Ngay
+                          Đặt hẹn theo giờ • Quét mã QR vào khám ngay
                         </div>
                         <div className="carousel-slide-desc">
-                          Chủ động lựa chọn Bác sĩ và khung giờ khám thuận tiện. Không cần xếp hàng bốc số, hệ thống tiếp nhận thông minh điều phối thẳng vào phòng khám.
+                          Chủ động chọn bác sĩ và giờ khám. Đến viện <strong>quét mã QR vào thẳng buồng khám</strong>, không cần bốc số.
                         </div>
                         <div className="carousel-slide-highlights">
                           <span className="carousel-slide-highlight-item">
-                            <CheckCircleOutlined /> Tiết kiệm 90% thời gian chờ
+                            <CheckCircleOutlined /> Không xếp hàng chờ đợi
                           </span>
                           <span className="carousel-slide-highlight-item">
-                            <SafetyCertificateOutlined /> BHYT thông tuyến toàn quốc
+                            <SafetyCertificateOutlined /> Áp dụng BHYT toàn quốc
                           </span>
                           <span className="carousel-slide-highlight-item">
-                            <ClockCircleOutlined /> Lịch khám T2 - Chủ Nhật
+                            <ClockCircleOutlined /> Khám từ thứ Hai đến Chủ nhật
                           </span>
                         </div>
                         <div className="carousel-slide-btn-group">
@@ -1780,7 +1780,7 @@ export const PatientBookingPage: React.FC = () => {
                               setCurrentStep(0);
                             }}
                           >
-                            <span>Đặt Khám Theo Khoa</span>
+                            <span>Đặt khám theo khoa</span>
                             <ArrowRightOutlined />
                           </button>
                           <button
@@ -1788,7 +1788,7 @@ export const PatientBookingPage: React.FC = () => {
                             className="carousel-slide-btn carousel-slide-btn-secondary"
                             onClick={() => setLookupModalOpen(true)}
                           >
-                            <span>Tra Cứu Phiếu QR</span>
+                            <span>Tra cứu lịch hẹn</span>
                             <SearchOutlined />
                           </button>
                         </div>
@@ -1831,23 +1831,23 @@ export const PatientBookingPage: React.FC = () => {
                     <Row gutter={[24, 20]} className="carousel-slide-row">
                       <Col xs={24} md={15}>
                         <div className="carousel-slide-badge">
-                          <span>❤️ CHĂM SÓC SỨC KHỎE CHỦ ĐỘNG</span>
+                          <span>❤️ TẦM SOÁT SỚM</span>
                         </div>
                         <div className="carousel-slide-title">
-                          Gói Tầm Soát Sức Khỏe Toàn Diện • Giảm 15% Khi Đặt Online
+                          Gói tầm soát sức khỏe • Ưu đãi 15% khi đặt online
                         </div>
                         <div className="carousel-slide-desc">
-                          Kiểm tra tổng quát tim mạch, gan thận, tầm soát sớm nguy cơ đột quỵ và tiêu hóa. Quy trình khép kín, Bác sĩ CKII trực tiếp tư vấn kết quả chu đáo.
+                          Đánh giá chức năng tim mạch, gan thận và tiêu hóa. <strong>Bác sĩ CKII trực tiếp tư vấn kết quả</strong>.
                         </div>
                         <div className="carousel-slide-highlights">
                           <span className="carousel-slide-highlight-item">
-                            <CheckCircleOutlined /> 28 chỉ số xét nghiệm chuyên sâu
+                            <CheckCircleOutlined /> 28 chỉ số xét nghiệm thiết yếu
                           </span>
                           <span className="carousel-slide-highlight-item">
-                            <UserOutlined /> Nội soi tiêu hóa NBI êm ái
+                            <UserOutlined /> Nội soi NBI không đau
                           </span>
                           <span className="carousel-slide-highlight-item">
-                            <QrcodeOutlined /> Hồ sơ kết quả điện tử trọn đời
+                            <QrcodeOutlined /> Lưu hồ sơ điện tử trọn đời
                           </span>
                         </div>
                         <div className="carousel-slide-btn-group">
@@ -1860,7 +1860,7 @@ export const PatientBookingPage: React.FC = () => {
                               setCurrentStep(0);
                             }}
                           >
-                            <span>Khám Phá Gói Khám</span>
+                            <span>Xem các gói khám</span>
                             <ArrowRightOutlined />
                           </button>
                         </div>
@@ -1897,23 +1897,23 @@ export const PatientBookingPage: React.FC = () => {
                     <Row gutter={[24, 20]} className="carousel-slide-row">
                       <Col xs={24} md={15}>
                         <div className="carousel-slide-badge">
-                          <span>👨‍⚕️ CHUYÊN GIA Y TẾ TUYẾN ĐẦU</span>
+                          <span>👨‍⚕️ ĐỘI NGŨ CHUYÊN GIA</span>
                         </div>
                         <div className="carousel-slide-title">
-                          Thăm Khám Cùng Bác Sĩ CKII & Tiến Sĩ Giàu Kinh Nghiệm
+                          Khám cùng bác sĩ CKII và tiến sĩ đầu ngành
                         </div>
                         <div className="carousel-slide-desc">
-                          Hơn 50 Bác sĩ Chuyên khoa hàng đầu từ các bệnh viện tuyến trung ương (Chợ Rẫy, ĐH Y Dược). Đặt hẹn đích danh Bác sĩ mong muốn với lịch khám rõ ràng.
+                          Đội ngũ bác sĩ từ các bệnh viện tuyến đầu. <strong>Chủ động chọn bác sĩ</strong> và xem lịch trực chi tiết.
                         </div>
                         <div className="carousel-slide-highlights">
                           <span className="carousel-slide-highlight-item">
-                            <CheckCircleOutlined /> Xem trước tiểu sử & lịch trực
+                            <CheckCircleOutlined /> Chủ động xem lịch trực
                           </span>
                           <span className="carousel-slide-highlight-item">
                             <SafetyCertificateOutlined /> Tư vấn chuyên sâu 1-1
                           </span>
                           <span className="carousel-slide-highlight-item">
-                            <CalendarOutlined /> Khám liên tục tất cả các ngày
+                            <CalendarOutlined /> Phục vụ tất cả các ngày
                           </span>
                         </div>
                         <div className="carousel-slide-btn-group">
@@ -1926,7 +1926,7 @@ export const PatientBookingPage: React.FC = () => {
                               setCurrentStep(0);
                             }}
                           >
-                            <span>Chọn Bác Sĩ Khám</span>
+                            <span>Chọn bác sĩ khám</span>
                             <ArrowRightOutlined />
                           </button>
                         </div>
@@ -1959,23 +1959,23 @@ export const PatientBookingPage: React.FC = () => {
                     <Row gutter={[24, 20]} className="carousel-slide-row">
                       <Col xs={24} md={15}>
                         <div className="carousel-slide-badge">
-                          <span>🔄 THEO DÕI ĐIỀU TRỊ LIÊN TỤC</span>
+                          <span>🔄 LIÊN KẾT BỆNH ÁN</span>
                         </div>
                         <div className="carousel-slide-title">
-                          Cổng Tái Khám Điện Tử • Tự Động Kết Nối Bệnh Án Cũ
+                          Tái khám định kỳ • Tự động liên kết bệnh án cũ
                         </div>
                         <div className="carousel-slide-desc">
-                          Hệ thống tự động liên kết với bệnh án điện tử (EMR) và toa thuốc đợt trước. Bác sĩ nắm rõ diễn tiến bệnh lý, không cần làm lại các xét nghiệm không cần thiết.
+                          Tự động đồng bộ bệnh án và đơn thuốc đợt trước. <strong>Bác sĩ theo dõi liên tục</strong>, hạn chế xét nghiệm lại.
                         </div>
                         <div className="carousel-slide-highlights">
                           <span className="carousel-slide-highlight-item">
-                            <CheckCircleOutlined /> 1-Click điền hồ sơ cũ
+                            <CheckCircleOutlined /> Tự điền thông tin cũ
                           </span>
                           <span className="carousel-slide-highlight-item">
-                            <HistoryOutlined /> Giữ nguyên Bác sĩ điều trị
+                            <HistoryOutlined /> Chọn lại bác sĩ điều trị
                           </span>
                           <span className="carousel-slide-highlight-item">
-                            <ClockCircleOutlined /> Nhắc hẹn tự động qua Zalo/SMS
+                            <ClockCircleOutlined /> Tự động nhắc lịch hẹn
                           </span>
                         </div>
                         <div className="carousel-slide-btn-group">
@@ -1988,7 +1988,7 @@ export const PatientBookingPage: React.FC = () => {
                               setCurrentStep(0);
                             }}
                           >
-                            <span>Đặt Lịch Tái Khám</span>
+                            <span>Đặt lịch tái khám</span>
                             <ArrowRightOutlined />
                           </button>
                         </div>
@@ -2028,28 +2028,28 @@ export const PatientBookingPage: React.FC = () => {
                   className={`carousel-nav-tab ${currentSlideIndex === 0 ? 'active' : ''}`}
                   onClick={() => carouselRef.current?.goTo(0)}
                 >
-                  <span>🏥 Đặt Hẹn Nhanh</span>
+                  <span>🏥 Đặt hẹn nhanh</span>
                 </button>
                 <button
                   type="button"
                   className={`carousel-nav-tab ${currentSlideIndex === 1 ? 'active' : ''}`}
                   onClick={() => carouselRef.current?.goTo(1)}
                 >
-                  <span>❤️ Gói Khám (-15%)</span>
+                  <span>❤️ Gói khám (-15%)</span>
                 </button>
                 <button
                   type="button"
                   className={`carousel-nav-tab ${currentSlideIndex === 2 ? 'active' : ''}`}
                   onClick={() => carouselRef.current?.goTo(2)}
                 >
-                  <span>👨‍⚕️ Bác Sĩ Chuyên Gia</span>
+                  <span>👨‍⚕️ Bác sĩ chuyên khoa</span>
                 </button>
                 <button
                   type="button"
                   className={`carousel-nav-tab ${currentSlideIndex === 3 ? 'active' : ''}`}
                   onClick={() => carouselRef.current?.goTo(3)}
                 >
-                  <span>🔄 Tái Khám Theo Hẹn</span>
+                  <span>🔄 Tái khám định kỳ</span>
                 </button>
               </div>
             </div>
@@ -2067,7 +2067,7 @@ export const PatientBookingPage: React.FC = () => {
               }}
             >
               <MedicineBoxOutlined />
-              <span>Theo Chuyên Khoa</span>
+              <span>Theo chuyên khoa</span>
             </button>
             <button
               type="button"
@@ -2079,7 +2079,7 @@ export const PatientBookingPage: React.FC = () => {
               }}
             >
               <UserOutlined />
-              <span>Bác Sĩ Chuyên Gia</span>
+              <span>Theo bác sĩ</span>
             </button>
             <button
               type="button"
@@ -2090,7 +2090,7 @@ export const PatientBookingPage: React.FC = () => {
               }}
             >
               <ThunderboltOutlined />
-              <span>Gói Khám & Tầm Soát</span>
+              <span>Gói khám tổng quát</span>
             </button>
             <button
               type="button"
@@ -2103,7 +2103,7 @@ export const PatientBookingPage: React.FC = () => {
               }}
             >
               <HistoryOutlined />
-              <span>Tái Khám Theo Hẹn</span>
+              <span>Tái khám định kỳ</span>
             </button>
           </div>
 
@@ -2114,14 +2114,14 @@ export const PatientBookingPage: React.FC = () => {
               {bookingMode === 'byDept' && (
                 <div>
                   <div className="medpro-section-header" style={{ marginTop: 8 }}>
-                    <div className="medpro-section-title">Cơ Sở & Chuyên Khoa Tiêu Biểu</div>
+                    <div className="medpro-section-title">Chuyên khoa khám bệnh</div>
                     <div
                       className="medpro-view-all-btn"
                       onClick={() => {
                         setSearchQuery('');
                       }}
                     >
-                      Tất cả 9 chuyên khoa <ArrowRightOutlined />
+                      Xem tất cả chuyên khoa <ArrowRightOutlined />
                     </div>
                   </div>
 
@@ -2853,10 +2853,10 @@ export const PatientBookingPage: React.FC = () => {
             <div>
               <div style={{ marginBottom: 24, textAlign: 'center' }}>
                 <Title level={3} style={{ color: '#0369a1', fontWeight: 800, margin: 0 }}>
-                  Bước 2: Chọn Bác Sĩ Khám Bệnh
+                  Chọn bác sĩ khám
                 </Title>
                 <Text style={{ color: '#64748b', fontSize: 14 }}>
-                  Chuyên khoa đã chọn: <strong style={{ color: '#0284c7' }}>{selectedDept.name}</strong>
+                  Chuyên khoa: <strong style={{ color: '#0284c7' }}>{selectedDept.name}</strong>
                 </Text>
               </div>
 
@@ -2864,7 +2864,7 @@ export const PatientBookingPage: React.FC = () => {
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <MedicineBoxOutlined style={{ fontSize: 48, color: '#94a3b8' }} />
                   <p style={{ marginTop: 12, color: '#64748b' }}>
-                    Chưa có danh sách bác sĩ riêng cho khoa này. Bạn có thể chọn đặt khám theo Bác sĩ Chuyên khoa trực ca!
+                    Khoa đang phân công bác sĩ trực ca tiếp nhận. Bạn có thể tiếp tục với bác sĩ trực ca của khoa.
                   </p>
                   <Button
                     type="primary"
@@ -2884,7 +2884,7 @@ export const PatientBookingPage: React.FC = () => {
                       setCurrentStep(2);
                     }}
                   >
-                    Tiếp tục với Bác sĩ trực ca
+                    Khám với bác sĩ trực ca
                   </Button>
                 </div>
               ) : (
@@ -2973,10 +2973,10 @@ export const PatientBookingPage: React.FC = () => {
             <div>
               <div style={{ marginBottom: 24, textAlign: 'center' }}>
                 <Title level={3} style={{ color: '#0369a1', fontWeight: 800, margin: 0 }}>
-                  Bước 3: Chọn Ngày Khám & Khung Giờ
+                  Chọn ngày và giờ khám
                 </Title>
                 <Text style={{ color: '#64748b', fontSize: 14 }}>
-                  Số lượng khám được đồng bộ trực tiếp với hệ thống kiểm soát tải của Bệnh viện
+                  Khung giờ hiển thị theo số lượng chỗ còn trống trong ngày
                 </Text>
               </div>
 
@@ -2998,7 +2998,7 @@ export const PatientBookingPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <CalendarOutlined style={{ color: '#0284c7', fontSize: 22 }} />
                   <div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>Ngày khám bệnh:</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>Ngày khám:</div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: '#0369a1' }}>
                       {dayjs(selectedDate).format('DD/MM/YYYY')} (Thứ {dayjs(selectedDate).day() === 0 ? 'Chủ Nhật' : dayjs(selectedDate).day() + 1})
                     </div>
@@ -3026,25 +3026,25 @@ export const PatientBookingPage: React.FC = () => {
                       className={`slot-shift-tab-btn ${slotShiftFilter === 'ALL' ? 'active' : ''}`}
                       onClick={() => setSlotShiftFilter('ALL')}
                     >
-                      Tất Cả ({slots.length})
+                      Tất cả ({slots.length})
                     </button>
                     <button
                       type="button"
                       className={`slot-shift-tab-btn ${slotShiftFilter === 'MORNING' ? 'active' : ''}`}
                       onClick={() => setSlotShiftFilter('MORNING')}
                     >
-                      ☀️ Ca Sáng (07:00 - 11:30)
+                      ☀️ Ca sáng (07:00 - 11:30)
                     </button>
                     <button
                       type="button"
                       className={`slot-shift-tab-btn ${slotShiftFilter === 'AFTERNOON' ? 'active' : ''}`}
                       onClick={() => setSlotShiftFilter('AFTERNOON')}
                     >
-                      ⛅ Ca Chiều (13:00 - 16:30)
+                      ⛅ Ca chiều (13:00 - 16:30)
                     </button>
                   </div>
                   <span style={{ fontSize: 12, color: '#0284c7', fontWeight: 600 }}>
-                    💡 Khung giờ bị khóa hoặc hết chỗ sẽ bị vô hiệu hóa
+                    💡 Khung giờ màu xám là đã kín chỗ
                   </span>
                 </div>
 
@@ -3189,10 +3189,10 @@ export const PatientBookingPage: React.FC = () => {
             <div>
               <div style={{ marginBottom: 24, textAlign: 'center' }}>
                 <Title level={3} style={{ color: '#0369a1', fontWeight: 800, margin: 0 }}>
-                  Bước 4: Điền Thông Tin Bệnh Nhân & Xác Nhận
+                  Thông tin người bệnh
                 </Title>
                 <Text style={{ color: '#64748b', fontSize: 14 }}>
-                  Vui lòng điền thông tin chính xác để hệ thống khởi tạo Phiếu Khám Điện Tử & Mã QR
+                  Thông tin dùng để xuất phiếu khám và đối soát BHYT
                 </Text>
               </div>
 
@@ -3213,7 +3213,7 @@ export const PatientBookingPage: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <SafetyCertificateOutlined style={{ color: '#0284c7', fontSize: 18 }} />
                           <span style={{ fontWeight: 800, color: '#0369a1', fontSize: 14 }}>
-                            HỒ SƠ BỆNH NHÂN ĐIỆN TỬ ĐÃ XÁC THỰC
+                            HỒ SƠ BỆNH NHÂN ĐÃ XÁC THỰC
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -3255,7 +3255,7 @@ export const PatientBookingPage: React.FC = () => {
                       message={
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                           <span style={{ fontWeight: 700, color: '#9a3412' }}>
-                            🔒 Yêu cầu Đăng nhập tài khoản Bệnh nhân
+                            🔒 Yêu cầu đăng nhập tài khoản
                           </span>
                           <Button
                             size="small"
@@ -3264,11 +3264,11 @@ export const PatientBookingPage: React.FC = () => {
                             style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
                             onClick={() => navigate('/login?redirect=/booking')}
                           >
-                            Đăng nhập ngay
+                            Đăng nhập
                           </Button>
                         </div>
                       }
-                      description="Bạn cần đăng nhập tài khoản Bệnh nhân và hoàn tất hồ sơ để hoàn thành đặt lịch khám và nhận Mã QR."
+                      description="Đăng nhập tài khoản để lưu hồ sơ khám và nhận mã QR."
                     />
                   )}
 
@@ -3280,7 +3280,7 @@ export const PatientBookingPage: React.FC = () => {
                       onClick={() => handleSwitchBookingTarget('self')}
                     >
                       <UserOutlined />
-                      <span>Đặt Cho Bản Thân</span>
+                      <span>Khám cho bản thân</span>
                     </button>
                     <button
                       type="button"
@@ -3288,7 +3288,7 @@ export const PatientBookingPage: React.FC = () => {
                       onClick={() => handleSwitchBookingTarget('relative')}
                     >
                       <TeamOutlined />
-                      <span>Đặt Cho Người Thân (Con cái, Bố mẹ...)</span>
+                      <span>Khám cho người thân</span>
                     </button>
                   </div>
 
@@ -3304,7 +3304,7 @@ export const PatientBookingPage: React.FC = () => {
                         marginBottom: 16,
                       }}
                     >
-                      👥 <strong>Lưu ý:</strong> Vui lòng điền đúng Họ tên, Giới tính và Năm sinh của <strong>người thân cần khám bệnh</strong> bên dưới. Lịch khám vẫn sẽ được quản lý trong tài khoản của bạn.
+                      👥 <strong>Lưu ý:</strong> Điền thông tin của <strong>người trực tiếp đi khám</strong> bên dưới. Lịch hẹn vẫn được lưu trong tài khoản của bạn.
                     </div>
                   )}
 
@@ -3428,7 +3428,7 @@ export const PatientBookingPage: React.FC = () => {
                   <Form form={form} layout="vertical">
                     <Form.Item
                       name="fullName"
-                      label="Họ và tên Bệnh nhân"
+                      label="Họ và tên"
                       rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
                     >
                       <Input
@@ -3443,7 +3443,7 @@ export const PatientBookingPage: React.FC = () => {
                       <Col xs={24} sm={14}>
                         <Form.Item
                           name="phoneNumber"
-                          label="Số điện thoại liên hệ"
+                          label="Số điện thoại"
                           rules={[
                             { required: true, message: 'Vui lòng nhập số điện thoại' },
                             { pattern: /^[0-9]{10}$/, message: 'Số điện thoại gồm 10 chữ số' },
@@ -3478,7 +3478,7 @@ export const PatientBookingPage: React.FC = () => {
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12}>
-                        <Form.Item name="identityNumber" label="Số CCCD hoặc Thẻ BHYT (nếu có)">
+                        <Form.Item name="identityNumber" label="Số CCCD hoặc mã thẻ BHYT">
                           <Input
                             prefix={<IdcardOutlined style={{ color: '#0284c7' }} />}
                             placeholder="07909200xxxx"
@@ -3489,7 +3489,7 @@ export const PatientBookingPage: React.FC = () => {
                       </Col>
                     </Row>
 
-                    <Form.Item name="appointmentType" label="Hình thức đăng ký khám" initialValue="New">
+                    <Form.Item name="appointmentType" label="Hình thức khám" initialValue="New">
                       <Radio.Group size="large" style={{ width: '100%' }}>
                         <Row gutter={12}>
                           <Col xs={24} sm={12}>
@@ -3497,7 +3497,7 @@ export const PatientBookingPage: React.FC = () => {
                               value="New"
                               style={{ width: '100%', textAlign: 'center', height: 42, lineHeight: '40px', borderRadius: 8, fontWeight: 700, marginBottom: 8 }}
                             >
-                              🩺 Khám Mới
+                              🩺 Khám mới
                             </Radio.Button>
                           </Col>
                           <Col xs={24} sm={12}>
@@ -3505,7 +3505,7 @@ export const PatientBookingPage: React.FC = () => {
                               value="FollowUp"
                               style={{ width: '100%', textAlign: 'center', height: 42, lineHeight: '40px', borderRadius: 8, fontWeight: 700, color: '#0284c7', marginBottom: 8 }}
                             >
-                              🔄 Tái Khám Định Kỳ
+                              🔄 Tái khám định kỳ
                             </Radio.Button>
                           </Col>
                         </Row>
@@ -3529,13 +3529,13 @@ export const PatientBookingPage: React.FC = () => {
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#0369a1', marginBottom: 10 }}>
                               <HistoryOutlined style={{ color: '#0284c7' }} />
-                              <span>Thông tin Tái khám theo chỉ định Bác sĩ</span>
+                              <span>Thông tin tái khám theo chỉ định</span>
                             </div>
                             <Row gutter={12}>
                               <Col xs={24} sm={12}>
                                 <Form.Item
                                   name="previousRecordCode"
-                                  label="Mã Bệnh Án (EMR) / Mã đơn thuốc trước"
+                                  label="Mã bệnh án (EMR) hoặc mã đơn thuốc cũ"
                                   style={{ marginBottom: 8 }}
                                 >
                                   <Input
@@ -3548,7 +3548,7 @@ export const PatientBookingPage: React.FC = () => {
                               <Col xs={24} sm={12}>
                                 <Form.Item
                                   name="followUpNotes"
-                                  label="Lời dặn / Ghi chú tái khám của Bác sĩ"
+                                  label="Lời dặn hoặc ghi chú tái khám"
                                   style={{ marginBottom: 8 }}
                                 >
                                   <Input
@@ -3580,10 +3580,10 @@ export const PatientBookingPage: React.FC = () => {
                     >
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0369a1' }}>
-                          <SafetyCertificateOutlined style={{ marginRight: 6 }} /> Áp dụng Bảo hiểm Y tế (BHYT) đúng tuyến
+                          <SafetyCertificateOutlined style={{ marginRight: 6 }} /> Áp dụng Bảo hiểm Y tế (BHYT)
                         </div>
                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                          Được hỗ trợ giảm trừ trực tiếp <strong>{selectedPackage ? selectedPackage.bhytSupport.toLocaleString('vi-VN') : '42.100'} đ</strong> theo quy định thông tuyến toàn quốc
+                          Giảm trực tiếp <strong>{selectedPackage ? selectedPackage.bhytSupport.toLocaleString('vi-VN') : '42.100'} đ</strong> khi xuất trình thẻ tại viện.
                         </div>
                       </div>
                       <Switch
@@ -3597,7 +3597,7 @@ export const PatientBookingPage: React.FC = () => {
                     {/* Lựa chọn Phương thức Thanh toán Viện phí */}
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a', marginBottom: 8 }}>
-                        Phương thức Thanh toán Viện phí:
+                        Hình thức thanh toán:
                       </div>
                       <Row gutter={[12, 12]}>
                         <Col xs={24} sm={12}>
@@ -3612,7 +3612,7 @@ export const PatientBookingPage: React.FC = () => {
                                   VietQR / Napas 247
                                 </div>
                                 <div style={{ fontSize: 11, color: '#0284c7', fontWeight: 600 }}>
-                                  Thẻ khám Ưu tiên • Không cần ghé quầy
+                                  Ưu tiên vào khám ngay, không cần qua quầy
                                 </div>
                               </div>
                             </div>
@@ -3631,7 +3631,7 @@ export const PatientBookingPage: React.FC = () => {
                                   Thanh toán tại Viện
                                 </div>
                                 <div style={{ fontSize: 11, color: '#64748b' }}>
-                                  Qua Kiosk tự động / Quầy Lễ tân
+                                  Thanh toán tại kiosk hoặc quầy tiếp đón
                                 </div>
                               </div>
                             </div>
@@ -3641,10 +3641,10 @@ export const PatientBookingPage: React.FC = () => {
                       </Row>
                     </div>
 
-                    <Form.Item name="symptoms" label="Lý do khám / Triệu chứng bệnh">
+                    <Form.Item name="symptoms" label="Triệu chứng hoặc lý do khám">
                       <Input.TextArea
                         rows={3}
-                        placeholder="Mô tả triệu chứng hiện tại (ví dụ: đau đầu, sốt nhẹ, hoặc tình trạng tiến triển khi tái khám...)"
+                        placeholder="Mô tả triệu chứng (ví dụ: đau đầu, sốt nhẹ, ho kéo dài...)"
                         style={{ borderRadius: 10 }}
                       />
                     </Form.Item>
@@ -3658,7 +3658,7 @@ export const PatientBookingPage: React.FC = () => {
                     return (
                       <div className="booking-summary-card booking-summary-sticky">
                         <div style={{ fontWeight: 800, fontSize: 16, color: '#0369a1', marginBottom: 4 }}>
-                          TÓM TẮT PHIẾU KHÁM HẸN
+                          Tóm tắt lịch hẹn
                         </div>
 
                         {selectedPackage ? (
@@ -3799,10 +3799,10 @@ export const PatientBookingPage: React.FC = () => {
               </div>
 
               <Title level={2} style={{ color: '#0369a1', fontWeight: 900, margin: '0 0 8px' }}>
-                ĐẶT LỊCH KHÁM THÀNH CÔNG!
+                Đặt khám thành công
               </Title>
               <Paragraph style={{ color: '#64748b', fontSize: 14, maxWidth: 550, margin: '0 auto 24px' }}>
-                Cảm ơn bạn đã tin tưởng Hệ thống Y tế D-Medical. Dưới đây là <strong>Phiếu Khám Điện Tử & Mã QR Check-in</strong> của bạn.
+                Lịch hẹn đã được xác nhận. Vui lòng <strong>lưu mã QR</strong> để quét khi đến bệnh viện.
               </Paragraph>
 
               {/* Printable Medical QR Ticket Card */}
@@ -3819,15 +3819,15 @@ export const PatientBookingPage: React.FC = () => {
                 </div>
                 {createdAppointment.appointmentType === 'FollowUp' ? (
                   <Tag color="blue" style={{ fontSize: 12, padding: '4px 14px', borderRadius: 20, fontWeight: 800 }}>
-                    🔄 PHIẾU HẸN TÁI KHÁM ĐỊNH KỲ • CHECK-IN QR
+                    🔄 Phiếu hẹn tái khám • Check-in QR
                   </Tag>
                 ) : (
                   <Tag color="cyan" style={{ fontSize: 12, padding: '4px 14px', borderRadius: 20, fontWeight: 800 }}>
-                    PHIẾU KHÁM ĐIỆN TỬ • CHECK-IN QR
+                    Phiếu khám điện tử • Check-in QR
                   </Tag>
                 )}
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, marginBottom: 16 }}>
-                  (Tiếp nhận thông minh tại Kiosk & Quầy tiếp đón qua Mã QR)
+                  (Quét mã tại kiosk hoặc quầy tiếp đón để vào khám)
                 </div>
 
                 {/* QR Code */}
@@ -3921,14 +3921,14 @@ export const PatientBookingPage: React.FC = () => {
                   }}
                 >
                   <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <ThunderboltOutlined style={{ color: '#0284c7' }} /> Hướng dẫn check-in & Lưu ý y tế:
+                    <ThunderboltOutlined style={{ color: '#0284c7' }} /> Hướng dẫn đến khám:
                   </div>
                   <div>
-                    • Khi đến bệnh viện trước 15 phút, quý khách đưa màn hình có <strong>Mã QR này</strong> vào máy quét tại Kiosk hoặc Quầy tiếp tân để vào thẳng phòng khám.
+                    • Đến bệnh viện trước 15 phút và <strong>quét mã QR</strong> tại kiosk hoặc quầy tiếp đón để vào thẳng buồng khám.
                   </div>
                   {selectedPackage && (
                     <div style={{ marginTop: 4, color: '#b91c1c' }}>
-                      • <strong>Lưu ý gói khám:</strong> Vui lòng nhịn ăn sáng từ 6 - 8 tiếng trước giờ khám nếu có thực hiện xét nghiệm máu hoặc nội soi tiêu hóa.
+                      • <strong>Lưu ý:</strong> Vui lòng <strong>nhịn ăn từ 6 - 8 tiếng</strong> nếu có xét nghiệm máu hoặc nội soi tiêu hóa.
                     </div>
                   )}
                 </div>
@@ -3942,7 +3942,7 @@ export const PatientBookingPage: React.FC = () => {
                   onClick={() => window.print()}
                   style={{ fontWeight: 600, borderRadius: 10 }}
                 >
-                  In Phiếu Khám QR
+                  In phiếu khám
                 </Button>
 
                 <Button
@@ -3951,7 +3951,7 @@ export const PatientBookingPage: React.FC = () => {
                   onClick={handleDownloadQrImage}
                   style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600, borderRadius: 10 }}
                 >
-                  Tải Ảnh QR Về Máy
+                  Lưu ảnh QR
                 </Button>
 
                 <Button
@@ -3969,7 +3969,7 @@ export const PatientBookingPage: React.FC = () => {
                     window.open(url, '_blank');
                   }}
                 >
-                  Lưu Vào Google Calendar
+                  Thêm vào Google Calendar
                 </Button>
 
                 {createdAppointment.status !== 'Cancelled' && createdAppointment.status !== 'Completed' && (
@@ -3980,7 +3980,7 @@ export const PatientBookingPage: React.FC = () => {
                       style={{ borderColor: '#0284c7', color: '#0284c7', fontWeight: 700, borderRadius: 10 }}
                       onClick={() => handleOpenReschedule(createdAppointment)}
                     >
-                      Đổi Giờ Khám
+                      Đổi giờ khám
                     </Button>
                     <Button
                       danger
@@ -3989,7 +3989,7 @@ export const PatientBookingPage: React.FC = () => {
                       style={{ fontWeight: 700, borderRadius: 10 }}
                       onClick={() => handleOpenCancel(createdAppointment)}
                     >
-                      Hủy Lịch Hẹn
+                      Hủy lịch hẹn
                     </Button>
                   </>
                 )}
@@ -4001,7 +4001,7 @@ export const PatientBookingPage: React.FC = () => {
                   style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 10 }}
                   onClick={handleResetBooking}
                 >
-                  Đăng Ký Lịch Khám Mới
+                  Đặt lịch mới
                 </Button>
                 <Button
                   size="large"
@@ -4009,7 +4009,7 @@ export const PatientBookingPage: React.FC = () => {
                   onClick={() => setLookupModalOpen(true)}
                   style={{ fontWeight: 600, borderRadius: 10 }}
                 >
-                  Tra Cứu Lịch Hẹn
+                  Tra cứu lịch hẹn
                 </Button>
               </div>
             </div>
@@ -4021,13 +4021,13 @@ export const PatientBookingPage: React.FC = () => {
       <section className="patient-journey-wrap" style={{ maxWidth: 1200, margin: '36px auto 30px', padding: '32px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <Tag color="cyan" style={{ fontSize: 13, fontWeight: 700, padding: '4px 14px', borderRadius: 20 }}>
-            HỆ THỐNG Y TẾ THÔNG MINH
+            QUY TRÌNH TIẾP NHẬN
           </Tag>
           <Title level={2} style={{ color: '#0f172a', fontWeight: 800, marginTop: 10, marginBottom: 6 }}>
-            Quy Trình Khám Bệnh 3 Bước Nhanh Chóng & Tiện Lợi
+            Quy trình khám bệnh 3 bước
           </Title>
           <Paragraph style={{ color: '#64748b', fontSize: 14, maxWidth: 650, margin: '0 auto' }}>
-            Ứng dụng công nghệ Tiếp nhận QR Code thông minh giúp giảm 90% thời gian bốc số chờ đợi, chủ động chọn chuyên khoa và bác sĩ theo nhu cầu.
+            Quét mã QR tại kiosk để vào thẳng buồng khám, không cần xếp hàng bốc số.
           </Paragraph>
         </div>
 
@@ -4036,10 +4036,10 @@ export const PatientBookingPage: React.FC = () => {
             <div className="patient-journey-step">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div className="step-badge-num">1</div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#0369a1' }}>Đặt Lịch & Bác Sĩ</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#0369a1' }}>Đặt lịch và chọn bác sĩ</div>
               </div>
               <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginTop: 4 }}>
-                Chọn Chuyên khoa, Bác sĩ chuyên gia hoặc Gói khám sức khỏe. Đặt ngày và khung giờ khám mong muốn chỉ với vài thao tác.
+                Chọn chuyên khoa, bác sĩ và <strong>khung giờ khám</strong> theo nhu cầu.
               </div>
             </div>
           </Col>
@@ -4048,10 +4048,10 @@ export const PatientBookingPage: React.FC = () => {
             <div className="patient-journey-step">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div className="step-badge-num">2</div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#0369a1' }}>Quét QR Check-in</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#0369a1' }}>Quét mã QR check-in</div>
               </div>
               <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginTop: 4 }}>
-                Nhận Phiếu Khám QR điện tử ngay lập tức. Đến bệnh viện trước 15 phút, quét QR tại Kiosk thông minh hoặc Quầy tiếp nhận.
+                Đến viện trước 15 phút, <strong>quét mã QR</strong> tại kiosk hoặc quầy tiếp đón.
               </div>
             </div>
           </Col>
@@ -4060,10 +4060,10 @@ export const PatientBookingPage: React.FC = () => {
             <div className="patient-journey-step">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div className="step-badge-num">3</div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#0369a1' }}>Vào Thẳng Phòng Khám</div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: '#0369a1' }}>Vào thẳng buồng khám</div>
               </div>
               <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginTop: 4 }}>
-                Hệ thống điều phối tự động đưa thông tin vào phòng khám chuyên khoa. Bác sĩ tiếp nhận thăm khám chu đáo đúng giờ hẹn.
+                Hệ thống tự động điều phối lượt khám. Bác sĩ thăm khám đúng giờ hẹn.
               </div>
             </div>
           </Col>
@@ -4077,10 +4077,10 @@ export const PatientBookingPage: React.FC = () => {
             HỖ TRỢ BỆNH NHÂN
           </Tag>
           <Title level={2} style={{ color: '#0f172a', fontWeight: 800, marginTop: 10, marginBottom: 6 }}>
-            Câu Hỏi Thường Gặp Khi Đặt Lịch Trực Tuyến
+            Câu hỏi thường gặp
           </Title>
           <Paragraph style={{ color: '#64748b', fontSize: 14 }}>
-            Giải đáp nhanh các thắc mắc về thẻ BHYT, quy trình check-in và đổi hủy lịch hẹn.
+            Giải đáp thắc mắc về BHYT, thủ tục đến viện và đổi hủy lịch hẹn.
           </Paragraph>
         </div>
 
@@ -4093,12 +4093,12 @@ export const PatientBookingPage: React.FC = () => {
               key: 'faq-1',
               label: (
                 <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>
-                  1. Tôi có được hưởng quyền lợi Bảo hiểm Y tế (BHYT) khi đặt lịch trực tuyến không?
+                  1. Tôi có được dùng Bảo hiểm Y tế (BHYT) khi đặt lịch trực tuyến không?
                 </span>
               ),
               children: (
                 <div style={{ color: '#475569', lineHeight: 1.7, fontSize: 13.5 }}>
-                  <strong>Hoàn toàn có!</strong> Khi đặt lịch khám trực tuyến, quý khách tích chọn "Có áp dụng thẻ BHYT". Khi đến bệnh viện quét mã QR check-in tại Kiosk hoặc Quầy tiếp tân, quý khách vui lòng xuất trình Thẻ BHYT giấy hoặc ứng dụng VssID / VNeID định danh mức 2 để nhân viên y tế đối soát và áp dụng mức giảm trừ BHYT theo đúng quy định hiện hành của Bộ Y Tế.
+                  <strong>Có.</strong> Khi đến viện, vui lòng xuất trình <strong>thẻ BHYT giấy hoặc ứng dụng VNeID / VssID</strong> tại quầy tiếp đón để được đối soát và giảm trừ đúng tuyến theo quy định.
                 </div>
               ),
             },
@@ -4106,12 +4106,12 @@ export const PatientBookingPage: React.FC = () => {
               key: 'faq-2',
               label: (
                 <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>
-                  2. Sau khi đặt lịch thành công, tôi cần làm gì khi đến bệnh viện?
+                  2. Đến bệnh viện tôi cần làm gì?
                 </span>
               ),
               children: (
                 <div style={{ color: '#475569', lineHeight: 1.7, fontSize: 13.5 }}>
-                  Sau khi hoàn tất đăng ký, màn hình sẽ hiển thị <strong>Phiếu Khám Điện Tử chứa Mã QR định danh</strong> (đồng thời lưu trong mục "Tra cứu lịch hẹn" của số điện thoại quý khách). Quý khách chỉ cần có mặt tại bệnh viện trước giờ hẹn khoảng 10 - 15 phút, đưa mã QR vào máy quét tại <strong>Kiosk Tự Động</strong> hoặc Quầy Tiếp Đón để hoàn tất thủ tục vào thẳng phòng khám.
+                  Quý khách có mặt trước 15 phút, đưa <strong>mã QR trên điện thoại</strong> vào máy quét tại kiosk hoặc quầy tiếp đón để nhận số vào thẳng buồng khám.
                 </div>
               ),
             },
@@ -4119,12 +4119,12 @@ export const PatientBookingPage: React.FC = () => {
               key: 'faq-3',
               label: (
                 <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>
-                  3. Tôi có thể đổi giờ khám hoặc hủy lịch hẹn đã đăng ký không?
+                  3. Tôi có thể đổi giờ hoặc hủy lịch hẹn không?
                 </span>
               ),
               children: (
                 <div style={{ color: '#475569', lineHeight: 1.7, fontSize: 13.5 }}>
-                  Quý khách có thể chủ động Đổi khung giờ khám hoặc Hủy lịch hẹn bất kỳ lúc nào hoàn toàn miễn phí. Bấm vào nút <strong>"Tra cứu lịch hẹn"</strong> ở đầu trang, nhập số điện thoại hoặc mã phiếu để xem danh sách lịch khám và bấm "Đổi giờ khám" hoặc "Hủy lịch hẹn". Suất khám sẽ được tự động hoàn lại cho các bệnh nhân khác.
+                  <strong>Miễn phí đổi và hủy.</strong> Bấm <strong>"Tra cứu lịch hẹn"</strong> ở đầu trang, nhập số điện thoại để đổi giờ hoặc hủy lịch hẹn trước giờ khám. Suất khám sẽ tự động hoàn lại cho bệnh nhân khác.
                 </div>
               ),
             },
@@ -4132,12 +4132,12 @@ export const PatientBookingPage: React.FC = () => {
               key: 'faq-4',
               label: (
                 <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>
-                  4. Nếu tôi đến muộn so với khung giờ hẹn thì lịch khám có bị hủy không?
+                  4. Nếu đến muộn so với giờ hẹn thì có được khám không?
                 </span>
               ),
               children: (
                 <div style={{ color: '#475569', lineHeight: 1.7, fontSize: 13.5 }}>
-                  Nếu quý khách đến trễ trong vòng 30 phút so với giờ hẹn, hệ thống vẫn giữ chỗ và sắp xếp quý khách vào lượt khám ưu tiên tiếp theo ngay sau bệnh nhân đang khám. Nếu trễ quá 30 phút, vui lòng liên hệ nhân viên Tiếp tân tại Quầy để được hỗ trợ chuyển sang khung giờ khám gần nhất còn trống trong ngày.
+                  Nếu đến muộn trong vòng <strong>30 phút</strong>, hệ thống vẫn giữ chỗ vào lượt ưu tiên tiếp theo. Nếu trễ hơn 30 phút, vui lòng liên hệ quầy tiếp tân để xếp vào khung giờ trống gần nhất.
                 </div>
               ),
             },
@@ -4149,13 +4149,13 @@ export const PatientBookingPage: React.FC = () => {
       <section style={{ maxWidth: 1200, margin: '0 auto 48px', padding: '0 20px' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <Tag color="cyan" style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20 }}>
-            Ý KIẾN NGƯỜI BỆNH
+            ĐÁNH GIÁ THỰC TẾ
           </Tag>
           <Title level={2} style={{ color: '#0f172a', fontWeight: 800, marginTop: 10, marginBottom: 6 }}>
-            Hơn <CountUpNumber end={200000} duration={2400} /> Người Bệnh Tin Tưởng & Đồng Hành
+            Hơn <CountUpNumber end={200000} duration={2400} /> lượt khám tin tưởng đồng hành
           </Title>
           <Paragraph style={{ color: '#64748b', fontSize: 14 }}>
-            Những chia sẻ thực tế từ bệnh nhân sau khi trải nghiệm đặt khám trực tuyến và điều trị tại Bệnh viện D-Medical.
+            Chia sẻ từ người bệnh đã trải nghiệm dịch vụ tiếp nhận QR và điều trị tại D-Medical.
           </Paragraph>
         </div>
 
@@ -4237,7 +4237,7 @@ export const PatientBookingPage: React.FC = () => {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0369a1', fontSize: 16 }}>
             <SearchOutlined />
-            <span>Tra Cứu & Quản Lý Lịch Hẹn Khám Bệnh</span>
+            <span>Tra cứu lịch hẹn khám</span>
           </div>
         }
         open={lookupModalOpen}
@@ -4250,7 +4250,7 @@ export const PatientBookingPage: React.FC = () => {
       >
         <div style={{ padding: '8px 0' }}>
           <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-            Nhập số điện thoại đã đăng ký hoặc Mã phiếu hẹn để kiểm tra thông tin, xuất trình Mã QR hoặc Đổi/Hủy lịch hẹn:
+            Nhập số điện thoại hoặc mã phiếu hẹn để kiểm tra lịch khám, lấy mã QR hoặc đổi/hủy lịch hẹn:
           </p>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -4299,7 +4299,7 @@ export const PatientBookingPage: React.FC = () => {
                     backgroundColor: lookupTypeFilter === 'New' ? '#0284c7' : undefined,
                   }}
                 >
-                  Khám Mới ({lookupResults.filter((r) => r.appointmentType !== 'FollowUp' && !r.symptomsReason?.toLowerCase().includes('tái khám')).length})
+                  Khám mới ({lookupResults.filter((r) => r.appointmentType !== 'FollowUp' && !r.symptomsReason?.toLowerCase().includes('tái khám')).length})
                 </Button>
                 <Button
                   size="small"
@@ -4313,7 +4313,7 @@ export const PatientBookingPage: React.FC = () => {
                     color: lookupTypeFilter === 'FollowUp' ? '#ffffff' : '#0284c7',
                   }}
                 >
-                  🔄 Lịch Tái Khám ({lookupResults.filter((r) => r.appointmentType === 'FollowUp' || r.symptomsReason?.toLowerCase().includes('tái khám')).length})
+                  🔄 Tái khám ({lookupResults.filter((r) => r.appointmentType === 'FollowUp' || r.symptomsReason?.toLowerCase().includes('tái khám')).length})
                 </Button>
               </div>
 
