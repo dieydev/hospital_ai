@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Avatar, Button, Dropdown, Tag, Drawer, Divider, Switch } from 'antd';
+import { Avatar, Button, Dropdown, Tag, Drawer, Divider, Switch, Badge } from 'antd';
 import {
   PhoneOutlined,
   ClockCircleOutlined,
   EnvironmentOutlined,
   QrcodeOutlined,
   UserOutlined,
-  DownOutlined,
   SearchOutlined,
   LoginOutlined,
   LogoutOutlined,
@@ -266,7 +265,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
       <header className="booking-navbar">
         <div className="booking-navbar-content">
           {/* Logo & Brand */}
-          <div className="booking-brand" onClick={() => navigate('/booking')}>
+          <div className="booking-brand" onClick={() => navigate('/')}>
             <img
               src="/logo.png"
               alt="D-Medical Healthcare Connected"
@@ -293,6 +292,13 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
 
           {/* Menu Điều Hướng Trung Tâm (Hoàn toàn bằng chữ, không lạm dụng icon, thanh lịch & rõ ràng) */}
           <nav className="booking-nav-center hide-on-tablet-mobile">
+            <span
+              className={`booking-nav-link ${currentPath === '/' || currentPath === '/home' ? 'active' : ''}`}
+              onClick={() => handleNavClick('/')}
+            >
+              Trang chủ
+            </span>
+
             <span
               className={`booking-nav-link ${currentPath === '/booking' || currentPath === '/dat-lich' ? 'active' : ''}`}
               onClick={() => handleNavClick('/booking')}
@@ -353,36 +359,21 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                 arrow={{ pointAtCenter: true }}
               >
                 <div
-                  className="patient-profile-pill"
-                  title="Nhấp để xem các tùy chọn hồ sơ & lịch hẹn"
+                  className="patient-profile-circle-btn"
+                  title={`${user.hoTen || user.tenDangNhap} - Nhấp để xem hồ sơ & tùy chọn`}
                 >
-                  <Avatar
-                    src={user.avatarUrl}
-                    icon={<UserOutlined />}
-                    style={{ backgroundColor: '#0284c7' }}
-                    size="default"
-                  />
-                  <div style={{ lineHeight: 1.25, textAlign: 'left' }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>{user.hoTen || user.tenDangNhap}</span>
-                      <DownOutlined style={{ fontSize: 10, color: '#0284c7' }} />
-                    </div>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
-                      <Tag color="cyan" style={{ margin: 0, fontSize: 9.5, lineHeight: '14px', borderRadius: 6 }}>
-                        Bệnh nhân
-                      </Tag>
-                      {user.maBenhNhan && (
-                        <Tag color="geekblue" style={{ margin: 0, fontSize: 9.5, lineHeight: '14px', fontFamily: 'monospace', borderRadius: 6 }} className="hide-on-mobile">
-                          {user.maBenhNhan}
-                        </Tag>
-                      )}
-                      {!isProfileComplete(user) && (
-                        <Tag color="warning" style={{ margin: 0, fontSize: 9.5, lineHeight: '14px', fontWeight: 700, borderRadius: 6 }}>
-                          Thiếu hồ sơ
-                        </Tag>
-                      )}
-                    </div>
-                  </div>
+                  <Badge
+                    dot={!isProfileComplete(user)}
+                    color="#f59e0b"
+                    offset={[-2, 3]}
+                  >
+                    <Avatar
+                      src={user.avatarUrl}
+                      icon={<UserOutlined />}
+                      style={{ backgroundColor: '#0284c7' }}
+                      size={38}
+                    />
+                  </Badge>
                 </div>
               </Dropdown>
             ) : (
@@ -569,7 +560,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
         >
           <div>
             <div style={{ fontWeight: 800, fontSize: 13.5, color: isElderlyMode ? '#92400e' : '#0369a1' }}>
-              👓 Chế độ Chữ To Dễ Đọc
+              Chế độ Chữ To Dễ Đọc
             </div>
             <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
               Cỡ chữ lớn, nút bấm to cho Người cao tuổi
@@ -590,6 +581,17 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
             Menu Điều Hướng
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div
+              className={`mobile-drawer-nav-item ${currentPath === '/' || currentPath === '/home' ? 'active' : ''}`}
+              onClick={() => handleNavClick('/')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <HomeOutlined style={{ color: '#0284c7' }} />
+                <span>Trang Chủ</span>
+              </div>
+              <RightOutlined style={{ fontSize: 12, color: '#94a3b8' }} />
+            </div>
+
             <div
               className={`mobile-drawer-nav-item ${currentPath === '/booking' || currentPath === '/dat-lich' ? 'active' : ''}`}
               onClick={() => handleNavClick('/booking')}
@@ -727,7 +729,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                 textDecoration: 'none',
               }}
             >
-              <span>🚨 Cấp cứu 24/24:</span>
+              <span><AlertOutlined style={{ marginRight: 6 }} />Cấp cứu 24/24:</span>
               <strong style={{ fontSize: 14 }}>1900 1150</strong>
             </a>
 
@@ -747,13 +749,13 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                 textDecoration: 'none',
               }}
             >
-              <span>📞 Tổng đài Đặt hẹn:</span>
+              <span><PhoneOutlined style={{ marginRight: 6 }} />Tổng đài Đặt hẹn:</span>
               <strong>(028) 3855 0000</strong>
             </a>
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
-            📍 215 Hồng Bàng, P.11, Q.5, TP.HCM<br />
-            ⏰ Giờ khám: 06:30 - 17:00 (T2 - CN)
+            215 Hồng Bàng, P.11, Q.5, TP.HCM<br />
+            Giờ khám: 06:30 - 17:00 (T2 - CN)
           </div>
         </div>
       </Drawer>

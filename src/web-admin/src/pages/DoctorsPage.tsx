@@ -9,6 +9,7 @@ import {
   CheckCircleFilled,
   TrophyOutlined,
   InfoCircleOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
@@ -54,7 +55,7 @@ export const DoctorsPage: React.FC = () => {
       {/* Hero Banner Bác Sĩ */}
       <section
         style={{
-          background: 'linear-gradient(180deg, #dcf0fa 0%, #ebf7fd 55%, #ffffff 100%)',
+          background: '#f0f9ff',
           padding: '48px 20px 40px',
           textAlign: 'center',
           borderBottom: '1px solid #bae6fd',
@@ -374,8 +375,8 @@ export const DoctorsPage: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
               {detailModalDoctor.education && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 2 }}>
-                    🎓 Quá trình đào tạo & Học vị:
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ReadOutlined style={{ color: '#0284c7' }} /> Quá trình đào tạo & Học vị:
                   </div>
                   <div style={{ fontSize: 13.5, color: '#475569' }}>{detailModalDoctor.education}</div>
                 </div>
@@ -383,8 +384,8 @@ export const DoctorsPage: React.FC = () => {
 
               {detailModalDoctor.room && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 2 }}>
-                    📍 Vị trí phòng khám:
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <EnvironmentOutlined style={{ color: '#0284c7' }} /> Vị trí phòng khám:
                   </div>
                   <div style={{ fontSize: 13.5, color: '#475569' }}>{detailModalDoctor.room}</div>
                 </div>
@@ -392,8 +393,8 @@ export const DoctorsPage: React.FC = () => {
 
               {detailModalDoctor.workingDays && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 2 }}>
-                    🕒 Lịch làm việc trong tuần:
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ClockCircleOutlined style={{ color: '#0284c7' }} /> Lịch làm việc trong tuần:
                   </div>
                   <div style={{ fontSize: 13.5, color: '#475569' }}>{detailModalDoctor.workingDays}</div>
                 </div>
@@ -401,8 +402,8 @@ export const DoctorsPage: React.FC = () => {
 
               {detailModalDoctor.achievements && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
-                    🏆 Thành tựu y khoa nổi bật:
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <TrophyOutlined style={{ color: '#0284c7' }} /> Thành tựu y khoa nổi bật:
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {detailModalDoctor.achievements.map((ach, idx) => (

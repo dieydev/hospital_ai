@@ -19,10 +19,12 @@ namespace HospitalAI.QueueService.Controllers
         public string PatientCode { get; set; } = string.Empty;
         public string PatientName { get; set; } = string.Empty;
         public string PatientPhone { get; set; } = string.Empty;
+        public string? IdentityCardNumber { get; set; }
         public string PatientGender { get; set; } = string.Empty;
         public int PatientAge { get; set; }
         public string DepartmentName { get; set; } = string.Empty;
         public string DoctorName { get; set; } = string.Empty;
+        public string? RoomNumber { get; set; } = "Phòng Khám Chuyên Khoa";
         public string AppointmentDate { get; set; } = string.Empty;
         public string AppointmentTime { get; set; } = string.Empty;
         public string SymptomsReason { get; set; } = string.Empty;
@@ -449,8 +451,27 @@ namespace HospitalAI.QueueService.Controllers
 
             model.Id = $"apt-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
             model.Status = "Pending";
-            model.CheckInStatus = "PendingQR";
-            model.QrCode = $"MEDQR|{model.Id}|{model.PatientCode}|{model.AppointmentDate}|{model.AppointmentTime}";
+            var qrPayload = new
+            {
+                type = "D_MEDICAL_EXAM_PASS",
+                version = "2.0",
+                appointmentId = model.Id,
+                patientCode = model.PatientCode,
+                patientName = model.PatientName,
+                phoneNumber = model.PatientPhone,
+                identityCard = model.IdentityCardNumber ?? "",
+                department = model.DepartmentName,
+                doctor = model.DoctorName,
+                roomNumber = model.RoomNumber ?? "Phòng Khám Chuyên Khoa",
+                appointmentDate = model.AppointmentDate,
+                appointmentTime = model.AppointmentTime,
+                appointmentType = model.AppointmentType ?? "New",
+                previousRecordCode = model.PreviousRecordCode,
+                followUpNotes = model.FollowUpNotes,
+                symptoms = model.SymptomsReason,
+                checkInNotice = "Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)"
+            };
+            model.QrCode = System.Text.Json.JsonSerializer.Serialize(qrPayload);
 
             if (string.IsNullOrEmpty(model.CreatedAt))
             {
@@ -535,11 +556,37 @@ namespace HospitalAI.QueueService.Controllers
 
             lock (_lock)
             {
-                // Tìm theo Id hoặc theo QrCode hoặc parse chuỗi MEDQR
+                // Tìm theo Id hoặc theo QrCode hoặc parse chuỗi JSON / MEDQR
                 appointment = _cachedAppointments!.FirstOrDefault(a =>
                     a.Id.Equals(input, StringComparison.OrdinalIgnoreCase) ||
                     (!string.IsNullOrEmpty(a.QrCode) && a.QrCode.Equals(input, StringComparison.OrdinalIgnoreCase)) ||
                     (!string.IsNullOrEmpty(a.PatientCode) && a.PatientCode.Equals(input, StringComparison.OrdinalIgnoreCase)));
+
+                if (appointment == null && input.StartsWith("{") && input.EndsWith("}"))
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(input);
+                        string? aptId = null;
+                        if (doc.RootElement.TryGetProperty("appointmentId", out var idProp)) aptId = idProp.GetString();
+                        else if (doc.RootElement.TryGetProperty("id", out var id2Prop)) aptId = id2Prop.GetString();
+
+                        if (!string.IsNullOrEmpty(aptId))
+                        {
+                            appointment = _cachedAppointments!.FirstOrDefault(a => a.Id.Equals(aptId, StringComparison.OrdinalIgnoreCase));
+                        }
+
+                        if (appointment == null && doc.RootElement.TryGetProperty("patientCode", out var pCodeProp))
+                        {
+                            var pCode = pCodeProp.GetString();
+                            if (!string.IsNullOrEmpty(pCode))
+                            {
+                                appointment = _cachedAppointments!.FirstOrDefault(a => a.PatientCode.Equals(pCode, StringComparison.OrdinalIgnoreCase));
+                            }
+                        }
+                    }
+                    catch { }
+                }
 
                 if (appointment == null && input.StartsWith("MEDQR|"))
                 {
@@ -719,7 +766,27 @@ namespace HospitalAI.QueueService.Controllers
                 appointment.AppointmentTime = newTime;
                 appointment.Status = "Pending";
                 appointment.RescheduledAt = DateTime.UtcNow.ToString("o");
-                appointment.QrCode = $"MEDQR|{appointment.Id}|{appointment.PatientCode}|{newDate}|{newTime}";
+                var rescheduleQrPayload = new
+                {
+                    type = "D_MEDICAL_EXAM_PASS",
+                    version = "2.0",
+                    appointmentId = appointment.Id,
+                    patientCode = appointment.PatientCode,
+                    patientName = appointment.PatientName,
+                    phoneNumber = appointment.PatientPhone,
+                    identityCard = appointment.IdentityCardNumber ?? "",
+                    department = appointment.DepartmentName,
+                    doctor = appointment.DoctorName,
+                    roomNumber = appointment.RoomNumber ?? "Phòng Khám Chuyên Khoa",
+                    appointmentDate = newDate,
+                    appointmentTime = newTime,
+                    appointmentType = appointment.AppointmentType ?? "New",
+                    previousRecordCode = appointment.PreviousRecordCode,
+                    followUpNotes = appointment.FollowUpNotes,
+                    symptoms = appointment.SymptomsReason,
+                    checkInNotice = "Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)"
+                };
+                appointment.QrCode = System.Text.Json.JsonSerializer.Serialize(rescheduleQrPayload);
                 if (!string.IsNullOrWhiteSpace(dto.Reason))
                 {
                     appointment.SymptomsReason += $" [Đổi lịch từ {oldTime} {oldDate}: {dto.Reason}]";

@@ -10,6 +10,8 @@ import {
   ArrowRightOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
+  ExperimentOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
@@ -55,7 +57,7 @@ export const DepartmentsPage: React.FC = () => {
       {/* Hero Banner Chuyên Khoa */}
       <section
         style={{
-          background: 'linear-gradient(180deg, #dcf0fa 0%, #ebf7fd 55%, #ffffff 100%)',
+          background: '#f0f9ff',
           padding: '48px 20px 40px',
           textAlign: 'center',
           borderBottom: '1px solid #bae6fd',
@@ -391,13 +393,13 @@ export const DepartmentsPage: React.FC = () => {
             {/* Trang thiết bị */}
             {detailModalDept.equipment && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>
-                  🔬 Trang thiết bị kỹ thuật cao:
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ExperimentOutlined style={{ color: '#0284c7' }} /> Trang thiết bị kỹ thuật cao:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {detailModalDept.equipment.map((eq, idx) => (
                     <Tag key={idx} color="cyan" style={{ padding: '4px 10px', borderRadius: 8, fontSize: 12.5 }}>
-                      ✓ {eq}
+                      <CheckOutlined style={{ marginRight: 4, color: '#0284c7' }} />{eq}
                     </Tag>
                   ))}
                 </div>
@@ -407,8 +409,8 @@ export const DepartmentsPage: React.FC = () => {
             {/* Bác sĩ thuộc khoa */}
             {doctorsInModalDept.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>
-                  👨‍⚕️ Bác sĩ nổi bật của khoa:
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <UserOutlined style={{ color: '#0284c7' }} /> Bác sĩ nổi bật của khoa:
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {doctorsInModalDept.map((doc) => (

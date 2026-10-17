@@ -28,7 +28,7 @@ export const AboutPage: React.FC = () => {
       {/* Hero Banner Giới Thiệu */}
       <section
         style={{
-          background: 'linear-gradient(180deg, #dcf0fa 0%, #ebf7fd 55%, #ffffff 100%)',
+          background: '#f0f9ff',
           padding: '50px 20px 40px',
           textAlign: 'center',
           borderBottom: '1px solid #bae6fd',
@@ -77,7 +77,7 @@ export const AboutPage: React.FC = () => {
               label: 'Bác Sĩ Chuyên Khoa',
               sub: 'Trưởng khoa, CKII & Giảng viên ĐHYD',
               icon: <UserOutlined style={{ fontSize: 24, color: '#0284c7' }} />,
-              bg: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+              bg: '#e0f2fe',
               borderColor: '#bae6fd',
               color: '#0284c7',
             },
@@ -87,7 +87,7 @@ export const AboutPage: React.FC = () => {
               label: 'Giường Bệnh Nội Trú',
               sub: 'Phòng tiện nghi tiêu chuẩn quốc tế',
               icon: <MedicineBoxOutlined style={{ fontSize: 24, color: '#059669' }} />,
-              bg: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+              bg: '#ecfdf5',
               borderColor: '#a7f3d0',
               color: '#059669',
             },
@@ -97,7 +97,7 @@ export const AboutPage: React.FC = () => {
               label: 'Khoa Lâm Sàng Kỹ Thuật Cao',
               sub: 'Tim mạch, Tiêu hóa, Cấp cứu 24/7',
               icon: <ApartmentOutlined style={{ fontSize: 24, color: '#d97706' }} />,
-              bg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+              bg: '#fef3c7',
               borderColor: '#fde68a',
               color: '#d97706',
             },
@@ -108,7 +108,7 @@ export const AboutPage: React.FC = () => {
               label: 'Mức Độ Hài Lòng',
               sub: 'Đánh giá từ hơn 200.000 lượt khám/năm',
               icon: <SmileOutlined style={{ fontSize: 24, color: '#e11d48' }} />,
-              bg: 'linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)',
+              bg: '#ffe4e6',
               borderColor: '#fecdd3',
               color: '#e11d48',
             },
@@ -277,7 +277,7 @@ export const AboutPage: React.FC = () => {
         {/* Giấy phép hoạt động & Chứng nhận */}
         <section
           style={{
-            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+            background: '#f0f9ff',
             border: '1.5px solid #bae6fd',
             borderRadius: 20,
             padding: '30px 28px',

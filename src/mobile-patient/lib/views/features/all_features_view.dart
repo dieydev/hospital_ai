@@ -74,6 +74,15 @@ class AllFeaturesView extends StatelessWidget {
                         }),
                       },
                       {
+                        'title': 'Đặt lịch tái khám định kỳ',
+                        'desc': 'Đặt hẹn theo chỉ định bác sĩ và liên kết bệnh án cũ',
+                        'icon': Icons.event_repeat_rounded,
+                        'color': const Color(0xFF7C3AED),
+                        'onTap': (BuildContext ctx) => ProfileGuard.check(ctx, onAllowed: () {
+                          Navigator.push(ctx, MaterialPageRoute(builder: (_) => const BookAppointmentView(isFollowUp: true)));
+                        }),
+                      },
+                      {
                         'title': 'Hồ sơ bệnh án điện tử (EMR)',
                         'desc': 'Lịch sử chẩn đoán, toa thuốc và lời dặn bác sĩ',
                         'icon': Icons.assignment_outlined,
@@ -92,9 +101,9 @@ class AllFeaturesView extends StatelessWidget {
                         }),
                       },
                       {
-                        'title': 'Theo dõi hàng chờ',
-                        'desc': 'Xem số thứ tự và ước tính thời gian chờ',
-                        'icon': Icons.queue_rounded,
+                        'title': 'Thẻ khám QR & Hàng chờ',
+                        'desc': 'Tiếp nhận vào khám bằng Mã QR và theo dõi hàng chờ',
+                        'icon': Icons.qr_code_scanner_rounded,
                         'color': const Color(0xFF06B6D4),
                         'onTap': (BuildContext ctx) {
                           Navigator.push(ctx, MaterialPageRoute(builder: (_) => const QueueStatusView()));

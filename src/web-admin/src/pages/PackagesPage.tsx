@@ -9,6 +9,7 @@ import {
   InfoCircleOutlined,
   UserOutlined,
   AlertOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
@@ -52,7 +53,7 @@ export const PackagesPage: React.FC = () => {
       {/* Hero Banner Gói Khám */}
       <section
         style={{
-          background: 'linear-gradient(180deg, #dcf0fa 0%, #ebf7fd 55%, #ffffff 100%)',
+          background: '#f0f9ff',
           padding: '48px 20px 40px',
           textAlign: 'center',
           borderBottom: '1px solid #bae6fd',
@@ -248,7 +249,7 @@ export const PackagesPage: React.FC = () => {
                   style={{
                     padding: '12px 14px',
                     borderRadius: 14,
-                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                    background: '#f0f9ff',
                     border: '1.5px solid #bae6fd',
                     marginBottom: 16,
                   }}
@@ -331,8 +332,8 @@ export const PackagesPage: React.FC = () => {
 
             {/* Chi tiết danh mục */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 10 }}>
-                📋 Danh mục khám & xét nghiệm chi tiết:
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <UnorderedListOutlined style={{ color: '#0284c7' }} /> Danh mục khám & xét nghiệm chi tiết:
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 6 }}>
                 {detailModalPackage.items.map((it, idx) => (

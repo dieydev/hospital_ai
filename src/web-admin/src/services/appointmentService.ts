@@ -23,6 +23,7 @@ export interface OnlineAppointmentItem {
   appointmentType?: 'New' | 'FollowUp';
   previousRecordCode?: string;
   followUpNotes?: string;
+  roomNumber?: string;
 }
 
 export interface TimeSlotQuotaItem {
@@ -110,8 +111,25 @@ export const appointmentService = {
         id: `apt-${Date.now()}`,
         status: 'Pending',
         createdAt: new Date().toISOString(),
-        sourceApp: 'Flutter Patient App',
-        qrCode: `MEDQR|apt-${Date.now()}|${params.patientCode}|${params.appointmentDate}|${params.appointmentTime}`,
+        sourceApp: params.sourceApp || 'Web Booking Portal',
+        qrCode: JSON.stringify({
+          type: 'D_MEDICAL_EXAM_PASS',
+          version: '2.0',
+          appointmentId: `apt-${Date.now()}`,
+          patientCode: params.patientCode,
+          patientName: params.patientName,
+          phoneNumber: params.patientPhone,
+          department: params.departmentName,
+          doctor: params.doctorName,
+          roomNumber: params.roomNumber || 'Phòng Khám Chuyên Khoa',
+          appointmentDate: params.appointmentDate,
+          appointmentTime: params.appointmentTime,
+          appointmentType: params.appointmentType || 'New',
+          previousRecordCode: params.previousRecordCode,
+          followUpNotes: params.followUpNotes,
+          symptoms: params.symptomsReason,
+          checkInNotice: 'Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)',
+        }),
         checkInStatus: 'PendingQR',
       };
       localAppointments.unshift(newApt);
@@ -145,9 +163,47 @@ export const appointmentService = {
       if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
-      return [...localSlots];
+      const targetDate = date || new Date().toISOString().slice(0, 10);
+      return localSlots.map((slot) => {
+        const slotStartTime = slot.timeSlot.split('-')[0].trim();
+        const activeCount = localAppointments.filter(
+          (a) =>
+            a.appointmentDate === targetDate &&
+            a.status !== 'Cancelled' &&
+            (a.appointmentTime === slotStartTime ||
+              a.appointmentTime === slot.timeSlot ||
+              a.appointmentTime.startsWith(slotStartTime))
+        ).length;
+        const totalBooked = Math.min(slot.maxCapacity, slot.bookedCount + activeCount);
+        const isFull = totalBooked >= slot.maxCapacity;
+        return {
+          ...slot,
+          bookedCount: totalBooked,
+          isFull,
+          isAvailable: !slot.isLocked && !isFull,
+        };
+      });
     } catch {
-      return [...localSlots];
+      const targetDate = date || new Date().toISOString().slice(0, 10);
+      return localSlots.map((slot) => {
+        const slotStartTime = slot.timeSlot.split('-')[0].trim();
+        const activeCount = localAppointments.filter(
+          (a) =>
+            a.appointmentDate === targetDate &&
+            a.status !== 'Cancelled' &&
+            (a.appointmentTime === slotStartTime ||
+              a.appointmentTime === slot.timeSlot ||
+              a.appointmentTime.startsWith(slotStartTime))
+        ).length;
+        const totalBooked = Math.min(slot.maxCapacity, slot.bookedCount + activeCount);
+        const isFull = totalBooked >= slot.maxCapacity;
+        return {
+          ...slot,
+          bookedCount: totalBooked,
+          isFull,
+          isAvailable: !slot.isLocked && !isFull,
+        };
+      });
     }
   },
 
@@ -190,8 +246,18 @@ export const appointmentService = {
       return response.data;
     } catch {
       const input = qrCodeOrId.trim();
+      let targetId = input;
+      if (input.startsWith('{') && input.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(input);
+          targetId = parsed.appointmentId || parsed.id || parsed.ticketId || '';
+        } catch {}
+      } else if (input.startsWith('MEDQR|')) {
+        const parts = input.split('|');
+        if (parts.length >= 2) targetId = parts[1];
+      }
       const item = localAppointments.find(
-        (a) => a.id === input || a.qrCode === input || a.patientCode === input
+        (a) => a.id === targetId || a.id === input || a.qrCode === input || a.patientCode === input
       );
       if (item) {
         item.status = 'Completed';

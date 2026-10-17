@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -110,16 +111,35 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.primary,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const BookAppointmentView()),
-          ).then((_) => _loadAppointments());
-        },
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text('Đặt khám mới', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'fab_followup',
+            backgroundColor: const Color(0xFF7C3AED),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BookAppointmentView(isFollowUp: true)),
+              ).then((_) => _loadAppointments());
+            },
+            icon: const Icon(Icons.event_repeat_rounded, color: Colors.white, size: 18),
+            label: Text('Tái khám', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13)),
+          ),
+          const SizedBox(width: 10),
+          FloatingActionButton.extended(
+            heroTag: 'fab_new',
+            backgroundColor: AppTheme.primary,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BookAppointmentView()),
+              ).then((_) => _loadAppointments());
+            },
+            icon: const Icon(Icons.add_rounded, color: Colors.white),
+            label: Text('Đặt khám mới', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13)),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => _loadAppointments(),
@@ -412,6 +432,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                             initialDepartment: dept,
                             initialDoctor: doctor,
                             previousRecordCode: id,
+                            initialFollowUpNotes: 'Tái khám theo lịch hẹn $id ($dept)',
                           ),
                         ),
                       ).then((_) => _loadAppointments());
@@ -459,9 +480,29 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
     final isFollowUp = item['appointmentType'] == 'FollowUp' ||
         (item['symptomsReason']?.toString().toLowerCase().contains('tái khám') ?? false);
     final prevRecord = item['previousRecordCode']?.toString() ?? '';
-    final qrData = item['qrCode']?.toString().isNotEmpty == true
+
+    final Map<String, dynamic> qrPayload = {
+      'type': 'D_MEDICAL_EXAM_PASS',
+      'version': '2.0',
+      'appointmentId': id,
+      'patientCode': user?.maBenhNhan ?? item['patientCode']?.toString() ?? '',
+      'patientName': user?.hoTen ?? item['patientName']?.toString() ?? '',
+      'phoneNumber': user?.soDienThoai ?? item['patientPhone']?.toString() ?? '',
+      'identityCard': user?.soCCCD ?? item['identityCardNumber']?.toString() ?? '',
+      'department': dept,
+      'doctor': doctor,
+      'roomNumber': item['roomNumber']?.toString() ?? 'Phòng Khám Chuyên Khoa',
+      'appointmentDate': date,
+      'appointmentTime': time,
+      'appointmentType': isFollowUp ? 'FollowUp' : 'New',
+      if (prevRecord.isNotEmpty) 'previousRecordCode': prevRecord,
+      if (item['followUpNotes'] != null) 'followUpNotes': item['followUpNotes'],
+      if (item['symptomsReason'] != null) 'symptoms': item['symptomsReason'],
+      'checkInNotice': 'Xuat trinh ma QR de vao phong kham (Khong can lay STT)',
+    };
+    final qrData = item['qrCode'] != null && item['qrCode'].toString().startsWith('{')
         ? item['qrCode'].toString()
-        : 'MEDQR|$id|${user?.maBenhNhan ?? ''}|$date|$time${isFollowUp ? '|FOLLOWUP' : ''}';
+        : jsonEncode(qrPayload);
 
     showModalBottomSheet(
       context: parentContext,
@@ -588,31 +629,54 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
+                color: isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFDE68A)),
+                border: Border.all(color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Color(0xFFD97706), size: 20),
+                  Icon(Icons.qr_code_scanner_rounded, color: isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Quý khách chỉ cần xuất trình mã QR này tại quầy tiếp nhận để vào khám (Không cần bốc số thứ tự STT giấy).',
-                      style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF92400E), height: 1.35),
+                      'Quý khách chỉ cần xuất trình mã QR này tại phòng khám để vào khám ngay (Hệ thống đã bỏ hoàn toàn số thứ tự STT giấy).',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: isFollowUp ? const Color(0xFF5B21B6) : const Color(0xFF0369A1),
+                        height: 1.35,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(40),
+                side: BorderSide(color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: Icon(Icons.info_outline, size: 16, color: isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary),
+              label: Text(
+                'Xem toàn bộ thông tin khám trong Mã QR',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.bold,
+                  color: isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary,
+                ),
+              ),
+              onPressed: () => _showQrDataDetailsModal(parentContext, qrPayload),
+            ),
+            const SizedBox(height: 16),
 
             SizedBox(
               width: double.infinity,
               height: 46,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0284C7),
+                  backgroundColor: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () => Navigator.pop(ctx),
@@ -621,6 +685,106 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showQrDataDetailsModal(BuildContext context, Map<String, dynamic> data) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.qr_code_2_rounded, color: AppTheme.primary, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Dữ Liệu Khám Tích Hợp Trong Mã QR',
+                  style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Mã QR đã mã hóa đầy đủ thông tin bệnh nhân & đợt khám. Bệnh viện đã bỏ số thứ tự STT giấy.',
+              style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F9FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
+              ),
+              child: Column(
+                children: [
+                  _buildInspectionRow('Mã tiếp nhận', data['appointmentId'] ?? '--'),
+                  _buildInspectionRow('Họ và tên', data['patientName'] ?? '--'),
+                  _buildInspectionRow('Mã người bệnh', data['patientCode'] ?? '--'),
+                  _buildInspectionRow('Số CCCD / ĐDCN', data['identityCard'] ?? '--'),
+                  _buildInspectionRow('Chuyên khoa khám', data['department'] ?? '--'),
+                  _buildInspectionRow('Phòng khám', data['roomNumber'] ?? '--'),
+                  if (data['doctor'] != null) _buildInspectionRow('Bác sĩ', data['doctor']),
+                  if (data['appointmentDate'] != null) _buildInspectionRow('Ngày hẹn', '${data['appointmentTime']} - ${data['appointmentDate']}'),
+                  _buildInspectionRow('Loại khám', data['appointmentType'] == 'FollowUp' ? 'Tái khám định kỳ' : 'Khám mới'),
+                  if (data['previousRecordCode'] != null) _buildInspectionRow('Hồ sơ EMR cũ', data['previousRecordCode']),
+                  if (data['followUpNotes'] != null) _buildInspectionRow('Lời dặn tái khám', data['followUpNotes']),
+                  if (data['symptoms'] != null) _buildInspectionRow('Lý do khám', data['symptoms']),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Đã hiểu (Đóng)', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInspectionRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
+          ),
+          Expanded(
+            child: Text(value, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

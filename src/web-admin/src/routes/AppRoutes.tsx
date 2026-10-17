@@ -14,6 +14,7 @@ import { AuditLogPage } from '../pages/AuditLogPage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { AppointmentsPage } from '../pages/AppointmentsPage';
+import { PatientHomePage } from '../pages/PatientHomePage';
 import { PatientBookingPage } from '../pages/PatientBookingPage';
 import { AboutPage } from '../pages/AboutPage';
 import { NewsPage } from '../pages/NewsPage';
@@ -35,19 +36,19 @@ export const AppRoutes: React.FC = () => {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Root path "/" — Phân luồng chính xác theo vai trò ngay từ đầu */}
+      {/* Root path "/" — Cán bộ y tế vào Dashboard, Người bệnh & Khách vào Trang chủ Cổng Y Tế */}
       <Route
         path="/"
         element={
-          !user ? (
-            <Navigate to="/booking" replace />
-          ) : isStaffOrAdmin ? (
+          isStaffOrAdmin ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <Navigate to="/booking" replace />
+            <PatientHomePage />
           )
         }
       />
+      <Route path="/home" element={<PatientHomePage />} />
+      <Route path="/trang-chu" element={<PatientHomePage />} />
       
       {/* Public Patient Booking & Information Portal Routes */}
       <Route path="/booking" element={<PatientBookingPage />} />

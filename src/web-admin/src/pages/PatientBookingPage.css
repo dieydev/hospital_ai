@@ -4,26 +4,26 @@
    ========================================================================== */
 
 /* Container & Background */
-.booking-page-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e2e8f0 100%);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+.booking-page-container  { 
+  min-height: 100dvh;
+  background: #f8fafc;
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #0f172a;
   overflow-x: hidden;
-}
+ }
 
 /* Header Navbar */
-.booking-navbar {
+.booking-navbar  { 
   background-color: #ffffff;
-  border-bottom: 1px solid #bae6fd;
-  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.08);
+  border-bottom: none;
+  
   position: sticky;
   top: 0;
   z-index: 100;
   transition: all 0.3s ease;
-}
+ }
 
-.booking-navbar-content {
+.booking-navbar-content  { 
   width: 100%;
   max-width: 100%;
   margin: 0;
@@ -32,10 +32,35 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-}
+ }
 
-/* Patient Profile Dropdown Trigger (Pill at far right) */
-.patient-profile-pill {
+/* Patient Profile Dropdown Trigger (Compact Circle Button) */
+.patient-profile-circle-btn  { 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #f0f9ff;
+  border: 2px solid #bae6fd;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  padding: 0;
+  flex-shrink: 0;
+  }
+
+.patient-profile-circle-btn:hover,
+.patient-profile-circle-btn.active  { 
+  background-color: #e0f2fe;
+  border-color: #0284c7;
+  
+  transform: scale(1.06);
+  }
+
+.patient-profile-pill  { 
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -46,28 +71,28 @@
   cursor: pointer;
   user-select: none;
   transition: all 0.22s ease;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.08);
-}
+  
+ }
 
 .patient-profile-pill:hover,
-.patient-profile-pill.active {
+.patient-profile-pill.active  { 
   background-color: #e0f2fe;
   border-color: #0284c7;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.18);
+  
   transform: translateY(-1px);
-}
+  }
 
 /* Center Navigation Links in Header (Giới thiệu, Tin tức, Chuyên khoa...) */
-.booking-nav-center {
+.booking-nav-center  { 
   display: flex;
   align-items: center;
   gap: 6px;
   list-style: none;
   margin: 0;
   padding: 0;
-}
+ }
 
-.booking-nav-link {
+.booking-nav-link  { 
   font-size: 14.5px;
   font-weight: 700;
   color: #334155;
@@ -80,36 +105,36 @@
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-}
+ }
 
-.booking-nav-link:hover {
+.booking-nav-link:hover  { 
   color: #0284c7;
   background-color: #f0f9ff;
   transform: translateY(-1.5px);
-  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.1);
-}
+  
+  }
 
-.booking-nav-link.active {
+.booking-nav-link.active  { 
   color: #0284c7;
   background-color: #e0f2fe;
   font-weight: 800;
-  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.15);
-}
+  
+ }
 
-.show-on-tablet-mobile {
+.show-on-tablet-mobile  { 
   display: none !important;
-}
+ }
 
-@media (max-width: 1080px) {
+@media (max-width: 1080px)  { 
   .hide-on-tablet-mobile {
     display: none !important;
-  }
-  .show-on-tablet-mobile {
+   }
+  .show-on-tablet-mobile  { 
     display: inline-flex !important;
-  }
+   }
 }
 
-.mobile-drawer-nav-item {
+.mobile-drawer-nav-item  { 
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -121,77 +146,73 @@
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-}
+  }
 
-.mobile-drawer-nav-item:hover {
+.mobile-drawer-nav-item:hover  { 
   background-color: #f0f9ff;
   color: #0284c7;
-}
+  }
 
-.mobile-drawer-nav-item.active {
+.mobile-drawer-nav-item.active  { 
   background-color: #e0f2fe;
   color: #0284c7;
   font-weight: 800;
-}
+  }
 
-.booking-brand {
+.booking-brand  { 
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
   user-select: none;
-}
+ }
 
-.booking-brand-logo {
+.booking-brand-logo  { 
   height: 44px;
   max-width: 220px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(2, 132, 199, 0.18));
-}
+ }
 
-.booking-brand-title {
+.booking-brand-title  { 
   font-size: 13px;
   font-weight: 900;
   color: #0369a1;
   letter-spacing: -0.3px;
   text-transform: uppercase;
-}
+ }
 
-.booking-brand-subtitle {
+.booking-brand-subtitle  { 
   font-size: 11px;
   color: #64748b;
   font-weight: 600;
-}
+ }
 
 /* ==========================================================================
    Medpro Replica Hero & Search Section
    ========================================================================== */
-.medpro-hero-section {
-  background: linear-gradient(180deg, #dcf0fa 0%, #ebf7fd 55%, #f8fcff 100%);
+.medpro-hero-section  { 
+  background: #f0f9ff;
   position: relative;
   overflow: hidden;
   padding: 38px 20px 48px;
   border-bottom: 1.5px solid #bae6fd;
-}
+ }
 
-.medpro-hero-bg-pattern {
+.medpro-hero-bg-pattern  { 
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(2, 132, 199, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 20%, rgba(2, 132, 199, 0.08) 0%, transparent 40%),
-    radial-gradient(#93c5fd 1.2px, transparent 1.2px);
+  background-image: none;
   background-size: 100% 100%, 100% 100%, 28px 28px;
   opacity: 0.55;
   pointer-events: none;
   z-index: 1;
-}
+ }
 
 /* Left & Right Doctor Flanks */
-.medpro-doctor-flank {
+.medpro-doctor-flank  { 
   position: absolute;
   bottom: 80px;
   height: 445px;
@@ -201,79 +222,76 @@
   display: flex;
   align-items: flex-end;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+ }
 
-.medpro-doctor-flank.flank-left {
+.medpro-doctor-flank.flank-left  { 
   left: calc(50% - 660px);
-}
+ }
 
-.medpro-doctor-flank.flank-right {
+.medpro-doctor-flank.flank-right  { 
   right: calc(50% - 610px);
-}
+ }
 
-@media (max-width: 1440px) {
+@media (max-width: 1440px)  { 
   .medpro-doctor-flank {
     height: 395px;
     max-width: 340px;
     bottom: 95px;
-  }
-  .medpro-doctor-flank.flank-left {
+   }
+  .medpro-doctor-flank.flank-left  { 
     left: calc(50% - 590px);
-  }
-  .medpro-doctor-flank.flank-right {
+   }
+  .medpro-doctor-flank.flank-right  { 
     right: calc(50% - 550px);
-  }
+   }
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 1250px)  { 
   .medpro-doctor-flank {
     height: 330px;
     max-width: 280px;
     bottom: 120px;
-  }
-  .medpro-doctor-flank.flank-left {
+   }
+  .medpro-doctor-flank.flank-left  { 
     left: -15px;
-  }
-  .medpro-doctor-flank.flank-right {
+   }
+  .medpro-doctor-flank.flank-right  { 
     right: -15px;
-  }
+   }
 }
 
-@media (max-width: 992px) {
+@media (max-width: 992px)  { 
   .medpro-doctor-flank {
     display: none;
-  }
+   }
 }
 
-.medpro-doctor-img {
+.medpro-doctor-img  { 
   height: 100%;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 14px 28px rgba(2, 132, 199, 0.16));
-  mask-image: linear-gradient(to top, transparent 0%, black 8%, black 100%);
-  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 8%, black 100%);
-}
+ }
 
 /* Center Content */
-.medpro-hero-center-content {
+.medpro-hero-center-content  { 
   max-width: 760px;
   margin: 0 auto 36px;
   position: relative;
   z-index: 3;
   text-align: center;
-}
+ }
 
-.medpro-hero-main-title {
+.medpro-hero-main-title  { 
   color: #0c4a6e;
   font-size: clamp(23px, 3.2vw, 33px);
   font-weight: 900;
   margin: 0 0 20px;
   letter-spacing: -0.5px;
   line-height: 1.3;
-}
+ }
 
 /* Rounded Pill Search Bar */
-.medpro-search-bar-wrap {
+.medpro-search-bar-wrap  { 
   background: #ffffff;
   border-radius: 9999px;
   height: 56px;
@@ -281,65 +299,65 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 10px 30px rgba(2, 132, 199, 0.14), 0 2px 8px rgba(0, 0, 0, 0.04);
+  
   border: 1.5px solid #bae6fd;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   margin: 0 auto 20px;
   max-width: 680px;
   position: relative;
-}
+ }
 
 .medpro-search-bar-wrap:hover,
-.medpro-search-bar-wrap:focus-within {
+.medpro-search-bar-wrap:focus-within  { 
   border-color: #0284c7;
-  box-shadow: 0 16px 40px rgba(2, 132, 199, 0.24), 0 0 0 3px rgba(2, 132, 199, 0.15);
+  
   transform: translateY(-2px);
-}
+  }
 
-.medpro-search-icon {
+.medpro-search-icon  { 
   font-size: 20px;
   color: #0284c7;
   flex-shrink: 0;
   transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+ }
 
-.medpro-search-bar-wrap:focus-within .medpro-search-icon {
+.medpro-search-bar-wrap:focus-within .medpro-search-icon  { 
   transform: scale(1.18) rotate(-8deg);
-}
+  }
 
-.medpro-search-input {
+.medpro-search-input  { 
   flex: 1;
   border: none !important;
-  box-shadow: none !important;
+  
   font-size: 15px;
   color: #0f172a;
   background: transparent !important;
   padding: 0;
-}
+ }
 
-.medpro-search-action-btn {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+.medpro-search-action-btn  { 
+  background: #0284c7 !important;
   border-color: #0284c7 !important;
   border-radius: 24px !important;
   font-weight: 800 !important;
   height: 42px !important;
   padding: 0 22px !important;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+  
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
+ }
 
-.medpro-search-action-btn:hover {
+.medpro-search-action-btn:hover  { 
   transform: translateY(-1.5px) scale(1.03) !important;
-  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45) !important;
-}
+  
+  }
 
-.medpro-search-action-btn:active {
+.medpro-search-action-btn:active  { 
   transform: scale(0.96) !important;
-}
+  }
 
 /* Quick search suggestion tags */
-.medpro-quick-tags-wrap {
+.medpro-quick-tags-wrap  { 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -347,15 +365,15 @@
   gap: 8px;
   margin: -10px auto 20px;
   max-width: 680px;
-}
+ }
 
-.medpro-quick-tag-label {
+.medpro-quick-tag-label  { 
   font-size: 12px;
   color: #64748b;
   font-weight: 600;
-}
+ }
 
-.medpro-quick-tag-pill {
+.medpro-quick-tag-pill  { 
   font-size: 11.5px;
   font-weight: 700;
   color: #0369a1;
@@ -366,18 +384,18 @@
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
-}
+ }
 
-.medpro-quick-tag-pill:hover {
+.medpro-quick-tag-pill:hover  { 
   background-color: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
-}
+  
+  }
 
 /* 3 Green Checkmark Bullet Points */
-.medpro-hero-bullet-list {
+.medpro-hero-bullet-list  { 
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -386,18 +404,18 @@
   max-width: 100%;
   gap: 9px;
   text-align: left;
-}
+ }
 
-.medpro-hero-bullet-item {
+.medpro-hero-bullet-item  { 
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 13.5px;
   color: #1e293b;
   line-height: 1.45;
-}
+ }
 
-.medpro-bullet-check {
+.medpro-bullet-check  { 
   background: #16a34a;
   color: #ffffff;
   width: 17px;
@@ -409,43 +427,43 @@
   font-size: 10px;
   font-weight: 900;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
-}
+  
+ }
 
 /* ==========================================================================
    MEDPRO SERVICE CARDS & CAROUSEL ANIMATIONS
    ========================================================================== */
 
 /* 1. Staggered Entrance Animation on Load */
-@keyframes cardCascadeIn {
+@keyframes cardCascadeIn  { 
   0% {
     opacity: 0;
     transform: translateY(22px) scale(0.94);
-  }
-  60% {
+   }
+  60%  { 
     opacity: 0.85;
     transform: translateY(-3px) scale(1.01);
-  }
-  100% {
+   }
+  100%  { 
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
+   }
 }
 
 /* 2. Page Switching Slide Glide Animation */
-@keyframes cardSlideGlide {
+@keyframes cardSlideGlide  { 
   0% {
     opacity: 0.55;
     transform: scale(0.96) translateX(14px);
-  }
-  100% {
+   }
+  100%  { 
     opacity: 1;
     transform: scale(1) translateX(0);
-  }
+   }
 }
 
 /* Feature Cards Floating Container */
-.medpro-cards-carousel-container {
+.medpro-cards-carousel-container  { 
   max-width: 1240px;
   margin: 0 auto;
   position: relative;
@@ -454,10 +472,10 @@
   align-items: center;
   gap: 8px;
   padding: 0 4px;
-}
+ }
 
 /* Scrollable Horizontal Track for 14 Cards */
-.medpro-cards-scroll-track {
+.medpro-cards-scroll-track  { 
   display: flex;
   gap: 12px;
   overflow-x: auto;
@@ -467,18 +485,18 @@
   -ms-overflow-style: none; /* IE/Edge */
   padding: 10px 4px 14px;
   flex: 1;
-}
+ }
 
-.medpro-cards-scroll-track::-webkit-scrollbar {
+.medpro-cards-scroll-track::-webkit-scrollbar  { 
   display: none; /* Chrome, Safari, Opera */
-}
+ }
 
-.medpro-cards-scroll-track.is-sliding .medpro-service-card {
+.medpro-cards-scroll-track.is-sliding .medpro-service-card  { 
   animation: cardSlideGlide 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
+ }
 
 /* Service Card (7 cards visible per page on Desktop) */
-.medpro-service-card {
+.medpro-service-card  { 
   flex: 0 0 calc((100% - 6 * 12px) / 7);
   min-width: calc((100% - 6 * 12px) / 7);
   scroll-snap-align: start;
@@ -486,7 +504,7 @@
   border-radius: 20px;
   padding: 18px 8px 14px;
   border: 1.5px solid #bae6fd;
-  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.08);
+  
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -502,63 +520,57 @@
   position: relative;
   overflow: hidden;
   will-change: transform, box-shadow;
-}
+ }
 
 /* Shimmer Light Bar passing through Card on Hover */
-.medpro-service-card::before {
+.medpro-service-card::before  { 
   content: '';
   position: absolute;
   top: 0;
   left: -130%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.7) 45%,
-    rgba(2, 132, 199, 0.09) 50%,
-    transparent 100%
-  );
+  background: #f0f9ff;
   transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
-}
+ }
 
-.medpro-service-card:hover::before {
+.medpro-service-card:hover::before  { 
   left: 130%;
-}
+  }
 
-.medpro-service-card:hover {
+.medpro-service-card:hover  { 
   transform: translateY(-8px) scale(1.025);
   border-color: #0284c7;
-  box-shadow: 0 20px 40px rgba(2, 132, 199, 0.2), 0 0 0 1px rgba(2, 132, 199, 0.15);
-}
+  
+  }
 
-.medpro-service-card:active {
+.medpro-service-card:active  { 
   transform: translateY(-2px) scale(0.97);
   transition-duration: 0.1s;
-}
+  }
 
-@media (max-width: 1100px) {
+@media (max-width: 1100px)  { 
   .medpro-service-card {
     flex: 0 0 calc((100% - 3 * 12px) / 4);
     min-width: calc((100% - 3 * 12px) / 4);
-  }
+   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 680px)  { 
   .medpro-service-card {
     flex: 0 0 calc((100% - 1.5 * 10px) / 2.4);
     min-width: calc((100% - 1.5 * 10px) / 2.4);
     padding: 14px 6px 12px;
     min-height: 118px;
-  }
-  .medpro-cards-scroll-track {
+   }
+  .medpro-cards-scroll-track  { 
     gap: 10px;
-  }
+   }
 }
 
 /* Card Icon Wrap Elevation & Bounce */
-.medpro-card-icon-wrap {
+.medpro-card-icon-wrap  { 
   position: relative;
   width: 54px;
   height: 54px;
@@ -568,19 +580,19 @@
   justify-content: center;
   margin-bottom: 12px;
   transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+ }
 
-.medpro-service-card:hover .medpro-card-icon-wrap {
+.medpro-service-card:hover .medpro-card-icon-wrap  { 
   transform: scale(1.15) translateY(-3px);
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.22);
-}
+  
+  }
 
-.medpro-service-card:hover .medpro-card-title {
+.medpro-service-card:hover .medpro-card-title  { 
   color: #0284c7;
   transition: color 0.22s ease;
-}
+  }
 
-.medpro-icon-star-badge {
+.medpro-icon-star-badge  { 
   position: absolute;
   top: -4px;
   right: -4px;
@@ -593,10 +605,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.4);
-}
+  
+ }
 
-.medpro-icon-clock-badge {
+.medpro-icon-clock-badge  { 
   position: absolute;
   top: -7px;
   right: -14px;
@@ -607,22 +619,22 @@
   padding: 1px 5px;
   font-weight: 800;
   white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.4);
-}
+  
+ }
 
 /* Heartbeat Pulse Animation for "Mới" Badge */
-@keyframes pulseMoiBadge {
+@keyframes pulseMoiBadge  { 
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
-  }
-  50% {
+    
+   }
+  50%  { 
     transform: scale(1.16);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.65);
-  }
+    
+   }
 }
 
-.medpro-card-moi-badge {
+.medpro-card-moi-badge  { 
   position: absolute;
   top: -8px;
   right: -8px;
@@ -634,46 +646,46 @@
   font-weight: 800;
   letter-spacing: 0.3px;
   animation: pulseMoiBadge 1.8s ease-in-out infinite;
-}
+ }
 
-.medpro-card-title {
+.medpro-card-title  { 
   font-size: 13px;
   font-weight: 700;
   color: #0f172a;
   line-height: 1.35;
   transition: color 0.2s ease;
-}
+ }
 
 /* Arrow Nudge Keyframes on Button Hover */
-@keyframes arrowNudgeRight {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(3.5px); }
+@keyframes arrowNudgeRight  { 
+  0%, 100% { transform: translateX(0);  }
+  50%  {  transform: translateX(3.5px);  }
 }
 
-@keyframes arrowNudgeLeft {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-3.5px); }
+@keyframes arrowNudgeLeft  { 
+  0%, 100% { transform: translateX(0);  }
+  50%  {  transform: translateX(-3.5px);  }
 }
 
-@keyframes navBtnSlideIn {
+@keyframes navBtnSlideIn  { 
   from {
     opacity: 0;
     transform: scale(0.6) translateX(-12px);
-  }
-  to {
+   }
+  to  { 
     opacity: 1;
     transform: scale(1) translateX(0);
-  }
+   }
 }
 
 /* Prev & Next Carousel Buttons (White Circles with Blue Arrows) */
-.medpro-carousel-nav-btn {
+.medpro-carousel-nav-btn  { 
   width: 42px;
   height: 42px;
   border-radius: 50%;
   background: #ffffff;
   border: 1.5px solid #bae6fd;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.16);
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -685,55 +697,55 @@
   transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 5;
   user-select: none;
-}
+ }
 
-.medpro-carousel-prev-btn:not(.is-hidden) {
+.medpro-carousel-prev-btn:not(.is-hidden)  { 
   animation: navBtnSlideIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+ }
 
-.medpro-carousel-next-btn:hover .anticon {
+.medpro-carousel-next-btn:hover .anticon  { 
   animation: arrowNudgeRight 0.8s ease-in-out infinite;
-}
+  }
 
-.medpro-carousel-prev-btn:hover .anticon {
+.medpro-carousel-prev-btn:hover .anticon  { 
   animation: arrowNudgeLeft 0.8s ease-in-out infinite;
-}
+  }
 
-.medpro-carousel-nav-btn:hover {
+.medpro-carousel-nav-btn:hover  { 
   background: #f0f9ff;
   border-color: #0284c7;
   color: #0369a1;
   transform: scale(1.15);
-  box-shadow: 0 8px 22px rgba(2, 132, 199, 0.3);
-}
+  
+  }
 
-.medpro-carousel-nav-btn:active {
+.medpro-carousel-nav-btn:active  { 
   transform: scale(0.92);
   transition-duration: 0.08s;
-}
+  }
 
-.medpro-carousel-nav-btn.is-hidden {
+.medpro-carousel-nav-btn.is-hidden  { 
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
-}
+ }
 
-@media (max-width: 768px) {
+@media (max-width: 768px)  { 
   .medpro-carousel-nav-btn {
     display: none !important;
-  }
+   }
 }
 
 /* Carousel Pagination Dots Indicator with Shimmer */
-.medpro-cards-dots-indicator {
+.medpro-cards-dots-indicator  { 
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   margin: 4px auto 24px;
-}
+ }
 
-.medpro-cards-dot {
+.medpro-cards-dot  { 
   position: relative;
   width: 22px;
   height: 6px;
@@ -742,292 +754,284 @@
   cursor: pointer;
   transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
-}
+ }
 
-.medpro-cards-dot:hover {
+.medpro-cards-dot:hover  { 
   background-color: #94a3b8;
   transform: scale(1.1);
-}
+  }
 
-.medpro-cards-dot.active {
+.medpro-cards-dot.active  { 
   width: 44px;
-  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
-}
+  background: #0284c7;
+  
+ }
 
-.medpro-cards-dot.active::after {
+.medpro-cards-dot.active::after  { 
   content: '';
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  background: #f0f9ff;
   animation: shimmerDot 2.2s infinite;
-}
+ }
 
-@keyframes shimmerDot {
-  0% { left: -100%; }
-  100% { left: 100%; }
+@keyframes shimmerDot  { 
+  0% { left: -100%;  }
+  100%  {  left: 100%;  }
 }
 
 /* Active Card Glow Pulse */
-@keyframes activeCardPulse {
+@keyframes activeCardPulse  { 
   0%, 100% {
-    box-shadow: 0 12px 28px rgba(2, 132, 199, 0.2), 0 0 0 2px rgba(2, 132, 199, 0.2);
-  }
-  50% {
-    box-shadow: 0 16px 36px rgba(2, 132, 199, 0.32), 0 0 0 3px rgba(2, 132, 199, 0.35);
-  }
+    
+   }
+  50%  { 
+    
+   }
 }
 
-.medpro-service-card.card-active {
-  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+.medpro-service-card.card-active  { 
+  background: #f0f9ff;
   border-color: #0284c7;
   animation: activeCardPulse 2.8s ease-in-out infinite;
-}
+ }
 
 /* Floating Hotline Orange Button (Fixed at Bottom-Right) with Phone Ring Wiggle */
-@keyframes phoneRingWiggle {
+@keyframes phoneRingWiggle  { 
   0%, 100% {
     transform: rotate(0deg) scale(1);
-  }
-  2%, 6%, 10% {
+   }
+  2%, 6%, 10%  { 
     transform: rotate(-14deg) scale(1.08);
-  }
-  4%, 8%, 12% {
+   }
+  4%, 8%, 12%  { 
     transform: rotate(14deg) scale(1.08);
-  }
-  14% {
+   }
+  14%  { 
     transform: rotate(0deg) scale(1);
-  }
+   }
 }
 
-.medpro-floating-hotline-btn {
+.medpro-floating-hotline-btn  { 
   position: fixed;
   bottom: 28px;
   right: 28px;
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  background: #ea580c;
   color: #ffffff !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(234, 88, 12, 0.42);
+  
   z-index: 1000;
   transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   text-decoration: none;
   animation: phoneRingWiggle 4.5s ease-in-out infinite;
-}
+ }
 
-.medpro-floating-hotline-btn:hover {
+.medpro-floating-hotline-btn:hover  { 
   transform: scale(1.15) !important;
-  box-shadow: 0 16px 36px rgba(234, 88, 12, 0.6) !important;
+  
   animation-play-state: paused;
-}
+  }
 
-.medpro-floating-hotline-btn:active {
+.medpro-floating-hotline-btn:active  { 
   transform: scale(0.94) !important;
-}
+  }
 
 /* Feature Promo Banner */
-.portal-promo-banner {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+.portal-promo-banner  { 
+  background: #f0f9ff;
   border: 1px solid #bae6fd;
   border-radius: 18px;
   padding: 22px 26px;
   margin-bottom: 26px;
-  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.06);
-}
+  
+ }
 
 /* Main Card */
-.booking-main-card {
+.booking-main-card  { 
   max-width: 1100px;
   margin: 0 auto 50px;
   padding: 0 16px;
-}
+ }
 
-.booking-card-inner {
+.booking-card-inner  { 
   border-radius: 20px;
-  box-shadow: 0 12px 36px rgba(2, 132, 199, 0.1);
+  
   border: 1px solid #bae6fd;
   overflow: hidden;
   background: #ffffff;
-}
+ }
 
 /* Interactive Cards & Selection Grid */
-.interactive-card {
+.interactive-card  { 
   transition: all 0.26s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   border-radius: 18px;
   position: relative;
   overflow: hidden;
-}
+ }
 
-.interactive-card:hover {
+.interactive-card:hover  { 
   transform: translateY(-5px) scale(1.015);
-  box-shadow: 0 16px 36px rgba(2, 132, 199, 0.16) !important;
+  
   border-color: #0284c7 !important;
-}
+  }
 
-.interactive-card:active {
+.interactive-card:active  { 
   transform: translateY(-1px) scale(0.98);
-}
+  }
 
 /* Time Slot Item with Soft Glow & Pop */
-.time-slot-box {
+.time-slot-box  { 
   padding: 11px 8px;
   border-radius: 12px;
   text-align: center;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   cursor: pointer;
-}
+ }
 
-.time-slot-box:not(.blocked):hover {
+.time-slot-box:not(.blocked):hover  { 
   transform: translateY(-3px) scale(1.03);
   border-color: #0284c7;
-  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.18);
-}
+  
+  }
 
-.time-slot-box:active:not(.blocked) {
+.time-slot-box:active:not(.blocked)  { 
   transform: scale(0.96);
-}
+  }
 
 /* ==========================================================================
    PORTAL-WIDE HARMONIZED INTERACTIVE ANIMATIONS
    ========================================================================== */
 
 /* 1. Ant Steps Indicator Halo Pulse */
-@keyframes stepHaloPulse {
+@keyframes stepHaloPulse  { 
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 7px rgba(2, 132, 199, 0);
-  }
+    
+   }
+  50%  { 
+    
+   }
 }
 
-.ant-steps-item-process .ant-steps-item-icon {
+.ant-steps-item-process .ant-steps-item-icon  { 
   animation: stepHaloPulse 2.2s infinite !important;
-}
+ }
 
-.ant-steps-item-finish .ant-steps-item-icon {
+.ant-steps-item-finish .ant-steps-item-icon  { 
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
+ }
 
 /* 2. Global Primary Button Radiance & Tactile Click */
-.ant-btn {
+.ant-btn  { 
   transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
+ }
 
-.ant-btn-primary {
+.ant-btn-primary  { 
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25) !important;
-}
+  
+ }
 
-.ant-btn-primary:hover {
+.ant-btn-primary:hover  { 
   transform: translateY(-1.5px) !important;
-  box-shadow: 0 8px 22px rgba(2, 132, 199, 0.38) !important;
-}
+  
+  }
 
-.ant-btn-primary:active {
+.ant-btn-primary:active  { 
   transform: scale(0.96) translateY(0) !important;
-}
+  }
 
 /* 3. Primary CTA Button Shimmer Sweep */
-@keyframes btnCtaShimmer {
+@keyframes btnCtaShimmer  { 
   0% {
     background-position: -200% 0;
-  }
-  100% {
+   }
+  100%  { 
     background-position: 200% 0;
-  }
+   }
 }
 
-.booking-confirm-cta-btn {
-  background: linear-gradient(
-    90deg,
-    #0284c7 0%,
-    #0369a1 40%,
-    #38bdf8 50%,
-    #0369a1 60%,
-    #0284c7 100%
-  ) !important;
-  background-size: 200% 100% !important;
-  animation: btnCtaShimmer 4s infinite linear !important;
+.booking-confirm-cta-btn  { 
+  background-color: #0284c7 !important;
   border: none !important;
   color: #ffffff !important;
-  font-weight: 800 !important;
-}
+  font-weight: 700;
+  border-radius: 8px;
+ }
 
-.booking-confirm-cta-btn:hover {
+.booking-confirm-cta-btn:hover  { 
   animation-duration: 2s !important;
   transform: translateY(-2px) scale(1.015) !important;
-}
+  }
 
 /* 4. Form Inputs, DatePickers & Selects Focus Ring Expansion */
 .ant-input,
 .ant-picker,
-.ant-select-selector {
+.ant-select-selector  { 
   transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
+ }
 
 .ant-input:focus,
 .ant-input-focused,
 .ant-picker-focused,
-.ant-select-focused .ant-select-selector {
+.ant-select-focused .ant-select-selector  { 
   border-color: #0284c7 !important;
-  box-shadow: 0 0 0 3.5px rgba(2, 132, 199, 0.18) !important;
-}
+  
+  }
 
 /* 5. Sticky Booking Summary Card Polish */
-.booking-summary-sticky {
+.booking-summary-sticky  { 
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+ }
 
-.booking-summary-sticky .ant-card {
+.booking-summary-sticky .ant-card  { 
   border-radius: 20px !important;
   border: 1.5px solid #bae6fd !important;
-  box-shadow: 0 10px 30px rgba(2, 132, 199, 0.08) !important;
+  
   transition: all 0.28s ease !important;
-}
+ }
 
-.booking-summary-sticky .ant-card:hover {
+.booking-summary-sticky .ant-card:hover  { 
   border-color: #0284c7 !important;
-  box-shadow: 0 14px 38px rgba(2, 132, 199, 0.14) !important;
-}
+  
+  }
 
 /* 6. Partner Accreditation Badge Hover Lift */
-.medpro-partner-badge-item {
+.medpro-partner-badge-item  { 
   transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
-}
+ }
 
-.medpro-partner-badge-item:hover {
+.medpro-partner-badge-item:hover  { 
   background: #ffffff;
   border-color: #0284c7;
   color: #0284c7;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12);
-}
+  
+  }
 
 /* 7. Quick Search Chips Animation */
-.medpro-quick-tag {
+.medpro-quick-tag  { 
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
   cursor: pointer;
-}
+ }
 
-.medpro-quick-tag:hover {
+.medpro-quick-tag:hover  { 
   transform: translateY(-2px) scale(1.04) !important;
   border-color: #0284c7 !important;
   color: #0284c7 !important;
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15) !important;
-}
+  
+  }
 
 /* Summary Card Sticky on Desktop */
 /* ==========================================================================
@@ -1035,20 +1039,20 @@
    ========================================================================== */
 
 /* 1. Top Utility & Emergency Bar */
-.booking-top-bar {
-  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
+.booking-top-bar  { 
+  background: #0284c7;
   color: #f0f9ff;
   font-size: 12.5px;
   padding: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-bottom: none;
+  
   width: 100%;
-}
+ }
 
 /* Running Marquee Announcement Bar (Medpro Style - Enlarged & Positioned below Header) */
-.marquee-banner {
-  background: linear-gradient(90deg, #fff7ed 0%, #ffedd5 50%, #fff7ed 100%);
-  border-top: 1px solid #fed7aa;
+.marquee-banner  { 
+  background: #fff7ed;
+  border-top: none;
   border-bottom: 2px solid #fdba74;
   color: #9a3412;
   padding: 12px 0;
@@ -1060,15 +1064,15 @@
   position: relative;
   display: flex;
   align-items: center;
-  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.08);
-}
+  
+ }
 
-.marquee-banner:hover .marquee-track {
+.marquee-banner:hover .marquee-track  { 
   animation-play-state: paused;
-}
+  }
 
-.marquee-prefix {
-  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+.marquee-prefix  { 
+  background: #ea580c;
   color: #ffffff;
   font-weight: 900;
   font-size: 13px;
@@ -1082,43 +1086,43 @@
   gap: 6px;
   flex-shrink: 0;
   z-index: 2;
-  box-shadow: 0 3px 10px rgba(234, 88, 12, 0.35);
-}
+  
+ }
 
-.marquee-content-wrap {
+.marquee-content-wrap  { 
   flex: 1;
   overflow: hidden;
   position: relative;
-}
+ }
 
-.marquee-track {
+.marquee-track  { 
   display: inline-block;
   padding-left: 100%;
   animation: marquee-scroll 34s linear infinite;
   white-space: nowrap;
-}
+ }
 
-.marquee-track:hover {
+.marquee-track:hover  { 
   animation-play-state: paused;
-}
+  }
 
-@keyframes marquee-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+@keyframes marquee-scroll  { 
+  0% { transform: translateX(0);  }
+  100%  {  transform: translateX(-100%);  }
 }
 
 /* Promotional Carousel Banner (Medpro Style) */
-.hospital-carousel-wrap {
+.hospital-carousel-wrap  { 
   border-radius: 20px;
   overflow: hidden;
   margin-bottom: 24px;
-  box-shadow: 0 10px 30px rgba(2, 132, 199, 0.12);
+  
   border: 1px solid #bae6fd;
   position: relative;
-}
+ }
 
 /* Floating Navigation Arrows */
-.carousel-arrow-btn {
+.carousel-arrow-btn  { 
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -1127,7 +1131,7 @@
   height: 44px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(10px);
+  
   border: 1.5px solid rgba(255, 255, 255, 0.5);
   color: #ffffff;
   display: flex;
@@ -1136,31 +1140,31 @@
   font-size: 16px;
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-}
+  
+ }
 
-.carousel-arrow-btn:hover {
+.carousel-arrow-btn:hover  { 
   background: #ffffff;
   color: #0284c7;
   transform: translateY(-50%) scale(1.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-}
+  
+  }
 
-.carousel-arrow-btn.arrow-prev {
+.carousel-arrow-btn.arrow-prev  { 
   left: 16px;
-}
+ }
 
-.carousel-arrow-btn.arrow-next {
+.carousel-arrow-btn.arrow-next  { 
   right: 16px;
-}
+ }
 
-@media (max-width: 768px) {
+@media (max-width: 768px)  { 
   .carousel-arrow-btn {
     display: none;
-  }
+   }
 }
 
-.carousel-slide-card {
+.carousel-slide-card  { 
   padding: 36px 44px;
   min-height: 250px;
   position: relative;
@@ -1168,47 +1172,47 @@
   display: flex;
   align-items: center;
   transition: all 0.3s ease;
-}
+ }
 
-@media (max-width: 640px) {
+@media (max-width: 640px)  { 
   .carousel-slide-card {
     padding: 24px 20px;
     min-height: 280px;
-  }
+   }
 }
 
-.carousel-slide-row {
+.carousel-slide-row  { 
   width: 100%;
   align-items: center;
-}
+ }
 
 /* Slide Gradients (Strict Medical Theme) */
-.slide-bg-1 {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 55%, #075985 100%);
+.slide-bg-1  { 
+  background: #0284c7;
   color: #ffffff;
-}
+ }
 
-.slide-bg-2 {
-  background: linear-gradient(135deg, #0369a1 0%, #0891b2 55%, #0e7490 100%);
+.slide-bg-2  { 
+  background: #0369a1;
   color: #ffffff;
-}
+ }
 
-.slide-bg-3 {
-  background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 60%, #1e40af 100%);
+.slide-bg-3  { 
+  background: #0284c7;
   color: #ffffff;
-}
+ }
 
-.slide-bg-4 {
-  background: linear-gradient(135deg, #0369a1 0%, #0f766e 60%, #115e59 100%);
+.slide-bg-4  { 
+  background: #0369a1;
   color: #ffffff;
-}
+ }
 
-.carousel-slide-badge {
+.carousel-slide-badge  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(8px);
+  
   border: 1px solid rgba(255, 255, 255, 0.45);
   padding: 5px 14px;
   border-radius: 20px;
@@ -1219,27 +1223,27 @@
   color: #ffffff;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-}
+ }
 
-.carousel-slide-title {
+.carousel-slide-title  { 
   font-size: clamp(20px, 3.2vw, 28px);
   font-weight: 900;
   margin: 0 0 10px;
   line-height: 1.3;
   color: #ffffff;
   letter-spacing: -0.3px;
-}
+ }
 
-.carousel-slide-desc {
+.carousel-slide-desc  { 
   font-size: clamp(13px, 1.5vw, 15px);
   opacity: 0.95;
   max-width: 650px;
   margin: 0 0 16px;
   line-height: 1.55;
   color: #f0f9ff;
-}
+ }
 
-.carousel-slide-highlights {
+.carousel-slide-highlights  { 
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1248,27 +1252,27 @@
   font-size: 13px;
   font-weight: 600;
   color: #e0f2fe;
-}
+ }
 
-.carousel-slide-highlight-item {
+.carousel-slide-highlight-item  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
+ }
 
-.carousel-slide-highlight-item svg {
+.carousel-slide-highlight-item svg  { 
   color: #fef08a;
   font-size: 14px;
-}
+ }
 
-.carousel-slide-btn-group {
+.carousel-slide-btn-group  { 
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-}
+ }
 
-.carousel-slide-btn {
+.carousel-slide-btn  { 
   background: #ffffff !important;
   color: #0369a1 !important;
   font-weight: 800 !important;
@@ -1276,7 +1280,7 @@
   border: none !important;
   padding: 0 24px !important;
   height: 42px !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16) !important;
+  
   width: fit-content;
   display: inline-flex;
   align-items: center;
@@ -1284,41 +1288,41 @@
   transition: all 0.2s ease !important;
   cursor: pointer;
   font-size: 13.5px;
-}
+ }
 
-.carousel-slide-btn:hover {
+.carousel-slide-btn:hover  { 
   transform: translateY(-2px);
   background: #f0f9ff !important;
   color: #0284c7 !important;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22) !important;
-}
+  
+  }
 
-.carousel-slide-btn-secondary {
+.carousel-slide-btn-secondary  { 
   background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
   border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
-  backdrop-filter: blur(8px);
-}
+  
+ }
 
-.carousel-slide-btn-secondary:hover {
+.carousel-slide-btn-secondary:hover  { 
   background: rgba(255, 255, 255, 0.28) !important;
   color: #ffffff !important;
   border-color: #ffffff !important;
-}
+  }
 
 /* Banner Right Visual Card Component */
-.carousel-slide-visual {
+.carousel-slide-visual  { 
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-}
+ }
 
-.carousel-preview-card {
+.carousel-preview-card  { 
   background: rgba(255, 255, 255, 0.96);
   border-radius: 18px;
   padding: 16px 20px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  
   border: 1px solid rgba(255, 255, 255, 0.7);
   max-width: 320px;
   width: 100%;
@@ -1327,24 +1331,24 @@
   overflow: hidden;
   transition: all 0.25s ease;
   text-align: left;
-}
+ }
 
-.carousel-slide-card:hover .carousel-preview-card {
+.carousel-slide-card:hover .carousel-preview-card  { 
   transform: translateY(-3px);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
-}
+  
+  }
 
 /* Bottom Quick Jump Slide Tabs */
-.carousel-nav-tabs-wrap {
+.carousel-nav-tabs-wrap  { 
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 10px;
   overflow-x: auto;
   padding: 2px 2px 8px;
-}
+ }
 
-.carousel-nav-tab {
+.carousel-nav-tab  { 
   flex: 1;
   min-width: 150px;
   padding: 9px 12px;
@@ -1362,24 +1366,24 @@
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   user-select: none;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.05);
-}
+  
+ }
 
-.carousel-nav-tab:hover:not(.active) {
+.carousel-nav-tab:hover:not(.active)  { 
   border-color: #0284c7;
   color: #0284c7;
   background: #f0f9ff;
   transform: translateY(-1px);
-}
+  }
 
-.carousel-nav-tab.active {
+.carousel-nav-tab.active  { 
   background: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
-}
+  
+ }
 
-.booking-top-bar-content {
+.booking-top-bar-content  { 
   width: 100%;
   max-width: 100%;
   margin: 0;
@@ -1389,36 +1393,36 @@
   justify-content: space-between;
   gap: 16px;
   box-sizing: border-box;
-}
+ }
 
-.booking-top-bar-left {
+.booking-top-bar-left  { 
   display: flex;
   align-items: center;
   gap: 18px;
   flex-wrap: nowrap;
-}
+ }
 
-.booking-top-bar-right {
+.booking-top-bar-right  { 
   display: flex;
   align-items: center;
   gap: 14px;
   flex-wrap: nowrap;
-}
+ }
 
-.booking-top-bar-item {
+.booking-top-bar-item  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-weight: 500;
   white-space: nowrap;
-}
+ }
 
-.booking-top-bar-item strong {
+.booking-top-bar-item strong  { 
   color: #ffffff;
   font-weight: 700;
-}
+ }
 
-.booking-top-bar-badge {
+.booking-top-bar-badge  { 
   background: #ef4444;
   color: #ffffff;
   padding: 2.5px 9px;
@@ -1429,39 +1433,39 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.35);
-}
+  
+ }
 
-@media (max-width: 1100px) {
+@media (max-width: 1100px)  { 
   .booking-top-bar-content {
     flex-wrap: wrap;
     gap: 8px 16px;
     padding: 7px 16px;
-  }
+   }
   .booking-top-bar-left,
-  .booking-top-bar-right {
+  .booking-top-bar-right  { 
     width: 100%;
     justify-content: space-between;
-  }
+   }
 }
 
 /* Partner Accreditation Bar (Medpro Style) */
-.medpro-partner-bar {
+.medpro-partner-bar  { 
   max-width: 1100px;
   margin: 0 auto 28px;
   padding: 16px 20px;
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #bae6fd;
-  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.05);
+  
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-}
+ }
 
-.medpro-partner-label {
+.medpro-partner-label  { 
   font-size: 12px;
   font-weight: 800;
   color: #0369a1;
@@ -1470,16 +1474,16 @@
   display: flex;
   align-items: center;
   gap: 6px;
-}
+ }
 
-.medpro-partner-badges {
+.medpro-partner-badges  { 
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-}
+ }
 
-.medpro-partner-badge-item {
+.medpro-partner-badge-item  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1490,21 +1494,21 @@
   border: 1px solid #bae6fd;
   padding: 4px 10px;
   border-radius: 8px;
-}
+ }
 
 /* Medpro Section Headers */
-.medpro-section-wrap {
+.medpro-section-wrap  { 
   margin-bottom: 34px;
-}
+ }
 
-.medpro-section-header {
+.medpro-section-header  { 
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
-}
+ }
 
-.medpro-section-title {
+.medpro-section-title  { 
   font-size: 18px;
   font-weight: 800;
   color: #0f172a;
@@ -1512,18 +1516,18 @@
   align-items: center;
   gap: 10px;
   margin: 0;
-}
+ }
 
-.medpro-section-title::before {
+.medpro-section-title::before  { 
   content: '';
   display: inline-block;
   width: 4px;
   height: 20px;
   background: #0284c7;
   border-radius: 4px;
-}
+ }
 
-.medpro-view-all-btn {
+.medpro-view-all-btn  { 
   color: #0284c7;
   font-weight: 700;
   font-size: 13px;
@@ -1532,15 +1536,15 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-}
+ }
 
-.medpro-view-all-btn:hover {
+.medpro-view-all-btn:hover  { 
   color: #0369a1;
   transform: translateX(2px);
-}
+  }
 
 /* Medpro Department Card */
-.medpro-dept-card {
+.medpro-dept-card  { 
   background: #ffffff;
   border-radius: 18px;
   border: 1.5px solid #bae6fd;
@@ -1550,19 +1554,19 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.06);
+  
   position: relative;
   overflow: hidden;
-}
+ }
 
-.medpro-dept-card:hover {
+.medpro-dept-card:hover  { 
   transform: translateY(-6px) scale(1.015);
-  box-shadow: 0 16px 36px rgba(2, 132, 199, 0.16);
+  
   border-color: #0284c7;
-}
+  }
 
 /* Medpro Doctor Card */
-.medpro-doc-card {
+.medpro-doc-card  { 
   background: #ffffff;
   border-radius: 18px;
   border: 1.5px solid #bae6fd;
@@ -1574,27 +1578,27 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.06);
+  
   position: relative;
   overflow: hidden;
-}
+ }
 
-.medpro-doc-card:hover {
+.medpro-doc-card:hover  { 
   transform: translateY(-6px) scale(1.015);
-  box-shadow: 0 18px 38px rgba(2, 132, 199, 0.18);
+  
   border-color: #0284c7;
-}
+  }
 
-.medpro-doc-card .ant-avatar {
+.medpro-doc-card .ant-avatar  { 
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+ }
 
-.medpro-doc-card:hover .ant-avatar {
+.medpro-doc-card:hover .ant-avatar  { 
   transform: scale(1.08);
-  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.22);
-}
+  
+  }
 
-.medpro-rating-badge {
+.medpro-rating-badge  { 
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1606,14 +1610,14 @@
   padding: 2px 8px;
   border-radius: 12px;
   transition: transform 0.2s ease;
-}
+ }
 
-.medpro-doc-card:hover .medpro-rating-badge {
+.medpro-doc-card:hover .medpro-rating-badge  { 
   transform: scale(1.05);
-}
+  }
 
 /* 3. Booking Modes Switcher Tabs */
-.booking-modes-bar {
+.booking-modes-bar  { 
   display: flex;
   background: #f0f9ff;
   border: 1.5px solid #bae6fd;
@@ -1622,10 +1626,10 @@
   gap: 6px;
   margin-bottom: 24px;
   overflow-x: auto;
-  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.05);
-}
+  
+ }
 
-.mode-tab-btn {
+.mode-tab-btn  { 
   flex: 1;
   min-width: 140px;
   padding: 11px 16px;
@@ -1643,24 +1647,24 @@
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   user-select: none;
-}
+ }
 
-.mode-tab-btn:hover:not(.active) {
+.mode-tab-btn:hover:not(.active)  { 
   background: rgba(255, 255, 255, 0.65);
   color: #0369a1;
   transform: translateY(-1px);
-}
+  }
 
-.mode-tab-btn.active {
+.mode-tab-btn.active  { 
   background: #ffffff;
   color: #0284c7;
-  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.18);
+  
   border: 1px solid #bae6fd;
   transform: scale(1.02);
-}
+ }
 
 /* 4. Health Checkup Packages (Gói khám sức khỏe) */
-.package-card {
+.package-card  { 
   border-radius: 18px;
   border: 1.5px solid #bae6fd;
   background: #ffffff;
@@ -1671,16 +1675,16 @@
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.06);
-}
+  
+ }
 
-.package-card:hover {
+.package-card:hover  { 
   transform: translateY(-6px) scale(1.012);
-  box-shadow: 0 18px 38px rgba(2, 132, 199, 0.18);
+  
   border-color: #0284c7;
-}
+  }
 
-.package-ribbon {
+.package-ribbon  { 
   position: absolute;
   top: 14px;
   right: -28px;
@@ -1692,28 +1696,28 @@
   transform: rotate(45deg);
   letter-spacing: 0.5px;
   text-transform: uppercase;
-}
+ }
 
-.package-price-tag {
+.package-price-tag  { 
   display: flex;
   align-items: baseline;
   gap: 6px;
   margin: 12px 0;
-}
+ }
 
-.package-price-current {
+.package-price-current  { 
   font-size: 20px;
   font-weight: 900;
   color: #0284c7;
-}
+ }
 
-.package-price-original {
+.package-price-original  { 
   font-size: 13px;
   color: #94a3b8;
   text-decoration: line-through;
-}
+ }
 
-.package-items-list {
+.package-items-list  { 
   list-style: none;
   padding: 0;
   margin: 12px 0 16px;
@@ -1721,18 +1725,18 @@
   flex-direction: column;
   gap: 6px;
   flex: 1;
-}
+ }
 
-.package-items-list li {
+.package-items-list li  { 
   font-size: 12.5px;
   color: #334155;
   display: flex;
   align-items: center;
   gap: 6px;
-}
+ }
 
 /* 5. Payment Selection Cards */
-.payment-method-card {
+.payment-method-card  { 
   padding: 14px 16px;
   border-radius: 12px;
   border: 1.5px solid #bae6fd;
@@ -1742,30 +1746,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
+ }
 
-.payment-method-card:hover {
+.payment-method-card:hover  { 
   border-color: #0284c7;
   background: #f0f9ff;
-}
+  }
 
-.payment-method-card.selected {
+.payment-method-card.selected  { 
   border-color: #0284c7;
   background: #f0f9ff;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
-}
+  
+ }
 
 /* 6. Patient Journey 3-Step Guide */
-.patient-journey-wrap {
+.patient-journey-wrap  { 
   margin: 40px auto 20px;
   padding: 30px 24px;
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #bae6fd;
-  box-shadow: 0 10px 30px rgba(2, 132, 199, 0.08);
-}
+  
+ }
 
-.patient-journey-step {
+.patient-journey-step  { 
   padding: 16px;
   border-radius: 14px;
   background: #f0f9ff;
@@ -1775,15 +1779,15 @@
   flex-direction: column;
   gap: 8px;
   transition: all 0.2s ease;
-}
+ }
 
-.patient-journey-step:hover {
+.patient-journey-step:hover  { 
   transform: translateY(-2px);
   border-color: #0284c7;
-  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.1);
-}
+  
+  }
 
-.step-badge-num {
+.step-badge-num  { 
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -1794,28 +1798,28 @@
   justify-content: center;
   font-weight: 900;
   font-size: 15px;
-}
+ }
 
 /* 7. Comprehensive Medical Footer */
-.hospital-portal-footer {
+.hospital-portal-footer  { 
   background: #0f172a;
   color: #cbd5e1;
   padding: 48px 20px 24px;
   margin-top: 50px;
   border-top: 3px solid #0284c7;
-}
+ }
 
-.hospital-portal-footer a {
+.hospital-portal-footer a  { 
   color: #94a3b8;
   transition: color 0.2s;
   text-decoration: none;
-}
+ }
 
-.hospital-portal-footer a:hover {
+.hospital-portal-footer a:hover  { 
   color: #38bdf8;
-}
+  }
 
-.footer-cert-badge {
+.footer-cert-badge  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1825,12 +1829,12 @@
   border-radius: 6px;
   font-size: 11px;
   color: #e2e8f0;
-}
+ }
 
 /* ==========================================================================
    Doctor Department Filter Chips (Chuyên Khoa Bác Sĩ)
    ========================================================================== */
-.doctor-filter-tabs-wrap {
+.doctor-filter-tabs-wrap  { 
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -1842,9 +1846,9 @@
   background: #f0f9ff;
   border-radius: 30px;
   border: 1px solid #bae6fd;
-}
+ }
 
-.doctor-filter-chip {
+.doctor-filter-chip  { 
   padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid transparent;
@@ -1856,25 +1860,25 @@
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   user-select: none;
-}
+ }
 
-.doctor-filter-chip:hover:not(.active) {
+.doctor-filter-chip:hover:not(.active)  { 
   background: rgba(255, 255, 255, 0.85);
   color: #0284c7;
   border-color: #bae6fd;
-}
+  }
 
-.doctor-filter-chip.active {
+.doctor-filter-chip.active  { 
   background: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.28);
-}
+  
+ }
 
 /* ==========================================================================
    Time Slot Shift Filter Tabs (Ca Sáng / Ca Chiều)
    ========================================================================== */
-.slot-shift-tabs-wrap {
+.slot-shift-tabs-wrap  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1883,10 +1887,10 @@
   border-radius: 14px;
   border: 1.5px solid #bae6fd;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.05);
-}
+  
+ }
 
-.slot-shift-tab-btn {
+.slot-shift-tab-btn  { 
   padding: 7px 16px;
   border-radius: 10px;
   border: none;
@@ -1898,26 +1902,26 @@
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   user-select: none;
-}
+ }
 
-.slot-shift-tab-btn:hover:not(.active) {
+.slot-shift-tab-btn:hover:not(.active)  { 
   color: #0284c7;
   background: rgba(255, 255, 255, 0.75);
   transform: translateY(-1px);
-}
+  }
 
-.slot-shift-tab-btn.active {
+.slot-shift-tab-btn.active  { 
   background: #ffffff;
   color: #0284c7;
-  box-shadow: 0 3px 12px rgba(2, 132, 199, 0.18);
+  
   border: 1px solid #bae6fd;
   transform: scale(1.025);
-}
+ }
 
 /* ==========================================================================
    Booking Target Switcher (Đặt cho Bản thân / Đặt cho Người thân)
    ========================================================================== */
-.booking-target-switch-wrap {
+.booking-target-switch-wrap  { 
   display: inline-flex;
   background: #f0f9ff;
   border: 1.5px solid #bae6fd;
@@ -1926,10 +1930,10 @@
   gap: 6px;
   margin-bottom: 18px;
   width: 100%;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.05);
-}
+  
+ }
 
-.booking-target-pill {
+.booking-target-pill  { 
   flex: 1;
   padding: 9px 16px;
   border-radius: 10px;
@@ -1945,35 +1949,35 @@
   gap: 8px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-}
+ }
 
-.booking-target-pill:hover:not(.active) {
+.booking-target-pill:hover:not(.active)  { 
   color: #0284c7;
   background: rgba(255, 255, 255, 0.75);
   transform: translateY(-1px);
-}
+  }
 
-.booking-target-pill.active {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+.booking-target-pill.active  { 
+  background: #0284c7;
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+  
   transform: scale(1.02);
-}
+ }
 
 /* ==========================================================================
    Follow-Up Portal Box & Past Appointments Card
    ========================================================================== */
-.followup-hero-box {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+.followup-hero-box  { 
+  background: #f0f9ff;
   border: 1.5px solid #bae6fd;
   border-radius: 20px;
   padding: 32px 24px;
   margin-bottom: 24px;
   text-align: center;
-  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.08);
-}
+  
+ }
 
-.followup-past-card {
+.followup-past-card  { 
   padding: 16px 20px;
   border-radius: 14px;
   background-color: #ffffff;
@@ -1983,71 +1987,71 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.05);
+  
   transition: all 0.2s ease;
-}
+ }
 
-.followup-past-card:hover {
+.followup-past-card:hover  { 
   border-color: #0284c7;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.12);
-}
+  
+  }
 
 /* ==========================================================================
    Step 4 Medical QR Ticket Card (Printable & Screen)
    ========================================================================== */
-@keyframes ticketUnfold {
+@keyframes ticketUnfold  { 
   0% {
     opacity: 0;
     transform: perspective(600px) rotateX(-15deg) translateY(-20px);
-  }
-  100% {
+   }
+  100%  { 
     opacity: 1;
     transform: perspective(600px) rotateX(0deg) translateY(0);
-  }
+   }
 }
 
-.qr-ticket-wrapper {
+.qr-ticket-wrapper  { 
   max-width: 520px;
   margin: 0 auto 32px;
   background: #ffffff;
   border-radius: 20px;
   border: 2px solid #bae6fd;
-  box-shadow: 0 16px 40px rgba(2, 132, 199, 0.16);
+  
   padding: 28px 24px;
   position: relative;
   overflow: hidden;
   animation: ticketUnfold 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
+ }
 
-.qr-ticket-wrapper::before {
+.qr-ticket-wrapper::before  { 
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 6px;
-  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #0369a1 100%);
-}
+  background: #0284c7;
+ }
 
 /* ==========================================================================
    Print Style Sheet (Print Ticket Only)
    ========================================================================== */
-@media print {
+@media print  { 
   body {
     background: #ffffff !important;
-  }
+   }
 
-  body * {
+  body *  { 
     visibility: hidden;
-  }
+   }
 
   #qr-ticket-card,
-  #qr-ticket-card * {
+  #qr-ticket-card *  { 
     visibility: visible;
-  }
+   }
 
-  #qr-ticket-card {
+  #qr-ticket-card  { 
     position: absolute;
     left: 50% !important;
     top: 20px !important;
@@ -2056,12 +2060,12 @@
     max-width: 100% !important;
     border: 2px solid #0369a1 !important;
     border-radius: 12px !important;
-    box-shadow: none !important;
+    
     padding: 24px !important;
     margin: 0 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
+   }
 
   .booking-navbar,
   .booking-hero,
@@ -2069,15 +2073,15 @@
   .ant-steps,
   .ticket-action-btns,
   .patient-journey-wrap,
-  .hospital-portal-footer {
+  .hospital-portal-footer  { 
     display: none !important;
-  }
+   }
 }
 
 /* ==========================================================================
    HEADER ELDERLY MODE TOGGLE PILL
    ========================================================================== */
-.header-elderly-pill {
+.header-elderly-pill  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2091,38 +2095,38 @@
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
-}
+ }
 
-.header-elderly-pill:hover {
+.header-elderly-pill:hover  { 
   background-color: #dcfce7;
   border-color: #22c55e;
   transform: translateY(-1px);
-}
+  }
 
-.header-elderly-pill.active {
+.header-elderly-pill.active  { 
   background-color: #fef3c7;
   border-color: #f59e0b;
   color: #92400e;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
-}
+  
+ }
 
-.header-elderly-pill .pill-badge {
+.header-elderly-pill .pill-badge  { 
   background-color: #22c55e;
   color: #ffffff;
   font-size: 11px;
   font-weight: 900;
   padding: 1px 6px;
   border-radius: 10px;
-}
+ }
 
-.header-elderly-pill.active .pill-badge {
+.header-elderly-pill.active .pill-badge  { 
   background-color: #d97706;
-}
+ }
 
 /* ==========================================================================
    FLOATING ELDERLY ASSIST WIDGET (BOTTOM LEFT)
    ========================================================================== */
-.elderly-floating-widget-wrap {
+.elderly-floating-widget-wrap  { 
   position: fixed;
   bottom: 24px;
   left: 20px;
@@ -2130,9 +2134,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
+ }
 
-.elderly-floating-toggle-btn {
+.elderly-floating-toggle-btn  { 
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -2143,26 +2147,26 @@
   border-radius: 30px;
   font-weight: 800;
   font-size: 13.5px;
-  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
+  
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-}
+ }
 
-.elderly-floating-toggle-btn:hover {
+.elderly-floating-toggle-btn:hover  { 
   background: #f0f9ff;
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.32);
-}
+  
+  }
 
-.elderly-floating-toggle-btn.active {
+.elderly-floating-toggle-btn.active  { 
   background: #fffbeb;
   color: #92400e;
   border-color: #f59e0b;
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
-}
+  
+ }
 
-.elderly-floating-toggle-btn .elderly-btn-icon {
+.elderly-floating-toggle-btn .elderly-btn-icon  { 
   background: #e0f2fe;
   color: #0284c7;
   width: 28px;
@@ -2171,19 +2175,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
+ }
 
-.elderly-floating-toggle-btn.active .elderly-btn-icon {
+.elderly-floating-toggle-btn.active .elderly-btn-icon  { 
   background: #fde68a;
   color: #b45309;
-}
+ }
 
-.elderly-floating-toggle-btn .elderly-active-dot {
+.elderly-floating-toggle-btn .elderly-active-dot  { 
   color: #16a34a;
   font-size: 14px;
-}
+ }
 
-.elderly-floating-call-btn {
+.elderly-floating-call-btn  { 
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2193,50 +2197,50 @@
   border-radius: 20px;
   font-size: 12.5px;
   font-weight: 800;
-  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.3);
+  
   text-decoration: none !important;
   width: fit-content;
   transition: all 0.2s ease;
-}
+ }
 
-.elderly-floating-call-btn:hover {
+.elderly-floating-call-btn:hover  { 
   background: #dc2626;
   transform: translateY(-1px);
-}
+  }
 
 /* ==========================================================================
    ELDERLY FRIENDLY MODE (CHẾ ĐỘ NGƯỜI CAO TUỔI - CHỮ TO, TƯƠNG PHẢN CAO)
    ========================================================================== */
-body.elderly-mode {
+body.elderly-mode  { 
   font-size: 18px !important;
   line-height: 1.75 !important;
-}
+ }
 
-body.elderly-mode .booking-page-container {
+body.elderly-mode .booking-page-container  { 
   font-size: 18px !important;
-}
+ }
 
 /* Headings */
 body.elderly-mode h1,
-body.elderly-mode .medpro-hero-main-title {
+body.elderly-mode .medpro-hero-main-title  { 
   font-size: clamp(26px, 3.8vw, 36px) !important;
   line-height: 1.35 !important;
   color: #082f49 !important;
-}
+ }
 
 body.elderly-mode h2,
-body.elderly-mode .ant-typography h2 {
+body.elderly-mode .ant-typography h2  { 
   font-size: 26px !important;
   font-weight: 900 !important;
   color: #0c4a6e !important;
-}
+ }
 
 body.elderly-mode h3,
-body.elderly-mode .ant-typography h3 {
+body.elderly-mode .ant-typography h3  { 
   font-size: 22px !important;
   font-weight: 800 !important;
   color: #0369a1 !important;
-}
+ }
 
 /* Body text, Paragraphs, Labels */
 body.elderly-mode p,
@@ -2244,16 +2248,16 @@ body.elderly-mode .ant-typography,
 body.elderly-mode .ant-form-item-label > label,
 body.elderly-mode .medpro-hero-bullet-item,
 body.elderly-mode .package-item-row,
-body.elderly-mode .patient-journey-step div {
+body.elderly-mode .patient-journey-step div  { 
   font-size: 17px !important;
   line-height: 1.7 !important;
   color: #0f172a !important;
-}
+ }
 
 /* High Contrast Form Inputs & DatePickers */
 body.elderly-mode .ant-input,
 body.elderly-mode .ant-picker,
-body.elderly-mode .ant-select-selector {
+body.elderly-mode .ant-select-selector  { 
   font-size: 17px !important;
   height: 52px !important;
   line-height: 50px !important;
@@ -2262,173 +2266,173 @@ body.elderly-mode .ant-select-selector {
   border-radius: 12px !important;
   color: #0f172a !important;
   background-color: #ffffff !important;
-}
+ }
 
-body.elderly-mode .ant-input::placeholder {
+body.elderly-mode .ant-input::placeholder  { 
   font-size: 15px !important;
   color: #64748b !important;
-}
+ }
 
-body.elderly-mode .ant-radio-wrapper {
+body.elderly-mode .ant-radio-wrapper  { 
   font-size: 17px !important;
   font-weight: 700 !important;
   padding: 6px 12px !important;
-}
+ }
 
-body.elderly-mode .ant-radio-inner {
+body.elderly-mode .ant-radio-inner  { 
   width: 22px !important;
   height: 22px !important;
-}
+ }
 
 /* Large, High-Contrast Buttons */
-body.elderly-mode .ant-btn {
+body.elderly-mode .ant-btn  { 
   font-size: 16px !important;
   font-weight: 800 !important;
   min-height: 50px !important;
   border-radius: 12px !important;
   letter-spacing: 0.2px !important;
-}
+ }
 
 body.elderly-mode .ant-btn-lg,
 body.elderly-mode .medpro-search-action-btn,
-body.elderly-mode .carousel-slide-btn {
+body.elderly-mode .carousel-slide-btn  { 
   font-size: 18px !important;
   min-height: 56px !important;
   padding: 0 28px !important;
   border-radius: 14px !important;
-}
+ }
 
 /* Mode Switcher Tabs */
-body.elderly-mode .booking-modes-bar .mode-tab-btn {
+body.elderly-mode .booking-modes-bar .mode-tab-btn  { 
   font-size: 17px !important;
   padding: 14px 22px !important;
   font-weight: 800 !important;
   border-width: 2px !important;
-}
+ }
 
 /* Cards & Catalogs */
-body.elderly-mode .medpro-service-card {
+body.elderly-mode .medpro-service-card  { 
   padding: 20px 14px !important;
   min-height: 130px !important;
-}
+ }
 
-body.elderly-mode .medpro-card-title {
+body.elderly-mode .medpro-card-title  { 
   font-size: 15px !important;
   font-weight: 800 !important;
   color: #0f172a !important;
-}
+ }
 
 body.elderly-mode .medpro-doc-card,
-body.elderly-mode .package-card {
+body.elderly-mode .package-card  { 
   border: 2px solid #0284c7 !important;
-  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.15) !important;
-}
+  
+ }
 
 /* Time Slots Quota (Extra large for trembling hands or low vision) */
-body.elderly-mode .slot-shift-tab-btn {
+body.elderly-mode .slot-shift-tab-btn  { 
   font-size: 16px !important;
   padding: 10px 20px !important;
   font-weight: 800 !important;
-}
+ }
 
-body.elderly-mode .booking-date-container {
+body.elderly-mode .booking-date-container  { 
   padding: 20px !important;
   border: 2px solid #0284c7 !important;
-}
+ }
 
-body.elderly-mode [class*="booking-main-card"] [style*="border-radius: 12px"][style*="text-align: center"] {
+body.elderly-mode [class*="booking-main-card"] [style*="border-radius: 12px"][style*="text-align: center"]  { 
   min-height: 72px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
-}
+ }
 
-body.elderly-mode [class*="booking-main-card"] [style*="font-weight: 800"][style*="font-size: 13px"] {
+body.elderly-mode [class*="booking-main-card"] [style*="font-weight: 800"][style*="font-size: 13px"]  { 
   font-size: 17px !important;
   font-weight: 900 !important;
-}
+ }
 
 /* Booking Summary Card */
-body.elderly-mode .booking-summary-card {
+body.elderly-mode .booking-summary-card  { 
   padding: 24px !important;
   border: 2.5px solid #0284c7 !important;
   font-size: 16px !important;
-}
+ }
 
-body.elderly-mode .booking-summary-card strong {
+body.elderly-mode .booking-summary-card strong  { 
   font-size: 17px !important;
-}
+ }
 
 /* QR Ticket */
-body.elderly-mode .qr-ticket-wrapper {
+body.elderly-mode .qr-ticket-wrapper  { 
   max-width: 580px !important;
   border: 3px solid #0284c7 !important;
   padding: 32px 28px !important;
-}
+ }
 
 /* ==========================================================================
    MOBILE & TABLET RESPONSIVE ENHANCEMENTS (< 768px & < 480px)
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 768px)  { 
   .booking-navbar-content {
     padding: 8px 14px !important;
-  }
+   }
 
-  .booking-top-bar {
+  .booking-top-bar  { 
     padding: 0 !important;
     font-size: 11.5px !important;
-  }
+   }
 
-  .booking-top-bar-content {
+  .booking-top-bar-content  { 
     padding: 6px 14px !important;
     flex-wrap: nowrap !important;
     justify-content: space-between !important;
-  }
+   }
 
   .booking-top-bar-left,
-  .booking-top-bar-right {
+  .booking-top-bar-right  { 
     width: auto !important;
-  }
+   }
 
   /* Compact header buttons on small screens */
-  .compact-btn-on-mobile {
+  .compact-btn-on-mobile  { 
     padding: 4px 10px !important;
     font-size: 12.5px !important;
     height: 34px !important;
-  }
+   }
 
   /* Hero Section */
-  .medpro-hero-section {
+  .medpro-hero-section  { 
     padding: 24px 12px 32px !important;
-  }
+   }
 
-  .medpro-hero-main-title {
+  .medpro-hero-main-title  { 
     font-size: 21px !important;
     margin-bottom: 14px !important;
-  }
+   }
 
-  .medpro-search-bar-wrap {
+  .medpro-search-bar-wrap  { 
     height: 48px !important;
     padding: 2px 6px 2px 14px !important;
     margin-bottom: 14px !important;
-  }
+   }
 
-  .medpro-search-input {
+  .medpro-search-input  { 
     font-size: 13.5px !important;
-  }
+   }
 
-  .medpro-search-action-btn {
+  .medpro-search-action-btn  { 
     height: 36px !important;
     padding: 0 14px !important;
     font-size: 13px !important;
-  }
+   }
 
   /* 14 Cards Horizontal Scroll on Mobile */
-  .medpro-cards-carousel-container {
+  .medpro-cards-carousel-container  { 
     padding: 0 4px !important;
-  }
+   }
 
-  .medpro-cards-scroll-track {
+  .medpro-cards-scroll-track  { 
     display: flex !important;
     gap: 10px !important;
     overflow-x: auto !important;
@@ -2436,156 +2440,518 @@ body.elderly-mode .qr-ticket-wrapper {
     scroll-snap-type: x mandatory;
     padding: 6px 4px 12px !important;
     scrollbar-width: none;
-  }
+   }
 
-  .medpro-cards-scroll-track::-webkit-scrollbar {
+  .medpro-cards-scroll-track::-webkit-scrollbar  { 
     display: none;
-  }
+   }
 
-  .medpro-service-card {
+  .medpro-service-card  { 
     min-width: 135px !important;
     max-width: 145px !important;
     scroll-snap-align: start;
     padding: 14px 8px !important;
-  }
+   }
 
-  .medpro-card-icon-wrap {
+  .medpro-card-icon-wrap  { 
     width: 44px !important;
     height: 44px !important;
     margin-bottom: 8px !important;
-  }
+   }
 
-  .medpro-card-title {
+  .medpro-card-title  { 
     font-size: 12px !important;
     line-height: 1.3 !important;
-  }
+   }
 
   /* Hide arrow buttons on mobile since user can swipe smoothly */
-  .medpro-carousel-nav-btn {
+  .medpro-carousel-nav-btn  { 
     display: none !important;
-  }
+   }
 
   /* Floating Hotline button */
-  .medpro-floating-hotline-btn {
+  .medpro-floating-hotline-btn  { 
     width: 46px !important;
     height: 46px !important;
     bottom: 20px !important;
     right: 16px !important;
-  }
+   }
 
   /* Booking Main Card */
-  .booking-main-card {
+  .booking-main-card  { 
     padding: 12px 8px !important;
-  }
+   }
 
-  .booking-card-inner {
+  .booking-card-inner  { 
     padding: 14px 10px !important;
     border-radius: 14px !important;
-  }
+   }
 
   /* Modes Switcher */
-  .booking-modes-bar {
+  .booking-modes-bar  { 
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 8px !important;
     padding: 6px !important;
-  }
+   }
 
-  .mode-tab-btn {
+  .mode-tab-btn  { 
     font-size: 12.5px !important;
     padding: 10px 6px !important;
     justify-content: center !important;
-  }
+   }
 
   /* Steps Indicator */
-  .ant-steps {
+  .ant-steps  { 
     display: none !important;
-  }
+   }
 
   /* Time Slots Quota */
-  .slot-shift-tabs-wrap {
+  .slot-shift-tabs-wrap  { 
     width: 100% !important;
     display: flex !important;
     overflow-x: auto !important;
     scrollbar-width: none;
-  }
+   }
 
-  .slot-shift-tab-btn {
+  .slot-shift-tab-btn  { 
     white-space: nowrap !important;
     font-size: 12px !important;
     padding: 6px 12px !important;
-  }
+   }
 
   /* Floating Elderly Widget on Mobile */
-  .elderly-floating-widget-wrap {
+  .elderly-floating-widget-wrap  { 
     bottom: 20px !important;
     left: 14px !important;
-  }
+   }
 
-  .elderly-floating-toggle-btn {
+  .elderly-floating-toggle-btn  { 
     padding: 6px 12px !important;
     font-size: 12px !important;
-  }
+   }
 
-  .elderly-floating-call-btn {
+  .elderly-floating-call-btn  { 
     padding: 4px 10px !important;
     font-size: 11.5px !important;
-  }
+   }
 
   /* Summary sticky card on mobile */
-  .booking-summary-sticky {
+  .booking-summary-sticky  { 
     position: static !important;
     margin-top: 16px !important;
-  }
+   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px)  { 
   .medpro-hero-main-title {
     font-size: 18.5px !important;
-  }
+   }
 
-  .carousel-slide-title {
+  .carousel-slide-title  { 
     font-size: 16px !important;
-  }
+   }
 
-  .booking-target-switch-wrap {
+  .booking-target-switch-wrap  { 
     flex-direction: column !important;
-  }
+   }
 
-  .booking-target-pill {
+  .booking-target-pill  { 
     width: 100% !important;
     justify-content: center !important;
-  }
+   }
 }
 
 /* ==========================================================================
    ABOUT PAGE STAT CARDS & NUMBER ANIMATIONS
    ========================================================================== */
-.about-stat-card {
+.about-stat-card  { 
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
   cursor: default;
-}
+ }
 
-.about-stat-card:hover {
+.about-stat-card:hover  { 
   transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 16px 36px rgba(2, 132, 199, 0.14) !important;
-}
+  
+  }
 
-.about-stat-card:hover .about-stat-icon-wrap {
+.about-stat-card:hover .about-stat-icon-wrap  { 
   transform: scale(1.12) rotate(6deg);
-}
+  }
 
-@media (max-width: 576px) {
+@media (max-width: 576px)  { 
   .about-stat-card {
     padding: 12px 6px !important;
-  }
-  .about-stat-card .about-stat-icon-wrap {
+   }
+  .about-stat-card .about-stat-icon-wrap  { 
     width: 44px !important;
     height: 44px !important;
     margin-bottom: 8px !important;
-  }
-  .about-stat-card div[style*="font-size: 34px"] {
+   }
+  .about-stat-card div[style*="font-size: 34px"]  { 
     font-size: 26px !important;
-  }
+   }
 }
 
+/* ==========================================================================
+   BOOKING PAGE SPECIFIC ENHANCEMENTS & TASTE SKILL ELEVATION
+   Strict Medical Palette: #0284c7 | #0369a1 | #bae6fd | #0f172a | #f0f9ff
+   ========================================================================== */
+.booking-page-header-banner {
+  background: transparent;
+  border: none;
+  padding: 8px 0 16px;
+}
+
+.booking-page-header-banner::before {
+  display: none;
+}
+
+.hero-security-pill  { 
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #0369a1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+ }
+
+/* Enhanced Stepper Customization */
+.booking-main-card .ant-steps-item-process .ant-steps-item-icon  { 
+  background-color: #0284c7 !important;
+  border-color: #0284c7 !important;
+  
+ }
+
+.booking-main-card .ant-steps-item-finish .ant-steps-item-icon  { 
+  background-color: #f0fdf4 !important;
+  border-color: #10b981 !important;
+ }
+
+.booking-main-card .ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon  { 
+  color: #10b981 !important;
+ }
+
+.booking-main-card .ant-steps-item-process .ant-steps-item-title  { 
+  color: #0369a1 !important;
+  font-weight: 800 !important;
+ }
+
+.booking-main-card .ant-steps-item-finish .ant-steps-item-title  { 
+  color: #0f172a !important;
+  font-weight: 700 !important;
+ }
+
+.booking-main-card .ant-steps-item-wait .ant-steps-item-title  { 
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+ }
+
+/* Quick 7-Day Date Selector Strip */
+.quick-date-strip  { 
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  scrollbar-width: thin;
+ }
+
+.quick-date-strip::-webkit-scrollbar  { 
+  height: 4px;
+ }
+
+.quick-date-strip::-webkit-scrollbar-thumb  { 
+  background: #bae6fd;
+  border-radius: 4px;
+ }
+
+.quick-date-pill  { 
+  flex: 1;
+  min-width: 82px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  border: 1.5px solid #bae6fd;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  user-select: none;
+ }
+
+.quick-date-pill:hover:not(.active)  { 
+  border-color: #0284c7;
+  background: #f0f9ff;
+  transform: translateY(-2px);
+  
+  }
+
+.quick-date-pill.active  { 
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  
+  transform: translateY(-2px) scale(1.02);
+ }
+
+.quick-date-pill .quick-date-day  { 
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  transition: color 0.2s ease;
+ }
+
+.quick-date-pill.active .quick-date-day  { 
+  color: #e0f2fe;
+ }
+
+.quick-date-pill .quick-date-num  { 
+  font-size: 14px;
+  font-weight: 900;
+  color: #0f172a;
+  transition: color 0.2s ease;
+ }
+
+.quick-date-pill.active .quick-date-num  { 
+  color: #ffffff;
+ }
+
+/* Booking Summary Card (Step 4 Right Column) */
+.booking-summary-card  { 
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1.5px solid #bae6fd;
+  
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+ }
+
+.booking-summary-card::before  { 
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #0284c7;
+ }
+
+.booking-summary-sticky  { 
+  position: sticky;
+  top: 86px;
+  z-index: 10;
+ }
+
+.summary-card-header  { 
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: none;
+ }
+
+.summary-details-list  { 
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+ }
+
+.summary-item-row  { 
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  gap: 12px;
+ }
+
+.summary-item-label  { 
+  color: #64748b;
+  font-size: 12.5px;
+ }
+
+.summary-item-value  { 
+  color: #0f172a;
+  text-align: right;
+  font-size: 13px;
+ }
+
+.summary-item-value.highlight  { 
+  color: #0284c7;
+  font-weight: 700;
+ }
+
+.summary-item-value.text-sky  { 
+  color: #0369a1;
+  font-weight: 800;
+ }
+
+.summary-item-value.location-badge  { 
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0369a1;
+ }
+
+.summary-divider-dashed  { 
+  border-top: 2px dashed #e2e8f0;
+  margin: 4px 0;
+ }
+
+.summary-pricing-breakdown  { 
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+ }
+
+.summary-total-box  { 
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 4px 2px;
+ }
+
+.summary-total-label  { 
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.02em;
+ }
+
+.summary-total-amount  { 
+  font-size: 22px;
+  font-weight: 900;
+  color: #0284c7;
+  letter-spacing: -0.02em;
+ }
+
+.summary-guarantee-note  { 
+  padding: 10px 12px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #0369a1;
+  line-height: 1.45;
+ }
+
+.booking-submit-btn  { 
+  background: #0284c7 !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 14.5px !important;
+  height: 48px !important;
+  border-radius: 14px !important;
+  
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+ }
+
+.booking-submit-btn:hover  { 
+  transform: translateY(-2px) !important;
+  
+  }
+
+.summary-trust-badge  { 
+  text-align: center;
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+ }
+
+/* Payment Method Card */
+.payment-method-card  { 
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid #bae6fd;
+  background-color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.22s ease;
+ }
+
+.payment-method-card:hover  { 
+  border-color: #0284c7;
+  background-color: #f0f9ff;
+  transform: translateY(-2px);
+  
+  }
+
+.payment-method-card.selected  { 
+  border-color: #0284c7;
+  background-color: #f0f9ff;
+  
+ }
+
+/* QR Medical Boarding Pass (Step 5) */
+.vietqr-wrapper-card  { 
+  background: #ffffff;
+  border-radius: 20px;
+  border: 2px solid #bae6fd;
+  
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+ }
+
+.vietqr-wrapper-card.paid  { 
+  border-color: #10b981;
+  
+ }
+
+.vietqr-wrapper-card::before  { 
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #0284c7;
+ }
+
+
+
+/* Taste Skill Contrast & Flat Enhancements */
+.ant-btn {
+  box-shadow: none !important; /* taste-skill-ignore */
+}
+.booking-main-card .ant-steps-item-wait .ant-steps-item-title {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+.booking-main-card .ant-card.booking-card-inner {
+  box-shadow: none !important; /* taste-skill-ignore */
+}

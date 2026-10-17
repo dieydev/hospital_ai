@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -99,8 +100,8 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
           unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13.5),
           tabs: const [
             Tab(
-              icon: Icon(Icons.confirmation_number_outlined, size: 20),
-              text: 'Phiếu của tôi',
+              icon: Icon(Icons.qr_code_2_rounded, size: 20),
+              text: 'Thẻ Khám QR',
             ),
             Tab(
               icon: Icon(Icons.dashboard_outlined, size: 20),
@@ -307,36 +308,57 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
 
   // ── 3. Active Ticket Hero Card ──────────────────────────────────────
   Widget _buildActiveTicketHeroCard(QueueTicketModel ticket, QueueProvider queue) {
+    final Map<String, dynamic> ticketQrPayload = {
+      'type': 'D_MEDICAL_EXAM_PASS',
+      'version': '2.0',
+      'ticketId': ticket.id,
+      'patientCode': ticket.patientCode,
+      'patientName': ticket.patientName,
+      'patientGender': ticket.patientGender,
+      'patientAge': ticket.patientAge,
+      'identityCard': ticket.identityCardNumber,
+      if (ticket.healthInsuranceNumber != null) 'healthInsuranceNumber': ticket.healthInsuranceNumber,
+      'department': ticket.departmentName,
+      'location': ticket.location,
+      'status': ticket.status,
+      'priority': ticket.priority,
+      'createdAt': ticket.createdAt.toIso8601String(),
+      'checkInNotice': 'Xuat trinh ma QR de tiep nhan vao phong kham (He thong da bo STT)',
+    };
+    final String qrDataString = jsonEncode(ticketQrPayload);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.primaryColor, AppTheme.primaryDark],
+        gradient: LinearGradient(
+          colors: ticket.isEmergency
+              ? [const Color(0xFFDC2626), const Color(0xFF991B1B)]
+              : [AppTheme.primaryDark, AppTheme.primary, const Color(0xFF38BDF8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
           BoxShadow(
-            color: Color.fromRGBO(2, 132, 199, 0.25),
+            color: (ticket.isEmergency ? Colors.red : AppTheme.primary).withValues(alpha: 0.35),
             blurRadius: 20,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Room Header
+          // Clinic Room Badge Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
+              Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -370,41 +392,81 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Đổi số khác',
+                    'Đổi thẻ',
                     style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          Text(
-            'SỐ THỨ TỰ CỦA BẠN',
-            style: GoogleFonts.inter(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+          // Badge Thầy dặn: Đã Bỏ STT - Tiếp Nhận 100% Bằng Mã QR
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.qr_code_scanner_rounded, size: 13, color: Colors.white),
+                const SizedBox(width: 6),
+                Text(
+                  'TIẾP NHẬN 100% BẰNG MÃ QR (ĐÃ BỎ STT)',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
 
-          // Big Sequence Number
+          // Central QR Code Container
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: QrImageView(
+              data: qrDataString,
+              version: QrVersions.auto,
+              size: 155,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.primaryDark),
+              dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.primary),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           Text(
-            '#${ticket.sequenceNumber}',
+            'Mã Tiếp Nhận: #${ticket.id.isNotEmpty ? ticket.id : ticket.sequenceNumber}',
             style: GoogleFonts.sora(
               color: Colors.white,
-              fontSize: 54,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
           ),
 
           // Priority Tag if Emergency
           if (ticket.isEmergency) ...[
             Container(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(top: 8, bottom: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.red.shade600,
@@ -427,11 +489,37 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: Colors.white.withValues(alpha: 0.95),
-              fontSize: 14,
+              fontSize: 13.5,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
+
+          // Button to inspect QR contents
+          InkWell(
+            onTap: () => _showQrDataInspectionModal(ticketQrPayload),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.45)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Xem thông tin y tế trong Mã QR',
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
 
           // Status & Estimated Time Pill
           Container(
@@ -465,7 +553,7 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
                                 : 'Ước tính còn: ~${queue.estimatedWaitMinutes} phút (${queue.remainingAhead} lượt trước)',
                     style: GoogleFonts.inter(
                       color: Colors.white,
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -794,16 +882,16 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
                   color: Color(0xFFF0F9FF),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.confirmation_number_outlined, size: 44, color: AppTheme.primaryColor),
+                child: const Icon(Icons.qr_code_2_rounded, size: 44, color: AppTheme.primaryColor),
               ),
               const SizedBox(height: 14),
               Text(
-                'Hôm nay bạn chưa có số thứ tự',
+                'Hôm nay bạn chưa có Mã QR Tiếp Nhận',
                 style: GoogleFonts.sora(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
               ),
               const SizedBox(height: 6),
               Text(
-                'Bạn có thể lấy số thứ tự khám trực tuyến ngay trên ứng dụng mà không cần phải xếp hàng tại quầy tiếp đón bệnh viện.',
+                'Bệnh viện đã bỏ hoàn toàn việc bốc số thứ tự STT giấy. Quý khách chỉ cần nhận 1 Mã QR Tiếp Nhận duy nhất chứa đầy đủ thông tin để vào khám ngay.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B), height: 1.45),
               ),
@@ -818,10 +906,10 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 4,
                 ),
-                icon: const Icon(Icons.add_circle_outline_rounded),
+                icon: const Icon(Icons.qr_code_rounded),
                 label: Text(
-                  'Lấy số thứ tự khám trực tuyến',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
+                  'Nhận Mã QR Tiếp Nhận Khám (Bỏ STT)',
+                  style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.bold),
                 ),
                 onPressed: () => _showIssueTicketModal(queue, auth),
               ),
@@ -1029,7 +1117,7 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
           ),
           const SizedBox(height: 4),
           Text(
-            'Theo dõi số thứ tự đang được phục vụ tại từng phòng khám theo thời gian thực.',
+            'Theo dõi tình trạng tiếp nhận và lượt khám tại từng phòng khám theo thời gian thực.',
             style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
           ),
         ],
@@ -1198,11 +1286,11 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
               ),
               const SizedBox(height: 16),
               Text(
-                'Lấy Số Thứ Tự Khám Trực Tuyến',
-                style: GoogleFonts.sora(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+                'Nhận Mã QR Tiếp Nhận Khám (Bỏ STT)',
+                style: GoogleFonts.sora(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
               ),
               Text(
-                'Chọn chuyên khoa phòng khám cần khám để lấy phiếu STT',
+                'Chọn chuyên khoa phòng khám để cấp Thẻ Tiếp Nhận QR điện tử',
                 style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF64748B)),
               ),
               const SizedBox(height: 18),
@@ -1398,6 +1486,25 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
 
   /// Hiển thị mã QR phiếu khám
   void _showTicketQrDialog(QueueTicketModel ticket) {
+    final Map<String, dynamic> ticketQrPayload = {
+      'type': 'D_MEDICAL_EXAM_PASS',
+      'version': '2.0',
+      'ticketId': ticket.id,
+      'patientCode': ticket.patientCode,
+      'patientName': ticket.patientName,
+      'patientGender': ticket.patientGender,
+      'patientAge': ticket.patientAge,
+      'identityCard': ticket.identityCardNumber,
+      if (ticket.healthInsuranceNumber != null) 'healthInsuranceNumber': ticket.healthInsuranceNumber,
+      'department': ticket.departmentName,
+      'location': ticket.location,
+      'status': ticket.status,
+      'priority': ticket.priority,
+      'createdAt': ticket.createdAt.toIso8601String(),
+      'checkInNotice': 'Xuat trinh ma QR de tiep nhan vao phong kham (He thong da bo STT)',
+    };
+    final String qrDataString = jsonEncode(ticketQrPayload);
+
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -1408,36 +1515,64 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'MÃ QR PHIẾU KHÁM',
+                'MÃ QR TIẾP NHẬN KHÁM BỆNH',
                 style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
               ),
               const SizedBox(height: 6),
               Text(
-                'Xuất trình mã QR tại cửa phòng khám để nhân viên quét xác thực',
+                'Xuất trình mã QR tại cửa phòng khám để máy quét tiếp nhận ngay (Đã bỏ STT giấy)',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF64748B)),
               ),
               const SizedBox(height: 16),
               QrImageView(
-                data: 'https://dmedical.hospital.vn/queue/${ticket.id}',
+                data: qrDataString,
                 version: QrVersions.auto,
-                size: 180,
+                size: 175,
                 backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.primaryDark),
+                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.primary),
               ),
               const SizedBox(height: 12),
-              Text(
-                'STT: #${ticket.sequenceNumber}',
-                style: GoogleFonts.sora(fontSize: 26, fontWeight: FontWeight.w900, color: AppTheme.primaryColor),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Mã phiếu: #${ticket.id.isNotEmpty ? ticket.id : ticket.sequenceNumber}',
+                  style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                ),
               ),
+              const SizedBox(height: 6),
               Text(
                 '${ticket.patientName} • ${ticket.departmentName}',
                 style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(38),
+                  side: const BorderSide(color: Color(0xFFBAE6FD)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.info_outline, size: 16, color: AppTheme.primary),
+                label: Text(
+                  'Xem thông tin y tế trong Mã QR',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _showQrDataInspectionModal(ticketQrPayload);
+                },
+              ),
+              const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
-                  minimumSize: const Size.fromHeight(42),
+                  minimumSize: const Size.fromHeight(40),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Đóng', style: TextStyle(color: Colors.white)),
@@ -1449,15 +1584,115 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
     );
   }
 
+  void _showQrDataInspectionModal(Map<String, dynamic> data) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.qr_code_2_rounded, color: AppTheme.primary, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Dữ Liệu Khám Tích Hợp Trong Mã QR',
+                  style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Mã QR đã mã hóa đầy đủ thông tin bệnh nhân & đợt khám. Bệnh viện đã bỏ số thứ tự STT giấy.',
+              style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F9FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
+              ),
+              child: Column(
+                children: [
+                  _buildInspectionRow('Mã tiếp nhận', data['appointmentId'] ?? data['ticketId'] ?? '--'),
+                  _buildInspectionRow('Họ và tên', data['patientName'] ?? '--'),
+                  _buildInspectionRow('Mã người bệnh', data['patientCode'] ?? '--'),
+                  _buildInspectionRow('Số CCCD / ĐDCN', data['identityCard'] ?? '--'),
+                  _buildInspectionRow('Chuyên khoa khám', data['department'] ?? '--'),
+                  _buildInspectionRow('Phòng khám', data['roomNumber'] ?? data['location'] ?? '--'),
+                  if (data['doctor'] != null) _buildInspectionRow('Bác sĩ', data['doctor']),
+                  if (data['appointmentDate'] != null) _buildInspectionRow('Ngày hẹn', '${data['appointmentTime']} - ${data['appointmentDate']}'),
+                  _buildInspectionRow('Loại khám', data['appointmentType'] == 'FollowUp' ? 'Tái khám định kỳ' : 'Khám mới / Tiếp nhận'),
+                  if (data['previousRecordCode'] != null) _buildInspectionRow('Hồ sơ EMR cũ', data['previousRecordCode']),
+                  if (data['followUpNotes'] != null) _buildInspectionRow('Lời dặn tái khám', data['followUpNotes']),
+                  if (data['symptoms'] != null) _buildInspectionRow('Lý do khám', data['symptoms']),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Đã hiểu (Đóng)', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInspectionRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
+          ),
+          Expanded(
+            child: Text(value, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Xác nhận huỷ vé
   void _confirmCancelTicket(QueueProvider queue) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('Xác nhận huỷ số thứ tự?', style: GoogleFonts.sora(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: Text('Xác nhận huỷ Mã QR tiếp nhận?', style: GoogleFonts.sora(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Text(
-          'Sau khi huỷ, số thứ tự hiện tại của bạn sẽ bị xoá khỏi hàng chờ của phòng khám.',
+          'Sau khi huỷ, lượt tiếp nhận của bạn sẽ bị xoá khỏi hàng chờ của phòng khám.',
           style: GoogleFonts.inter(fontSize: 13.5),
         ),
         actions: [
@@ -1472,7 +1707,7 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
               await queue.cancelMyTicket();
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã huỷ số thứ tự khám.')),
+                  const SnackBar(content: Text('Đã huỷ tiếp nhận khám.')),
                 );
               }
             },

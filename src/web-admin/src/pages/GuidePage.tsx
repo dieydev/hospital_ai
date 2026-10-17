@@ -111,7 +111,7 @@ export const GuidePage: React.FC = () => {
       {/* Hero Banner Hướng Dẫn */}
       <section
         style={{
-          background: 'linear-gradient(180deg, #dcf0fa 0%, #ebf7fd 55%, #ffffff 100%)',
+          background: '#f0f9ff',
           padding: '46px 20px 38px',
           textAlign: 'center',
           borderBottom: '1px solid #bae6fd',
@@ -304,12 +304,12 @@ export const GuidePage: React.FC = () => {
         {/* CTA Banner */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            background: '#0284c7',
             color: '#ffffff',
             borderRadius: 20,
             padding: '34px 28px',
             textAlign: 'center',
-            boxShadow: '0 10px 30px rgba(2, 132, 199, 0.22)',
+            border: '1px solid #0369a1',
           }}
         >
           <Title level={2} style={{ color: '#ffffff', fontWeight: 900, margin: '0 0 10px' }}>

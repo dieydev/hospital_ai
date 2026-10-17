@@ -51,6 +51,7 @@ import {
   OnlineAppointmentItem,
   TimeSlotQuotaItem,
 } from '../services/appointmentService';
+import { signalrService } from '../services/signalrService';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -92,7 +93,7 @@ export const AppointmentsPage: React.FC = () => {
       setAppointments(data);
       if (prevLength > 0 && data.length > prevLength) {
         const latest = data[0];
-        showToast(`🔥 Đặt lịch mới từ Mobile App: ${latest.patientName} (${latest.departmentName})`, 'success');
+        showToast(`🔥 Có lượt đặt lịch mới: ${latest.patientName} (${latest.departmentName || latest.doctorName || 'D-Medical'})`, 'success');
       }
       setPrevLength(data.length);
     } catch {
@@ -118,7 +119,7 @@ export const AppointmentsPage: React.FC = () => {
     fetchAppointments().finally(() => setLoading(false));
     fetchTimeSlots();
 
-    // Polling sync
+    // Polling sync fallback
     const interval = setInterval(() => {
       fetchAppointments();
       if (activeTab === 'slots') {
@@ -126,7 +127,18 @@ export const AppointmentsPage: React.FC = () => {
       }
     }, 4000);
 
-    return () => clearInterval(interval);
+    // Real-time SignalR Event Sync
+    const unsubscribe = signalrService.subscribeQueueUpdates(() => {
+      fetchAppointments();
+      if (activeTab === 'slots') {
+        fetchTimeSlots();
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, [fetchAppointments, fetchTimeSlots, activeTab]);
 
   // Actions: Confirm Appointment

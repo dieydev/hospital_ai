@@ -22,6 +22,7 @@ class ExaminationRecord {
   final double weight;
   final double height;
   final double bmi;
+  final String followUpAppointment;
   final List<Map<String, dynamic>> prescriptionDetails;
   final List<Map<String, dynamic>> serviceOrderDetails;
 
@@ -46,6 +47,7 @@ class ExaminationRecord {
     required this.weight,
     required this.height,
     required this.bmi,
+    this.followUpAppointment = '',
     required this.prescriptionDetails,
     required this.serviceOrderDetails,
   });
@@ -101,6 +103,7 @@ class ExaminationRecord {
       weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
       height: (json['height'] as num?)?.toDouble() ?? 0.0,
       bmi: (json['bmi'] as num?)?.toDouble() ?? 0.0,
+      followUpAppointment: json['followUpAppointment']?.toString() ?? json['lichTaiKham']?.toString() ?? '',
       prescriptionDetails: parsePrescriptions(json['prescriptionDetails']),
       serviceOrderDetails: parseServices(json['serviceOrderDetails']),
     );

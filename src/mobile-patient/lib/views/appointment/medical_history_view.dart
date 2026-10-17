@@ -7,6 +7,7 @@ import '../../providers/patient_provider.dart';
 import '../features/medication_reminder_view.dart';
 import '../profile/complete_profile_view.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'book_appointment_view.dart';
 
 class MedicalHistoryView extends StatefulWidget {
   const MedicalHistoryView({super.key});
@@ -378,7 +379,86 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                                         ...record.serviceOrderDetails.map((svc) => _buildServiceCard(svc)),
                                       ],
 
-                                      const SizedBox(height: 16),
+                                      const SizedBox(height: 14),
+
+                                      // Follow-up Appointment & Doctor's Advice
+                                      if (record.followUpAppointment.isNotEmpty) ...[
+                                        Container(
+                                          margin: const EdgeInsets.symmetric(vertical: 4),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF5F3FF),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: const Color(0xFFDDD6FE)),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  const Icon(Icons.event_repeat_rounded, size: 18, color: Color(0xFF7C3AED)),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    'CHỈ ĐỊNH TÁI KHÁM & LỜI DẶN',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: const Color(0xFF6D28D9),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                record.followUpAppointment,
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(0xFF4C1D95),
+                                                  height: 1.4,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                      ],
+
+                                      // Button Đặt lịch tái khám theo bệnh án này
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 44,
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF7C3AED),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            elevation: 0,
+                                          ),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => BookAppointmentView(
+                                                  isFollowUp: true,
+                                                  initialDepartment: record.departmentName,
+                                                  initialDoctor: record.doctorName,
+                                                  previousRecordCode: record.examinationCode,
+                                                  initialFollowUpNotes: record.followUpAppointment.isNotEmpty
+                                                      ? record.followUpAppointment
+                                                      : 'Tái khám theo bệnh án ${record.examinationCode}',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(Icons.event_repeat_rounded, size: 18, color: Colors.white),
+                                          label: Text(
+                                            'Đặt Lịch Tái Khám Theo Bệnh Án Này',
+                                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+
                                       SizedBox(
                                         width: double.infinity,
                                         height: 44,
@@ -803,7 +883,28 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                       const SizedBox(height: 16),
                     ],
 
-                    // IV. Ký số & QR Code
+                    // IV. Chỉ định tái khám
+                    if (record.followUpAppointment.isNotEmpty) ...[
+                      Text('IV. LỜI DẶN BÁC SĨ & HẸN TÁI KHÁM',
+                          style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1))),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F3FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFDDD6FE)),
+                        ),
+                        child: Text(
+                          record.followUpAppointment,
+                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF5B21B6), height: 1.4, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // V. Ký số & QR Code
                     const Divider(color: Color(0xFFCBD5E1)),
                     const SizedBox(height: 12),
                     Row(

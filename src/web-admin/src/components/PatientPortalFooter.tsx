@@ -40,10 +40,10 @@ export const PatientPortalFooter: React.FC = () => {
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <span className="footer-cert-badge">
-                🏛️ Giấy phép BYT: 0864/BYT-GPHĐ
+                Giấy phép BYT: 0864/BYT-GPHĐ
               </span>
               <span className="footer-cert-badge">
-                ✓ Tiêu chuẩn ISO 9001:2015
+                Tiêu chuẩn ISO 9001:2015
               </span>
             </div>
           </Col>

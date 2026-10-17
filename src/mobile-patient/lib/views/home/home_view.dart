@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/patient_provider.dart';
+import '../../providers/appointment_provider.dart';
 import '../../widgets/profile_guard.dart';
 import '../appointment/book_appointment_view.dart';
 import '../appointment/medical_history_view.dart';
@@ -22,6 +26,18 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final int _activeNewsIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        context.read<PatientProvider>().fetchMedicalHistory(user.id);
+        context.read<AppointmentProvider>().fetchMyAppointments(user.soDienThoai ?? '', patientCode: user.maBenhNhan);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +68,12 @@ class _HomeViewState extends State<HomeView> {
                 // 1. Top Branding Header (Hospital logo + Title + Subtitle)
                 _buildHeader(),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
+
+                // Smart Re-book / Tái khám 1 chạm Banner
+                _buildSmartRebookBanner(),
+
+                const SizedBox(height: 14),
 
                 // 2. Main 12-Feature Card (Card "Chức năng")
                 _buildPrimaryFunctionsCard(),
@@ -158,6 +179,143 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  // ── Smart Re-book Banner (Gợi ý tái khám 1 chạm) ───────────────
+  Widget _buildSmartRebookBanner() {
+    final patientProvider = context.watch<PatientProvider>();
+    final appointmentProvider = context.watch<AppointmentProvider>();
+    final exams = patientProvider.examinations;
+    final pastApts = appointmentProvider.myAppointments;
+
+    if (exams.isEmpty && pastApts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final latestExam = exams.isNotEmpty ? exams.first : null;
+    final latestApt = pastApts.isNotEmpty ? pastApts.first : null;
+
+    final deptName = latestExam?.departmentName ?? latestApt?['departmentName']?.toString() ?? 'Khoa Nội Tổng Hợp';
+    final docName = latestExam?.doctorName ?? latestApt?['doctorName']?.toString() ?? 'Bác sĩ chuyên khoa';
+    final dateStr = latestExam?.formattedDate ?? latestApt?['appointmentDate']?.toString() ?? '';
+    final code = latestExam?.examinationCode ?? latestApt?['id']?.toString() ?? '';
+    final followUpNote = latestExam?.followUpAppointment ?? latestApt?['followUpNotes']?.toString() ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFDDD6FE), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F3FF),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFEDE9FE)),
+              ),
+              child: const Icon(Icons.event_repeat_rounded, color: Color(0xFF7C3AED), size: 28),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDE9FE),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'GỢI Ý TÁI KHÁM 1 CHẠM',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF7C3AED),
+                          ),
+                        ),
+                      ),
+                      if (dateStr.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          dateStr,
+                          style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$deptName • $docName',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F172A),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (followUpNote.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      followUpNote,
+                      style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF6D28D9), fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              onPressed: () {
+                ProfileGuard.check(context, onAllowed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BookAppointmentView(
+                        isFollowUp: true,
+                        initialDepartment: deptName,
+                        initialDoctor: docName,
+                        previousRecordCode: code,
+                        initialFollowUpNotes: followUpNote.isNotEmpty ? followUpNote : 'Tái khám theo đợt khám ngày $dateStr ($deptName)',
+                      ),
+                    ),
+                  );
+                });
+              },
+              child: Text(
+                'Tái khám',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── 2. Primary 12-Feature Card ("Chức năng") ───────────────────
   Widget _buildPrimaryFunctionsCard() {
     final List<Map<String, dynamic>> primaryFunctions = [
@@ -258,15 +416,20 @@ class _HomeViewState extends State<HomeView> {
         },
       },
       {
-        'title': 'Lắng nghe\nkhách hàng',
+        'title': 'Đặt lịch\ntái khám',
         'iconWidget': _buildDualIcon(
-          Icons.support_agent_rounded,
-          badgeIcon: Icons.chat_bubble_rounded,
-          iconColor: const Color(0xFF0284C7),
-          badgeColor: const Color(0xFFF97316),
+          Icons.event_repeat_rounded,
+          badgeIcon: Icons.calendar_month_rounded,
+          iconColor: const Color(0xFF7C3AED),
+          badgeColor: const Color(0xFF0284C7),
         ),
         'onTap': () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpCenterView()));
+          ProfileGuard.check(context, onAllowed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BookAppointmentView(isFollowUp: true)),
+            );
+          });
         },
       },
       {
