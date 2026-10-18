@@ -41,12 +41,6 @@ import {
   EnvironmentOutlined,
   PlayCircleFilled,
   PlayCircleOutlined,
-  GiftOutlined,
-  FireFilled,
-  EyeOutlined,
-  FullscreenOutlined,
-  LikeOutlined,
-  RobotOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
@@ -75,8 +69,8 @@ export interface HospitalVideoItem {
   title: string;
   description: string;
   duration: string;
-  views: string;
-  likes: string;
+  category: string;
+  resolution: string;
   thumbnail: string;
   videoUrl: string;
   tag: string;
@@ -86,51 +80,51 @@ export interface HospitalVideoItem {
 export const HOSPITAL_VIDEOS: HospitalVideoItem[] = [
   {
     id: 'v1',
-    title: 'Toàn cảnh Bệnh viện Đa khoa Hospital AI & Phòng Mổ Hybrid Vô Khuẩn',
-    description: 'Khám phá quy mô hơn 500 giường bệnh tiện nghi, hệ thống phòng mổ áp lực dương vô khuẩn một chiều và trung tâm chẩn đoán hình ảnh kỹ thuật cao chuẩn quốc tế.',
+    title: 'Khuôn viên khám bệnh & Hệ thống phòng mổ vô khuẩn Hybrid',
+    description: 'Quy mô hơn 500 giường bệnh tiện nghi, hệ thống phòng mổ áp lực dương vô khuẩn một chiều và trung tâm chẩn đoán hình ảnh kỹ thuật cao.',
     duration: '03:45',
-    views: '28.4K lượt xem',
-    likes: '1.8K',
+    category: 'Cơ sở vật chất',
+    resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&auto=format&fit=crop&q=80',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    tag: 'TOÀN CẢNH BỆNH VIỆN',
+    tag: 'Cơ sở vật chất',
     badgeColor: '#0284c7',
   },
   {
     id: 'v2',
-    title: 'Quy Trình Tiếp Nhận 60 Giây: Quét Mã QR Kiosk Vào Thẳng Buồng Khám',
-    description: 'Hướng dẫn chi tiết người bệnh đặt lịch trước, nhận mã QR thông minh và làm thủ tục check-in tự động tại kiosk sảnh A mà không cần xếp hàng bốc số.',
+    title: 'Quy trình tiếp nhận tự động qua Kiosk QR Code',
+    description: 'Hướng dẫn chi tiết quy trình đặt lịch trước, nhận mã QR thông minh và làm thủ tục check-in tự động tại sảnh A không cần bốc số.',
     duration: '02:18',
-    views: '35.2K lượt xem',
-    likes: '2.4K',
+    category: 'Hướng dẫn người bệnh',
+    resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    tag: 'TIẾP NHẬN 4.0',
+    tag: 'Tiếp nhận thông minh',
     badgeColor: '#059669',
   },
   {
     id: 'v3',
-    title: 'Hệ Thống Trí Tuệ Nhân Tạo AI Hỗ Trợ Bác Sĩ Chẩn Đoán & Kê Đơn An Toàn',
-    description: 'Tìm hiểu cơ chế hoạt động của Hospital AI Medical Engine: Gợi ý mã bệnh ICD-10, phân tích hình ảnh MRI/CT và tự động kiểm tra cảnh báo dị ứng, tương tác thuốc.',
+    title: 'Ứng dụng công nghệ hỗ trợ bác sĩ chẩn đoán & cảnh báo kê đơn',
+    description: 'Cơ chế hoạt động của Hospital AI: Hỗ trợ phân tích phim chụp MRI/CT và tự động kiểm tra cảnh báo dị ứng, tương tác thuốc theo Dược thư.',
     duration: '04:12',
-    views: '19.8K lượt xem',
-    likes: '1.5K',
+    category: 'Công nghệ y khoa',
+    resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    tag: 'CÔNG NGHỆ AI Y TẾ',
-    badgeColor: '#7c3aed',
+    tag: 'Công nghệ chẩn đoán',
+    badgeColor: '#0369a1',
   },
   {
     id: 'v4',
-    title: 'Lời Khuyên Sức Khỏe & Tầm Soát Đột Quỵ Sớm - BS. CKII Nguyễn Thanh Duy',
-    description: 'Giám đốc chuyên môn chia sẻ về các yếu tố nguy cơ tim mạch - đột quỵ tiềm ẩn ở người trẻ và người cao tuổi, cùng giải pháp tầm soát sớm bảo vệ tính mạng.',
+    title: 'Tư vấn chuyên khoa & Tầm soát sớm nguy cơ tim mạch',
+    description: 'Bác sĩ chuyên khoa II chia sẻ về các dấu hiệu cảnh báo bệnh lý tim mạch, phình mạch máu và các bước thăm khám định kỳ.',
     duration: '03:30',
-    views: '22.6K lượt xem',
-    likes: '1.9K',
+    category: 'Tư vấn sức khỏe',
+    resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800&auto=format&fit=crop&q=80',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    tag: 'TƯ VẤN CHUYÊN GIA',
-    badgeColor: '#d97706',
+    tag: 'Tư vấn chuyên gia',
+    badgeColor: '#0284c7',
   },
 ];
 
@@ -821,25 +815,21 @@ export const PatientHomePage: React.FC = () => {
             <div className="carousel-slide-card slide-ad-1">
               <Row gutter={[24, 20]} className="carousel-slide-row">
                 <Col xs={24} md={15}>
-                  <div className="carousel-slide-badge badge-gold">
-                    <FireFilled style={{ color: '#eab308' }} />
-                    <span>ƯU ĐÃI NĂM MỚI 2026 • GIẢM 30% GÓI VIP</span>
-                  </div>
                   <div className="carousel-slide-title">
-                    Tầm Soát Toàn Diện Tim Mạch & Nguy Cơ Đột Quỵ
+                    Tầm soát toàn diện tim mạch & nguy cơ đột quỵ
                   </div>
                   <div className="carousel-slide-desc">
-                    Hội chẩn cùng Bác sĩ Viện Tim TP.HCM. Chụp MRI sọ não 3.0T & CT 128 lát cắt phát hiện mảng xơ vữa, phình mạch chỉ trong 15 phút.
+                    Hội chẩn cùng chuyên gia tim mạch hàng đầu. Chụp MRI 3.0 Tesla và CT 128 lát cắt phát hiện sớm mảng xơ vữa, phình mạch máu não chỉ trong 15 phút.
                   </div>
                   <div className="carousel-slide-highlights">
                     <span className="carousel-slide-highlight-item">
                       <CheckCircleOutlined /> Chụp MRI 3.0T thế hệ mới
                     </span>
                     <span className="carousel-slide-highlight-item">
-                      <CheckCircleOutlined /> Siêu âm Doppler tim mạch
+                      <CheckCircleOutlined /> Siêu âm Doppler màu tim
                     </span>
                     <span className="carousel-slide-highlight-item">
-                      <SafetyCertificateOutlined /> Hỗ trợ trừ lời BHYT
+                      <SafetyCertificateOutlined /> Áp dụng trừ mức BHYT
                     </span>
                   </div>
                   <div className="carousel-slide-btn-group">
@@ -848,7 +838,7 @@ export const PatientHomePage: React.FC = () => {
                       className="carousel-slide-btn"
                       onClick={() => navigate('/booking?mode=byPackage')}
                     >
-                      <span>Đăng Ký Khám Ưu Đãi</span>
+                      <span>Đăng ký khám chuyên sâu</span>
                       <ArrowRightOutlined />
                     </button>
                     <button
@@ -861,26 +851,25 @@ export const PatientHomePage: React.FC = () => {
                   </div>
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
-                  <div className="carousel-preview-card" style={{ borderColor: '#fde047' }}>
+                  <div className="carousel-preview-card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#854d0e', textTransform: 'uppercase' }}>
-                        VOUCHER ƯU ĐÃI VÀNG
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0369a1' }}>
+                        Gói khám chuyên khoa tim mạch
                       </span>
-                      <span className="ad-card-discount-tag">-30% GIẢM</span>
                     </div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#0284c7', margin: '4px 0' }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#0284c7', margin: '6px 0' }}>
                       2.450.000 đ
                     </div>
-                    <div style={{ fontSize: 12, color: '#94a3b8', textDecoration: 'line-through' }}>
-                      3.500.000 đ (Giá gốc)
+                    <div style={{ fontSize: 13, color: '#64748b', textDecoration: 'line-through' }}>
+                      3.500.000 đ (Giá niêm yết)
                     </div>
-                    <div style={{ fontSize: 12, color: '#334155', marginTop: 10, lineHeight: 1.5 }}>
-                      • Miễn phí xét nghiệm đường huyết & mỡ máu<br />
-                      • Đo điện tâm đồ ECG kỹ thuật số<br />
-                      • Bác sĩ CKII tư vấn phác đồ phòng ngừa
+                    <div style={{ fontSize: 13, color: '#334155', marginTop: 12, lineHeight: 1.6 }}>
+                      • Xét nghiệm đường huyết & mỡ máu toàn phần<br />
+                      • Đo điện tâm đồ ECG kỹ thuật số 12 chuyển đạo<br />
+                      • Bác sĩ CKII tư vấn phác đồ dự phòng cá nhân
                     </div>
-                    <div style={{ marginTop: 10, fontSize: 11, color: '#059669', fontWeight: 700 }}>
-                      ⚡ Mã KM: <strong>STROKE2026</strong> (Còn 15 suất hôm nay)
+                    <div style={{ marginTop: 12, fontSize: 12.5, color: '#0369a1', fontWeight: 600 }}>
+                      Mã ưu đãi trực tuyến: STROKE2026
                     </div>
                   </div>
                 </Col>
@@ -891,25 +880,21 @@ export const PatientHomePage: React.FC = () => {
             <div className="carousel-slide-card slide-ad-2">
               <Row gutter={[24, 20]} className="carousel-slide-row">
                 <Col xs={24} md={15}>
-                  <div className="carousel-slide-badge">
-                    <SafetyCertificateOutlined />
-                    <span>BHYT TOÀN QUỐC • KHÔNG CẦN CHUYỂN TUYẾN</span>
-                  </div>
                   <div className="carousel-slide-title">
-                    Khám BHYT 7 Ngày Trong Tuần • Quét QR Vào Khám Ngay
+                    Khám chữa bệnh BHYT thông tuyến toàn quốc
                   </div>
                   <div className="carousel-slide-desc">
-                    Hưởng trọn 100% quyền lợi BHYT. Tích hợp CCCD gắn chip, VNeID & VssID điện tử. Đặt lịch trước giúp người bệnh chủ động khung giờ, không phải chen lấn bốc số.
+                    Hưởng trọn vẹn 100% quyền lợi BHYT theo quy định. Tích hợp định danh CCCD gắn chip và VNeID điện tử, đặt hẹn trước giúp tiếp nhận đúng giờ không phải chờ đợi.
                   </div>
                   <div className="carousel-slide-highlights">
                     <span className="carousel-slide-highlight-item">
-                      <CheckCircleOutlined /> Khám cả Thứ 7 & Chủ Nhật
+                      <CheckCircleOutlined /> Phục vụ cả Thứ 7 và Chủ Nhật
                     </span>
                     <span className="carousel-slide-highlight-item">
-                      <CheckCircleOutlined /> Đồng bộ hồ sơ VNeID
+                      <CheckCircleOutlined /> Đồng bộ dữ liệu thẻ VNeID
                     </span>
                     <span className="carousel-slide-highlight-item">
-                      <ClockCircleOutlined /> Tiết kiệm 90% thời gian chờ
+                      <ClockCircleOutlined /> Tiếp nhận trực tiếp qua Kiosk
                     </span>
                   </div>
                   <div className="carousel-slide-btn-group">
@@ -918,7 +903,7 @@ export const PatientHomePage: React.FC = () => {
                       className="carousel-slide-btn"
                       onClick={() => navigate('/booking?mode=byDept')}
                     >
-                      <span>Lấy Số Khám BHYT Ngay</span>
+                      <span>Lấy số khám BHYT</span>
                       <ArrowRightOutlined />
                     </button>
                     <button
@@ -934,18 +919,18 @@ export const PatientHomePage: React.FC = () => {
                 <Col xs={0} md={9} className="carousel-slide-visual">
                   <div className="carousel-preview-card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#0369a1', textTransform: 'uppercase' }}>
-                        PHIẾU KHÁM TIẾP NHẬN 4.0
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0369a1' }}>
+                        Phiếu tiếp nhận điện tử
                       </span>
-                      <Tag color="cyan" style={{ margin: 0, fontWeight: 800 }}>MÃ QR HỢP LỆ</Tag>
+                      <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Mã QR số</span>
                     </div>
-                    <div style={{ textAlign: 'center', padding: '6px 0' }}>
-                      <div style={{ display: 'inline-block', padding: 8, background: '#fff', borderRadius: 12, border: '2px solid #bae6fd' }}>
+                    <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                      <div style={{ display: 'inline-block', padding: 8, background: '#fff', borderRadius: 12, border: '1px solid #bae6fd' }}>
                         <QRCodeSVG value="MEDQR|SAMPLE|BHYT|2026" size={110} level="M" fgColor="#0369a1" />
                       </div>
                     </div>
-                    <div style={{ fontSize: 12, color: '#334155', textAlign: 'center', marginTop: 4 }}>
-                      Quét tại <strong>Kiosk Sảnh A</strong> để nhận số phòng khám thẳng
+                    <div style={{ fontSize: 13, color: '#334155', textAlign: 'center', marginTop: 6 }}>
+                      Quét mã tại Kiosk Sảnh A để nhận số buồng khám thẳng
                     </div>
                   </div>
                 </Col>
@@ -956,15 +941,11 @@ export const PatientHomePage: React.FC = () => {
             <div className="carousel-slide-card slide-ad-3">
               <Row gutter={[24, 20]} className="carousel-slide-row">
                 <Col xs={24} md={15}>
-                  <div className="carousel-slide-badge badge-emerald">
-                    <TeamOutlined />
-                    <span>DÀNH RIÊNG DOANH NGHIỆP & GIA ĐÌNH • CHIẾT KHẤU 25%</span>
-                  </div>
                   <div className="carousel-slide-title">
-                    Gói Khám Sức Khỏe Định Kỳ Doanh Nghiệp & Gia Đình
+                    Khám sức khỏe định kỳ doanh nghiệp & gia đình
                   </div>
                   <div className="carousel-slide-desc">
-                    Thiết kế danh mục linh hoạt theo Luật Lao động và ngân sách công ty. Đội ngũ y tế lưu động lấy mẫu tận nơi hoặc quy trình khám VIP khép kín tại viện.
+                    Thiết kế danh mục linh hoạt theo Luật Lao động và nhu cầu thực tế. Đội ngũ y tế lưu động lấy mẫu tận nơi hoặc quy trình khám VIP khép kín tại viện.
                   </div>
                   <div className="carousel-slide-highlights">
                     <span className="carousel-slide-highlight-item">
@@ -974,7 +955,7 @@ export const PatientHomePage: React.FC = () => {
                       <CheckCircleOutlined /> Trả kết quả số hóa EMR
                     </span>
                     <span className="carousel-slide-highlight-item">
-                      <SafetyCertificateOutlined /> Bác sĩ tư vấn 1:1 tận tâm
+                      <SafetyCertificateOutlined /> Bác sĩ tư vấn phác đồ 1:1
                     </span>
                   </div>
                   <div className="carousel-slide-btn-group">
@@ -983,7 +964,7 @@ export const PatientHomePage: React.FC = () => {
                       className="carousel-slide-btn"
                       onClick={() => navigate('/booking?mode=byPackage&search=doanh nghiệp')}
                     >
-                      <span>Tư Vấn Gói Doanh Nghiệp</span>
+                      <span>Tư vấn gói đoàn thể</span>
                       <ArrowRightOutlined />
                     </button>
                     <button
@@ -996,20 +977,20 @@ export const PatientHomePage: React.FC = () => {
                   </div>
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
-                  <div className="carousel-preview-card" style={{ borderColor: '#6ee7b7' }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#059669', marginBottom: 4 }}>
-                      HỢP TÁC DOANH NGHIỆP
+                  <div className="carousel-preview-card">
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>
+                      Dành cho doanh nghiệp
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>
-                      Ưu đãi đoàn từ 20 người
+                    <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
+                      Chính sách ưu đãi đoàn từ 20 người
                     </div>
-                    <div style={{ fontSize: 12, color: '#059669', fontWeight: 700, margin: '6px 0' }}>
-                      ✓ Giảm 20% - 30% gói khám tổng thể<br />
-                      ✓ Tặng gói siêu âm tuyến giáp & bụng<br />
-                      ✓ Miễn phí khám chuyên khoa Mắt & Răng
+                    <div style={{ fontSize: 13, color: '#334155', marginTop: 10, lineHeight: 1.6 }}>
+                      • Chiết khấu trực tiếp theo quy mô nhân sự<br />
+                      • Tặng gói siêu âm tuyến giáp và ổ bụng<br />
+                      • Miễn phí khám chuyên khoa Mắt và Răng
                     </div>
-                    <div style={{ fontSize: 11, color: '#64748b' }}>
-                      Hotline đối ngoại: <strong>1900 6868 (Phím 2)</strong>
+                    <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 10 }}>
+                      Liên hệ đối ngoại: <strong>1900 6868</strong>
                     </div>
                   </div>
                 </Col>
@@ -1020,25 +1001,21 @@ export const PatientHomePage: React.FC = () => {
             <div className="carousel-slide-card slide-ad-4">
               <Row gutter={[24, 20]} className="carousel-slide-row">
                 <Col xs={24} md={15}>
-                  <div className="carousel-slide-badge">
-                    <ExperimentOutlined />
-                    <span>CÔNG NGHỆ NHẬT BẢN • KHÔNG ĐAU • KHÔNG KHÓ CHỊU</span>
-                  </div>
                   <div className="carousel-slide-title">
-                    Nội Soi Tiêu Hóa NBI Phóng Đại 100 Lần Phát Hiện Sớm
+                    Nội soi tiêu hóa công nghệ dải tần hẹp NBI
                   </div>
                   <div className="carousel-slide-desc">
-                    Hệ thống Olympus CV-190 dải tần ánh sáng hẹp (NBI) phóng đại siêu rõ nét, phát hiện tổn thương ung thư dạ dày - đại tràng giai đoạn sớm nhất.
+                    Hệ thống Olympus dải tần ánh sáng hẹp (NBI) phóng đại siêu rõ nét, phát hiện tổn thương ung thư dạ dày - đại tràng giai đoạn sớm nhất với tiền mê êm ái.
                   </div>
                   <div className="carousel-slide-highlights">
                     <span className="carousel-slide-highlight-item">
-                      <CheckCircleOutlined /> Tiền mê êm dịu, tỉnh sau 15p
+                      <CheckCircleOutlined /> Tiền mê êm dịu, tỉnh sau 15 phút
                     </span>
                     <span className="carousel-slide-highlight-item">
-                      <CheckCircleOutlined /> Cắt polyp điều trị ngay
+                      <CheckCircleOutlined /> Cắt polyp điều trị trong ngày
                     </span>
                     <span className="carousel-slide-highlight-item">
-                      <SafetyCertificateOutlined /> Dụng cụ tiệt trùng 100%
+                      <SafetyCertificateOutlined /> Dụng cụ tiệt khuẩn 100%
                     </span>
                   </div>
                   <div className="carousel-slide-btn-group">
@@ -1047,7 +1024,7 @@ export const PatientHomePage: React.FC = () => {
                       className="carousel-slide-btn"
                       onClick={() => navigate('/booking?mode=byDept&search=nội soi')}
                     >
-                      <span>Đặt Lịch Nội Soi</span>
+                      <span>Đặt lịch nội soi</span>
                       <ArrowRightOutlined />
                     </button>
                     <button
@@ -1055,23 +1032,23 @@ export const PatientHomePage: React.FC = () => {
                       className="carousel-slide-btn carousel-slide-btn-secondary"
                       onClick={() => navigate('/bac-si')}
                     >
-                      <span>Đội ngũ Chuyên gia Tiêu Hóa</span>
+                      <span>Đội ngũ bác sĩ tiêu hóa</span>
                     </button>
                   </div>
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
-                  <div className="carousel-preview-card" style={{ borderColor: '#67e8f9' }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#0e7490', marginBottom: 4 }}>
-                      TRUNG TÂM NỘI SOI CHUẨN QUỐC TẾ
+                  <div className="carousel-preview-card">
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>
+                      Trung tâm nội soi tiêu hóa
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#0369a1', margin: '4px 0' }}>
-                      Đánh Giá 5.0 ⭐ (1.200+ ca)
+                    <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
+                      Công nghệ dải tần ánh sáng hẹp NBI
                     </div>
-                    <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.5, marginTop: 8 }}>
-                      "Nội soi êm ru như một giấc ngủ ngắn, không hề đau rát hay nôn nao. Bác sĩ giải thích kết quả rất kỹ càng."
+                    <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginTop: 8 }}>
+                      Quan sát chi tiết cấu trúc vi mạch máu và vi bề mặt niêm mạc, hỗ trợ chẩn đoán chính xác tổn thương ung thư đường tiêu hóa sớm.
                     </div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>
-                      — Bệnh nhân <strong>Hoàng Minh T. (Hà Nội)</strong>
+                    <div style={{ fontSize: 12.5, color: '#0369a1', marginTop: 10, fontWeight: 600 }}>
+                      Xuất viện trong ngày sau khi thực hiện
                     </div>
                   </div>
                 </Col>
@@ -1082,15 +1059,11 @@ export const PatientHomePage: React.FC = () => {
             <div className="carousel-slide-card slide-ad-5">
               <Row gutter={[24, 20]} className="carousel-slide-row">
                 <Col xs={24} md={15}>
-                  <div className="carousel-slide-badge badge-purple">
-                    <RobotOutlined />
-                    <span>TRÍ TUỆ NHÂN TẠO Y TẾ • HOSPITAL AI MEDICAL ENGINE</span>
-                  </div>
                   <div className="carousel-slide-title">
-                    Ứng Dụng Hospital AI - Sổ Sức Khỏe Số & Trợ Lý 24/7
+                    Sổ sức khỏe điện tử & Tiện ích y tế số
                   </div>
                   <div className="carousel-slide-desc">
-                    Trợ lý ảo hỗ trợ phân tích triệu chứng sơ bộ, gợi ý chuyên khoa phù hợp, lưu trữ hồ sơ EMR không giới hạn và bảo mật tuyệt đối theo chuẩn y tế HIPAA.
+                    Theo dõi toàn bộ hồ sơ bệnh án EMR cá nhân, tra cứu kết quả cận lâm sàng trực tuyến và tự động kiểm tra tương tác thuốc an toàn theo chuẩn Dược thư.
                   </div>
                   <div className="carousel-slide-highlights">
                     <span className="carousel-slide-highlight-item">
@@ -1109,7 +1082,7 @@ export const PatientHomePage: React.FC = () => {
                       className="carousel-slide-btn"
                       onClick={() => setAiDrawerOpen(true)}
                     >
-                      <span>Trò Chuyện Cùng Trợ Lý AI</span>
+                      <span>Trò chuyện cùng trợ lý y tế</span>
                       <ArrowRightOutlined />
                     </button>
                     <button
@@ -1117,24 +1090,24 @@ export const PatientHomePage: React.FC = () => {
                       className="carousel-slide-btn carousel-slide-btn-secondary"
                       onClick={() => navigate('/booking')}
                     >
-                      <span>Trải nghiệm đặt khám 4.0</span>
+                      <span>Đặt khám trực tuyến</span>
                     </button>
                   </div>
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
-                  <div className="carousel-preview-card" style={{ borderColor: '#c4b5fd' }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#6d28d9', marginBottom: 4 }}>
-                      TRỢ LÝ Y TẾ THÔNG MINH
+                  <div className="carousel-preview-card">
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>
+                      Hồ sơ sức khỏe số EMR
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#4338ca' }}>
-                      Hospital AI Copilot 24/7
+                    <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
+                      Bảo vệ an toàn dùng thuốc
                     </div>
-                    <div style={{ fontSize: 12, color: '#334155', marginTop: 8, lineHeight: 1.5 }}>
-                      🤖 Hỗ trợ kiểm tra đơn thuốc, chống lặp thành phần hoạt chất & tương tác thuốc nguy hiểm.
+                    <div style={{ fontSize: 13, color: '#334155', marginTop: 8, lineHeight: 1.6 }}>
+                      Tự động đối chiếu đơn thuốc, kiểm tra liều lượng và cảnh báo tương tác thuốc theo danh mục Dược thư Quốc gia.
                     </div>
-                    <div style={{ marginTop: 10 }}>
-                      <Tag color="purple" style={{ fontWeight: 700 }}>AI BẢO VỆ SỨC KHỎE</Tag>
-                      <Tag color="blue" style={{ fontWeight: 700 }}>EMR SỐ HÓA</Tag>
+                    <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                      <Tag color="cyan" style={{ fontWeight: 600 }}>Dữ liệu số hóa</Tag>
+                      <Tag color="blue" style={{ fontWeight: 600 }}>Bảo mật chuẩn y tế</Tag>
                     </div>
                   </div>
                 </Col>
@@ -1143,60 +1116,45 @@ export const PatientHomePage: React.FC = () => {
           </Carousel>
         </div>
 
-        {/* BỘ 3 BANNER QUẢNG CÁO PHỤ (SUB-PROMOTIONAL AD BANNERS) */}
+        {/* BỘ 3 TIỆN ÍCH DỊCH VỤ NGƯỜI BỆNH (QUICK SERVICE STRIP) */}
         <div className="sub-promo-banners-wrap">
-          {/* Sub-Banner 1 */}
           <div
             className="sub-promo-card"
             onClick={() => navigate('/booking?mode=byPackage&search=tầm soát')}
           >
-            <div className="sub-promo-icon-box" style={{ background: '#fef3c7', color: '#d97706' }}>
-              <GiftOutlined />
-            </div>
             <div className="sub-promo-content">
-              <div className="sub-promo-title">Voucher 500.000đ Tầm Soát Ung Thư</div>
-              <div className="sub-promo-desc">Áp dụng cho gói tầm soát chuyên sâu khi đặt hẹn trực tuyến trong tháng này.</div>
+              <div className="sub-promo-title">Tầm soát bệnh lý & Gói khám chuyên sâu</div>
+              <div className="sub-promo-desc">Chủ động tầm soát nguy cơ tim mạch, đái tháo đường và ung thư theo nhóm tuổi.</div>
               <div className="sub-promo-action">
-                <span>Nhận ưu đãi ngay</span>
+                <span>Xem danh mục gói khám</span>
                 <ArrowRightOutlined />
               </div>
             </div>
           </div>
 
-          {/* Sub-Banner 2 */}
           <div
             className="sub-promo-card"
             onClick={() => navigate('/booking?mode=byDept&search=tiêm chủng')}
           >
-            <div className="sub-promo-icon-box" style={{ background: '#ecfdf5', color: '#059669' }}>
-              <SafetyCertificateOutlined />
-            </div>
             <div className="sub-promo-content">
-              <div className="sub-promo-title">Tiêm Chủng Trọn Gói Mẹ & Bé 2026</div>
-              <div className="sub-promo-desc">Vaccine chính hãng 100% nhập khẩu, kho lạnh GSP đạt chuẩn Bộ Y Tế.</div>
+              <div className="sub-promo-title">Trung tâm tiêm chủng vắc-xin Mẹ & Bé</div>
+              <div className="sub-promo-desc">Nguồn vắc-xin chính hãng bảo quản kho lạnh GSP, tự động nhắc lịch trên sổ số.</div>
               <div className="sub-promo-action">
-                <span>Xem gói tiêm phòng</span>
+                <span>Tra cứu phác đồ tiêm</span>
                 <ArrowRightOutlined />
               </div>
             </div>
           </div>
 
-          {/* Sub-Banner 3 */}
           <div
             className="sub-promo-card"
-            onClick={() => {
-              showToast('Dịch vụ Khám Từ Xa Video Call: Liên hệ hotline 1900 6868', 'info');
-              navigate('/bac-si');
-            }}
+            onClick={() => navigate('/bac-si')}
           >
-            <div className="sub-promo-icon-box" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-              <VideoCameraOutlined />
-            </div>
             <div className="sub-promo-content">
-              <div className="sub-promo-title">Tư Vấn Bác Sĩ Từ Xa Qua Video Call</div>
-              <div className="sub-promo-desc">Kết nối trực tuyến cùng Bác sĩ Chuyên Khoa II ngay tại nhà 24/7.</div>
+              <div className="sub-promo-title">Tư vấn sức khỏe cùng Bác sĩ chuyên khoa</div>
+              <div className="sub-promo-desc">Kết nối trao đổi trực tuyến, giải thích kết quả cận lâm sàng và phác đồ điều trị.</div>
               <div className="sub-promo-action">
-                <span>Kết nối Bác sĩ</span>
+                <span>Chọn bác sĩ tư vấn</span>
                 <ArrowRightOutlined />
               </div>
             </div>
@@ -1204,31 +1162,27 @@ export const PatientHomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* KHỐI VIDEO GIỚI THIỆU & CƠ SỞ VẬT CHẤT BỆNH VIỆN 4.0 */}
+      {/* KHỐI VIDEO GIỚI THIỆU & CƠ SỞ VẬT CHẤT BỆNH VIỆN */}
       <section className="hospital-video-section">
         <div className="hospital-video-container">
           {/* Header */}
           <div className="video-header-row">
             <div>
-              <div className="video-section-badge">
-                <VideoCameraOutlined style={{ marginRight: 4 }} />
-                TRẢI NGHIỆM THỰC TẾ • TIÊU CHUẨN BỆNH VIỆN 4.0
-              </div>
               <h2 className="video-section-title">
-                Video Giới Thiệu Cơ Sở Vật Chất & Quy Trình Khám Thông Minh
+                Cơ sở vật chất & Quy trình khám bệnh
               </h2>
               <p className="video-section-subtitle">
-                Trực quan hóa không gian khám chữa bệnh hiện đại, hệ thống máy móc chẩn đoán tối tân và trải nghiệm tiếp nhận không chờ đợi tại Bệnh viện Đa khoa Hospital AI.
+                Trực quan hóa không gian khám chữa bệnh, trang thiết bị chẩn đoán hình ảnh và quy trình tiếp đón không chờ đợi tại Bệnh viện Đa khoa Hospital AI.
               </p>
             </div>
             <div>
               <Button
                 type="primary"
                 icon={<PlayCircleOutlined />}
-                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 10, height: 40 }}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 8, height: 40 }}
                 onClick={() => setVideoModalOpen(true)}
               >
-                Xem Toàn Màn Hình
+                Xem toàn màn hình
               </Button>
             </div>
           </div>
@@ -1253,17 +1207,11 @@ export const PatientHomePage: React.FC = () => {
                 {!isPlayingInline && (
                   <div className="video-player-overlay">
                     <div className="video-overlay-top">
-                      <div className="video-tag-live">
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }} />
-                        {currentVideo.tag}
-                      </div>
-                      <div className="video-tag-hd">
-                        <FullscreenOutlined style={{ marginRight: 4 }} />
-                        FULL HD 1080P
-                      </div>
+                      <span className="video-tag-badge">{currentVideo.category}</span>
+                      <span className="video-tag-badge">{currentVideo.resolution}</span>
                     </div>
 
-                    {/* Glowing Central Play Button */}
+                    {/* Central Play Button */}
                     <button
                       type="button"
                       className="video-play-center-btn"
@@ -1278,8 +1226,7 @@ export const PatientHomePage: React.FC = () => {
                       <div className="video-current-title">{currentVideo.title}</div>
                       <div className="video-current-meta">
                         <span><ClockCircleOutlined style={{ marginRight: 4 }} />Thời lượng: {currentVideo.duration}</span>
-                        <span><EyeOutlined style={{ marginRight: 4 }} />{currentVideo.views}</span>
-                        <span><LikeOutlined style={{ marginRight: 4 }} />{currentVideo.likes} yêu thích</span>
+                        <span>Chuyên mục: {currentVideo.category}</span>
                       </div>
                     </div>
                   </div>
@@ -1287,9 +1234,9 @@ export const PatientHomePage: React.FC = () => {
               </div>
 
               {/* Video Description Snippet */}
-              <div style={{ marginTop: 14, padding: '12px 16px', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
-                  <strong>Nội dung:</strong> {currentVideo.description}
+              <div style={{ marginTop: 14, padding: '12px 16px', background: '#f8fafc', borderRadius: 12 }}>
+                <div style={{ fontSize: 13.5, color: '#334155', lineHeight: 1.6 }}>
+                  {currentVideo.description}
                 </div>
               </div>
             </Col>
@@ -1298,8 +1245,8 @@ export const PatientHomePage: React.FC = () => {
             <Col xs={24} lg={9}>
               <div className="video-playlist-card">
                 <div className="video-playlist-header">
-                  <span>DANH SÁCH VIDEO CLIP ({HOSPITAL_VIDEOS.length})</span>
-                  <Tag color="blue" style={{ margin: 0, fontWeight: 700 }}>HOSPITAL AI TV</Tag>
+                  <span>Danh mục video clip ({HOSPITAL_VIDEOS.length})</span>
+                  <Tag color="blue" style={{ margin: 0, fontWeight: 600 }}>Tài liệu video</Tag>
                 </div>
 
                 <div className="video-playlist-items">
@@ -1326,10 +1273,9 @@ export const PatientHomePage: React.FC = () => {
                         <div className="video-item-info">
                           <div className="video-item-title">{item.title}</div>
                           <div className="video-item-sub">
-                            <Tag color={item.badgeColor || 'blue'} style={{ margin: 0, fontSize: 9.5, padding: '0 6px', fontWeight: 700 }}>
-                              {item.tag}
-                            </Tag>
-                            <span>{item.views}</span>
+                            <span>{item.category}</span>
+                            <span>•</span>
+                            <span>{item.duration}</span>
                           </div>
                         </div>
                       </div>
@@ -1337,63 +1283,44 @@ export const PatientHomePage: React.FC = () => {
                   })}
                 </div>
 
-                <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
+                <div style={{ marginTop: 12, textAlign: 'center' }}>
                   <Button
-                    type="dashed"
+                    type="default"
                     block
                     icon={<VideoCameraOutlined />}
-                    style={{ borderColor: '#0284c7', color: '#0284c7', fontWeight: 600, borderRadius: 8 }}
+                    style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600, borderRadius: 8 }}
                     onClick={() => {
-                      showToast('Kênh Video Bệnh viện Hospital AI cập nhật liên tục các chuyên đề y khoa mới nhất!', 'info');
+                      showToast('Kênh Video Bệnh viện cập nhật liên tục các chuyên đề y học mới nhất', 'info');
                     }}
                   >
-                    Xem Thêm Video Khác Trên Kênh Y Tế
+                    Xem thêm chuyên đề y khoa
                   </Button>
                 </div>
               </div>
             </Col>
           </Row>
 
-          {/* 4 Feature Badges Under Video */}
-          <div className="video-features-row">
-            <div className="video-feature-box">
-              <div className="video-feature-icon">
-                <MedicineBoxOutlined />
-              </div>
-              <div>
-                <div className="video-feature-text-title">Phòng Khám Khép Kín</div>
-                <div className="video-feature-text-desc">100% không gian riêng tư, vô khuẩn áp lực dương chuẩn WHO.</div>
-              </div>
+          {/* Clinical Quality Assurance Strip */}
+          <div className="video-clinical-strip">
+            <div className="video-clinical-col">
+              <div className="video-clinical-number">JCI & WHO</div>
+              <div className="video-clinical-title">Phòng khám khép kín</div>
+              <div className="video-clinical-desc">Không gian riêng tư, kiểm soát nhiễm khuẩn áp lực dương.</div>
             </div>
-
-            <div className="video-feature-box">
-              <div className="video-feature-icon">
-                <ExperimentOutlined />
-              </div>
-              <div>
-                <div className="video-feature-text-title">Máy MRI 3.0T & CT 128 Dãy</div>
-                <div className="video-feature-text-desc">Độ phân giải siêu cao, quét nhanh, giảm 80% liều phóng xạ.</div>
-              </div>
+            <div className="video-clinical-col">
+              <div className="video-clinical-number">3.0T & 128 Dãy</div>
+              <div className="video-clinical-title">Chẩn đoán hình ảnh</div>
+              <div className="video-clinical-desc">Hệ thống MRI và CT đa lát cắt phát hiện sớm vi tổn thương.</div>
             </div>
-
-            <div className="video-feature-box">
-              <div className="video-feature-icon">
-                <ScanOutlined />
-              </div>
-              <div>
-                <div className="video-feature-text-title">Check-in Kiosk 60 Giây</div>
-                <div className="video-feature-text-desc">Quét mã QR trên điện thoại vào thẳng buồng khám, không xếp hàng.</div>
-              </div>
+            <div className="video-clinical-col">
+              <div className="video-clinical-number">QR Kiosk</div>
+              <div className="video-clinical-title">Tiếp nhận thông minh</div>
+              <div className="video-clinical-desc">Quét mã nhận số buồng khám thẳng, không cần bốc số.</div>
             </div>
-
-            <div className="video-feature-box">
-              <div className="video-feature-icon">
-                <SafetyCertificateOutlined />
-              </div>
-              <div>
-                <div className="video-feature-text-title">Bác Sĩ Cấp Cứu 24/7</div>
-                <div className="video-feature-text-desc">Đội ngũ Bác sĩ Chuyên Khoa trực tiếp túc trực, cấp cứu kịp thời.</div>
-              </div>
+            <div className="video-clinical-col">
+              <div className="video-clinical-number">24/7</div>
+              <div className="video-clinical-title">Thường trực cấp cứu</div>
+              <div className="video-clinical-desc">Đội ngũ bác sĩ chuyên khoa nội, ngoại và hồi sức tích cực.</div>
             </div>
           </div>
         </div>
@@ -1457,7 +1384,7 @@ export const PatientHomePage: React.FC = () => {
                 </p>
 
                 <div style={{ marginBottom: 10 }}>
-                  <span className="medpro-rating-badge">⭐ 5.0 (450+ lượt khám)</span>
+                  <span className="medpro-rating-badge"><CheckCircleFilled style={{ color: '#0284c7', marginRight: 4 }} />Tiếp nhận đúng giờ</span>
                 </div>
 
                 <div
@@ -1516,20 +1443,20 @@ export const PatientHomePage: React.FC = () => {
                   <Avatar src={doc.avatar} size={74} style={{ border: '3px solid #0284c7', backgroundColor: '#e0f2fe' }} />
                   {doc.isSpecialist && (
                     <Tag
-                      color="gold"
+                      color="blue"
                       style={{
                         position: 'absolute',
                         bottom: -6,
                         left: '50%',
                         transform: 'translateX(-50%)',
                         margin: 0,
-                        fontSize: 9.5,
-                        fontWeight: 800,
+                        fontSize: 10,
+                        fontWeight: 700,
                         borderRadius: 10,
                         padding: '1px 8px',
                       }}
                     >
-                      CHUYÊN GIA
+                      Chuyên gia
                     </Tag>
                   )}
                 </div>
@@ -1539,7 +1466,7 @@ export const PatientHomePage: React.FC = () => {
                 <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2, minHeight: 34 }}>{doc.title}</div>
 
                 <div style={{ margin: '8px 0 10px' }}>
-                  <span className="medpro-rating-badge">⭐ {doc.rating} (150+ lượt)</span>
+                  <span className="medpro-rating-badge"><CheckCircleFilled style={{ color: '#0284c7', marginRight: 4 }} />Bác sĩ chỉ định</span>
                 </div>
 
                 <div style={{ fontSize: 12, color: '#475569', marginBottom: 12 }}>
@@ -1647,11 +1574,8 @@ export const PatientHomePage: React.FC = () => {
       {/* 8. Quy Trình Khám Bệnh 3 Bước Tiếp Nhận Không Chờ Đợi */}
       <section className="patient-journey-wrap" style={{ maxWidth: 1200, margin: '36px auto 30px', padding: '32px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Tag color="cyan" style={{ fontSize: 13, fontWeight: 700, padding: '4px 14px', borderRadius: 20 }}>
-            QUY TRÌNH TIẾP NHẬN
-          </Tag>
-          <Title level={2} style={{ color: '#0f172a', fontWeight: 800, marginTop: 10, marginBottom: 6 }}>
-            Quy trình khám bệnh 3 bước
+          <Title level={2} style={{ color: '#0f172a', fontWeight: 800, margin: '0 0 6px' }}>
+            Quy trình tiếp nhận và khám bệnh
           </Title>
           <Paragraph style={{ color: '#64748b', fontSize: 14, maxWidth: 650, margin: '0 auto' }}>
             Quét mã QR tại kiosk để vào thẳng buồng khám, không cần xếp hàng bốc số.
@@ -1704,16 +1628,15 @@ export const PatientHomePage: React.FC = () => {
             style={{
               backgroundColor: '#0284c7',
               borderColor: '#0284c7',
-              fontWeight: 800,
-              height: 48,
-              borderRadius: 12,
+              fontWeight: 700,
+              height: 46,
+              borderRadius: 10,
               padding: '0 32px',
               fontSize: 15,
-              boxShadow: '0 6px 18px rgba(2, 132, 199, 0.25)',
             }}
             onClick={() => navigate('/booking')}
           >
-            BẮT ĐẦU ĐẶT KHÁM NGAY
+            Bắt đầu đặt khám ngay
           </Button>
         </div>
       </section>
@@ -1721,10 +1644,7 @@ export const PatientHomePage: React.FC = () => {
       {/* 9. FAQ & Testimonials */}
       <section style={{ maxWidth: 1200, margin: '0 auto 48px', padding: '0 20px' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Tag color="blue" style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20 }}>
-            HỖ TRỢ BỆNH NHÂN
-          </Tag>
-          <Title level={2} style={{ color: '#0f172a', fontWeight: 800, marginTop: 10, marginBottom: 6 }}>
+          <Title level={2} style={{ color: '#0f172a', fontWeight: 800, margin: '0 0 6px' }}>
             Câu hỏi thường gặp
           </Title>
           <Paragraph style={{ color: '#64748b', fontSize: 14 }}>
