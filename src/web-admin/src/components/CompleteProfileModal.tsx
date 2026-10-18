@@ -171,8 +171,11 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
       try {
         const storedStr = localStorage.getItem('hospital_registered_users');
         const userList = storedStr ? JSON.parse(storedStr) : [];
+        const userEmail = (user?.email || updatedUser.email || '').toLowerCase();
         const idx = userList.findIndex(
           (u: any) =>
+            (userEmail && u.email && u.email.toLowerCase() === userEmail) ||
+            (userEmail && u.username && u.username.toLowerCase() === userEmail) ||
             u.username === user?.tenDangNhap ||
             u.tenDangNhap === user?.tenDangNhap ||
             u.phoneNumber === values.soDienThoai.trim() ||
@@ -181,6 +184,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
         );
         const persistentUserObj = {
           ...updatedUser,
+          email: user?.email || updatedUser.email,
           username: updatedUser.tenDangNhap,
           fullName: updatedUser.hoTen,
           phoneNumber: updatedUser.soDienThoai,
@@ -198,6 +202,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           userList.push(persistentUserObj);
         }
         localStorage.setItem('hospital_registered_users', JSON.stringify(userList));
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       } catch {
         // ignore
       }

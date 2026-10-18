@@ -160,21 +160,48 @@ export const LoginPage: React.FC = () => {
       isProfileComplete: isProfileComplete,
     };
 
-    setAuth(authUser, token);
-
-    // Đồng bộ vào Local Storage cho đăng nhập sau
+    // Kiểm tra trong danh sách người dùng đã lưu xem đã có hồ sơ hoàn chỉnh trước đó chưa
     try {
       const storedUsersStr = localStorage.getItem('hospital_registered_users');
       const userList = storedUsersStr ? JSON.parse(storedUsersStr) : [];
       const idx = userList.findIndex(
         (item: any) =>
+          (item.email && authUser.email && item.email.toLowerCase() === authUser.email.toLowerCase()) ||
           item.username === authUser.tenDangNhap ||
           item.tenDangNhap === authUser.tenDangNhap ||
-          item.soDienThoai === authUser.soDienThoai ||
+          (item.soDienThoai && authUser.soDienThoai && item.soDienThoai === authUser.soDienThoai) ||
           item.id === authUser.id
       );
+
       if (idx >= 0) {
-        userList[idx] = { ...userList[idx], ...authUser };
+        const existing = userList[idx];
+        // Giữ nguyên các trường đã điền đầy đủ trước đó nếu authUser hiện tại chưa có
+        if (!authUser.soCCCD && (existing.soCCCD || existing.identityCardNumber)) {
+          authUser.soCCCD = existing.soCCCD || existing.identityCardNumber;
+        }
+        if (!authUser.soDienThoai && (existing.soDienThoai || existing.phoneNumber)) {
+          authUser.soDienThoai = existing.soDienThoai || existing.phoneNumber;
+        }
+        if (!authUser.ngaySinh && (existing.ngaySinh || existing.dateOfBirth)) {
+          authUser.ngaySinh = existing.ngaySinh || existing.dateOfBirth;
+        }
+        if (!authUser.namSinh && existing.namSinh) {
+          authUser.namSinh = existing.namSinh;
+        }
+        if (!authUser.diaChi && (existing.diaChi || existing.address)) {
+          authUser.diaChi = existing.diaChi || existing.address;
+        }
+        if (!authUser.maTheBHYT && (existing.maTheBHYT || existing.healthInsuranceNumber)) {
+          authUser.maTheBHYT = existing.maTheBHYT || existing.healthInsuranceNumber;
+        }
+        if (!authUser.maBenhNhan && (existing.maBenhNhan || existing.patientCode)) {
+          authUser.maBenhNhan = existing.maBenhNhan || existing.patientCode;
+        }
+        if (existing.isProfileComplete === true) {
+          authUser.isProfileComplete = true;
+        }
+
+        userList[idx] = { ...existing, ...authUser };
       } else {
         userList.push(authUser);
       }
@@ -182,6 +209,8 @@ export const LoginPage: React.FC = () => {
     } catch {
       // ignore
     }
+
+    setAuth(authUser, token);
 
     const redirectUrl = getRedirectUrl();
 
@@ -532,7 +561,7 @@ export const LoginPage: React.FC = () => {
     setLoading(false);
   };
 
-  // Đăng nhập Google OAuth: Tự động gán quyền Bệnh nhân
+  // Đăng nhập Google OAuth: Kết nối CSDL Backend & Giữ nguyên hồ sơ bệnh nhân đã lưu
   const googleLoginTrigger = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -542,21 +571,77 @@ export const LoginPage: React.FC = () => {
         });
         const googleUser = await userInfoRes.json();
 
-        const newPatient = {
-          id: `pat-google-${Date.now()}`,
+        // 1. Thử gọi API Backend /auth/google-login để lấy JWT và hồ sơ bệnh nhân từ CSDL SQL Server
+        let backendUser: any = null;
+        let backendToken: string | null = null;
+        try {
+          const res = await api.post('/auth/google-login', {
+            idToken: tokenResponse.access_token,
+            email: googleUser.email,
+            fullName: googleUser.name || 'Bệnh nhân Google',
+            photoUrl: googleUser.picture,
+          });
+          if (res.data?.token && res.data?.user) {
+            backendToken = res.data.token;
+            backendUser = res.data.user;
+          }
+        } catch (apiErr: any) {
+          console.warn('Backend google-login fallback:', apiErr?.message);
+        }
+
+        // 2. Tìm kiếm hồ sơ đã lưu trước đó trong local storage theo email
+        let localExisting: any = null;
+        try {
+          const storedStr = localStorage.getItem('hospital_registered_users');
+          if (storedStr) {
+            const list = JSON.parse(storedStr);
+            localExisting = list.find(
+              (u: any) =>
+                (u.email && u.email.toLowerCase() === googleUser.email.toLowerCase()) ||
+                (u.username && u.username.toLowerCase() === googleUser.email.toLowerCase())
+            );
+          }
+        } catch {
+          // ignore
+        }
+
+        // 3. Hợp nhất thông tin hồ sơ: Ưu tiên dữ liệu đã điền đầy đủ từ CSDL backend hoặc local storage
+        const baseUser = backendUser || localExisting || {};
+        const isComplete = Boolean(
+          baseUser.isProfileComplete === true ||
+          ((baseUser.identityCardNumber || baseUser.soCCCD) &&
+          (baseUser.dateOfBirth || baseUser.ngaySinh) &&
+          (baseUser.address || baseUser.diaChi))
+        );
+
+        const patientUser = {
+          id: baseUser.id || `pat-google-${Date.now()}`,
           username: googleUser.email,
-          fullName: googleUser.name || 'Bệnh nhân Google',
+          fullName: baseUser.fullName || baseUser.hoTen || googleUser.name || 'Bệnh nhân Google',
           email: googleUser.email,
-          phoneNumber: '',
+          phoneNumber: baseUser.phoneNumber || baseUser.soDienThoai || '',
           roles: ['Patient'],
-          avatarUrl: googleUser.picture,
-          isProfileComplete: false,
+          avatarUrl: googleUser.picture || baseUser.avatarUrl,
+          patientCode: baseUser.patientCode || baseUser.maBenhNhan,
+          maBenhNhan: baseUser.patientCode || baseUser.maBenhNhan,
+          identityCardNumber: baseUser.identityCardNumber || baseUser.soCCCD,
+          soCCCD: baseUser.identityCardNumber || baseUser.soCCCD,
+          dateOfBirth: baseUser.dateOfBirth || baseUser.ngaySinh,
+          ngaySinh: baseUser.dateOfBirth || baseUser.ngaySinh,
+          namSinh: baseUser.namSinh,
+          gender: baseUser.gender || baseUser.gioiTinh || 'Nam',
+          gioiTinh: baseUser.gender || baseUser.gioiTinh || 'Nam',
+          address: baseUser.address || baseUser.diaChi,
+          diaChi: baseUser.address || baseUser.diaChi,
+          healthInsuranceNumber: baseUser.healthInsuranceNumber || baseUser.maTheBHYT,
+          maTheBHYT: baseUser.healthInsuranceNumber || baseUser.maTheBHYT,
+          isProfileComplete: isComplete,
         };
 
         handleAuthSuccess(
-          newPatient,
-          tokenResponse.access_token,
-          `Đăng nhập Google thành công! Chào mừng Bệnh nhân ${googleUser.name}`
+          patientUser,
+          backendToken || tokenResponse.access_token,
+          `Đăng nhập Google thành công! Chào mừng Bệnh nhân ${patientUser.fullName}`
         );
         setGoogleLoading(false);
       } catch {
