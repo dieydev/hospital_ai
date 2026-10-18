@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace HospitalAI.Application.DTOs;
 
@@ -59,21 +60,41 @@ public class ExaminationDto
 
 public class CreateExaminationDto
 {
+    [Required(ErrorMessage = "Bệnh nhân không được để trống")]
     public Guid PatientId { get; set; }
+
+    [Required(ErrorMessage = "Bác sĩ phụ trách không được để trống")]
     public Guid DoctorId { get; set; }
+
+    [Required(ErrorMessage = "Chuyên khoa không được để trống")]
     public string DepartmentName { get; set; } = "Khoa Nội Tổng Hợp";
+
     public string Subjective { get; set; } = string.Empty;
     
     // Vitals
+    [Range(30, 250, ErrorMessage = "Mạch phải từ 30 đến 250 lần/phút")]
     public int PulseRate { get; set; } = 75;
+
+    [Range(30.0, 45.0, ErrorMessage = "Nhiệt độ phải từ 30.0 đến 45.0 °C")]
     public decimal Temperature { get; set; } = 37.0m;
+
     public string BloodPressure { get; set; } = "120/80";
+
+    [Range(5, 60, ErrorMessage = "Nhịp thở phải từ 5 đến 60 lần/phút")]
     public int RespiratoryRate { get; set; } = 18;
+
+    [Range(0.5, 500.0, ErrorMessage = "Cân nặng phải hợp lệ")]
     public decimal Weight { get; set; } = 65.0m;
+
+    [Range(20.0, 300.0, ErrorMessage = "Chiều cao phải hợp lệ")]
     public decimal Height { get; set; } = 168.0m;
 
     public string Assessment { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Mã chẩn đoán ICD-10 không được để trống")]
     public string ICD10Code { get; set; } = "J02.9";
+
+    [Required(ErrorMessage = "Tên chẩn đoán không được để trống")]
     public string ICD10Name { get; set; } = "Viêm họng cấp tính";
     public string Plan { get; set; } = string.Empty;
     public string Status { get; set; } = "Hoàn thành";

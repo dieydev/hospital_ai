@@ -51,6 +51,9 @@ public class ExaminationsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetExaminationById(Guid id)
     {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID lượt khám không hợp lệ." });
+
         var result = await _examinationService.GetExaminationByIdAsync(id);
         if (result == null)
             return NotFound(new { message = $"Không tìm thấy lượt khám với ID {id}" });
@@ -92,6 +95,9 @@ public class ExaminationsController : ControllerBase
     [Authorize(Roles = "Doctor,Admin")]
     public async Task<IActionResult> UpdateExamination(Guid id, [FromBody] CreateExaminationDto dto)
     {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID lượt khám không hợp lệ." });
+
         try
         {
             var result = await _examinationService.UpdateExaminationAsync(id, dto);
@@ -110,6 +116,9 @@ public class ExaminationsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteExamination(Guid id)
     {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID lượt khám không hợp lệ." });
+
         var success = await _examinationService.DeleteExaminationAsync(id);
         if (!success)
             return NotFound(new { message = $"Không tìm thấy lượt khám với ID {id}" });

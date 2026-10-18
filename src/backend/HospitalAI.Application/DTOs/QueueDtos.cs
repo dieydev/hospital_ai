@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace HospitalAI.Application.DTOs;
 
@@ -24,13 +25,20 @@ public class QueueTicketDto
 
 public class IssueQueueTicketDto
 {
+    [Required(ErrorMessage = "Mã bệnh nhân không được để trống")]
     public Guid PatientId { get; set; }
+
+    [Required(ErrorMessage = "Khoa khám bệnh không được để trống")]
     public Guid DepartmentId { get; set; }
+
+    [StringLength(50)]
     public string Priority { get; set; } = "Normal";
 }
 
 public class UpdateQueueStatusDto
 {
+    [Required(ErrorMessage = "Trạng thái không được để trống")]
+    [StringLength(50)]
     public string Status { get; set; } = "Waiting";
 }
 

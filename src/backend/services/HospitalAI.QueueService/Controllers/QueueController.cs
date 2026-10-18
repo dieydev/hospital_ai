@@ -82,6 +82,9 @@ public class QueueController : ControllerBase
     [Authorize(Roles = "Doctor,Receptionist,Nurse,Admin")]
     public async Task<IActionResult> UpdateStatus(Guid ticketId, [FromBody] UpdateQueueStatusDto dto)
     {
+        if (ticketId == Guid.Empty)
+            return BadRequest(new { message = "Mã phiếu hàng chờ không hợp lệ." });
+
         try
         {
             var result = await _queueService.UpdateQueueTicketStatusAsync(ticketId, dto.Status);
@@ -111,6 +114,9 @@ public class QueueController : ControllerBase
     [Authorize(Roles = "Doctor,Admin")]
     public async Task<IActionResult> CallNext(Guid departmentId)
     {
+        if (departmentId == Guid.Empty)
+            return BadRequest(new { message = "Mã chuyên khoa không hợp lệ." });
+
         var result = await _queueService.CallNextPatientAsync(departmentId);
         if (result == null)
             return NotFound(new { message = "Không có bệnh nhân nào đang chờ trong phòng khám này." });

@@ -41,6 +41,8 @@ public class PatientsController : ControllerBase
     [Authorize(Roles = "Admin,Doctor,Nurse,Receptionist")]
     public async Task<IActionResult> GetPatients([FromQuery] string? search, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 20)
     {
+        pageIndex = Math.Max(1, pageIndex);
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var result = await _patientService.GetPatientsAsync(search, pageIndex, pageSize);
         return Ok(result);
     }
@@ -51,6 +53,9 @@ public class PatientsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetPatientById(Guid id)
     {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID bệnh nhân không hợp lệ." });
+
         var patient = await _patientService.GetPatientByIdAsync(id);
         if (patient == null)
             return NotFound(new { message = $"Không tìm thấy bệnh nhân với ID {id}" });
@@ -67,6 +72,9 @@ public class PatientsController : ControllerBase
     [HttpGet("code/{code}")]
     public async Task<IActionResult> GetPatientByCode(string code)
     {
+        if (string.IsNullOrWhiteSpace(code))
+            return BadRequest(new { message = "Mã bệnh nhân không được để trống." });
+
         var patient = await _patientService.GetPatientByCodeAsync(code);
         if (patient == null)
             return NotFound(new { message = $"Không tìm thấy bệnh nhân với mã {code}" });
@@ -83,6 +91,9 @@ public class PatientsController : ControllerBase
     [HttpGet("identity/{cccd}")]
     public async Task<IActionResult> GetPatientByIdentity(string cccd)
     {
+        if (string.IsNullOrWhiteSpace(cccd))
+            return BadRequest(new { message = "Số CCCD không được để trống." });
+
         var patient = await _patientService.GetPatientByIdentityCardAsync(cccd);
         if (patient == null)
             return NotFound(new { message = $"Không tìm thấy bệnh nhân với số CCCD {cccd}" });
@@ -125,6 +136,9 @@ public class PatientsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdatePatient(Guid id, [FromBody] UpdatePatientDto dto)
     {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID bệnh nhân không hợp lệ." });
+
         try
         {
             var existingPatient = await _patientService.GetPatientByIdAsync(id);
@@ -162,6 +176,9 @@ public class PatientsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeletePatient(Guid id)
     {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID bệnh nhân không hợp lệ." });
+
         var success = await _patientService.DeletePatientAsync(id);
         if (!success)
             return NotFound(new { message = "Không tìm thấy bệnh nhân để xóa." });

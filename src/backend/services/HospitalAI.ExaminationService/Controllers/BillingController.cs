@@ -95,6 +95,9 @@ public class BillingController : ControllerBase
     [Authorize(Roles = "Receptionist,Admin")]
     public async Task<IActionResult> PayCash(Guid id)
     {
+        if (id == Guid.Empty)
+            return BadRequest(new { Message = "Mã hóa đơn không hợp lệ" });
+
         var billing = await _dbContext.Billings
             .Include(b => b.Items)
             .FirstOrDefaultAsync(b => b.Id == id);

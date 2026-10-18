@@ -440,8 +440,15 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateAppointment([FromBody] OnlineAppointmentItem model)
         {
+            if (string.IsNullOrWhiteSpace(model.PatientName) || string.IsNullOrWhiteSpace(model.PatientPhone) ||
+                string.IsNullOrWhiteSpace(model.AppointmentDate) || string.IsNullOrWhiteSpace(model.AppointmentTime))
+            {
+                return BadRequest(new { message = "Vui lòng điền đầy đủ họ tên, số điện thoại, ngày khám và khung giờ khám." });
+            }
+
             EnsureDataLoaded();
             EnsureSlotsLoaded();
 
@@ -565,9 +572,10 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Thay thế hoàn toàn cấp STT truyền thống)
+        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Dành cho Lễ tân, Điều dưỡng, Bác sĩ, Admin)
         /// </summary>
         [HttpPost("checkin-qr")]
+        [Authorize(Roles = "Receptionist,Nurse,Doctor,Admin")]
         public async Task<IActionResult> CheckInWithQr([FromBody] CheckInQrDto dto)
         {
             EnsureDataLoaded();
@@ -741,11 +749,17 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Bệnh nhân đổi lịch khám sang ngày/giờ khác (Tự động kiểm tra & cập nhật Quota chỗ trống)
+        /// Bệnh nhân đổi lịch khám sang ngày/giờ khác (Tự động kiểm tra quyền sở hữu & cập nhật Quota chỗ trống)
         /// </summary>
         [HttpPut("{id}/reschedule")]
+        [Authorize]
         public async Task<IActionResult> RescheduleAppointment(string id, [FromBody] RescheduleAppointmentDto dto)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { message = "Mã lịch hẹn không hợp lệ." });
+            }
+
             EnsureDataLoaded();
             EnsureSlotsLoaded();
 
@@ -765,6 +779,15 @@ namespace HospitalAI.QueueService.Controllers
                 if (appointment == null)
                 {
                     return NotFound(new { message = "Không tìm thấy lịch hẹn cần đổi." });
+                }
+
+                if (!IsStaff())
+                {
+                    var currentPhone = (User.FindFirstValue(ClaimTypes.Name) ?? "").ToLower();
+                    if (!appointment.PatientPhone.Contains(currentPhone) && !appointment.PatientCode.ToLower().Contains(currentPhone))
+                    {
+                        return Forbid();
+                    }
                 }
 
                 if (appointment.Status == "Completed")
