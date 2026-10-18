@@ -194,18 +194,17 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Cập nhật và lưu hồ sơ Bệnh nhân thật vào CSDL SQL Server
+    /// Cập nhật và lưu hồ sơ Bệnh nhân thật vào CSDL SQL Server (Yêu cầu xác thực tài khoản)
     /// </summary>
     [HttpPost("complete-profile")]
+    [Authorize]
     public async Task<IActionResult> CompleteProfile([FromBody] CompleteProfileRequestDto request)
     {
         try
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var username = User.FindFirstValue(ClaimTypes.Name);
-            var identifier = !string.IsNullOrEmpty(userId) 
-                ? userId 
-                : (!string.IsNullOrEmpty(username) ? username : (!string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.PhoneNumber.Trim() : null));
+            var identifier = !string.IsNullOrEmpty(userId) ? userId : username;
 
             if (string.IsNullOrEmpty(identifier))
             {
@@ -225,6 +224,7 @@ public class AuthController : ControllerBase
     /// Cập nhật thông tin tài khoản & hồ sơ cá nhân
     /// </summary>
     [HttpPut("profile")]
+    [Authorize]
     public async Task<IActionResult> UpdateProfile([FromBody] CompleteProfileRequestDto request)
     {
         return await CompleteProfile(request);

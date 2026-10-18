@@ -1,6 +1,7 @@
 using HospitalAI.Domain.Entities;
 using HospitalAI.Infrastructure.Data;
 using HospitalAI.QueueService.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -263,21 +265,33 @@ namespace HospitalAI.QueueService.Controllers
             }
         }
 
+        private bool IsStaff()
+        {
+            return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Nurse") || User.IsInRole("Receptionist");
+        }
+
         [HttpGet]
+        [Authorize]
         public IActionResult GetAppointments()
         {
             EnsureDataLoaded();
             lock (_lock)
             {
-                var sortedList = _cachedAppointments!.OrderByDescending(a => a.CreatedAt).ToList();
-                return Ok(sortedList);
+                var sortedList = _cachedAppointments!.OrderByDescending(a => a.CreatedAt).AsEnumerable();
+                if (!IsStaff())
+                {
+                    var currentPhone = User.FindFirstValue(ClaimTypes.Name) ?? "";
+                    sortedList = sortedList.Where(a => a.PatientPhone == currentPhone || a.PatientCode == currentPhone);
+                }
+                return Ok(sortedList.ToList());
             }
         }
 
         /// <summary>
-        /// Lấy danh sách lịch hẹn tái khám của bệnh nhân
+        /// Lấy danh sách lịch hẹn tái khám của bệnh nhân (Bảo vệ chống IDOR)
         /// </summary>
         [HttpGet("followups/{patientCodeOrPhone}")]
+        [Authorize]
         public IActionResult GetPatientFollowUps(string patientCodeOrPhone)
         {
             EnsureDataLoaded();
@@ -287,6 +301,15 @@ namespace HospitalAI.QueueService.Controllers
             }
 
             var query = patientCodeOrPhone.Trim().ToLower();
+            if (!IsStaff())
+            {
+                var currentPhone = (User.FindFirstValue(ClaimTypes.Name) ?? "").ToLower();
+                if (!query.Contains(currentPhone) && !currentPhone.Contains(query))
+                {
+                    return Forbid();
+                }
+            }
+
             lock (_lock)
             {
                 var list = _cachedAppointments!
@@ -340,9 +363,10 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Admin cấu hình số lượng tối đa / ghi chú cho khung giờ
+        /// Admin cấu hình số lượng tối đa / ghi chú cho khung giờ (Chỉ dành cho Admin & Tiếp tân)
         /// </summary>
         [HttpPut("slots/{id}")]
+        [Authorize(Roles = "Admin,Receptionist")]
         public async Task<IActionResult> UpdateSlot(string id, [FromBody] UpdateSlotDto dto)
         {
             EnsureSlotsLoaded();
@@ -383,9 +407,10 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Admin Khóa / Mở khóa nhanh khung giờ (chặn không cho đặt bên Mobile App)
+        /// Admin Khóa / Mở khóa nhanh khung giờ (Chỉ dành cho Admin & Tiếp tân)
         /// </summary>
         [HttpPut("slots/{id}/toggle-lock")]
+        [Authorize(Roles = "Admin,Receptionist")]
         public async Task<IActionResult> ToggleSlotLock(string id)
         {
             EnsureSlotsLoaded();
@@ -627,7 +652,11 @@ namespace HospitalAI.QueueService.Controllers
             return Ok(appointment);
         }
 
+        /// <summary>
+        /// Cập nhật trạng thái lịch hẹn (Chỉ dành cho Cán bộ y tế & Quản trị)
+        /// </summary>
         [HttpPut("{id}/status")]
+        [Authorize(Roles = "Receptionist,Nurse,Doctor,Admin")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusDto dto)
         {
             EnsureDataLoaded();
@@ -662,9 +691,10 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Bệnh nhân hoặc nhân viên hủy lịch hẹn (Tự động hoàn trả Quota chỗ trống)
+        /// Bệnh nhân hoặc nhân viên hủy lịch hẹn (Tự động hoàn trả Quota chỗ trống, có kiểm tra quyền sở hữu)
         /// </summary>
         [HttpPut("{id}/cancel")]
+        [Authorize]
         public async Task<IActionResult> CancelAppointment(string id, [FromBody] CancelAppointmentDto? dto)
         {
             EnsureDataLoaded();
@@ -676,6 +706,15 @@ namespace HospitalAI.QueueService.Controllers
                 if (appointment == null)
                 {
                     return NotFound(new { message = "Không tìm thấy lịch hẹn cần hủy." });
+                }
+
+                if (!IsStaff())
+                {
+                    var currentPhone = (User.FindFirstValue(ClaimTypes.Name) ?? "").ToLower();
+                    if (!appointment.PatientPhone.Contains(currentPhone) && !appointment.PatientCode.ToLower().Contains(currentPhone))
+                    {
+                        return Forbid();
+                    }
                 }
 
                 if (appointment.Status == "Completed")

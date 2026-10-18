@@ -251,6 +251,7 @@ public class ExaminationService : IExaminationService
             Id = e.Id,
             ExaminationCode = e.ExaminationCode,
             PatientId = e.PatientId,
+            PatientUserId = e.Patient?.UserId,
             PatientCode = e.Patient?.PatientCode ?? string.Empty,
             PatientName = e.Patient?.FullName ?? string.Empty,
             PatientGender = e.Patient?.Gender ?? string.Empty,

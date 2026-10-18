@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace HospitalAI.PatientService.Controllers;
 
 [ApiController]
 [Route("api/patients")]
+[Authorize]
 public class PatientsController : ControllerBase
 {
     private readonly IPatientService _patientService;
@@ -19,10 +21,24 @@ public class PatientsController : ControllerBase
         _patientService = patientService;
     }
 
+    private bool IsStaff()
+    {
+        return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Nurse") || User.IsInRole("Receptionist");
+    }
+
+    private bool IsAuthorizedForPatient(PatientDto patient)
+    {
+        if (IsStaff()) return true;
+
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return patient.UserId.HasValue && patient.UserId.ToString() == currentUserId;
+    }
+
     /// <summary>
-    /// Lấy danh sách bệnh nhân (Có hỗ trợ lọc tìm kiếm & phân trang)
+    /// Lấy danh sách bệnh nhân (Chỉ dành cho Cán bộ y tế & Quản trị viên)
     /// </summary>
     [HttpGet]
+    [Authorize(Roles = "Admin,Doctor,Nurse,Receptionist")]
     public async Task<IActionResult> GetPatients([FromQuery] string? search, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 20)
     {
         var result = await _patientService.GetPatientsAsync(search, pageIndex, pageSize);
@@ -30,7 +46,7 @@ public class PatientsController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy thông tin bệnh nhân theo ID
+    /// Lấy thông tin bệnh nhân theo ID (Bảo vệ chống IDOR)
     /// </summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetPatientById(Guid id)
@@ -39,11 +55,14 @@ public class PatientsController : ControllerBase
         if (patient == null)
             return NotFound(new { message = $"Không tìm thấy bệnh nhân với ID {id}" });
 
+        if (!IsAuthorizedForPatient(patient))
+            return Forbid();
+
         return Ok(patient);
     }
 
     /// <summary>
-    /// Tìm bệnh nhân theo Mã Bệnh Nhân (Ví dụ: BN2026000001)
+    /// Tìm bệnh nhân theo Mã Bệnh Nhân (Bảo vệ chống IDOR)
     /// </summary>
     [HttpGet("code/{code}")]
     public async Task<IActionResult> GetPatientByCode(string code)
@@ -52,11 +71,14 @@ public class PatientsController : ControllerBase
         if (patient == null)
             return NotFound(new { message = $"Không tìm thấy bệnh nhân với mã {code}" });
 
+        if (!IsAuthorizedForPatient(patient))
+            return Forbid();
+
         return Ok(patient);
     }
 
     /// <summary>
-    /// Tìm bệnh nhân theo Số CCCD
+    /// Tìm bệnh nhân theo Số CCCD (Bảo vệ chống IDOR)
     /// </summary>
     [HttpGet("identity/{cccd}")]
     public async Task<IActionResult> GetPatientByIdentity(string cccd)
@@ -65,13 +87,17 @@ public class PatientsController : ControllerBase
         if (patient == null)
             return NotFound(new { message = $"Không tìm thấy bệnh nhân với số CCCD {cccd}" });
 
+        if (!IsAuthorizedForPatient(patient))
+            return Forbid();
+
         return Ok(patient);
     }
 
     /// <summary>
-    /// Tiếp nhận & Thêm hồ sơ Bệnh nhân mới
+    /// Tiếp nhận & Thêm hồ sơ Bệnh nhân mới (Lễ tân, Bác sĩ, Admin)
     /// </summary>
     [HttpPost]
+    [Authorize(Roles = "Admin,Receptionist,Doctor")]
     public async Task<IActionResult> CreatePatient([FromBody] CreatePatientDto dto)
     {
         try
@@ -101,6 +127,13 @@ public class PatientsController : ControllerBase
     {
         try
         {
+            var existingPatient = await _patientService.GetPatientByIdAsync(id);
+            if (existingPatient == null)
+                return NotFound(new { message = "Không tìm thấy hồ sơ bệnh nhân." });
+
+            if (!IsAuthorizedForPatient(existingPatient))
+                return Forbid();
+
             var result = await _patientService.UpdatePatientAsync(id, dto);
             return Ok(result);
         }
@@ -123,9 +156,10 @@ public class PatientsController : ControllerBase
     }
 
     /// <summary>
-    /// Xóa thông tin Bệnh nhân
+    /// Xóa thông tin Bệnh nhân (Chỉ dành cho Quản trị viên tối cao)
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeletePatient(Guid id)
     {
         var success = await _patientService.DeletePatientAsync(id);

@@ -180,6 +180,7 @@ public class PatientService : IPatientService
         return new PatientDto
         {
             Id = p.Id,
+            UserId = p.UserId,
             PatientCode = p.PatientCode,
             FullName = p.FullName,
             Gender = p.Gender,

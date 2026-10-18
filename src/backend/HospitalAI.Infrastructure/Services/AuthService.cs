@@ -25,6 +25,12 @@ public class AuthService : IAuthService
         _tokenGenerator = tokenGenerator;
     }
 
+    private static bool IsDevelopmentEnvironment()
+    {
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        return string.IsNullOrEmpty(env) || env.Equals("Development", StringComparison.OrdinalIgnoreCase);
+    }
+
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
     {
         var user = await _context.Users
@@ -284,7 +290,7 @@ public class AuthService : IAuthService
         {
             Success = true,
             Message = $"Mã xác thực OTP đã được gửi đến số điện thoại {normalizedPhone}",
-            OtpCode = otpCode // Cung cấp mã để test/demo thuận tiện mà không phụ thuộc vào SMS Gateway
+            OtpCode = IsDevelopmentEnvironment() ? otpCode : null
         };
     }
 
@@ -331,7 +337,7 @@ public class AuthService : IAuthService
         {
             Success = true,
             Message = $"Mã OTP đặt lại mật khẩu đã được gửi đến số {normalizedPhone}",
-            OtpCode = otpCode // Trả về để app hiển thị demo
+            OtpCode = IsDevelopmentEnvironment() ? otpCode : null
         };
     }
 
@@ -358,8 +364,8 @@ public class AuthService : IAuthService
             }
         }
 
-        // Hỗ trợ mã mặc định "123456" cho môi trường phát triển/demo
-        if (!isValidOtp && request.OtpCode.Trim() == "123456")
+        // Chỉ hỗ trợ mã mặc định "123456" cho môi trường phát triển / kiểm thử local
+        if (!isValidOtp && IsDevelopmentEnvironment() && request.OtpCode.Trim() == "123456")
             isValidOtp = true;
 
         if (!isValidOtp)
@@ -401,8 +407,8 @@ public class AuthService : IAuthService
             }
         }
 
-        // Hỗ trợ mã OTP mặc định test "123456" cho môi trường phát triển & kiểm thử
-        if (!isValidOtp && request.OtpCode.Trim() == "123456")
+        // Chỉ hỗ trợ mã OTP mặc định test "123456" khi ở môi trường Local Development
+        if (!isValidOtp && IsDevelopmentEnvironment() && request.OtpCode.Trim() == "123456")
         {
             isValidOtp = true;
         }

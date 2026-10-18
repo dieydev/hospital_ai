@@ -1,4 +1,5 @@
 using HospitalAI.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System;
@@ -22,6 +23,7 @@ namespace HospitalAI.ExaminationService.Controllers
         }
 
         [HttpPost("create-payment-url")]
+        [Authorize]
         public IActionResult CreatePaymentUrl([FromBody] PaymentInformationModel model)
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";

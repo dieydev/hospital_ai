@@ -1,6 +1,7 @@
 using HospitalAI.Application.DTOs;
 using HospitalAI.Application.Interfaces;
 using HospitalAI.QueueService.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System;
@@ -22,9 +23,10 @@ public class QueueController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách các Khoa/Phòng khám
+    /// Lấy danh sách các Khoa/Phòng khám (Công khai cho màn hình sảnh và đặt lịch)
     /// </summary>
     [HttpGet("departments")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetDepartments()
     {
         var result = await _queueService.GetDepartmentsAsync();
@@ -32,9 +34,10 @@ public class QueueController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách hàng chờ trong ngày
+    /// Lấy danh sách hàng chờ trong ngày (Hiển thị bảng điện tử và app bệnh nhân)
     /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetTodayQueue([FromQuery] Guid? departmentId, [FromQuery] string? status)
     {
         var result = await _queueService.GetTodayQueueTicketsAsync(departmentId, status);
@@ -45,6 +48,7 @@ public class QueueController : ControllerBase
     /// Tiếp nhận & Cấp số thứ tự hàng chờ mới cho bệnh nhân
     /// </summary>
     [HttpPost("issue")]
+    [Authorize]
     public async Task<IActionResult> IssueTicket([FromBody] IssueQueueTicketDto dto)
     {
         try
@@ -72,9 +76,10 @@ public class QueueController : ControllerBase
     }
 
     /// <summary>
-    /// Cập nhật trạng thái phiếu hàng chờ (Waiting -> Calling -> Examining -> Finished)
+    /// Cập nhật trạng thái phiếu hàng chờ (Chỉ dành cho Cán bộ y tế & Quản trị)
     /// </summary>
     [HttpPut("{ticketId:guid}/status")]
+    [Authorize(Roles = "Doctor,Receptionist,Nurse,Admin")]
     public async Task<IActionResult> UpdateStatus(Guid ticketId, [FromBody] UpdateQueueStatusDto dto)
     {
         try
@@ -100,9 +105,10 @@ public class QueueController : ControllerBase
     }
 
     /// <summary>
-    /// Gọi loa mời bệnh nhân tiếp theo vào khám
+    /// Gọi loa mời bệnh nhân tiếp theo vào khám (Chỉ dành cho Bác sĩ và Quản trị viên)
     /// </summary>
     [HttpPost("departments/{departmentId:guid}/call-next")]
+    [Authorize(Roles = "Doctor,Admin")]
     public async Task<IActionResult> CallNext(Guid departmentId)
     {
         var result = await _queueService.CallNextPatientAsync(departmentId);

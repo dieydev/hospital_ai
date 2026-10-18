@@ -6,6 +6,7 @@ namespace HospitalAI.Application.DTOs;
 public class PatientDto
 {
     public Guid Id { get; set; }
+    public Guid? UserId { get; set; }
     public string PatientCode { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string Gender { get; set; } = "Nam";

@@ -1,14 +1,17 @@
 using HospitalAI.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace HospitalAI.ExaminationService.Controllers;
 
 [ApiController]
 [Route("api/billing")]
+[Authorize]
 public class BillingController : ControllerBase
 {
     private readonly HospitalDbContext _dbContext;
@@ -18,6 +21,14 @@ public class BillingController : ControllerBase
         _dbContext = dbContext;
     }
 
+    private bool IsStaff()
+    {
+        return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Nurse") || User.IsInRole("Receptionist");
+    }
+
+    /// <summary>
+    /// Lấy danh sách hóa đơn viện phí (Bệnh nhân chỉ xem được hóa đơn của chính mình)
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetBillings([FromQuery] string? status = null, [FromQuery] string? type = null)
     {
@@ -25,6 +36,20 @@ public class BillingController : ControllerBase
             .Include(b => b.Patient)
             .Include(b => b.Items)
             .AsQueryable();
+
+        // IDOR Protection: Nếu là Bệnh nhân, chỉ lấy hóa đơn gắn với tài khoản của họ
+        if (!IsStaff())
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(currentUserId, out var parsedUserId))
+            {
+                query = query.Where(b => b.Patient != null && b.Patient.UserId == parsedUserId);
+            }
+            else
+            {
+                return Ok(new object[] { });
+            }
+        }
 
         if (!string.IsNullOrEmpty(status) && status != "ALL")
         {
@@ -63,7 +88,11 @@ public class BillingController : ControllerBase
         return Ok(billings);
     }
 
+    /// <summary>
+    /// Thu tiền mặt viện phí tại quầy (Chỉ dành cho Lễ tân / Thu ngân và Admin)
+    /// </summary>
     [HttpPost("{id}/pay-cash")]
+    [Authorize(Roles = "Receptionist,Admin")]
     public async Task<IActionResult> PayCash(Guid id)
     {
         var billing = await _dbContext.Billings
@@ -86,7 +115,7 @@ public class BillingController : ControllerBase
             var exam = await _dbContext.Examinations.FirstOrDefaultAsync(e => e.Id == billing.ExaminationId.Value);
             if (exam != null)
             {
-                exam.Status = "Paid"; // Hoặc "Queued" tuỳ logic
+                exam.Status = "Paid";
             }
         }
         else if (billing.BillingType == "ServiceOrder")

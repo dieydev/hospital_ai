@@ -8,6 +8,7 @@ public class ExaminationDto
     public Guid Id { get; set; }
     public string ExaminationCode { get; set; } = string.Empty; // LK2026xxxx
     public Guid PatientId { get; set; }
+    public Guid? PatientUserId { get; set; }
     public string PatientCode { get; set; } = string.Empty;
     public string PatientName { get; set; } = string.Empty;
     public string PatientGender { get; set; } = string.Empty;
