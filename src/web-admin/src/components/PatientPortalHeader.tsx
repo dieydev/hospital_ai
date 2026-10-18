@@ -21,6 +21,7 @@ import {
   RightOutlined,
   CheckCircleOutlined,
   CameraOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { ElderlyModeWidget, ELDERLY_MODE_STORAGE_KEY } from './ElderlyModeWidget';
@@ -176,11 +177,11 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     },
     {
       key: 'lookup',
-      icon: <SearchOutlined style={{ fontSize: 16, color: '#0284c7' }} />,
+      icon: <CalendarOutlined style={{ fontSize: 16, color: '#0284c7' }} />,
       label: (
         <div style={{ padding: '2px 0' }}>
-          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>Tra cứu phiếu hẹn QR</div>
-          <div style={{ fontSize: 11.5, color: '#64748b' }}>Tìm nhanh phiếu tiếp nhận bằng mã hẹn</div>
+          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>Lịch khám của tôi</div>
+          <div style={{ fontSize: 11.5, color: '#64748b' }}>Xem lịch hẹn đã đặt, lấy mã QR & đổi/hủy lịch</div>
         </div>
       ),
       onClick: () => {
@@ -352,30 +353,44 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
           {/* User Account / Auth Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {user ? (
-              <Dropdown
-                menu={{ items: patientDropdownItems }}
-                trigger={['click']}
-                placement="bottomRight"
-                arrow={{ pointAtCenter: true }}
-              >
-                <div
-                  className="patient-profile-circle-btn"
-                  title={`${user.hoTen || user.tenDangNhap} - Nhấp để xem hồ sơ & tùy chọn`}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Button
+                  icon={<CalendarOutlined style={{ color: '#0284c7' }} />}
+                  onClick={() => {
+                    if (onOpenLookup) onOpenLookup();
+                    else navigate('/booking?lookup=open');
+                  }}
+                  style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600, backgroundColor: '#ffffff' }}
+                  className="compact-btn-on-mobile"
                 >
-                  <Badge
-                    dot={!isProfileComplete(user)}
-                    color="#f59e0b"
-                    offset={[-2, 3]}
+                  <span className="hide-on-mobile">Lịch khám của tôi</span>
+                  <span className="show-on-mobile">Lịch khám</span>
+                </Button>
+                <Dropdown
+                  menu={{ items: patientDropdownItems }}
+                  trigger={['click']}
+                  placement="bottomRight"
+                  arrow={{ pointAtCenter: true }}
+                >
+                  <div
+                    className="patient-profile-circle-btn"
+                    title={`${user.hoTen || user.tenDangNhap} - Nhấp để xem hồ sơ & tùy chọn`}
                   >
-                    <Avatar
-                      src={user.avatarUrl}
-                      icon={<UserOutlined />}
-                      style={{ backgroundColor: '#0284c7' }}
-                      size={38}
-                    />
-                  </Badge>
-                </div>
-              </Dropdown>
+                    <Badge
+                      dot={!isProfileComplete(user)}
+                      color="#f59e0b"
+                      offset={[-2, 3]}
+                    >
+                      <Avatar
+                        src={user.avatarUrl}
+                        icon={<UserOutlined />}
+                        style={{ backgroundColor: '#0284c7' }}
+                        size={38}
+                      />
+                    </Badge>
+                  </div>
+                </Dropdown>
+              </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Button
@@ -487,6 +502,18 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <Button
+                size="small"
+                icon={<CalendarOutlined />}
+                style={{ flex: 1, borderColor: '#bae6fd', color: '#0284c7', fontWeight: 700, borderRadius: 8, backgroundColor: '#ffffff' }}
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  if (onOpenLookup) onOpenLookup();
+                  else navigate('/booking?lookup=open');
+                }}
+              >
+                Lịch khám
+              </Button>
               <Button
                 size="small"
                 icon={<IdcardOutlined />}

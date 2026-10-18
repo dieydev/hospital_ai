@@ -130,7 +130,7 @@ export const HOSPITAL_VIDEOS: HospitalVideoItem[] = [
 
 export const PatientHomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { syncCurrentUser } = useAuthStore();
+  const { user, syncCurrentUser } = useAuthStore();
 
   useEffect(() => {
     syncCurrentUser();
@@ -265,6 +265,31 @@ export const PatientHomePage: React.FC = () => {
   const [cancelCustomReason, setCancelCustomReason] = useState<string>('');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
+  // Mở modal tra cứu lịch hẹn (tự động nạp danh sách lịch của tài khoản nếu đã đăng nhập)
+  const openLookupModal = async () => {
+    setLookupModalOpen(true);
+    const phone = user?.soDienThoai?.trim();
+    if (phone) {
+      setLookupPhone(phone);
+      setLookupLoading(true);
+      try {
+        const all = await appointmentService.getAppointments();
+        const query = phone.toLowerCase();
+        const found = all.filter(
+          (a) =>
+            a.patientPhone.includes(query) ||
+            a.patientCode.toLowerCase().includes(query) ||
+            a.id.toLowerCase().includes(query)
+        );
+        setLookupResults(found);
+      } catch {
+        // fallback
+      } finally {
+        setLookupLoading(false);
+      }
+    }
+  };
+
   // Handle lookup appointments
   const handleLookup = async () => {
     if (!lookupPhone.trim()) {
@@ -398,7 +423,7 @@ export const PatientHomePage: React.FC = () => {
     <div className="booking-page-container">
       {/* 1. Portal Header */}
       <PatientPortalHeader
-        onOpenLookup={() => setLookupModalOpen(true)}
+        onOpenLookup={openLookupModal}
         onOpenProfile={() => setCompleteProfileModalOpen(true)}
       />
 

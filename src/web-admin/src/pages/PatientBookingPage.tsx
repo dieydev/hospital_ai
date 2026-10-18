@@ -507,6 +507,18 @@ export const PatientBookingPage: React.FC = () => {
     }
   };
 
+  // Tự động mở tra cứu lịch hẹn khi URL có ?lookup=open
+  useEffect(() => {
+    const lookupParam = searchParams.get('lookup');
+    if (lookupParam === 'open') {
+      if (user) {
+        openPatientAppointments();
+      } else {
+        setLookupModalOpen(true);
+      }
+    }
+  }, [searchParams, user]);
+
   // Mở modal đổi lịch khám (Reschedule)
   const handleOpenReschedule = async (apt: OnlineAppointmentItem) => {
     if (!ensureAuthenticated('đổi lịch hẹn khám')) return;
@@ -773,7 +785,10 @@ export const PatientBookingPage: React.FC = () => {
     <div className="booking-page-container">
       {/* 1. Header */}
       <PatientPortalHeader
-        onOpenLookup={() => setLookupModalOpen(true)}
+        onOpenLookup={() => {
+          if (user) openPatientAppointments();
+          else setLookupModalOpen(true);
+        }}
         onOpenProfile={() => {
           setCompleteProfileModalOpen(true);
           setCompleteProfileAllowClose(true);
@@ -804,7 +819,10 @@ export const PatientBookingPage: React.FC = () => {
               <Button
                 icon={<SearchOutlined />}
                 style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 700, borderRadius: 8, height: 42, padding: '0 18px', backgroundColor: '#ffffff' }}
-                onClick={() => setLookupModalOpen(true)}
+                onClick={() => {
+                  if (user) openPatientAppointments();
+                  else setLookupModalOpen(true);
+                }}
               >
                 Tra cứu lịch hẹn
               </Button>
