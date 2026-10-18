@@ -2624,35 +2624,94 @@ body.elderly-mode .qr-ticket-wrapper  {
  }
 
 /* Enhanced Stepper Customization */
-.booking-main-card .ant-steps-item-process .ant-steps-item-icon  { 
+.booking-main-card .ant-steps .ant-steps-item-icon,
+.booking-main-card .ant-steps .ant-steps-item-custom .ant-steps-item-icon {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 8px !important;
+  transition: all 0.25s ease !important;
+  overflow: hidden !important;
+  vertical-align: middle !important;
+}
+
+.booking-main-card .ant-steps .ant-steps-item-icon .ant-steps-icon,
+.booking-main-card .ant-steps .ant-steps-item-custom .ant-steps-item-icon .ant-steps-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 1. Active / Process Step */
+.booking-main-card .ant-steps-item-process .ant-steps-item-icon { 
   background-color: #0284c7 !important;
-  border-color: #0284c7 !important;
-  
- }
+  border: 2px solid #0284c7 !important;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.22) !important;
+}
 
-.booking-main-card .ant-steps-item-finish .ant-steps-item-icon  { 
-  background-color: #f0fdf4 !important;
-  border-color: #10b981 !important;
- }
+.booking-main-card .ant-steps-item-process .ant-steps-item-icon .ant-steps-icon,
+.booking-main-card .ant-steps-item-process .ant-steps-item-icon .anticon {
+  color: #ffffff !important;
+  font-size: 16px !important;
+}
 
-.booking-main-card .ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon  { 
-  color: #10b981 !important;
- }
+.booking-main-card .ant-steps-item-process .ant-steps-item-icon .anticon svg {
+  fill: #ffffff !important;
+}
 
-.booking-main-card .ant-steps-item-process .ant-steps-item-title  { 
+.booking-main-card .ant-steps-item-process .ant-steps-item-title { 
   color: #0369a1 !important;
   font-weight: 800 !important;
- }
+}
 
-.booking-main-card .ant-steps-item-finish .ant-steps-item-title  { 
+/* 2. Finished / Completed Step */
+.booking-main-card .ant-steps-item-finish .ant-steps-item-icon { 
+  background-color: #f0fdf4 !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12) !important;
+}
+
+.booking-main-card .ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon,
+.booking-main-card .ant-steps-item-finish .ant-steps-item-icon .anticon { 
+  color: #10b981 !important;
+  font-size: 15px !important;
+}
+
+.booking-main-card .ant-steps-item-finish .ant-steps-item-icon .anticon svg {
+  fill: #10b981 !important;
+}
+
+.booking-main-card .ant-steps-item-finish .ant-steps-item-title { 
   color: #0f172a !important;
   font-weight: 700 !important;
- }
+}
 
-.booking-main-card .ant-steps-item-wait .ant-steps-item-title  { 
-  color: #94a3b8 !important;
+/* 3. Waiting Step */
+.booking-main-card .ant-steps-item-wait .ant-steps-item-icon { 
+  background-color: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+}
+
+.booking-main-card .ant-steps-item-wait .ant-steps-item-icon .ant-steps-icon,
+.booking-main-card .ant-steps-item-wait .ant-steps-item-icon .anticon { 
+  color: #64748b !important;
+  font-size: 15px !important;
+}
+
+.booking-main-card .ant-steps-item-wait .ant-steps-item-icon .anticon svg {
+  fill: #64748b !important;
+}
+
+.booking-main-card .ant-steps-item-wait .ant-steps-item-title { 
+  color: #64748b !important;
   font-weight: 600 !important;
- }
+}
 
 /* Quick 7-Day Date Selector Strip */
 .quick-date-strip  { 
