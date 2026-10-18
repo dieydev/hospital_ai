@@ -511,7 +511,9 @@ export const PatientHomePage: React.FC = () => {
         {/* Center Content Container */}
         <div className="medpro-hero-center-content">
           <h1 className="medpro-hero-main-title">
-            Kết nối Người Dân với Cơ sở & Dịch vụ Y tế hàng đầu
+            Kết nối Người Dân với{' '}
+            <span className="medpro-hero-title-highlight">Cơ sở & Dịch vụ Y tế</span>{' '}
+            hàng đầu
           </h1>
 
           {/* Omnibar Rounded Pill Search */}
