@@ -65,6 +65,7 @@ import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
 import { isPatientProfileComplete, isPatientUser } from '../utils/authHelper';
 import { AIChatDrawer } from '../components/AIChatDrawer';
+import { DepartmentIcon } from '../components/DepartmentIcon';
 import {
   DEPARTMENTS_CATALOG,
   DOCTORS_CATALOG,
@@ -1105,17 +1106,17 @@ export const PatientBookingPage: React.FC = () => {
                                 style={{
                                   width: 44,
                                   height: 44,
-                                  borderRadius: 10,
-                                  backgroundColor: dept.iconBg,
+                                  borderRadius: 12,
+                                  background: `linear-gradient(135deg, ${dept.iconBg} 0%, ${dept.iconBg}dd 100%)`,
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   color: '#ffffff',
-                                  fontSize: 20,
+                                  boxShadow: `0 4px 10px ${dept.iconBg}40`,
                                   flexShrink: 0,
                                 }}
                               >
-                                <MedicineBoxOutlined />
+                                <DepartmentIcon deptId={dept.id} deptName={dept.name} size={22} color="#ffffff" />
                               </div>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 700, fontSize: 16, color: '#0f172a' }}>

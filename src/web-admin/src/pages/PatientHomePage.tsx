@@ -53,6 +53,7 @@ import { RequireLoginModal } from '../components/RequireLoginModal';
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
 import { AIChatDrawer } from '../components/AIChatDrawer';
+import { DepartmentIcon } from '../components/DepartmentIcon';
 import {
   DEPARTMENTS_CATALOG,
   DOCTORS_CATALOG,
@@ -570,7 +571,7 @@ export const PatientHomePage: React.FC = () => {
                 {searchSuggestions.depts.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <MedicineBoxOutlined style={{ color: '#0284c7' }} />
+                      <DepartmentIcon deptName="khoa" size={16} color="#0284c7" />
                       <span>Chuyên khoa ({searchSuggestions.depts.length})</span>
                     </div>
                     {searchSuggestions.depts.map((d) => (
@@ -1571,19 +1572,19 @@ export const PatientHomePage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                   <div
                     style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      backgroundColor: dept.iconBg,
+                      width: 48,
+                      height: 48,
+                      borderRadius: 14,
+                      background: `linear-gradient(135deg, ${dept.iconBg} 0%, ${dept.iconBg}ee 100%)`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: '#ffffff',
-                      fontSize: 20,
+                      boxShadow: `0 6px 14px ${dept.iconBg}35`,
                       flexShrink: 0,
                     }}
                   >
-                    <MedicineBoxOutlined />
+                    <DepartmentIcon deptId={dept.id} deptName={dept.name} size={25} color="#ffffff" />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>{dept.name}</div>

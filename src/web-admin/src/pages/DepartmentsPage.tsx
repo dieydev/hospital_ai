@@ -5,7 +5,6 @@ import {
   SearchOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
-  MedicineBoxOutlined,
   UserOutlined,
   ArrowRightOutlined,
   CheckCircleOutlined,
@@ -16,6 +15,7 @@ import {
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
 import { CountUpNumber } from '../components/CountUpNumber';
+import { DepartmentIcon } from '../components/DepartmentIcon';
 import { DEPARTMENTS_CATALOG, DOCTORS_CATALOG, DepartmentOption } from '../data/medicalCatalogs';
 import './PatientBookingPage.css';
 
@@ -218,7 +218,7 @@ export const DepartmentsPage: React.FC = () => {
                       flexShrink: 0,
                     }}
                   >
-                    <MedicineBoxOutlined style={{ fontSize: 24, color: dept.iconBg }} />
+                    <DepartmentIcon deptId={dept.id} deptName={dept.name} size={26} color={dept.iconBg} />
                   </div>
                   <div>
                     <Title level={4} style={{ color: '#0f172a', fontWeight: 800, margin: '0 0 4px', fontSize: 17 }}>
@@ -353,7 +353,7 @@ export const DepartmentsPage: React.FC = () => {
                   justifyContent: 'center',
                 }}
               >
-                <MedicineBoxOutlined style={{ fontSize: 28, color: detailModalDept.iconBg }} />
+                <DepartmentIcon deptId={detailModalDept.id} deptName={detailModalDept.name} size={30} color={detailModalDept.iconBg} />
               </div>
               <div>
                 <Title level={3} style={{ color: '#0c4a6e', fontWeight: 900, margin: 0 }}>
