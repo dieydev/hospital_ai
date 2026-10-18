@@ -19,6 +19,7 @@ import {
   Spin,
   Switch,
   Breadcrumb,
+  Tooltip,
 } from 'antd';
 import {
   CalendarOutlined,
@@ -411,6 +412,29 @@ export const PatientBookingPage: React.FC = () => {
       const patientCode = user?.maBenhNhan || `BN2026${Date.now().toString().slice(-4)}`;
       const appointmentTime = selectedSlot.split(' - ')[0].trim();
       const pricing = calculatePricing();
+
+      // Kiểm tra tránh trùng khung giờ khám cùng ngày của bệnh nhân
+      try {
+        const allApts = await appointmentService.getAppointments();
+        const normalizedPhone = values.phoneNumber.trim();
+        const hasConflict = allApts.some(
+          (a) =>
+            a.appointmentDate === selectedDate &&
+            a.appointmentTime === appointmentTime &&
+            (a.patientPhone === normalizedPhone || (user?.soDienThoai && a.patientPhone === user.soDienThoai)) &&
+            a.status !== 'Cancelled'
+        );
+        if (hasConflict) {
+          showErrorAlert(
+            'Trùng khung giờ khám!',
+            `Bạn đã có một lịch hẹn khác vào khung giờ ${selectedSlot} ngày ${dayjs(selectedDate).format('DD/MM/YYYY')}. Vui lòng chọn khung giờ khác để tránh bị trùng lịch!`
+          );
+          setBookingLoading(false);
+          return;
+        }
+      } catch {
+        // non-blocking fallback
+      }
 
       let reason = values.symptoms ? values.symptoms.trim() : '';
       if (bookingForTarget === 'relative') {
@@ -2159,22 +2183,55 @@ export const PatientBookingPage: React.FC = () => {
                         <Form.Item
                           name="birthYear"
                           label="Năm sinh"
-                          rules={[{ required: true, message: 'Vui lòng nhập năm sinh' }]}
+                          rules={[
+                            { required: true, message: 'Vui lòng nhập năm sinh' },
+                            { pattern: /^(19[2-9]\d|20[0-2]\d)$/, message: 'Năm sinh hợp lệ từ 1920 đến nay' },
+                          ]}
                         >
                           <Input placeholder="Ví dụ: 1995" size="large" style={{ borderRadius: 10 }} />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12}>
-                        <Form.Item name="identityNumber" label="Số CCCD hoặc mã thẻ BHYT">
+                        <Form.Item
+                          name="identityNumber"
+                          label="Số CCCD (12 số) hoặc CMND (9 số)"
+                          rules={[
+                            { pattern: /^\d{9}(\d{3})?$/, message: 'Số CCCD gồm 12 chữ số (hoặc CMND cũ 9 chữ số)' },
+                          ]}
+                        >
                           <Input
                             prefix={<IdcardOutlined style={{ color: '#0284c7' }} />}
-                            placeholder="07909200xxxx"
+                            placeholder="07909200xxxx (12 số)"
                             size="large"
                             style={{ borderRadius: 10, fontFamily: 'monospace' }}
                           />
                         </Form.Item>
                       </Col>
                     </Row>
+
+                    {/* Cảnh báo độ tuổi Khoa Nhi */}
+                    <Form.Item
+                      noStyle
+                      shouldUpdate={(prevValues, currentValues) => prevValues.birthYear !== currentValues.birthYear}
+                    >
+                      {({ getFieldValue }) => {
+                        const by = Number(getFieldValue('birthYear'));
+                        const currentYear = new Date().getFullYear();
+                        const isPediatric = selectedDept?.name?.toLowerCase().includes('nhi');
+                        if (isPediatric && by && currentYear - by > 16) {
+                          return (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message="Lưu ý độ tuổi khám Khoa Nhi"
+                              description="Khoa Nhi chuyên tiếp nhận bệnh nhi từ 0 đến dưới 16 tuổi. Nếu người khám từ 16 tuổi trở lên, hệ thống khuyến nghị bạn nên chọn Khoa Nội Tổng Hợp để được bác sĩ chuyên khoa thăm khám phù hợp nhất."
+                              style={{ marginBottom: 16, borderRadius: 10 }}
+                            />
+                          );
+                        }
+                        return null;
+                      }}
+                    </Form.Item>
 
                     <Form.Item name="appointmentType" label="Hình thức khám" initialValue={bookingMode === 'byFollowUp' ? 'FollowUp' : 'New'}>
                       <Radio.Group size="large" style={{ width: '100%' }}>
@@ -2530,8 +2587,22 @@ export const PatientBookingPage: React.FC = () => {
                           fgColor="#0369a1"
                         />
                       </div>
-                      <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: '#0284c7' }}>
-                        {createdAppointment.id.toUpperCase()}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: '#0284c7' }}>
+                          {createdAppointment.id.toUpperCase()}
+                        </span>
+                        <Tooltip title="Sao chép mã phiếu hẹn">
+                          <Button
+                            size="small"
+                            type="text"
+                            icon={<CopyOutlined style={{ color: '#0284c7', fontSize: 14 }} />}
+                            onClick={() => {
+                              navigator.clipboard.writeText(createdAppointment.id.toUpperCase());
+                              showToast('Đã sao chép mã phiếu hẹn!', 'success');
+                            }}
+                            style={{ padding: '2px 6px', height: 'auto' }}
+                          />
+                        </Tooltip>
                       </div>
                     </div>
 
@@ -2763,8 +2834,14 @@ export const PatientBookingPage: React.FC = () => {
                       `Bác sĩ: ${createdAppointment.doctorName}\nMã phiếu: ${createdAppointment.id.toUpperCase()}\nĐịa chỉ: 215 Hồng Bàng, P.11, Q.5, TP.HCM\nQuét mã QR tại Kiosk để vào khám.`
                     );
                     const location = encodeURIComponent('Bệnh viện Đa khoa D-Medical, 215 Hồng Bàng, Quận 5, TP.HCM');
-                    const dStr = dayjs(createdAppointment.appointmentDate).format('YYYYMMDD');
-                    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dStr}T080000Z/${dStr}T090000Z`;
+                    const datePart = dayjs(createdAppointment.appointmentDate).format('YYYY-MM-DD');
+                    const slotText = selectedSlot || createdAppointment.appointmentTime || '08:00 - 08:30';
+                    const timeParts = slotText.split('-').map((t) => t.trim());
+                    const startStr = timeParts[0] || '08:00';
+                    const endStr = timeParts[1] || dayjs(`${datePart} ${startStr}`).add(30, 'minute').format('HH:mm');
+                    const startUtc = dayjs(`${datePart} ${startStr}`).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                    const endUtc = dayjs(`${datePart} ${endStr}`).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${startUtc}/${endUtc}`;
                     window.open(url, '_blank');
                   }}
                 >

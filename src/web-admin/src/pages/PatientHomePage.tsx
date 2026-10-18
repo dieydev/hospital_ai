@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Row,
   Col,
@@ -134,11 +134,35 @@ export const PatientHomePage: React.FC = () => {
 
   useEffect(() => {
     syncCurrentUser();
-  }, [syncCurrentUser]);
+  }, [syncCurrentUser])
 
-  // Search omnibar
+  // Search omnibar & instant suggestions
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [marqueeDismissed, setMarqueeDismissed] = useState(false);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const searchSuggestions = useMemo(() => {
+    if (!normalizedQuery || normalizedQuery.length < 2) return null;
+    const depts = DEPARTMENTS_CATALOG.filter(
+      (d) => d.name.toLowerCase().includes(normalizedQuery) || d.description.toLowerCase().includes(normalizedQuery)
+    ).slice(0, 3);
+    const docs = DOCTORS_CATALOG.filter(
+      (doc) =>
+        doc.name.toLowerCase().includes(normalizedQuery) ||
+        doc.department.toLowerCase().includes(normalizedQuery) ||
+        doc.title.toLowerCase().includes(normalizedQuery)
+    ).slice(0, 3);
+    const pkgs = HEALTH_PACKAGES_CATALOG.filter(
+      (p) =>
+        p.name.toLowerCase().includes(normalizedQuery) ||
+        p.category.toLowerCase().includes(normalizedQuery) ||
+        p.recommendedFor.toLowerCase().includes(normalizedQuery)
+    ).slice(0, 3);
+    const totalCount = depts.length + docs.length + pkgs.length;
+    return totalCount > 0 ? { depts, docs, pkgs, totalCount } : null;
+  }, [normalizedQuery]);
 
   // Hospital Video Section States
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
@@ -160,7 +184,7 @@ export const PatientHomePage: React.FC = () => {
   const handleTogglePlay = () => {
     if (mainVideoRef.current) {
       if (mainVideoRef.current.paused) {
-        mainVideoRef.current.play().then(() => setIsPlayingInline(true)).catch(() => {});
+        mainVideoRef.current.play().then(() => setIsPlayingInline(true)).catch(() => { });
       } else {
         mainVideoRef.current.pause();
         setIsPlayingInline(false);
@@ -428,16 +452,38 @@ export const PatientHomePage: React.FC = () => {
       />
 
       {/* Dòng chữ chạy qua lại thông báo người bệnh (Đặt ở dưới Header & Kích thước to rõ hơn) */}
-      <div className="marquee-banner">
-        <div className="marquee-prefix">
-          <SoundOutlined style={{ fontSize: 15 }} /> THÔNG BÁO
-        </div>
-        <div className="marquee-content-wrap">
-          <div className="marquee-track">
-            Kính chào Quý người bệnh và thân nhân: Bệnh viện Đa khoa D-Medical tiếp nhận khám chữa bệnh tất cả các ngày trong tuần (kể cả Thứ 7 & Chủ Nhật) • Quý khách vui lòng đặt hẹn trước để được vào khám đúng giờ, không lo xếp hàng chờ đợi • Hỗ trợ BHYT thông tuyến toàn quốc và bảo lãnh viện phí trực tiếp • Tổng đài chăm sóc và hỗ trợ người bệnh 24/7: 1900 6868 • Cấp cứu khẩn cấp: 1900 8888.
+      {!marqueeDismissed && (
+        <div className="marquee-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+            <div className="marquee-prefix">
+              <SoundOutlined style={{ fontSize: 15 }} /> THÔNG BÁO
+            </div>
+            <div className="marquee-content-wrap">
+              <div className="marquee-track">
+                Kính chào Quý người bệnh và thân nhân: Bệnh viện Đa khoa D-Medical tiếp nhận khám chữa bệnh tất cả các ngày trong tuần (kể cả Thứ 7 & Chủ Nhật) • Quý khách vui lòng đặt hẹn trước để được vào khám đúng giờ, không lo xếp hàng chờ đợi • Hỗ trợ BHYT thông tuyến toàn quốc và bảo lãnh viện phí trực tiếp • Tổng đài chăm sóc và hỗ trợ người bệnh 24/7: 1900 6868 • Cấp cứu khẩn cấp: 1900 8888.
+              </div>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setMarqueeDismissed(true)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#64748b',
+              cursor: 'pointer',
+              padding: '0 12px',
+              fontSize: 18,
+              lineHeight: 1,
+              fontWeight: 700,
+            }}
+            title="Đóng thông báo"
+            aria-label="Đóng thông báo"
+          >
+            ×
+          </button>
         </div>
-      </div>
+      )}
 
       {/* 2. Panoramic Medpro Replica Hero Banner with Two Doctors & Omnibar Search */}
       <section className="medpro-hero-section">
@@ -469,13 +515,17 @@ export const PatientHomePage: React.FC = () => {
           </h1>
 
           {/* Omnibar Rounded Pill Search */}
-          <div className="medpro-search-bar-wrap">
+          <div className="medpro-search-bar-wrap" style={{ position: 'relative' }}>
             <SearchOutlined className="medpro-search-icon" />
             <Input
               className="medpro-search-input"
               placeholder="Tìm kiếm chuyên khoa, bác sĩ, gói khám, triệu chứng..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => {
+                setTimeout(() => setSearchFocused(false), 250);
+              }}
               onPressEnter={() => {
                 if (searchQuery.trim()) {
                   navigate(`/booking?search=${encodeURIComponent(searchQuery.trim())}`);
@@ -495,6 +545,145 @@ export const PatientHomePage: React.FC = () => {
               >
                 Tìm
               </Button>
+            )}
+
+            {/* Floating Autocomplete Suggestions Dropdown */}
+            {searchFocused && searchSuggestions && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: '#ffffff',
+                  border: '1.5px solid #bae6fd',
+                  borderRadius: 14,
+                  boxShadow: '0 12px 32px rgba(2, 132, 199, 0.15)',
+                  zIndex: 1000,
+                  maxHeight: 380,
+                  overflowY: 'auto',
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                }}
+              >
+                {/* 1. Chuyên khoa */}
+                {searchSuggestions.depts.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <MedicineBoxOutlined style={{ color: '#0284c7' }} />
+                      <span>Chuyên khoa ({searchSuggestions.depts.length})</span>
+                    </div>
+                    {searchSuggestions.depts.map((d) => (
+                      <div
+                        key={d.id}
+                        onClick={() => navigate(`/booking?mode=byDept&deptId=${d.id}`)}
+                        style={{
+                          padding: '7px 10px',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'background 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f9ff')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>{d.name}</div>
+                          <div style={{ fontSize: 11.5, color: '#64748b' }}>{d.location} • {d.phone || 'Sảnh A'}</div>
+                        </div>
+                        <Tag color="cyan" style={{ margin: 0, fontSize: 11, borderRadius: 6 }}>Đặt khám</Tag>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 2. Bác sĩ */}
+                {searchSuggestions.docs.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <UserOutlined style={{ color: '#0284c7' }} />
+                      <span>Bác sĩ chuyên khoa ({searchSuggestions.docs.length})</span>
+                    </div>
+                    {searchSuggestions.docs.map((doc) => (
+                      <div
+                        key={doc.id}
+                        onClick={() => navigate(`/booking?mode=byDoctor&doctorId=${doc.id}`)}
+                        style={{
+                          padding: '7px 10px',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'background 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f9ff')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <Avatar src={doc.avatar} size={32} icon={<UserOutlined />} style={{ backgroundColor: '#0284c7' }} />
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>{doc.name}</div>
+                            <div style={{ fontSize: 11.5, color: '#64748b' }}>{doc.title} • {doc.department}</div>
+                          </div>
+                        </div>
+                        <Tag color="blue" style={{ margin: 0, fontSize: 11, borderRadius: 6 }}>Đặt bác sĩ</Tag>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 3. Gói khám */}
+                {searchSuggestions.pkgs.length > 0 && (
+                  <div style={{ marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <HeartOutlined style={{ color: '#0284c7' }} />
+                      <span>Gói khám ({searchSuggestions.pkgs.length})</span>
+                    </div>
+                    {searchSuggestions.pkgs.map((pkg) => (
+                      <div
+                        key={pkg.id}
+                        onClick={() => navigate(`/booking?mode=byPackage&packageId=${pkg.id}`)}
+                        style={{
+                          padding: '7px 10px',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'background 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f9ff')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>{pkg.name}</div>
+                          <div style={{ fontSize: 11.5, color: '#64748b' }}>{pkg.recommendedFor} • {pkg.discountPrice.toLocaleString('vi-VN')}đ</div>
+                        </div>
+                        <Tag color="green" style={{ margin: 0, fontSize: 11, borderRadius: 6 }}>Xem gói</Tag>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div
+                  onClick={() => navigate(`/booking?search=${encodeURIComponent(searchQuery.trim())}`)}
+                  style={{
+                    borderTop: '1px solid #e2e8f0',
+                    marginTop: 8,
+                    paddingTop: 8,
+                    textAlign: 'center',
+                    color: '#0284c7',
+                    fontWeight: 700,
+                    fontSize: 12.5,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Xem tất cả kết quả cho "{searchQuery}" →
+                </div>
+              </div>
             )}
           </div>
 
