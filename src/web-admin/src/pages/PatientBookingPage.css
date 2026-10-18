@@ -864,10 +864,15 @@
 
 .booking-card-inner  { 
   border-radius: 20px;
-  
-  border: 1px solid #bae6fd;
+  border: 1px solid rgba(186, 230, 253, 0.75);
+  background: linear-gradient(180deg, #f8fcff 0%, #ffffff 100px);
+  box-shadow: 
+    0 0 0 1px rgba(224, 242, 254, 0.8),
+    0 4px 16px -2px rgba(2, 132, 199, 0.06),
+    0 12px 36px -4px rgba(2, 132, 199, 0.09),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
   overflow: hidden;
-  background: #ffffff;
+  transition: all 0.3s ease;
  }
 
 /* Interactive Cards & Selection Grid */
@@ -3020,7 +3025,14 @@ body.elderly-mode .qr-ticket-wrapper  {
   font-weight: 600 !important;
 }
 .booking-main-card .ant-card.booking-card-inner {
-  box-shadow: none !important; /* taste-skill-ignore */
+  border-radius: 20px !important;
+  border: 1px solid rgba(186, 230, 253, 0.75) !important;
+  background: linear-gradient(180deg, #f8fcff 0%, #ffffff 100px) !important;
+  box-shadow: 
+    0 0 0 1px rgba(224, 242, 254, 0.8),
+    0 4px 16px -2px rgba(2, 132, 199, 0.06),
+    0 12px 36px -4px rgba(2, 132, 199, 0.09),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 /* ==========================================================================
