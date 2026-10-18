@@ -71,7 +71,7 @@ class SignalRService {
     if (this.connection || this.isConnecting) return;
 
     this.isConnecting = true;
-    const hubUrl = import.meta.env.VITE_SIGNALR_URL || 'http://localhost:5000/hubs/queue';
+    const hubUrl = import.meta.env.VITE_SIGNALR_URL || (import.meta.env.PROD ? '/hubs/queue' : 'http://localhost:5000/hubs/queue');
 
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {
