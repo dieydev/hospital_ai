@@ -31,8 +31,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
+  box-sizing: border-box;
  }
+
+.booking-navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+ }
+
 
 /* Patient Profile Dropdown Trigger (Compact Circle Button) */
 .patient-profile-circle-btn  { 
@@ -1992,10 +2001,96 @@
 .slot-shift-tab-btn.active  { 
   background: #ffffff;
   color: #0284c7;
-  
   border: 1px solid #bae6fd;
   transform: scale(1.025);
  }
+
+/* Quick 7-Day Date Selection Strip */
+.quick-date-strip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  padding-bottom: 6px !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.quick-date-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-date-pill {
+  flex: 0 0 84px !important;
+  min-width: 84px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 6px !important;
+  border-radius: 12px !important;
+  border: 1.5px solid #bae6fd !important;
+  background: #ffffff !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.quick-date-pill:hover {
+  border-color: #0284c7 !important;
+  background: #f0f9ff !important;
+}
+
+.quick-date-pill.active {
+  border-color: #0284c7 !important;
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
+}
+
+.quick-date-pill.active .quick-date-day,
+.quick-date-pill.active .quick-date-num {
+  color: #ffffff !important;
+}
+
+.quick-date-day {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  margin-bottom: 2px !important;
+}
+
+.quick-date-num {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+}
+
+/* Booking Page Banner Typography */
+.booking-page-header-banner {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1.5px solid #bae6fd;
+  padding: 24px 28px;
+  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.05);
+}
+
+.booking-banner-h1 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  font-size: clamp(24px, 4vw, 40px) !important;
+  margin: 0 0 10px !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.2 !important;
+}
+
+.booking-banner-p {
+  color: #334155 !important;
+  font-size: clamp(13.5px, 2vw, 15.5px) !important;
+  margin: 0 !important;
+  max-width: 700px !important;
+  line-height: 1.6 !important;
+}
+
 
 /* ==========================================================================
    Booking Target Switcher (Đặt cho Bản thân / Đặt cho Người thân)
@@ -2453,193 +2548,521 @@ body.elderly-mode .qr-ticket-wrapper  {
 /* ==========================================================================
    MOBILE & TABLET RESPONSIVE ENHANCEMENTS (< 768px & < 480px)
    ========================================================================== */
-@media (max-width: 768px)  { 
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE ENHANCEMENTS (< 1024px, < 768px, < 560px, < 480px)
+   Strict Medical Palette: #0284c7 (Sky 600) | #0369a1 (Sky 700) | #bae6fd (Sky 200)
+   ========================================================================== */
+
+/* Universal mobile overflow prevention */
+html, body, #root, .booking-page-container {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+}
+
+@media (max-width: 1024px) {
+  .booking-brand-subtitle {
+    display: none !important;
+  }
+  .booking-brand-title {
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 1. Header & Navigation */
   .booking-navbar-content {
-    padding: 8px 14px !important;
-   }
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
 
-  .booking-top-bar  { 
-    padding: 0 !important;
-    font-size: 11.5px !important;
-   }
+  .booking-brand {
+    gap: 8px !important;
+  }
 
-  .booking-top-bar-content  { 
-    padding: 6px 14px !important;
-    flex-wrap: nowrap !important;
-    justify-content: space-between !important;
-   }
+  .booking-brand-logo {
+    height: 32px !important;
+    max-width: 135px !important;
+  }
 
-  .booking-top-bar-left,
-  .booking-top-bar-right  { 
-    width: auto !important;
-   }
+  .booking-brand-text {
+    display: none !important;
+  }
 
-  /* Compact header buttons on small screens */
-  .compact-btn-on-mobile  { 
-    padding: 4px 10px !important;
+  .booking-navbar-actions {
+    gap: 6px !important;
+  }
+
+  .compact-btn-on-mobile {
+    padding: 0 10px !important;
     font-size: 12.5px !important;
     height: 34px !important;
-   }
+    border-radius: 8px !important;
+  }
 
-  /* Hero Section */
-  .medpro-hero-section  { 
-    padding: 24px 12px 32px !important;
-   }
-
-  .medpro-hero-main-title  { 
-    font-size: 21px !important;
-    margin-bottom: 14px !important;
-   }
-
-  .medpro-search-bar-wrap  { 
-    height: 48px !important;
-    padding: 2px 6px 2px 14px !important;
-    margin-bottom: 14px !important;
-   }
-
-  .medpro-search-input  { 
-    font-size: 13.5px !important;
-   }
-
-  .medpro-search-action-btn  { 
+  .patient-profile-circle-btn {
+    width: 36px !important;
     height: 36px !important;
-    padding: 0 14px !important;
+  }
+
+  .mobile-nav-toggle-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* 2. Top Emergency & Marquee Bar */
+  .booking-top-bar {
+    padding: 0 !important;
+    font-size: 11.5px !important;
+  }
+
+  .booking-top-bar-content {
+    padding: 6px 12px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+
+  .booking-top-bar-left,
+  .booking-top-bar-right {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 4px 10px !important;
+  }
+
+  .booking-top-bar-item {
+    font-size: 11px !important;
+  }
+
+  .marquee-banner {
+    min-height: 40px !important;
+    padding: 6px 0 !important;
+    font-size: 12.5px !important;
+  }
+
+  .marquee-prefix {
+    margin-left: 10px !important;
+    margin-right: 8px !important;
+    padding: 3px 10px !important;
+    font-size: 10.5px !important;
+  }
+
+  /* 3. Hero Section & Omnibar Search */
+  .medpro-hero-section {
+    padding: 20px 12px 28px !important;
+  }
+
+  .medpro-hero-center-content {
+    margin-bottom: 20px !important;
+    max-width: 100% !important;
+  }
+
+  .medpro-hero-main-title {
+    font-size: 20px !important;
+    margin-bottom: 12px !important;
+    white-space: normal !important;
+    line-height: 1.35 !important;
+    letter-spacing: -0.2px !important;
+  }
+
+  .medpro-search-bar-wrap {
+    height: 46px !important;
+    padding: 2px 4px 2px 14px !important;
+    margin-bottom: 12px !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .medpro-search-icon {
+    font-size: 17px !important;
+  }
+
+  .medpro-search-input {
     font-size: 13px !important;
-   }
+  }
 
-  /* 14 Cards Horizontal Scroll on Mobile */
-  .medpro-cards-carousel-container  { 
-    padding: 0 4px !important;
-   }
+  .medpro-search-action-btn {
+    height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 12.5px !important;
+    border-radius: 18px !important;
+  }
 
-  .medpro-cards-scroll-track  { 
+  .medpro-quick-tags-wrap {
+    gap: 5px !important;
+    margin: -4px auto 14px !important;
+  }
+
+  .medpro-quick-tag-pill {
+    font-size: 11px !important;
+    padding: 2.5px 8px !important;
+  }
+
+  .medpro-hero-bullet-list {
+    display: none !important;
+  }
+
+  /* 4. 14 Service Action Cards Scroll Track */
+  .medpro-cards-carousel-container {
+    padding: 0 !important;
+  }
+
+  .medpro-cards-scroll-track {
     display: flex !important;
-    gap: 10px !important;
+    gap: 8px !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    padding: 6px 4px 12px !important;
+    padding: 4px 2px 10px !important;
     scrollbar-width: none;
-   }
+  }
 
-  .medpro-cards-scroll-track::-webkit-scrollbar  { 
+  .medpro-cards-scroll-track::-webkit-scrollbar {
     display: none;
-   }
+  }
 
-  .medpro-service-card  { 
-    min-width: 135px !important;
-    max-width: 145px !important;
+  .medpro-service-card {
+    flex: 0 0 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
     scroll-snap-align: start;
-    padding: 14px 8px !important;
-   }
-
-  .medpro-card-icon-wrap  { 
-    width: 44px !important;
-    height: 44px !important;
-    margin-bottom: 8px !important;
-   }
-
-  .medpro-card-title  { 
-    font-size: 12px !important;
-    line-height: 1.3 !important;
-   }
-
-  /* Hide arrow buttons on mobile since user can swipe smoothly */
-  .medpro-carousel-nav-btn  { 
-    display: none !important;
-   }
-
-  /* Floating Hotline button */
-  .medpro-floating-hotline-btn  { 
-    width: 46px !important;
-    height: 46px !important;
-    bottom: 20px !important;
-    right: 16px !important;
-   }
-
-  /* Booking Main Card */
-  .booking-main-card  { 
-    padding: 12px 8px !important;
-   }
-
-  .booking-card-inner  { 
-    padding: 14px 10px !important;
+    padding: 12px 6px 10px !important;
+    min-height: 108px !important;
     border-radius: 14px !important;
-   }
+  }
 
-  /* Modes Switcher */
-  .booking-modes-bar  { 
+  .medpro-card-icon-wrap {
+    width: 40px !important;
+    height: 40px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .medpro-card-icon-wrap .anticon {
+    font-size: 20px !important;
+  }
+
+  .medpro-card-title {
+    font-size: 11.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .medpro-carousel-nav-btn {
+    display: none !important;
+  }
+
+  /* 5. Promotional Carousel Banner */
+  .hospital-carousel-wrap {
+    height: 260px !important;
+    min-height: 260px !important;
+    border-radius: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .carousel-slide-card {
+    padding: 16px 14px !important;
+    height: 260px !important;
+    min-height: 260px !important;
+    max-height: 260px !important;
+    border-radius: 16px !important;
+  }
+
+  .carousel-arrow-btn {
+    display: none !important;
+  }
+
+  .carousel-slide-badge {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .carousel-slide-title {
+    font-size: 16.5px !important;
+    min-height: unset !important;
+    line-height: 1.3 !important;
+    margin-bottom: 6px !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .carousel-slide-desc {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+    max-height: 34px !important;
+    margin-bottom: 10px !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .carousel-slide-highlights {
+    display: none !important;
+  }
+
+  .carousel-slide-btn-group {
+    gap: 6px !important;
+  }
+
+  .carousel-slide-btn {
+    font-size: 11.5px !important;
+    padding: 0 14px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  .carousel-slide-btn-secondary {
+    display: none !important;
+  }
+
+  .carousel-slide-visual {
+    display: none !important;
+  }
+
+  /* 6. Sub-promo Cards & Partner Bar */
+  .sub-promo-banners-wrap {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .sub-promo-card {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .sub-promo-title {
+    font-size: 14px !important;
+  }
+
+  .sub-promo-desc {
+    font-size: 12px !important;
+  }
+
+  .medpro-partner-bar {
+    padding: 12px 14px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    margin-bottom: 18px !important;
+  }
+
+  /* 7. Video Section on Mobile */
+  .hospital-video-section {
+    margin: 24px auto !important;
+    padding: 0 12px !important;
+  }
+
+  .hospital-video-container {
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .video-section-title {
+    font-size: 18px !important;
+  }
+
+  .video-section-subtitle {
+    font-size: 12px !important;
+  }
+
+  .video-clinical-strip {
+    grid-template-columns: 1fr !important;
+    padding: 12px 14px !important;
+    gap: 10px !important;
+    margin-top: 18px !important;
+  }
+
+  /* 8. Booking Wizard Flow & Cards */
+  .booking-page-header-banner {
+    padding: 16px 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .booking-banner-h1 {
+    font-size: 22px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .booking-banner-p {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+  }
+
+  .booking-main-card {
+    padding: 8px 4px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .booking-card-inner {
+    padding: 12px 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .booking-modes-bar {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-    padding: 6px !important;
-   }
+    gap: 6px !important;
+    padding: 4px !important;
+  }
 
-  .mode-tab-btn  { 
-    font-size: 12.5px !important;
-    padding: 10px 6px !important;
+  .mode-tab-btn {
+    font-size: 11.5px !important;
+    padding: 8px 4px !important;
     justify-content: center !important;
-   }
+    border-radius: 8px !important;
+  }
 
-  /* Steps Indicator */
-  .ant-steps  { 
+  .ant-steps {
     display: none !important;
-   }
+  }
 
-  /* Time Slots Quota */
-  .slot-shift-tabs-wrap  { 
+  /* 9. Date & Slot Quotas */
+  .quick-date-strip {
+    padding-bottom: 4px !important;
+  }
+
+  .quick-date-pill {
+    min-width: 74px !important;
+    flex: 0 0 74px !important;
+    padding: 6px 4px !important;
+  }
+
+  .booking-date-container {
+    padding: 10px 12px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .booking-date-container .ant-picker {
+    width: 100% !important;
+  }
+
+  .slot-shift-tabs-wrap {
     width: 100% !important;
     display: flex !important;
     overflow-x: auto !important;
     scrollbar-width: none;
-   }
+  }
 
-  .slot-shift-tab-btn  { 
+  .slot-shift-tab-btn {
     white-space: nowrap !important;
     font-size: 12px !important;
     padding: 6px 12px !important;
-   }
+  }
 
-  /* Floating Elderly Widget on Mobile */
-  .elderly-floating-widget-wrap  { 
-    bottom: 20px !important;
-    left: 14px !important;
-   }
+  .booking-target-switch-wrap {
+    flex-direction: column !important;
+    padding: 3px !important;
+  }
 
-  .elderly-floating-toggle-btn  { 
-    padding: 6px 12px !important;
+  .booking-target-pill {
+    width: 100% !important;
+    padding: 7px 10px !important;
     font-size: 12px !important;
-   }
+    justify-content: center !important;
+  }
 
-  .elderly-floating-call-btn  { 
-    padding: 4px 10px !important;
-    font-size: 11.5px !important;
-   }
-
-  /* Summary sticky card on mobile */
-  .booking-summary-sticky  { 
+  /* 10. Summary & Confirmation on Mobile */
+  .booking-summary-sticky {
     position: static !important;
-    margin-top: 16px !important;
-   }
+    margin-top: 14px !important;
+  }
+
+  .booking-summary-card {
+    padding: 14px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .qr-ticket-wrapper {
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+    max-width: 100% !important;
+  }
+
+  .qr-ticket-wrapper svg {
+    max-width: 140px !important;
+    height: auto !important;
+  }
+
+  /* 11. Modals & Popups */
+  .ant-modal {
+    max-width: calc(100vw - 20px) !important;
+    margin: 10px auto !important;
+    top: 10px !important;
+  }
+
+  .ant-modal-content {
+    padding: 16px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  /* 12. Floating Action Buttons */
+  .medpro-floating-hotline-btn {
+    width: 44px !important;
+    height: 44px !important;
+    bottom: 16px !important;
+    right: 14px !important;
+  }
+
+  .elderly-floating-widget-wrap {
+    bottom: 16px !important;
+    left: 12px !important;
+  }
+
+  .elderly-floating-toggle-btn {
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  .elderly-floating-call-btn {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+  }
+
+  /* 13. Footer on Mobile */
+  .hospital-portal-footer {
+    padding: 28px 14px 20px !important;
+    margin-top: 32px !important;
+  }
 }
 
-@media (max-width: 480px)  { 
+/* Extra Small Screens (Smartphones <= 560px) */
+@media (max-width: 560px) {
+  .hide-on-xs-mobile {
+    display: none !important;
+  }
+}
+
+/* Ultra Small Screens (iPhone SE, Small Android <= 480px) */
+@media (max-width: 480px) {
   .medpro-hero-main-title {
-    font-size: 18.5px !important;
-   }
+    font-size: 18px !important;
+  }
 
-  .carousel-slide-title  { 
-    font-size: 16px !important;
-   }
+  .carousel-slide-title {
+    font-size: 15px !important;
+  }
 
-  .booking-target-switch-wrap  { 
-    flex-direction: column !important;
-   }
+  .carousel-slide-desc {
+    font-size: 11.5px !important;
+  }
 
-  .booking-target-pill  { 
-    width: 100% !important;
-    justify-content: center !important;
-   }
+  .booking-banner-h1 {
+    font-size: 20px !important;
+  }
+
+  .booking-modes-bar {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .mode-tab-btn {
+    font-size: 11px !important;
+    padding: 6px 2px !important;
+  }
 }
 
 /* ==========================================================================

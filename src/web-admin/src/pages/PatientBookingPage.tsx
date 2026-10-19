@@ -833,10 +833,10 @@ export const PatientBookingPage: React.FC = () => {
         <div className="booking-page-header-banner">
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
             <div>
-              <Title level={1} style={{ color: '#0f172a', fontWeight: 800, fontSize: 44, margin: '0 0 10px', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
+              <Title level={1} className="booking-banner-h1">
                 Đặt lịch khám bệnh
               </Title>
-              <Paragraph style={{ color: '#334155', fontSize: 16, margin: 0, maxWidth: 700, lineHeight: 1.6 }}>
+              <Paragraph className="booking-banner-p">
                 Chủ động chọn chuyên khoa, bác sĩ và khung giờ theo nhu cầu. Xác nhận lịch hẹn tức thì, tiếp nhận nhanh qua mã QR tại buồng khám.
               </Paragraph>
             </div>

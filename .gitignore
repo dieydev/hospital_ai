@@ -62,4 +62,9 @@ desktop.ini
 .agents/skills/
 skills-lock.json
 
+# Keys and secrets
+*.pem
+*.key
+
+
 

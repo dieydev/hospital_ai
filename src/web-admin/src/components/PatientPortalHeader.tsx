@@ -383,7 +383,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
           </nav>
 
           {/* User Account / Auth Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="booking-navbar-actions">
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Button
@@ -402,7 +402,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                     fontSize: 14,
                     padding: '0 16px',
                   }}
-                  className="compact-btn-on-mobile"
+                  className="compact-btn-on-mobile hide-on-xs-mobile"
                 >
                   Lịch khám của tôi
                 </Button>
@@ -432,7 +432,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                 </Dropdown>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Button
                   icon={<SearchOutlined style={{ fontSize: 14 }} />}
                   onClick={() => {
@@ -448,7 +448,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                     fontSize: 14,
                     padding: '0 16px',
                   }}
-                  className="compact-btn-on-mobile"
+                  className="compact-btn-on-mobile hide-on-xs-mobile"
                 >
                   Tra cứu lịch hẹn
                 </Button>
