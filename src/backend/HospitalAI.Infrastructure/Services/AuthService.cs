@@ -1,8 +1,10 @@
+using Google.Apis.Auth;
 using HospitalAI.Application.DTOs;
 using HospitalAI.Application.Interfaces;
 using HospitalAI.Domain.Entities;
 using HospitalAI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,13 +18,15 @@ public class AuthService : IAuthService
     private readonly HospitalDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _tokenGenerator;
+    private readonly IConfiguration _configuration;
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt)> _otpStore = new();
 
-    public AuthService(HospitalDbContext context, IPasswordHasher passwordHasher, IJwtTokenGenerator tokenGenerator)
+    public AuthService(HospitalDbContext context, IPasswordHasher passwordHasher, IJwtTokenGenerator tokenGenerator, IConfiguration configuration)
     {
         _context = context;
         _passwordHasher = passwordHasher;
         _tokenGenerator = tokenGenerator;
+        _configuration = configuration;
     }
 
     private static bool IsDevelopmentEnvironment()
@@ -90,10 +94,43 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request)
     {
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            throw new Exception("Mã xác thực Google ID Token không được để trống.");
+        }
+
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            var googleClientId = _configuration["Authentication:Google:ClientId"];
+            GoogleJsonWebSignature.ValidationSettings? settings = null;
+            if (!string.IsNullOrWhiteSpace(googleClientId) && googleClientId != "YOUR_GOOGLE_CLIENT_ID")
+            {
+                settings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new[] { googleClientId }
+                };
+            }
+            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Xác thực Google ID Token thất bại hoặc token đã hết hạn: " + ex.Message);
+        }
+
+        if (string.IsNullOrWhiteSpace(payload.Email))
+        {
+            throw new Exception("Tài khoản Google không cung cấp địa chỉ Email hợp lệ.");
+        }
+
+        var verifiedEmail = payload.Email.Trim().ToLower();
+        var verifiedName = !string.IsNullOrWhiteSpace(payload.Name) ? payload.Name : request.FullName;
+        var verifiedPhoto = !string.IsNullOrWhiteSpace(payload.Picture) ? payload.Picture : request.PhotoUrl;
+
         var user = await _context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == verifiedEmail);
 
         if (user == null)
         {
@@ -107,19 +144,24 @@ public class AuthService : IAuthService
 
             user = new User
             {
-                Username = request.Email.Split('@')[0] + "_" + DateTime.UtcNow.Ticks.ToString().Substring(12),
+                Username = verifiedEmail.Split('@')[0] + "_" + DateTime.UtcNow.Ticks.ToString().Substring(12),
                 PasswordHash = _passwordHasher.HashPassword(Guid.NewGuid().ToString()),
-                FullName = string.IsNullOrWhiteSpace(request.FullName) ? request.Email : request.FullName,
-                Email = request.Email,
+                FullName = string.IsNullOrWhiteSpace(verifiedName) ? verifiedEmail : verifiedName,
+                Email = verifiedEmail,
                 PhoneNumber = "0900000000",
                 IsActive = true,
-                AvatarUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? $"https://lh3.googleusercontent.com/a/default-user" : request.PhotoUrl,
+                AvatarUrl = string.IsNullOrWhiteSpace(verifiedPhoto) ? $"https://lh3.googleusercontent.com/a/default-user" : verifiedPhoto,
                 CreatedAt = DateTime.UtcNow
             };
 
             user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+        }
+
+        if (!user.IsActive)
+        {
+            throw new Exception("Tài khoản của bạn đã bị khóa.");
         }
 
         var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
@@ -290,7 +332,7 @@ public class AuthService : IAuthService
         {
             Success = true,
             Message = $"Mã xác thực OTP đã được gửi đến số điện thoại {normalizedPhone}",
-            OtpCode = IsDevelopmentEnvironment() ? otpCode : null
+            OtpCode = null
         };
     }
 
@@ -330,14 +372,11 @@ public class AuthService : IAuthService
         var storeKey = $"forgot_{normalizedPhone}";
         _otpStore[storeKey] = (otpCode, DateTime.UtcNow.AddMinutes(5));
 
-        // In ra console để quan sát khi demo (không cần SMS)
-        Console.WriteLine($"[FORGOT-PWD OTP] SĐT: {normalizedPhone} → Mã OTP: {otpCode} (hết hạn sau 5 phút)");
-
         return new SendOtpResponseDto
         {
             Success = true,
             Message = $"Mã OTP đặt lại mật khẩu đã được gửi đến số {normalizedPhone}",
-            OtpCode = IsDevelopmentEnvironment() ? otpCode : null
+            OtpCode = null
         };
     }
 
@@ -363,10 +402,6 @@ public class AuthService : IAuthService
                 _otpStore.TryRemove(storeKey, out _);
             }
         }
-
-        // Chỉ hỗ trợ mã mặc định "123456" cho môi trường phát triển / kiểm thử local
-        if (!isValidOtp && IsDevelopmentEnvironment() && request.OtpCode.Trim() == "123456")
-            isValidOtp = true;
 
         if (!isValidOtp)
             throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
@@ -405,12 +440,6 @@ public class AuthService : IAuthService
                 isValidOtp = true;
                 _otpStore.TryRemove(normalizedPhone, out _);
             }
-        }
-
-        // Chỉ hỗ trợ mã OTP mặc định test "123456" khi ở môi trường Local Development
-        if (!isValidOtp && IsDevelopmentEnvironment() && request.OtpCode.Trim() == "123456")
-        {
-            isValidOtp = true;
         }
 
         if (!isValidOtp)

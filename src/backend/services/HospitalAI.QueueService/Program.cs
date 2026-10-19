@@ -1,5 +1,6 @@
 using HospitalAI.Application.Interfaces;
 using HospitalAI.Infrastructure.Data;
+using HospitalAI.Infrastructure.Middlewares;
 using HospitalAI.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Timeouts;
@@ -109,6 +110,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

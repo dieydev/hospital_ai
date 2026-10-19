@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
  }
 
 /* Patient Profile Dropdown Trigger (Compact Circle Button) */
@@ -39,31 +39,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background-color: #f0f9ff;
   border: 2px solid #bae6fd;
   cursor: pointer;
   user-select: none;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  
   padding: 0;
   flex-shrink: 0;
-  }
+ }
 
 .patient-profile-circle-btn:hover,
 .patient-profile-circle-btn.active  { 
   background-color: #e0f2fe;
   border-color: #0284c7;
-  
-  transform: scale(1.06);
-  }
+  transform: scale(1.05);
+ }
 
 .patient-profile-pill  { 
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 5px 14px;
   border-radius: 30px;
   background-color: #f0f9ff;
@@ -71,22 +69,20 @@
   cursor: pointer;
   user-select: none;
   transition: all 0.22s ease;
-  
  }
 
 .patient-profile-pill:hover,
 .patient-profile-pill.active  { 
   background-color: #e0f2fe;
   border-color: #0284c7;
-  
   transform: translateY(-1px);
-  }
+ }
 
-/* Center Navigation Links in Header (Giới thiệu, Tin tức, Chuyên khoa...) */
+/* Center Navigation Links in Header */
 .booking-nav-center  { 
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -94,11 +90,11 @@
 
 .booking-nav-link  { 
   font-size: 14.5px;
-  font-weight: 700;
+  font-weight: 600;
   color: #334155;
   cursor: pointer;
-  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 7px 15px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 7px 16px;
   border-radius: 9px;
   user-select: none;
   display: inline-flex;
@@ -110,18 +106,16 @@
 .booking-nav-link:hover  { 
   color: #0284c7;
   background-color: #f0f9ff;
-  transform: translateY(-1.5px);
-  
-  }
+ }
 
 .booking-nav-link.active  { 
   color: #0284c7;
   background-color: #e0f2fe;
-  font-weight: 800;
-  
+  font-weight: 700;
  }
 
-.show-on-tablet-mobile  { 
+.show-on-tablet-mobile,
+.show-on-mobile  { 
   display: none !important;
  }
 
@@ -132,7 +126,16 @@
   .show-on-tablet-mobile  { 
     display: inline-flex !important;
    }
-}
+ }
+
+@media (max-width: 768px)  { 
+  .hide-on-mobile {
+    display: none !important;
+   }
+  .show-on-mobile  { 
+    display: inline-flex !important;
+   }
+ }
 
 .mobile-drawer-nav-item  { 
   display: flex;
@@ -165,26 +168,40 @@
   gap: 12px;
   cursor: pointer;
   user-select: none;
+  flex-shrink: 0;
  }
 
 .booking-brand-logo  { 
-  height: 44px;
-  max-width: 220px;
+  height: 42px;
+  max-width: 190px;
   object-fit: contain;
  }
 
+.booking-brand-text  {
+  border-left: 1.5px solid #bae6fd;
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  white-space: nowrap;
+ }
+
 .booking-brand-title  { 
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 800;
   color: #0369a1;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
   text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.25;
  }
 
 .booking-brand-subtitle  { 
-  font-size: 11px;
+  font-size: 11.5px;
   color: #64748b;
-  font-weight: 600;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1.2;
  }
 
 /* ==========================================================================
@@ -274,7 +291,7 @@
 
 /* Center Content */
 .medpro-hero-center-content  { 
-  max-width: 760px;
+  max-width: 900px;
   margin: 0 auto 36px;
   position: relative;
   z-index: 3;
@@ -283,11 +300,18 @@
 
 .medpro-hero-main-title  { 
   color: #0c4a6e;
-  font-size: clamp(23px, 3.2vw, 33px);
+  font-size: clamp(22px, 2.3vw, 28px);
   font-weight: 900;
   margin: 0 0 20px;
-  letter-spacing: -0.5px;
-  line-height: 1.3;
+  letter-spacing: -0.4px;
+  line-height: 1.35;
+  text-wrap: balance;
+ }
+
+@media (min-width: 1150px) {
+  .medpro-hero-main-title {
+    white-space: nowrap;
+  }
  }
 
 /* Rounded Pill Search Bar */
@@ -1116,14 +1140,24 @@
   100%  {  transform: translateX(-100%);  }
 }
 
-/* Promotional Carousel Banner (Medpro Style) */
+/* Promotional Carousel Banner (Medpro Style) - Uniform Dimensions Across All Slides */
 .hospital-carousel-wrap  { 
   border-radius: 20px;
   overflow: hidden;
   margin-bottom: 24px;
-  
   border: 1px solid #bae6fd;
   position: relative;
+  height: 330px;
+  box-sizing: border-box;
+ }
+
+.hospital-carousel-wrap .ant-carousel,
+.hospital-carousel-wrap .ant-carousel .slick-slider,
+.hospital-carousel-wrap .ant-carousel .slick-list,
+.hospital-carousel-wrap .ant-carousel .slick-track,
+.hospital-carousel-wrap .ant-carousel .slick-slide,
+.hospital-carousel-wrap .ant-carousel .slick-slide > div {
+  height: 100% !important;
  }
 
 /* Floating Navigation Arrows */
@@ -1172,31 +1206,49 @@
 }
 
 .carousel-slide-card { 
-  padding: 36px 72px;
-  min-height: 250px;
+  padding: 24px 64px;
+  height: 330px !important;
+  max-height: 330px !important;
+  min-height: 330px !important;
+  box-sizing: border-box;
   position: relative;
   overflow: hidden;
-  display: flex;
+  display: flex !important;
   align-items: center;
   transition: all 0.3s ease;
+  background-size: cover !important;
+  background-position: center center !important;
+  border-radius: 18px;
 }
 
 @media (max-width: 900px) {
+  .hospital-carousel-wrap {
+    height: 320px;
+  }
   .carousel-slide-card {
-    padding: 28px 56px;
+    padding: 20px 48px;
+    height: 320px !important;
+    max-height: 320px !important;
+    min-height: 320px !important;
   }
 }
 
 @media (max-width: 640px) { 
+  .hospital-carousel-wrap {
+    height: 330px;
+  }
   .carousel-slide-card {
-    padding: 24px 20px;
-    min-height: 280px;
+    padding: 18px 16px;
+    height: 330px !important;
+    max-height: 330px !important;
+    min-height: 330px !important;
   }
 }
 
 .carousel-slide-row { 
   width: 100%;
   align-items: center;
+  height: 100%;
 }
 
 /* Slide Gradients (Strict Medical Theme) */
@@ -1237,34 +1289,47 @@
   letter-spacing: 0.3px;
   text-transform: uppercase;
  }
-
 .carousel-slide-title  { 
-  font-size: clamp(20px, 3.2vw, 28px);
+  font-size: clamp(19px, 2.3vw, 25px);
   font-weight: 900;
-  margin: 0 0 10px;
-  line-height: 1.3;
+  margin: 0 0 8px;
+  line-height: 1.25;
   color: #ffffff;
   letter-spacing: -0.3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
  }
 
 .carousel-slide-desc  { 
-  font-size: clamp(13px, 1.5vw, 15px);
+  font-size: 13.5px;
   opacity: 0.95;
-  max-width: 650px;
-  margin: 0 0 16px;
-  line-height: 1.55;
+  max-width: 620px;
+  margin: 0 0 12px;
+  line-height: 1.5;
   color: #f0f9ff;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 40px;
  }
 
 .carousel-slide-highlights  { 
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
-  font-size: 13px;
+  margin-bottom: 16px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #e0f2fe;
+  height: 24px;
+  overflow: hidden;
  }
 
 .carousel-slide-highlight-item  { 
@@ -1292,42 +1357,39 @@
   border-radius: 12px !important;
   border: none !important;
   padding: 0 24px !important;
-  height: 42px !important;
-  
+  height: 40px !important;
   width: fit-content;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease !important;
   cursor: pointer;
-  font-size: 13.5px;
+  font-size: 13px;
  }
 
 .carousel-slide-btn:hover  { 
   transform: translateY(-2px);
   background: #f0f9ff !important;
   color: #0284c7 !important;
-  
-  }
+ }
 
 .carousel-slide-btn-secondary  { 
   background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
   border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
-  
  }
 
 .carousel-slide-btn-secondary:hover  { 
   background: rgba(255, 255, 255, 0.28) !important;
   color: #ffffff !important;
   border-color: #ffffff !important;
-  }
+ }
 
 /* Banner Right Visual Card Component */
 .carousel-slide-visual  { 
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   height: 100%;
  }
 
@@ -1335,10 +1397,14 @@
   background: rgba(255, 255, 255, 0.96);
   border-radius: 18px;
   padding: 16px 20px;
-  
   border: 1px solid rgba(255, 255, 255, 0.7);
   max-width: 320px;
   width: 100%;
+  height: 245px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   color: #0f172a;
   position: relative;
   overflow: hidden;
@@ -2239,6 +2305,7 @@ body.elderly-mode .medpro-hero-main-title  {
   font-size: clamp(26px, 3.8vw, 36px) !important;
   line-height: 1.35 !important;
   color: #082f49 !important;
+  text-wrap: balance !important;
  }
 
 body.elderly-mode h2,
@@ -3038,14 +3105,6 @@ body.elderly-mode .qr-ticket-wrapper  {
 /* ==========================================================================
    ENHANCED ADVERTISING BANNER SLIDES (HOSPITAL AI PROMO SUITE)
    ========================================================================== */
-.carousel-slide-card {
-  background-size: cover !important;
-  background-position: center center !important;
-  border-radius: 18px;
-  overflow: hidden;
-  position: relative;
-}
-
 .slide-ad-1 {
   background: linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.75) 55%, rgba(15, 23, 42, 0.35) 100%) /* taste-skill-ignore */,
               url('https://images.unsplash.com/photo-1516549655169-df83a0774514?w=1400&auto=format&fit=crop&q=80') center/cover no-repeat;

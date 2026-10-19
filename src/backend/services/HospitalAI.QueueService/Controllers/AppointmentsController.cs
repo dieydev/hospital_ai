@@ -449,6 +449,16 @@ namespace HospitalAI.QueueService.Controllers
                 return BadRequest(new { message = "Vui lòng điền đầy đủ họ tên, số điện thoại, ngày khám và khung giờ khám." });
             }
 
+            // IDOR Protection: Bệnh nhân chỉ được đặt lịch cho chính mình
+            if (!IsStaff())
+            {
+                var currentPhone = User.FindFirstValue(ClaimTypes.Name);
+                if (!string.IsNullOrWhiteSpace(currentPhone))
+                {
+                    model.PatientPhone = currentPhone;
+                }
+            }
+
             EnsureDataLoaded();
             EnsureSlotsLoaded();
 

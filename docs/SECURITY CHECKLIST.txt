@@ -1,0 +1,390 @@
+
+# SECURITY CHECKLIST TRƯỚC KHI DEPLOY PRODUCTION
+
+Hãy kiểm tra toàn bộ project Hospital AI / D-Medical theo checklist dưới đây.
+
+## 1. Authentication – Đăng nhập
+
+- [ ] Password được hash an toàn, không lưu plaintext
+- [ ] Không có password hard-code trong source code
+- [ ] Không có JWT Secret hard-code
+- [ ] JWT có expiration
+- [ ] JWT signature được validate
+- [ ] Kiểm tra issuer/audience nếu có cấu hình
+- [ ] Refresh Token được bảo vệ
+- [ ] Logout hoạt động đúng
+- [ ] Có chống brute-force login
+- [ ] Có rate limit cho login
+- [ ] Không tiết lộ tài khoản có tồn tại hay không qua error message
+- [ ] Không có tài khoản mặc định nguy hiểm
+- [ ] Password reset/forgot password an toàn
+
+## 2. Authorization – Phân quyền
+
+Kiểm tra các role:
+
+- [ ] Admin
+- [ ] Doctor
+- [ ] Receptionist
+- [ ] Patient
+
+Kiểm tra:
+
+- [ ] Backend kiểm tra quyền, không chỉ Frontend
+- [ ] Patient không truy cập API Admin
+- [ ] Patient không truy cập API Doctor
+- [ ] Receptionist không truy cập API Admin
+- [ ] Doctor không truy cập chức năng Admin
+- [ ] Không thể tự thay đổi role bằng request
+- [ ] Không thể tự nâng quyền
+- [ ] Không thể thay đổi userId/patientId để xem dữ liệu người khác
+- [ ] Kiểm tra IDOR/Broken Access Control trên toàn bộ API
+
+## 3. API Security
+
+- [ ] Tất cả API nhạy cảm yêu cầu authentication
+- [ ] Tất cả API kiểm tra authorization
+- [ ] Validate toàn bộ request input
+- [ ] Validate query parameters
+- [ ] Validate request body
+- [ ] Validate path parameters
+- [ ] Có rate limiting
+- [ ] Có request size limit
+- [ ] Có timeout
+- [ ] Không có API debug/test nguy hiểm trong production
+- [ ] Swagger không expose thông tin nhạy cảm trong production
+- [ ] CORS được cấu hình đúng
+- [ ] Không dùng AllowAnyOrigin() tùy tiện
+- [ ] Không cho phép HTTP methods không cần thiết
+
+## 4. SQL Injection / Injection
+
+- [ ] Kiểm tra SQL Injection toàn bộ Backend
+- [ ] Kiểm tra FromSqlRaw()
+- [ ] Kiểm tra ExecuteSqlRaw()
+- [ ] Kiểm tra dynamic SQL
+- [ ] Kiểm tra string concatenation vào SQL
+- [ ] Kiểm tra NoSQL Injection nếu có MongoDB
+- [ ] Kiểm tra Command Injection
+- [ ] Kiểm tra XSS
+- [ ] Ưu tiên LINQ/parameterized query
+
+## 5. Database Security
+
+SQL Server:
+
+- [ ] Không expose SQL Server trực tiếp ra Internet
+- [ ] Không expose port database nếu không cần
+- [ ] Database password không hard-code
+- [ ] Connection string không commit vào Git
+- [ ] Tài khoản database sử dụng quyền tối thiểu cần thiết
+- [ ] Không sử dụng tài khoản SA cho application nếu không cần
+- [ ] Database backup được cấu hình
+- [ ] Backup không chứa credentials công khai
+
+MongoDB:
+
+- [ ] Không expose MongoDB ra Internet
+- [ ] Authentication được bật
+- [ ] Database credentials được bảo vệ
+- [ ] Không cho anonymous access
+- [ ] AI chat history được bảo vệ
+
+## 6. Docker Security
+
+Kiểm tra toàn bộ Dockerfile và docker-compose:
+
+- [ ] Container không chạy bằng root nếu không cần
+- [ ] Không hard-code secret trong Dockerfile
+- [ ] Không copy .env vào Docker image
+- [ ] Không commit .env lên Git
+- [ ] Không chứa JWT Secret trong image
+- [ ] Không chứa Gemini API Key trong image
+- [ ] Không chứa database password trong image
+- [ ] Kiểm tra exposed ports
+- [ ] Chỉ Gateway cần public thì mới expose Internet
+- [ ] Microservices nội bộ sử dụng Docker network
+- [ ] Identity Service không public trực tiếp
+- [ ] Patient Service không public trực tiếp
+- [ ] Queue Service không public trực tiếp
+- [ ] Examination Service không public trực tiếp
+- [ ] Database không public trực tiếp
+- [ ] Docker images không có vulnerability nghiêm trọng
+- [ ] Base images được cập nhật phù hợp
+- [ ] Container privileges được giới hạn
+
+Kiến trúc production mong muốn:
+
+Internet
+↓
+HTTPS :443
+↓
+API Gateway
+↓
+Internal Docker Network
+├── Identity Service
+├── Patient Service
+├── Queue Service
+├── Examination Service
+└── Database
+
+## 7. HTTPS / TLS
+
+- [ ] Domain sử dụng HTTPS
+- [ ] HTTP redirect sang HTTPS
+- [ ] SSL/TLS certificate hợp lệ
+- [ ] Không truyền password/token qua HTTP
+- [ ] HSTS được cấu hình
+- [ ] Cookie Secure nếu sử dụng cookie
+- [ ] Cookie HttpOnly nếu phù hợp
+- [ ] SameSite được cấu hình phù hợp
+- [ ] Không có mixed content
+
+## 8. Frontend React
+
+- [ ] Không có API Secret trong frontend
+- [ ] Không có Gemini API Key trong frontend
+- [ ] Không có JWT Secret trong frontend
+- [ ] Không có database credentials trong frontend
+- [ ] Không có private secret trong Vite environment variables
+- [ ] Kiểm tra localStorage/sessionStorage
+- [ ] Kiểm tra XSS
+- [ ] Kiểm tra dangerouslySetInnerHTML
+- [ ] Không expose thông tin debug
+- [ ] Kiểm tra source map production
+- [ ] Kiểm tra npm dependencies có vulnerability
+
+## 9. Flutter Mobile
+
+- [ ] Không có Gemini API Key trong app
+- [ ] Không có database credentials
+- [ ] Không có JWT Secret
+- [ ] Không hard-code private secrets
+- [ ] Token được lưu trữ an toàn
+- [ ] HTTPS được sử dụng
+- [ ] API endpoint production không chứa secret
+- [ ] Kiểm tra debug logging
+- [ ] Không log token/password
+- [ ] Kiểm tra dependency vulnerabilities
+
+## 10. Security Headers
+
+Kiểm tra production response headers:
+
+- [ ] Content-Security-Policy
+- [ ] Strict-Transport-Security
+- [ ] X-Content-Type-Options
+- [ ] Referrer-Policy
+- [ ] Permissions-Policy
+- [ ] Clickjacking protection
+
+## 11. Error Handling
+
+- [ ] Không trả Stack Trace cho client
+- [ ] Không trả SQL Exception cho client
+- [ ] Không trả Connection String
+- [ ] Không trả Database information
+- [ ] Không trả server path
+- [ ] Không trả JWT/secret
+- [ ] Không trả thông tin nội bộ của microservice
+- [ ] Có Global Exception Handler
+- [ ] Production error message không tiết lộ thông tin nhạy cảm
+
+## 12. Logging
+
+- [ ] Log login thất bại
+- [ ] Log unauthorized access
+- [ ] Log security events
+- [ ] Log admin actions quan trọng
+- [ ] Có error logging
+- [ ] Có thể phát hiện brute-force
+- [ ] Không log password
+- [ ] Không log JWT
+- [ ] Không log Refresh Token
+- [ ] Không log API Key
+- [ ] Không log dữ liệu bệnh nhân nhạy cảm không cần thiết
+
+## 13. File Upload
+
+Nếu hệ thống có upload CCCD/BHYT/PDF/Image:
+
+- [ ] Validate file extension
+- [ ] Validate MIME type
+- [ ] Giới hạn file size
+- [ ] Sanitize filename
+- [ ] Chống path traversal
+- [ ] Không cho upload executable
+- [ ] Không lưu file nhạy cảm trong public folder
+- [ ] Kiểm tra authorization khi download
+- [ ] User A không thể tải file của User B
+- [ ] Không thể đoán URL file để truy cập dữ liệu người khác
+
+## 14. Patient Data / EMR
+
+Kiểm tra đặc biệt các dữ liệu:
+
+- [ ] CCCD
+- [ ] BHYT
+- [ ] Patient Profile
+- [ ] Medical History
+- [ ] SOAP
+- [ ] Diagnosis
+- [ ] Prescription
+- [ ] Examination
+- [ ] AI Chat History
+
+Kiểm tra:
+
+- [ ] Patient chỉ xem được dữ liệu của chính mình
+- [ ] Doctor chỉ truy cập bệnh nhân được phép
+- [ ] Receptionist chỉ truy cập dữ liệu cần thiết
+- [ ] Admin có quyền đúng phạm vi
+- [ ] Không thể đổi patientId để xem bệnh nhân khác
+- [ ] Không trả dữ liệu nhạy cảm dư thừa trong API response
+- [ ] Không log dữ liệu bệnh nhân không cần thiết
+
+## 15. Gemini / Clinical AI
+
+- [ ] Gemini API Key chỉ tồn tại ở Backend
+- [ ] Không expose Gemini API Key cho React
+- [ ] Không expose Gemini API Key cho Flutter
+- [ ] Không commit Gemini API Key lên Git
+- [ ] Prompt Injection được xem xét
+- [ ] Có giới hạn input
+- [ ] Có giới hạn output/token
+- [ ] Có timeout
+- [ ] Có rate limit
+- [ ] Có xử lý Gemini API error
+- [ ] Không gửi dữ liệu bệnh nhân không cần thiết
+- [ ] AI Chat History được authorization
+- [ ] AI không được tự ý thực hiện hành động ngoài scope
+- [ ] Có giới hạn phạm vi câu hỏi của Clinical AI
+- [ ] Không lưu API Key vào log
+
+## 16. Dependency Security
+
+Kiểm tra:
+
+- [ ] npm packages
+- [ ] NuGet packages
+- [ ] Flutter packages
+- [ ] Docker images
+
+Tìm:
+
+- [ ] Critical CVE
+- [ ] High CVE
+- [ ] Outdated packages
+- [ ] Abandoned packages
+- [ ] Dependency bất thường
+- [ ] Package có security advisory
+
+## 17. Git / Secret Security
+
+Kiểm tra Git history:
+
+- [ ] Không có password
+- [ ] Không có JWT Secret
+- [ ] Không có Gemini API Key
+- [ ] Không có Cloudinary Secret
+- [ ] Không có Supabase Secret
+- [ ] Không có database password
+- [ ] Không có private key
+- [ ] .env nằm trong .gitignore
+- [ ] Không commit secret trước đây
+- [ ] Nếu secret từng commit thì phải đánh giá khả năng đã bị lộ và rotate secret
+
+## 18. VPS / Server
+
+- [ ] Firewall được bật
+- [ ] Chỉ mở port cần thiết
+- [ ] Không public SQL Server
+- [ ] Không public MongoDB
+- [ ] Không public microservices nội bộ
+- [ ] SSH được bảo vệ
+- [ ] Ưu tiên SSH key
+- [ ] Không cho root login trực tiếp nếu không cần
+- [ ] OS được cập nhật
+- [ ] Docker được cập nhật phù hợp
+- [ ] Có monitoring
+- [ ] Có disk monitoring
+- [ ] Có backup
+- [ ] Backup có thể restore
+- [ ] Có log rotation
+
+## 19. Production Configuration
+
+Kiểm tra:
+
+- [ ] ASP.NET Core chạy Production environment
+- [ ] Development mode không bật
+- [ ] Debug mode không bật
+- [ ] Swagger configuration phù hợp production
+- [ ] CORS production domain chính xác
+- [ ] Connection strings dùng secret/environment variable
+- [ ] JWT configuration dùng secret/environment variable
+- [ ] Gemini configuration dùng secret/environment variable
+- [ ] Không có test credentials
+- [ ] Không có mock/test API đang public
+
+## 20. Final Penetration Test Logic
+
+Hãy kiểm tra các tình huống:
+
+- [ ] Không login nhưng gọi API protected
+- [ ] Patient gọi Admin API
+- [ ] Patient xem patient khác
+- [ ] User sửa userId
+- [ ] User sửa patientId
+- [ ] User sửa role
+- [ ] User sửa JWT payload
+- [ ] Gửi token hết hạn
+- [ ] Gửi token giả
+- [ ] Brute-force login
+- [ ] SQL Injection
+- [ ] XSS
+- [ ] Upload file nguy hiểm
+- [ ] Truy cập database port từ Internet
+- [ ] Truy cập trực tiếp microservice từ Internet
+- [ ] Truy cập Swagger production
+- [ ] Thử truy cập file của user khác
+- [ ] Thử lấy secret từ frontend
+- [ ] Thử lấy Gemini API Key từ client
+
+# OUTPUT
+
+Không được tự ý sửa code trước khi báo cáo.
+
+Xuất kết quả theo:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+INFO
+
+Mỗi lỗi phải ghi:
+
+1. Tên vulnerability
+2. Severity
+3. File
+4. Class/Method
+5. Endpoint
+6. Dòng code nếu xác định được
+7. Evidence
+8. Tại sao nguy hiểm
+9. Cách fix đề xuất
+
+Cuối cùng đưa ra:
+
+PRODUCTION READY
+hoặc
+NOT PRODUCTION READY
+
+Nếu NOT PRODUCTION READY, liệt kê chính xác những lỗi bắt buộc phải sửa trước khi deploy.
+
+Nếu không thể kiểm tra một mục, ghi rõ:
+
+NOT VERIFIED
+
+Không được đánh dấu PASS nếu chưa thực sự kiểm tra.

@@ -22,6 +22,10 @@ import {
   CheckCircleOutlined,
   CameraOutlined,
   CalendarOutlined,
+  DownOutlined,
+  InfoCircleOutlined,
+  ReadOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { ElderlyModeWidget, ELDERLY_MODE_STORAGE_KEY } from './ElderlyModeWidget';
@@ -218,6 +222,51 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     },
   ];
 
+  const isInfoActive = [
+    '/gioi-thieu',
+    '/about',
+    '/huong-dan',
+    '/guide',
+    '/tin-tuc',
+    '/news',
+  ].includes(currentPath);
+
+  const infoDropdownItems = [
+    {
+      key: 'about',
+      icon: <InfoCircleOutlined style={{ color: '#0284c7', fontSize: 16 }} />,
+      label: (
+        <div style={{ padding: '2px 0' }}>
+          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>Giới thiệu bệnh viện</div>
+          <div style={{ fontSize: 11.5, color: '#64748b' }}>Đội ngũ y bác sĩ & sứ mệnh phục vụ</div>
+        </div>
+      ),
+      onClick: () => handleNavClick('/gioi-thieu'),
+    },
+    {
+      key: 'guide',
+      icon: <QuestionCircleOutlined style={{ color: '#0284c7', fontSize: 16 }} />,
+      label: (
+        <div style={{ padding: '2px 0' }}>
+          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>Hướng dẫn đi khám</div>
+          <div style={{ fontSize: 11.5, color: '#64748b' }}>Quy trình tiếp nhận, BHYT & chuẩn bị khám</div>
+        </div>
+      ),
+      onClick: () => handleNavClick('/huong-dan'),
+    },
+    {
+      key: 'news',
+      icon: <ReadOutlined style={{ color: '#0284c7', fontSize: 16 }} />,
+      label: (
+        <div style={{ padding: '2px 0' }}>
+          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>Tin tức & Y khoa</div>
+          <div style={{ fontSize: 11.5, color: '#64748b' }}>Kiến thức sức khỏe & hoạt động mới nhất</div>
+        </div>
+      ),
+      onClick: () => handleNavClick('/tin-tuc'),
+    },
+  ];
+
   return (
     <>
       {/* 1. Top Utility & Emergency Hotline Bar */}
@@ -272,26 +321,17 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
               alt="D-Medical Healthcare Connected"
               className="booking-brand-logo"
             />
-            <div
-              className="hide-on-mobile"
-              style={{
-                borderLeft: '1.5px solid #bae6fd',
-                paddingLeft: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-              }}
-            >
+            <div className="booking-brand-text hide-on-mobile">
               <div className="booking-brand-title">
                 Bệnh Viện Đa Khoa D-Medical
               </div>
               <div className="booking-brand-subtitle">
-                Cổng Đặt Lịch Khám & Chăm Sóc Người Bệnh
+                Cổng Chăm Sóc Sức Khỏe & Đặt Khám
               </div>
             </div>
           </div>
 
-          {/* Menu Điều Hướng Trung Tâm (Hoàn toàn bằng chữ, không lạm dụng icon, thanh lịch & rõ ràng) */}
+          {/* Menu Điều Hướng Trung Tâm Tinh Gọn */}
           <nav className="booking-nav-center hide-on-tablet-mobile">
             <span
               className={`booking-nav-link ${currentPath === '/' || currentPath === '/home' ? 'active' : ''}`}
@@ -305,13 +345,6 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
               onClick={() => handleNavClick('/booking')}
             >
               Đặt khám
-            </span>
-
-            <span
-              className={`booking-nav-link ${currentPath === '/gioi-thieu' || currentPath === '/about' ? 'active' : ''}`}
-              onClick={() => handleNavClick('/gioi-thieu')}
-            >
-              Giới thiệu
             </span>
 
             <span
@@ -335,36 +368,43 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
               Gói khám
             </span>
 
-            <span
-              className={`booking-nav-link ${currentPath === '/tin-tuc' || currentPath === '/news' ? 'active' : ''}`}
-              onClick={() => handleNavClick('/tin-tuc')}
+            <Dropdown
+              menu={{ items: infoDropdownItems }}
+              placement="bottom"
+              arrow={{ pointAtCenter: true }}
             >
-              Tin tức
-            </span>
-
-            <span
-              className={`booking-nav-link ${currentPath === '/huong-dan' || currentPath === '/guide' ? 'active' : ''}`}
-              onClick={() => handleNavClick('/huong-dan')}
-            >
-              Hướng dẫn
-            </span>
+              <span
+                className={`booking-nav-link ${isInfoActive ? 'active' : ''}`}
+                style={{ cursor: 'pointer' }}
+              >
+                Thông tin <DownOutlined style={{ fontSize: 11, marginLeft: 4 }} />
+              </span>
+            </Dropdown>
           </nav>
 
           {/* User Account / Auth Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {user ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Button
-                  icon={<CalendarOutlined style={{ color: '#0284c7' }} />}
+                  icon={<CalendarOutlined style={{ color: '#0284c7', fontSize: 15 }} />}
                   onClick={() => {
                     if (onOpenLookup) onOpenLookup();
                     else navigate('/booking?lookup=open');
                   }}
-                  style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600, backgroundColor: '#ffffff' }}
+                  style={{
+                    borderColor: '#bae6fd',
+                    color: '#0369a1',
+                    fontWeight: 600,
+                    backgroundColor: '#ffffff',
+                    height: 40,
+                    borderRadius: 10,
+                    fontSize: 14,
+                    padding: '0 16px',
+                  }}
                   className="compact-btn-on-mobile"
                 >
-                  <span className="hide-on-mobile">Lịch khám của tôi</span>
-                  <span className="show-on-mobile">Lịch khám</span>
+                  Lịch khám của tôi
                 </Button>
                 <Dropdown
                   menu={{ items: patientDropdownItems }}
@@ -392,22 +432,38 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                 </Dropdown>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Button
-                  icon={<SearchOutlined />}
+                  icon={<SearchOutlined style={{ fontSize: 14 }} />}
                   onClick={() => {
                     if (onOpenLookup) onOpenLookup();
                     else navigate('/booking?lookup=open');
                   }}
-                  style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600 }}
+                  style={{
+                    borderColor: '#bae6fd',
+                    color: '#0369a1',
+                    fontWeight: 600,
+                    height: 40,
+                    borderRadius: 10,
+                    fontSize: 14,
+                    padding: '0 16px',
+                  }}
                   className="compact-btn-on-mobile"
                 >
-                  Tra cứu <span className="hide-on-mobile">lịch hẹn &</span> QR
+                  Tra cứu lịch hẹn
                 </Button>
                 <Button
                   type="primary"
-                  icon={<LoginOutlined />}
-                  style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
+                  icon={<LoginOutlined style={{ fontSize: 14 }} />}
+                  style={{
+                    backgroundColor: '#0284c7',
+                    borderColor: '#0284c7',
+                    fontWeight: 600,
+                    height: 40,
+                    borderRadius: 10,
+                    fontSize: 14,
+                    padding: '0 18px',
+                  }}
                   onClick={() => navigate('/login?redirect=' + encodeURIComponent(currentPath))}
                   className="compact-btn-on-mobile"
                 >

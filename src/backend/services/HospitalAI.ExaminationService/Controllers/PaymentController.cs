@@ -24,11 +24,45 @@ namespace HospitalAI.ExaminationService.Controllers
 
         [HttpPost("create-payment-url")]
         [Authorize]
-        public IActionResult CreatePaymentUrl([FromBody] PaymentInformationModel model)
+        public async Task<IActionResult> CreatePaymentUrl([FromBody] PaymentInformationModel model)
         {
+            if (!Guid.TryParse(model.OrderId, out Guid billingId))
+            {
+                return BadRequest(new { message = "Mã hóa đơn thanh toán không hợp lệ." });
+            }
+
+            var billing = await _dbContext.Billings
+                .Include(b => b.Patient)
+                .FirstOrDefaultAsync(b => b.Id == billingId);
+
+            if (billing == null)
+            {
+                return NotFound(new { message = "Không tìm thấy hóa đơn viện phí cần thanh toán." });
+            }
+
+            if (billing.Status == "Paid")
+            {
+                return BadRequest(new { message = "Hóa đơn viện phí này đã được thanh toán trước đó." });
+            }
+
+            // IDOR Protection: Bệnh nhân chỉ được thanh toán hóa đơn của chính mình
+            var isStaff = User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") || User.IsInRole("Nurse");
+            if (!isStaff)
+            {
+                var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (billing.Patient == null || !billing.Patient.UserId.HasValue || billing.Patient.UserId.Value.ToString() != currentUserId)
+                {
+                    return Forbid();
+                }
+            }
+
+            // Ghi đè số tiền và nội dung bằng dữ liệu thực tế từ CSDL (Chống Price Tampering)
+            model.Amount = (double)billing.TotalAmount;
+            model.OrderDescription = $"Thanh toan vien phi {billing.Id.ToString().Substring(0, 8).ToUpper()}";
+
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
             var url = _paymentService.CreatePaymentUrl(model, ipAddress);
-            return Ok(new { Url = url });
+            return Ok(new { Url = url, Amount = billing.TotalAmount });
         }
 
         [HttpGet("vnpay-return")]
@@ -38,11 +72,18 @@ namespace HospitalAI.ExaminationService.Controllers
             var response = _paymentService.ValidateSignature(dict);
             if (!response)
             {
-                return BadRequest(new { Message = "Chữ ký không hợp lệ" });
+                return BadRequest(new { Message = "Chữ ký số VNPay không hợp lệ hoặc đã bị can thiệp" });
             }
 
             var vnp_ResponseCode = Request.Query["vnp_ResponseCode"].ToString();
             var vnp_TxnRef = Request.Query["vnp_TxnRef"].ToString();
+
+            if (!long.TryParse(Request.Query["vnp_Amount"], out long rawPaidAmount))
+            {
+                return BadRequest(new { Message = "Số tiền thanh toán phản hồi không hợp lệ" });
+            }
+
+            var actualPaidAmount = rawPaidAmount / 100;
 
             if (vnp_ResponseCode == "00")
             {
@@ -52,14 +93,30 @@ namespace HospitalAI.ExaminationService.Controllers
                         .Include(b => b.Items)
                         .FirstOrDefaultAsync(b => b.Id == billingId);
 
-                    if (billing != null && billing.Status != "Paid")
+                    if (billing == null)
+                    {
+                        return NotFound(new { Message = "Không tìm thấy hóa đơn tương ứng với giao dịch" });
+                    }
+
+                    // Chống gian lận số tiền thanh toán (Payment Amount Verification)
+                    if (actualPaidAmount < (long)billing.TotalAmount)
+                    {
+                        return BadRequest(new
+                        {
+                            Message = "Cảnh báo gian lận: Số tiền thực trả thấp hơn tổng tiền hóa đơn!",
+                            PaidAmount = actualPaidAmount,
+                            RequiredAmount = billing.TotalAmount
+                        });
+                    }
+
+                    if (billing.Status != "Paid")
                     {
                         billing.Status = "Paid";
                         billing.PaidAt = DateTime.UtcNow;
                         billing.PaymentMethod = "VNPay";
                         billing.TransactionRef = vnp_TxnRef;
 
-                        // Logic update according to billing type
+                        // Cập nhật trạng thái phiếu chỉ định cận lâm sàng nếu có
                         if (billing.BillingType == "ServiceOrder")
                         {
                             var item = billing.Items.FirstOrDefault();
@@ -69,20 +126,15 @@ namespace HospitalAI.ExaminationService.Controllers
                                 if (serviceOrder != null) serviceOrder.Status = "Paid";
                             }
                         }
-                        else if (billing.BillingType == "Registration")
-                        {
-                            // Could update QueueTicket status or something else if needed
-                        }
 
                         await _dbContext.SaveChangesAsync();
                     }
                 }
                 
-                // Return custom page or redirect to mobile app deep link
                 return Ok(new { Message = "Thanh toán thành công", OrderId = vnp_TxnRef, Success = true });
             }
             
-            return BadRequest(new { Message = "Thanh toán thất bại hoặc bị hủy", Success = false });
+            return BadRequest(new { Message = "Thanh toán thất bại hoặc bị hủy bởi người dùng", Success = false });
         }
     }
 }

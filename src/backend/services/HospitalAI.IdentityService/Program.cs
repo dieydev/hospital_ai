@@ -1,5 +1,6 @@
 using HospitalAI.Application.Interfaces;
 using HospitalAI.Infrastructure.Data;
+using HospitalAI.Infrastructure.Middlewares;
 using HospitalAI.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Timeouts;
@@ -142,6 +143,8 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Lỗi xảy ra khi khởi tạo Database & Seed Data.");
     }
 }
+
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

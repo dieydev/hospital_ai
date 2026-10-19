@@ -1067,24 +1067,28 @@ export const PatientHomePage: React.FC = () => {
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
                   <div className="carousel-preview-card">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0369a1' }}>
-                        Gói khám chuyên khoa tim mạch
-                      </span>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0369a1' }}>
+                          Gói khám chuyên khoa tim mạch
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '2px 0 4px' }}>
+                        <span style={{ fontSize: 22, fontWeight: 800, color: '#0284c7' }}>
+                          2.450.000 đ
+                        </span>
+                        <span style={{ fontSize: 12, color: '#64748b', textDecoration: 'line-through' }}>
+                          3.500.000 đ
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#0284c7', margin: '6px 0' }}>
-                      2.450.000 đ
-                    </div>
-                    <div style={{ fontSize: 13, color: '#64748b', textDecoration: 'line-through' }}>
-                      3.500.000 đ (Giá niêm yết)
-                    </div>
-                    <div style={{ fontSize: 13, color: '#334155', marginTop: 12, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.55 }}>
                       • Xét nghiệm đường huyết & mỡ máu toàn phần<br />
                       • Đo điện tâm đồ ECG kỹ thuật số 12 chuyển đạo<br />
                       • Bác sĩ CKII tư vấn phác đồ dự phòng cá nhân
                     </div>
-                    <div style={{ marginTop: 12, fontSize: 12.5, color: '#0369a1', fontWeight: 600 }}>
-                      Mã ưu đãi trực tuyến: STROKE2026
+                    <div style={{ fontSize: 11.5, color: '#0369a1', fontWeight: 600 }}>
+                      Mã ưu đãi trực tuyến: <strong>STROKE2026</strong>
                     </div>
                   </div>
                 </Col>
@@ -1133,18 +1137,18 @@ export const PatientHomePage: React.FC = () => {
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
                   <div className="carousel-preview-card">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0369a1' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0369a1' }}>
                         Phiếu tiếp nhận điện tử
                       </span>
-                      <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Mã QR số</span>
+                      <Tag color="green" style={{ margin: 0, fontSize: 10, fontWeight: 600 }}>Mã QR số</Tag>
                     </div>
-                    <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                      <div style={{ display: 'inline-block', padding: 8, background: '#fff', borderRadius: 12, border: '1px solid #bae6fd' }}>
-                        <QRCodeSVG value="MEDQR|SAMPLE|BHYT|2026" size={110} level="M" fgColor="#0369a1" />
+                    <div style={{ textAlign: 'center', padding: '2px 0' }}>
+                      <div style={{ display: 'inline-block', padding: 6, background: '#fff', borderRadius: 10, border: '1px solid #bae6fd' }}>
+                        <QRCodeSVG value="MEDQR|SAMPLE|BHYT|2026" size={96} level="M" fgColor="#0369a1" />
                       </div>
                     </div>
-                    <div style={{ fontSize: 13, color: '#334155', textAlign: 'center', marginTop: 6 }}>
+                    <div style={{ fontSize: 12, color: '#334155', textAlign: 'center' }}>
                       Quét mã tại Kiosk Sảnh A để nhận số buồng khám thẳng
                     </div>
                   </div>
@@ -1193,19 +1197,21 @@ export const PatientHomePage: React.FC = () => {
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
                   <div className="carousel-preview-card">
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>
-                      Dành cho doanh nghiệp
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0369a1', marginBottom: 2 }}>
+                        Dành cho doanh nghiệp
+                      </div>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
+                        Chính sách ưu đãi đoàn từ 20 người
+                      </div>
                     </div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
-                      Chính sách ưu đãi đoàn từ 20 người
-                    </div>
-                    <div style={{ fontSize: 13, color: '#334155', marginTop: 10, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.55 }}>
                       • Chiết khấu trực tiếp theo quy mô nhân sự<br />
                       • Tặng gói siêu âm tuyến giáp và ổ bụng<br />
                       • Miễn phí khám chuyên khoa Mắt và Răng
                     </div>
-                    <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 10 }}>
-                      Liên hệ đối ngoại: <strong>1900 6868</strong>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>
+                      Liên hệ đối ngoại: <strong style={{ color: '#0369a1' }}>1900 6868</strong>
                     </div>
                   </div>
                 </Col>
@@ -1253,16 +1259,18 @@ export const PatientHomePage: React.FC = () => {
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
                   <div className="carousel-preview-card">
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>
-                      Trung tâm nội soi tiêu hóa
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0369a1', marginBottom: 2 }}>
+                        Trung tâm nội soi tiêu hóa
+                      </div>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
+                        Công nghệ dải tần ánh sáng hẹp NBI
+                      </div>
                     </div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
-                      Công nghệ dải tần ánh sáng hẹp NBI
-                    </div>
-                    <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginTop: 8 }}>
+                    <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.55 }}>
                       Quan sát chi tiết cấu trúc vi mạch máu và vi bề mặt niêm mạc, hỗ trợ chẩn đoán chính xác tổn thương ung thư đường tiêu hóa sớm.
                     </div>
-                    <div style={{ fontSize: 12.5, color: '#0369a1', marginTop: 10, fontWeight: 600 }}>
+                    <div style={{ fontSize: 12, color: '#0369a1', fontWeight: 600 }}>
                       Xuất viện trong ngày sau khi thực hiện
                     </div>
                   </div>
@@ -1311,18 +1319,20 @@ export const PatientHomePage: React.FC = () => {
                 </Col>
                 <Col xs={0} md={9} className="carousel-slide-visual">
                   <div className="carousel-preview-card">
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>
-                      Hồ sơ sức khỏe số EMR
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0369a1', marginBottom: 2 }}>
+                        Hồ sơ sức khỏe số EMR
+                      </div>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
+                        Bảo vệ an toàn dùng thuốc
+                      </div>
                     </div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
-                      Bảo vệ an toàn dùng thuốc
-                    </div>
-                    <div style={{ fontSize: 13, color: '#334155', marginTop: 8, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.55 }}>
                       Tự động đối chiếu đơn thuốc, kiểm tra liều lượng và cảnh báo tương tác thuốc theo danh mục Dược thư Quốc gia.
                     </div>
-                    <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                      <Tag color="cyan" style={{ fontWeight: 600 }}>Dữ liệu số hóa</Tag>
-                      <Tag color="blue" style={{ fontWeight: 600 }}>Bảo mật chuẩn y tế</Tag>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <Tag color="cyan" style={{ fontWeight: 600, fontSize: 11, margin: 0 }}>Dữ liệu số hóa</Tag>
+                      <Tag color="blue" style={{ fontWeight: 600, fontSize: 11, margin: 0 }}>Bảo mật chuẩn y tế</Tag>
                     </div>
                   </div>
                 </Col>

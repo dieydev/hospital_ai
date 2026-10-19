@@ -1,5 +1,6 @@
 using HospitalAI.Application.Interfaces;
 using HospitalAI.Infrastructure.Data;
+using HospitalAI.Infrastructure.Middlewares;
 using HospitalAI.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Timeouts;
@@ -26,6 +27,7 @@ builder.Services.AddRequestTimeouts(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? new[] { "http://localhost:5173", "http://localhost:3000", "http://localhost:5000" };
@@ -111,6 +113,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

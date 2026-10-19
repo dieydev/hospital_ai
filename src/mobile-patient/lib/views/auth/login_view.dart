@@ -78,16 +78,14 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
 
   Future<void> _loadSavedCredentials() async {
     final savedUsername = await _storage.read(key: 'saved_username');
-    final savedPassword = await _storage.read(key: 'saved_password');
-    if (savedUsername != null &&
-        savedPassword != null &&
-        (widget.prefillPhone == null)) {
+    if (savedUsername != null && (widget.prefillPhone == null)) {
       setState(() {
         _usernameController.text = savedUsername;
-        _passwordController.text = savedPassword;
         _rememberMe = true;
       });
     }
+    // Clean up any legacy saved plaintext password from earlier builds
+    await _storage.delete(key: 'saved_password');
   }
 
   Future<void> _checkBiometricAvailability() async {
@@ -143,12 +141,10 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
       if (_rememberMe) {
         await _storage.write(
             key: 'saved_username', value: _usernameController.text.trim());
-        await _storage.write(
-            key: 'saved_password', value: _passwordController.text);
       } else {
         await _storage.delete(key: 'saved_username');
-        await _storage.delete(key: 'saved_password');
       }
+      await _storage.delete(key: 'saved_password');
       if (!mounted) return;
       final auth = context.read<AuthProvider>();
       await auth.login(

@@ -131,6 +131,19 @@ public class QueueService : IQueueService
         return MapToDto(nextTicket);
     }
 
+    private static string MaskString(string? input, int showStart = 3, int showEnd = 3)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        var trimmed = input.Trim();
+        if (trimmed.Length <= showStart + showEnd)
+        {
+            return new string('*', trimmed.Length);
+        }
+        var start = trimmed.Substring(0, showStart);
+        var end = trimmed.Substring(trimmed.Length - showEnd);
+        return $"{start}{new string('*', trimmed.Length - showStart - showEnd)}{end}";
+    }
+
     private static QueueTicketDto MapToDto(QueueTicket q)
     {
         var age = 0;
@@ -147,8 +160,8 @@ public class QueueService : IQueueService
             PatientName = q.Patient?.FullName ?? string.Empty,
             PatientGender = q.Patient?.Gender ?? string.Empty,
             PatientAge = age,
-            IdentityCardNumber = q.Patient?.IdentityCardNumber ?? string.Empty,
-            HealthInsuranceNumber = q.Patient?.HealthInsuranceNumber,
+            IdentityCardNumber = MaskString(q.Patient?.IdentityCardNumber, 3, 3),
+            HealthInsuranceNumber = string.IsNullOrWhiteSpace(q.Patient?.HealthInsuranceNumber) ? null : MaskString(q.Patient?.HealthInsuranceNumber, 2, 3),
             DepartmentId = q.DepartmentId,
             DepartmentName = q.Department?.DepartmentName ?? string.Empty,
             Location = q.Department?.Location ?? string.Empty,

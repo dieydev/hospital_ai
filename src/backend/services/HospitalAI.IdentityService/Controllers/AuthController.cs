@@ -2,6 +2,7 @@ using HospitalAI.Application.DTOs;
 using HospitalAI.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -9,6 +10,7 @@ namespace HospitalAI.IdentityService.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting("auth-limit")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

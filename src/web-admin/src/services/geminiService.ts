@@ -1,9 +1,6 @@
-import axios from 'axios';
 import { sanitizeMedicalPromptForAI, SanitizationOptions } from '../utils/aiPrivacySanitizer';
 import { useAuthStore } from '../store/useAuthStore';
 import api from './api';
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // Multi-Model Cascade Array for High Reliability & Zero Downtime
 export const GEMINI_MODELS_CASCADE = [
@@ -177,72 +174,24 @@ QUY TẮC BẢO MẬT & ĐỊNH DANH BẮT BUỘC:
       systemPrompt += `\n\n${RAG_EMR_CONTEXT_DATABASE}\nDựa vào Dữ liệu CSDL EMR Y tế được cung cấp ở trên (đã bảo mật danh tính), hãy tổng hợp và tóm tắt chi tiết hồ sơ bệnh án theo đúng nội dung yêu cầu của Bác sĩ.`;
     }
 
-    let lastError: any = null;
+    // Step 2: Call Secure Backend Clinical AI Proxy (Zero Secret Leakage)
+    try {
+      const response = await api.post('/ai/ask', {
+        prompt: sanitizedPrompt,
+        systemPrompt,
+        actionType: 'CHAT_ASSISTANT',
+      });
 
-    // Step 2: Multi-Model Cascade Loop (with valid API Key check)
-    if (GEMINI_API_KEY && GEMINI_API_KEY.startsWith('AIzaSy')) {
-      for (const modelName of GEMINI_MODELS_CASCADE) {
-        try {
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
-          const response = await axios.post(
-            endpoint,
-            {
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: `${systemPrompt}\n\n[Yêu cầu từ Bác sĩ/Nhân viên y tế]: ${sanitizedPrompt}`,
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              timeout: 12000,
-            }
-          );
-
-          const candidates = response.data?.candidates;
-          if (candidates && candidates.length > 0) {
-            const textParts = candidates[0]?.content?.parts || [];
-            const rawText = textParts.map((p: any) => p.text).join('\n');
-            const endTime = Date.now();
-            const latencyMs = endTime - startTime;
-            const sources = ['Hospital AI Clinical Engine', 'Bộ Y Tế Việt Nam & ICD-10 Standards'];
-
-            await this.saveAILogToMongo({
-              timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-              userRole: docInfo.userRole,
-              doctorName: docInfo.doctorName,
-              actionType: 'CHAT_ASSISTANT',
-              modelUsed: modelName,
-              promptText: sanitizedPrompt,
-              responseText: rawText.substring(0, 300) + (rawText.length > 300 ? '...' : ''),
-              latencyMs,
-              piiRedacted: sanitization.piiRedactedCount > 0,
-              redactedCategories: sanitization.redactedCategories,
-              sources,
-              status: 'SUCCESS',
-            });
-
-            return {
-              text: rawText,
-              sources,
-              modelUsed: modelName,
-              piiSanitized: sanitization.piiRedactedCount > 0,
-            };
-          }
-        } catch (err: any) {
-          lastError = err;
-          console.warn(`Model ${modelName} error or rate limited:`, err?.response?.status || err.message);
-        }
+      if (response.data && response.data.success) {
+        return {
+          text: response.data.text,
+          sources: response.data.sources || ['Hospital AI Clinical Engine (Backend Secured)'],
+          modelUsed: response.data.modelUsed,
+          piiSanitized: sanitization.piiRedactedCount > 0,
+        };
       }
-      if (lastError) {
-        console.warn('All Gemini models cascade failed, last error was:', lastError?.message || lastError);
-      }
+    } catch (err: any) {
+      console.warn('Backend Clinical AI proxy error, activating local decision engine:', err?.response?.data || err.message);
     }
 
     // Step 3: Offline / Intranet Clinical Medical Decision Engine Fallback
