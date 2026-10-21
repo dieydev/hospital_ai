@@ -87,7 +87,7 @@ export const HOSPITAL_VIDEOS: HospitalVideoItem[] = [
     category: 'Cơ sở vật chất',
     resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&auto=format&fit=crop&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: '/videos/hospital_tour.mp4',
     tag: 'Cơ sở vật chất',
     badgeColor: '#0284c7',
   },
@@ -99,7 +99,7 @@ export const HOSPITAL_VIDEOS: HospitalVideoItem[] = [
     category: 'Hướng dẫn người bệnh',
     resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    videoUrl: '/videos/kiosk_checkin.mp4',
     tag: 'Tiếp nhận thông minh',
     badgeColor: '#059669',
   },
@@ -111,7 +111,7 @@ export const HOSPITAL_VIDEOS: HospitalVideoItem[] = [
     category: 'Công nghệ y khoa',
     resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    videoUrl: '/videos/ai_diagnosis.mp4',
     tag: 'Công nghệ chẩn đoán',
     badgeColor: '#0369a1',
   },
@@ -123,7 +123,7 @@ export const HOSPITAL_VIDEOS: HospitalVideoItem[] = [
     category: 'Tư vấn sức khỏe',
     resolution: 'Full HD 1080p',
     thumbnail: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800&auto=format&fit=crop&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    videoUrl: '/videos/doctor_consultation.mp4',
     tag: 'Tư vấn chuyên gia',
     badgeColor: '#0284c7',
   },
@@ -179,6 +179,7 @@ export const PatientHomePage: React.FC = () => {
     if (mainVideoRef.current) {
       mainVideoRef.current.pause();
       mainVideoRef.current.currentTime = 0;
+      mainVideoRef.current.load();
     }
   };
 
@@ -1424,8 +1425,10 @@ export const PatientHomePage: React.FC = () => {
                   poster={currentVideo.thumbnail}
                   controls={isPlayingInline}
                   playsInline
+                  preload="metadata"
                   onPlay={() => setIsPlayingInline(true)}
                   onPause={() => setIsPlayingInline(false)}
+                  onEnded={() => setIsPlayingInline(false)}
                 />
 
                 {/* Custom Overlay when not playing */}

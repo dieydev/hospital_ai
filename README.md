@@ -32,7 +32,7 @@
 > - **Đề tài:** Hệ thống Quản lý Quá trình Khám chữa bệnh & Hồ sơ Bệnh án Điện tử (EMR) Tích hợp Trí tuệ Nhân tạo (Clinical AI) cho Bệnh viện Đa khoa Quốc tế D-Medical
 > - **Sinh viên thực hiện:** Nguyễn Thành Duy (Mã đề tài: 15)
 > - **Thời điểm cập nhật:** Tháng 10/2026
-> - **Đánh giá tổng quan:** **Hoàn thành ~98% khối lượng công việc** *(Phần mềm hoàn tất 100%, Quyển báo cáo Word đạt ~88%)*
+> - **Đánh giá tổng quan:** **Hoàn thành ~99% khối lượng công việc** *(Phần mềm hoàn tất 100%, Kiểm thử hệ thống QA 100% [35/35 Test Cases PASS], Quyển báo cáo Word đạt ~92%)*
 
 ---
 
@@ -45,11 +45,12 @@
 | **1** | **Khảo sát quy trình y tế & Thiết kế CSDL** | **100%** | 🟢 Hoàn thành | Đã chuẩn hóa SQL Server 2022 (`docs/HospitalAI_DB.sql`) + MongoDB 7.0 (Audit log). |
 | **2** | **Kiến trúc Backend Microservices** | **100%** | 🟢 Hoàn thành | .NET 9, Clean Architecture, CQRS, Docker Compose 7 containers độc lập. |
 | **3** | **API Gateway & Bảo mật dữ liệu y tế** | **100%** | 🟢 Hoàn thành | .NET 9 YARP Reverse Proxy, Rate Limiting, JWT Bearer Token, chuẩn bảo mật HIPAA/PII. |
-| **4** | **Web Admin Portal (D-Medical)** | **100%** | 🟢 Hoàn thành | React 18 + Vite + TS + Ant Design 5 (Hoàn thiện đầy đủ 13 màn hình nghiệp vụ). |
+| **4** | **Web Admin Portal & Patient Portal** | **100%** | 🟢 Hoàn thành | React 18 + Vite + TS + Ant Design 5 (Hoàn thiện 14 màn hình nghiệp vụ + Cổng bệnh nhân & Video nội bộ). |
 | **5** | **Mobile Patient App (Flutter)** | **100%** | 🟢 Hoàn thành | Flutter 3 (Bốc số, Hàng chờ, EMR, Viện phí VNPay/VietQR, Sinh hiệu, Nhắc thuốc). |
 | **6** | **Tích hợp Trợ lý Y tế AI (Clinical AI)** | **100%** | 🟢 Hoàn thành | Google Gemini Pro/Flash + Clinical Decision Rule Engine (ICD-10, tương tác thuốc). |
 | **7** | **Thanh toán Viện phí Đa kênh** | **100%** | 🟢 Hoàn thành | Tích hợp cổng VNPay Sandbox & VietQR tự động, trừ giảm BHYT 80%. |
-| **8** | **Quyển Báo cáo Đồ án Tốt nghiệp (Word)** | **88%** | 🟡 Đang hoàn thiện | Đã hoàn thành cấu trúc các chương (`docs/15_NguyenThanhDuy.docx`), đang cập nhật ảnh chụp các luồng mới. |
+| **8** | **Bẫy lỗi Toàn diện & Kiểm thử Hệ thống (QA)** | **100%** | 🟢 Hoàn thành | Bọc ErrorBoundary chống sập React, 404 NotFound, Interceptors bẫy mạng/timeout/500, 35/35 Test Cases PASS. |
+| **9** | **Quyển Báo cáo Đồ án Tốt nghiệp (Word)** | **92%** | 🟡 Giai đoạn cuối | Đã hoàn thành cấu trúc các chương (`docs/15_NguyenThanhDuy.docx`), đang tổng hợp phụ lục biên bản kiểm thử QA. |
 
 #### 🚀 Chi Tiết Sản Phẩm & Tính Năng Đã Hoàn Thiện:
 
@@ -63,9 +64,15 @@
    - **`hospitalai-examination-service` (Port 5004):** Thăm khám lâm sàng chuẩn SOAP, gợi ý mã bệnh ICD-10, kê đơn thuốc điện tử, tính viện phí.
    - **`hospitalai-web-admin` (Port 3000):** Đóng gói Nginx chạy ứng dụng quản trị Web.
 
-2. **Web Admin Portal (React 18 + TypeScript + Ant Design 5):**
-   - Tuân thủ bộ màu chuẩn y tế số (`#0284c7`, `#0369a1`).
-   - Đầy đủ 13 màn hình nghiệp vụ: **Dashboard** biểu đồ thời gian thực, **Tiếp nhận & Cấp số** in phiếu QR, **Phòng khám SOAP** (nhập sinh hiệu, chẩn đoán ICD-10, kê đơn có cảnh báo tương tác thuốc), **Bệnh án điện tử EMR** (xuất tóm tắt PDF), **Quản lý lịch hẹn**, **Thanh toán Viện phí** (VietQR, VNPay, BHYT 80%), **Trợ lý AI Y tế lâm sàng**, **Quản lý danh mục & Nhật ký hệ thống**.
+2. **Web Admin Portal & Cổng Y Tế Bệnh Nhân (React 18 + TypeScript + Ant Design 5):**
+   - Tuân thủ bộ màu chuẩn y tế số (`#0284c7`, `#0369a1`) và chế độ Dark/Light mode tự động thích ứng.
+   - **Cổng Bệnh nhân Trực tuyến (Public Patient Portal):** Trang chủ truyền thông y tế, Carousel 14 tiện ích Medpro, Trình phát Video giới thiệu cơ sở vật chất & quy trình tiếp đón Kiosk QR chuẩn Full HD (lưu trữ nội bộ `/videos/...`, offline-ready).
+   - **14 Màn hình Quản trị Nghiệp vụ chuyên sâu:** **Dashboard** biểu đồ thời gian thực, **Tiếp nhận & Cấp số** in phiếu QR, **Phòng khám SOAP** (nhập sinh hiệu, chẩn đoán ICD-10, kê đơn có cảnh báo tương tác thuốc Dược thư Quốc gia), **Bệnh án điện tử EMR** (PACS/DICOM viewer, xuất tóm tắt PDF), **Quản lý lịch hẹn**, **Thanh toán Viện phí** (VietQR, VNPay, BHYT 80%), **Trợ lý AI Y tế lâm sàng**, **Quản lý danh mục & Nhật ký hệ thống**.
+   - **Kiến trúc Bẫy lỗi Đa tầng (Resilient Fault Tolerance):**
+     - Bọc `ErrorBoundary` toàn cục ngăn chặn hoàn toàn lỗi sập màn hình trắng (White Screen of Death), tích hợp Debug log accordion.
+     - Định tuyến an toàn trang `NotFoundPage` (404) chuẩn nhận diện y tế.
+     - Axios Response Interceptors tự động bắt lỗi mất mạng, timeout > 15s, hết hạn phiên (401), phân quyền (403) và lỗi máy chủ nội bộ (500).
+   - **Kiểm thử Phần mềm:** Đạt tỷ lệ 100% PASS trên toàn bộ 35 Test Cases chức năng & phi chức năng.
 
 3. **Mobile Patient App (Flutter 3):**
    - **Onboarding & Khảo sát thông minh:** Phân luồng Bệnh nhân cũ (đồng bộ EMR theo CCCD) và Bệnh nhân mới (cấp mã BN).
