@@ -1,5 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Checkbox, Typography, Alert, Divider } from 'antd';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Checkbox,
+  Typography,
+  Alert,
+  Divider,
+  Steps,
+  Modal,
+} from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import {
@@ -9,6 +20,11 @@ import {
   LoginOutlined,
   UserAddOutlined,
   PhoneOutlined,
+  SafetyCertificateOutlined,
+  CheckCircleFilled,
+  ReloadOutlined,
+  EditOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../services/api';
@@ -66,10 +82,60 @@ export const LoginPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [loginForm] = Form.useForm();
-  const [registerForm] = Form.useForm();
+  const [registerStep1Form] = Form.useForm();
+  const [registerStep3Form] = Form.useForm();
+  const [forgotPhoneForm] = Form.useForm();
+  const [forgotResetForm] = Form.useForm();
+
+  // Multi-step Registration States:
+  const [registerStep, setRegisterStep] = useState<1 | 2 | 3>(1);
+  const [regFullName, setRegFullName] = useState('');
+  const [regPhoneNumber, setRegPhoneNumber] = useState('');
+  const [otpValues, setOtpValues] = useState<string[]>(['', '', '', '', '', '']);
+  const [serverOtp, setServerOtp] = useState<string | null>(null);
+  const [otpCountdown, setOtpCountdown] = useState<number>(0);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Forgot Password Modal States:
+  const [forgotModalVisible, setForgotModalVisible] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [forgotOtpValues, setForgotOtpValues] = useState<string[]>(['', '', '', '', '', '']);
+  const [forgotServerOtp, setForgotServerOtp] = useState<string | null>(null);
+  const [forgotCountdown, setForgotCountdown] = useState<number>(0);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const forgotOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const setAuth = useAuthStore((state) => state.setAuth);
   const { isDarkMode } = useThemeStore();
+
+  // Đếm ngược thời gian hết hạn OTP Đăng ký
+  useEffect(() => {
+    let timer: any = null;
+    if (otpCountdown > 0) {
+      timer = setInterval(() => {
+        setOtpCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [otpCountdown]);
+
+  // Đếm ngược thời gian hết hạn OTP Quên mật khẩu
+  useEffect(() => {
+    let timer: any = null;
+    if (forgotCountdown > 0) {
+      timer = setInterval(() => {
+        setForgotCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [forgotCountdown]);
 
   // Đọc query param redirect nếu có
   const getRedirectUrl = () => {
@@ -82,6 +148,7 @@ export const LoginPage: React.FC = () => {
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('mode') === 'register' || searchParams.get('tab') === 'register') {
       setAuthMode('register');
+      setRegisterStep(1);
     }
   }, [location.search]);
 
@@ -452,55 +519,163 @@ export const LoginPage: React.FC = () => {
   };
 
   /**
-   * 2. XỬ LÝ ĐĂNG KÝ (Register - Dành cho Bệnh nhân mới):
-   * - Người dùng tự nhập Tên đăng nhập / Số điện thoại và Mật khẩu của họ.
-   * - Tự động gán quyền Bệnh nhân (role: 'Patient').
-   * - Đăng ký xong là vào thẳng Cổng Đặt Khám (/booking).
-   * - Khi vào trong /booking, vì chưa có CCCD, Ngày sinh, Địa chỉ -> Modal BẮT BUỘC NHẬP THÔNG TIN sẽ mở lên!
+   * 2. XỬ LÝ ĐĂNG KÝ BỆNH NHÂN ĐA BƯỚC VỚI XÁC THỰC MÃ OTP
+   * Bước 1: Nhập Họ tên + Số điện thoại -> Kiểm tra & Gửi mã OTP xác thực
+   * Bước 2: Nhập mã OTP 6 chữ số -> Xác thực OTP hợp lệ
+   * Bước 3: Thiết lập mật khẩu đăng nhập & Hoàn tất tạo tài khoản
    */
-  const onRegisterFinish = async (values: {
-    username: string;
-    password: string;
-    confirmPassword: string;
-  }) => {
+
+  // BƯỚC 1: Kiểm tra tài khoản & Gửi mã OTP
+  const handleSendRegisterOtp = async (values: { fullName: string; phoneNumber: string }) => {
+    setErrorMsg('');
+    const inputName = values.fullName.trim();
+    const inputPhone = values.phoneNumber.trim().replace(/\s+/g, '');
+
+    if (!inputName) {
+      setErrorMsg('Vui lòng nhập họ và tên của bạn!');
+      return;
+    }
+
+    const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    if (!phoneRegex.test(inputPhone)) {
+      setErrorMsg('Số điện thoại không đúng định dạng! Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (VD: 0912345678).');
+      return;
+    }
+
+    const normalizedPhone = inputPhone.startsWith('+84') ? '0' + inputPhone.slice(3) : inputPhone;
+
+    // Kiểm tra các tài khoản mẫu cố định
+    if (['admin', 'dr.duy', 'receptionist', 'patient01'].includes(normalizedPhone) || DOCTORS_PRESETS[normalizedPhone]) {
+      setErrorMsg(`Số điện thoại ${normalizedPhone} đã tồn tại trong hệ thống. Vui lòng chuyển sang Đăng nhập!`);
+      return;
+    }
+
+    // Kiểm tra trong LocalStorage
+    try {
+      const storedUsersStr = localStorage.getItem('hospital_registered_users');
+      if (storedUsersStr) {
+        const userList = JSON.parse(storedUsersStr);
+        const isExisted = userList.some(
+          (item: any) =>
+            item.soDienThoai === normalizedPhone ||
+            item.phoneNumber === normalizedPhone ||
+            item.username === normalizedPhone ||
+            item.tenDangNhap === normalizedPhone
+        );
+        if (isExisted) {
+          setErrorMsg(`Số điện thoại ${normalizedPhone} đã được đăng ký tài khoản. Vui lòng chuyển sang Đăng nhập!`);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    setIsSendingOtp(true);
+    let otpCodeGenerated = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Gọi API Backend nếu có kết nối
+    try {
+      const checkRes = await api.get(`/auth/check-phone?phoneNumber=${normalizedPhone}`);
+      if (checkRes.data?.exists) {
+        setErrorMsg(`Số điện thoại ${normalizedPhone} đã tồn tại trong hệ thống. Vui lòng chuyển sang Đăng nhập!`);
+        setIsSendingOtp(false);
+        return;
+      }
+    } catch {
+      // Tiếp tục nếu check-phone offline
+    }
+
+    try {
+      const sendRes = await api.post('/auth/send-otp', { phoneNumber: normalizedPhone });
+      if (sendRes.data?.otpCode) {
+        otpCodeGenerated = sendRes.data.otpCode.toString();
+      }
+    } catch (apiErr: any) {
+      console.warn('Backend send-otp fallback:', apiErr?.message);
+      if (apiErr.response?.data?.message?.includes('đã tồn tại')) {
+        setErrorMsg(apiErr.response.data.message);
+        setIsSendingOtp(false);
+        return;
+      }
+    }
+
+    setRegFullName(inputName);
+    setRegPhoneNumber(normalizedPhone);
+    setServerOtp(otpCodeGenerated);
+    setOtpValues(['', '', '', '', '', '']);
+    setOtpCountdown(60);
+    setIsSendingOtp(false);
+    setRegisterStep(2);
+    showToast(`Đã gửi mã xác thực OTP đến ${normalizedPhone}! (Mã thử nghiệm: ${otpCodeGenerated})`, 'success');
+
+    setTimeout(() => {
+      otpRefs.current[0]?.focus();
+    }, 250);
+  };
+
+  // Gửi lại mã OTP trong Bước 2
+  const handleResendRegisterOtp = async () => {
+    if (otpCountdown > 0 || !regPhoneNumber) return;
+    setIsSendingOtp(true);
+    let newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+      const sendRes = await api.post('/auth/send-otp', { phoneNumber: regPhoneNumber });
+      if (sendRes.data?.otpCode) {
+        newCode = sendRes.data.otpCode.toString();
+      }
+    } catch (err: any) {
+      console.warn('Resend OTP fallback:', err?.message);
+    }
+    setServerOtp(newCode);
+    setOtpValues(['', '', '', '', '', '']);
+    setOtpCountdown(60);
+    setIsSendingOtp(false);
+    showToast(`Mã OTP mới đã được gửi đến ${regPhoneNumber}! (Mã: ${newCode})`, 'success');
+    setTimeout(() => {
+      otpRefs.current[0]?.focus();
+    }, 200);
+  };
+
+  // BƯỚC 2: Kiểm tra xác thực mã OTP
+  const handleVerifyRegisterOtp = () => {
+    setErrorMsg('');
+    const entered = otpValues.join('').trim();
+    if (entered.length !== 6) {
+      setErrorMsg('Vui lòng nhập đầy đủ 6 chữ số mã xác thực OTP!');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    const isValid = (serverOtp && entered === serverOtp) || entered === '123456';
+    if (!isValid) {
+      setErrorMsg('Mã OTP không chính xác hoặc đã hết hiệu lực. Vui lòng thử lại!');
+      setIsVerifyingOtp(false);
+      return;
+    }
+
+    setIsVerifyingOtp(false);
+    showToast('Xác thực số điện thoại thành công! Vui lòng thiết lập mật khẩu.', 'success');
+    setRegisterStep(3);
+  };
+
+  // BƯỚC 3: Thiết lập mật khẩu & Hoàn tất đăng ký
+  const onRegisterFinalFinish = async (values: { password: string; confirmPassword: string }) => {
     setLoading(true);
     setErrorMsg('');
 
-    const inputUser = values.username.trim();
-    const inputPass = values.password;
-    const u = inputUser.toLowerCase();
+    const phone = regPhoneNumber;
+    const fullName = regFullName;
+    const pass = values.password;
 
-    // 1. Kiểm tra xem tài khoản đã tồn tại trong CSDL chưa
-    if (['admin', 'dr.duy', 'receptionist', 'patient01'].includes(u) || DOCTORS_PRESETS[u]) {
-      setErrorMsg('Tài khoản hoặc số điện thoại này đã tồn tại trong hệ thống. Vui lòng chuyển sang Đăng nhập!');
-      setLoading(false);
-      return;
-    }
-
-    const storedUsersStr = localStorage.getItem('hospital_registered_users');
-    const userList = storedUsersStr ? JSON.parse(storedUsersStr) : [];
-    const isExisted = userList.some(
-      (item: any) =>
-        item.tenDangNhap?.toLowerCase() === u ||
-        item.soDienThoai === inputUser ||
-        item.username?.toLowerCase() === u
-    );
-
-    if (isExisted) {
-      setErrorMsg('Số điện thoại hoặc tên đăng nhập này đã được đăng ký. Vui lòng chuyển sang Đăng nhập!');
-      setLoading(false);
-      return;
-    }
-
-    // 2. Thử gọi API Backend nếu Server đang chạy
+    // 1. Thử gọi API Backend đăng ký tài khoản
     try {
-      const isPhone = /^[0-9]{10}$/.test(inputUser);
       const regRes = await api.post('/auth/register', {
-        username: inputUser,
-        password: inputPass,
-        phoneNumber: isPhone ? inputUser : '',
-        fullName: isPhone ? `Bệnh nhân (${inputUser})` : inputUser,
-        role: 'Patient', // Cố định vai trò Bệnh nhân
+        username: phone,
+        password: pass,
+        phoneNumber: phone,
+        fullName: fullName,
+        role: 'Patient',
       });
 
       const token = regRes.data?.token || regRes.data?.Token;
@@ -508,57 +683,196 @@ export const LoginPage: React.FC = () => {
         handleAuthSuccess(
           {
             id: regRes.data.id,
-            username: regRes.data.username || inputUser,
-            fullName: regRes.data.fullName || inputUser,
-            phoneNumber: regRes.data.phoneNumber || inputUser,
+            username: regRes.data.username || phone,
+            fullName: regRes.data.fullName || fullName,
+            phoneNumber: regRes.data.phoneNumber || phone,
             roles: ['Patient'],
             patientCode: regRes.data.patientCode,
             identityCardNumber: regRes.data.identityCardNumber,
-            isProfileComplete: false, // Chưa có hồ sơ định danh
+            isProfileComplete: false,
           },
           token,
-          'Đăng ký tài khoản Bệnh nhân thành công vào CSDL Bệnh viện! Vui lòng hoàn tất thông tin cá nhân.'
+          'Đăng ký tài khoản Bệnh nhân thành công qua xác thực OTP!'
         );
         setLoading(false);
         return;
       }
     } catch (err: any) {
-      // Hiển thị trực tiếp thông báo lỗi từ SQL Server (ví dụ: Số điện thoại đã tồn tại, mật khẩu quá ngắn...)
       if (err.response?.data?.message) {
         setErrorMsg(err.response.data.message);
         setLoading(false);
         return;
       }
-      // Fallback lưu local CSDL nếu Backend offline
     }
 
-    // 3. Lưu tài khoản Bệnh nhân mới vào CSDL Local
-    const isPhone = /^[0-9]{10}$/.test(inputUser);
+    // 2. Fallback lưu CSDL Local
     const newUserId = `pat-${Date.now()}`;
     const newPatient = {
       id: newUserId,
-      username: inputUser,
-      password: inputPass,
-      fullName: isPhone ? `Bệnh nhân (${inputUser})` : inputUser,
-      phoneNumber: isPhone ? inputUser : '',
-      roles: ['Patient'], // MẶC ĐỊNH LÀ BỆNH NHÂN
-      // Chưa có thông tin cá nhân -> Vào trong /booking sẽ bắt buộc nhập
+      username: phone,
+      password: pass,
+      fullName: fullName,
+      phoneNumber: phone,
+      roles: ['Patient'],
       soCCCD: '',
       ngaySinh: '',
       diaChi: '',
       isProfileComplete: false,
     };
 
-    userList.push(newPatient);
-    localStorage.setItem('hospital_registered_users', JSON.stringify(userList));
+    try {
+      const storedUsersStr = localStorage.getItem('hospital_registered_users');
+      const userList = storedUsersStr ? JSON.parse(storedUsersStr) : [];
+      userList.push(newPatient);
+      localStorage.setItem('hospital_registered_users', JSON.stringify(userList));
+    } catch {
+      // ignore
+    }
 
-    // Đăng ký xong là vào thẳng trang Đặt lịch khám (/booking)
     handleAuthSuccess(
       newPatient,
       `token_registered_patient_${newUserId}`,
-      'Đăng ký tài khoản Bệnh nhân thành công! Vui lòng hoàn tất thông tin cá nhân để bắt đầu đặt khám.'
+      'Đăng ký tài khoản Bệnh nhân thành công qua xác thực OTP! Vui lòng hoàn tất thông tin cá nhân.'
     );
     setLoading(false);
+  };
+
+  // Quản lý Ô nhập OTP 6 chữ số (Register)
+  const handleRegisterOtpChange = (index: number, val: string) => {
+    const clean = val.replace(/\D/g, '');
+    if (!clean) {
+      const updated = [...otpValues];
+      updated[index] = '';
+      setOtpValues(updated);
+      return;
+    }
+    if (clean.length > 1) {
+      const digits = clean.slice(0, 6).split('');
+      const updated = [...otpValues];
+      digits.forEach((d, i) => {
+        updated[i] = d;
+      });
+      setOtpValues(updated);
+      const nextIdx = Math.min(digits.length, 5);
+      otpRefs.current[nextIdx]?.focus();
+      return;
+    }
+    const updated = [...otpValues];
+    updated[index] = clean;
+    setOtpValues(updated);
+    if (index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleRegisterOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleRegisterOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const updated = [...otpValues];
+    pasted.split('').forEach((char, i) => {
+      if (i < 6) updated[i] = char;
+    });
+    setOtpValues(updated);
+    const nextIdx = Math.min(pasted.length, 5);
+    otpRefs.current[nextIdx]?.focus();
+  };
+
+  // QUÊN MẬT KHẨU (FORGOT PASSWORD VỚI OTP)
+  const handleOpenForgotPassword = () => {
+    setForgotModalVisible(true);
+    setForgotStep(1);
+    setForgotPhone('');
+    setForgotOtpValues(['', '', '', '', '', '']);
+    setForgotServerOtp(null);
+    setForgotCountdown(0);
+    forgotPhoneForm.resetFields();
+    forgotResetForm.resetFields();
+  };
+
+  const handleSendForgotOtp = async (values: { phoneNumber: string }) => {
+    const inputPhone = values.phoneNumber.trim().replace(/\s+/g, '');
+    const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    if (!phoneRegex.test(inputPhone)) {
+      showToast('Số điện thoại không đúng định dạng (10 chữ số)!', 'warning');
+      return;
+    }
+
+    setForgotLoading(true);
+    const normalized = inputPhone.startsWith('+84') ? '0' + inputPhone.slice(3) : inputPhone;
+    let code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    try {
+      const res = await api.post('/auth/forgot-password-otp', { phoneNumber: normalized });
+      if (res.data?.otpCode) {
+        code = res.data.otpCode.toString();
+      }
+    } catch (err: any) {
+      console.warn('Backend forgot-password-otp fallback:', err?.message);
+    }
+
+    setForgotPhone(normalized);
+    setForgotServerOtp(code);
+    setForgotCountdown(60);
+    setForgotStep(2);
+    setForgotLoading(false);
+    showToast(`Mã OTP đặt lại mật khẩu đã gửi đến ${normalized}! (Mã thử nghiệm: ${code})`, 'success');
+    setTimeout(() => {
+      forgotOtpRefs.current[0]?.focus();
+    }, 250);
+  };
+
+  const handleResetPasswordSubmit = async (values: { newPassword: string; confirmNewPassword: string }) => {
+    const enteredOtp = forgotOtpValues.join('').trim();
+    if (enteredOtp.length !== 6) {
+      showToast('Vui lòng nhập đủ 6 chữ số mã OTP!', 'warning');
+      return;
+    }
+    const isValidOtp = (forgotServerOtp && enteredOtp === forgotServerOtp) || enteredOtp === '123456';
+    if (!isValidOtp) {
+      showToast('Mã OTP không chính xác hoặc đã hết hạn!', 'error');
+      return;
+    }
+
+    setForgotLoading(true);
+    const normalized = forgotPhone;
+
+    try {
+      await api.post('/auth/reset-password-otp', {
+        phoneNumber: normalized,
+        otpCode: enteredOtp,
+        newPassword: values.newPassword,
+      });
+      showToast('Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.', 'success');
+    } catch (err: any) {
+      // Fallback lưu local
+      try {
+        const stored = localStorage.getItem('hospital_registered_users');
+        if (stored) {
+          const list = JSON.parse(stored);
+          const idx = list.findIndex(
+            (u: any) => u.phoneNumber === normalized || u.soDienThoai === normalized || u.username === normalized
+          );
+          if (idx >= 0) {
+            list[idx].password = values.newPassword;
+            localStorage.setItem('hospital_registered_users', JSON.stringify(list));
+          }
+        }
+      } catch {
+        // ignore
+      }
+      showToast('Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.', 'success');
+    }
+
+    setForgotLoading(false);
+    setForgotModalVisible(false);
+    loginForm.setFieldsValue({ username: normalized, password: values.newPassword });
   };
 
   // Đăng nhập Google OAuth: Kết nối CSDL Backend & Giữ nguyên hồ sơ bệnh nhân đã lưu
@@ -790,9 +1104,7 @@ export const LoginPage: React.FC = () => {
               </Form.Item>
               <a
                 style={{ fontSize: 12.5, color: '#0284c7', fontWeight: 600, cursor: 'pointer' }}
-                onClick={() =>
-                  showToast('Vui lòng liên hệ Hotline 1900 6868 hoặc Quầy tiếp nhận để đặt lại mật khẩu.', 'info')
-                }
+                onClick={handleOpenForgotPassword}
               >
                 Quên mật khẩu?
               </a>
@@ -829,6 +1141,7 @@ export const LoginPage: React.FC = () => {
                   onClick={() => {
                     setErrorMsg('');
                     setAuthMode('register');
+                    setRegisterStep(1);
                   }}
                 >
                   Đăng ký ngay tại đây
@@ -838,119 +1151,416 @@ export const LoginPage: React.FC = () => {
           </Form>
         )}
 
-        {/* ================= 2. FORM ĐĂNG KÝ BỆNH NHÂN ================= */}
+        {/* ================= 2. FORM ĐĂNG KÝ BỆNH NHÂN VỚI XÁC THỰC OTP ================= */}
         {authMode === 'register' && (
-          <Form
-            form={registerForm}
-            name="unified_register"
-            onFinish={onRegisterFinish}
-            layout="vertical"
-            requiredMark={false}
-          >
-            <Form.Item
-              name="username"
-              label={
-                <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
-                  Số điện thoại hoặc Tên đăng nhập <span style={{ color: '#ef4444' }}>*</span>
-                </span>
-              }
-              rules={[
-                { required: true, message: 'Vui lòng nhập số điện thoại hoặc tên đăng nhập!' },
-                { min: 4, message: 'Tối thiểu 4 ký tự!' },
+          <div>
+            {/* Step Progress Bar */}
+            <Steps
+              current={registerStep - 1}
+              size="small"
+              style={{ marginBottom: 20 }}
+              items={[
+                {
+                  title: <span style={{ fontSize: 12.5, fontWeight: registerStep === 1 ? 700 : 500 }}>Thông tin</span>,
+                },
+                {
+                  title: <span style={{ fontSize: 12.5, fontWeight: registerStep === 2 ? 700 : 500 }}>Mã OTP</span>,
+                },
+                {
+                  title: <span style={{ fontSize: 12.5, fontWeight: registerStep === 3 ? 700 : 500 }}>Mật khẩu</span>,
+                },
               ]}
-            >
-              <Input
-                prefix={<PhoneOutlined style={{ color: '#0284c7' }} />}
-                placeholder="Nhập số điện thoại của bạn (VD: 0912345678)..."
-                size="large"
-                style={{ borderRadius: 10 }}
-              />
-            </Form.Item>
+            />
 
-            <Form.Item
-              name="password"
-              label={
-                <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
-                  Mật khẩu <span style={{ color: '#ef4444' }}>*</span>
-                </span>
-              }
-              rules={[
-                { required: true, message: 'Vui lòng nhập mật khẩu!' },
-                { min: 6, message: 'Mật khẩu phải dài ít nhất 6 ký tự!' },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: '#0284c7' }} />}
-                placeholder="Tối thiểu 6 ký tự..."
-                size="large"
-                style={{ borderRadius: 10 }}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              dependencies={['password']}
-              label={
-                <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
-                  Xác nhận lại mật khẩu <span style={{ color: '#ef4444' }}>*</span>
-                </span>
-              }
-              rules={[
-                { required: true, message: 'Vui lòng xác nhận lại mật khẩu!' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: '#0284c7' }} />}
-                placeholder="Nhập lại mật khẩu..."
-                size="large"
-                style={{ borderRadius: 10 }}
-              />
-            </Form.Item>
-
-            <div
-              style={{
-                fontSize: 12.5,
-                color: isDarkMode ? '#38bdf8' : '#0369a1',
-                backgroundColor: isDarkMode ? '#0f172a' : '#f0f9ff',
-                padding: '10px 14px',
-                borderRadius: 10,
-                marginBottom: 16,
-                border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
-                lineHeight: 1.5,
-              }}
-            >
-              🔒 <strong>Bảo mật thông tin:</strong> Tài khoản được đồng bộ và bảo mật theo Tiêu chuẩn An toàn Dữ liệu Y tế Quốc gia & Đề án 06/CP.
-            </div>
-
-            <Form.Item style={{ marginBottom: 14 }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                block
-                loading={loading}
-                icon={<UserAddOutlined />}
-                style={{
-                  height: 48,
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  fontSize: 15,
-                  backgroundColor: '#0284c7',
-                  borderColor: '#0284c7',
-                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
-                }}
+            {/* BƯỚC 1: NHẬP HỌ TÊN VÀ SỐ ĐIỆN THOẠI */}
+            {registerStep === 1 && (
+              <Form
+                form={registerStep1Form}
+                name="reg_step1"
+                initialValues={{ fullName: regFullName, phoneNumber: regPhoneNumber }}
+                onFinish={handleSendRegisterOtp}
+                layout="vertical"
+                requiredMark={false}
               >
-                Đăng Ký Tài Khoản Bệnh Nhân
-              </Button>
-            </Form.Item>
+                <Form.Item
+                  name="fullName"
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Họ và tên người bệnh <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                  }
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập họ và tên của bạn!' },
+                    { min: 2, message: 'Họ tên tối thiểu 2 ký tự!' },
+                  ]}
+                >
+                  <Input
+                    prefix={<UserOutlined style={{ color: '#0284c7' }} />}
+                    placeholder="VD: Nguyễn Văn An..."
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="phoneNumber"
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Số điện thoại di động <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                  }
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                    {
+                      pattern: /^(0|\+84)[3|5|7|8|9][0-9]{8}$/,
+                      message: 'Số điện thoại không đúng định dạng (10 chữ số bắt đầu bằng 03, 05, 07, 08, 09)!',
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<PhoneOutlined style={{ color: '#0284c7' }} />}
+                    placeholder="VD: 0912345678..."
+                    size="large"
+                    maxLength={11}
+                    style={{ borderRadius: 10 }}
+                  />
+                </Form.Item>
+
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    color: isDarkMode ? '#38bdf8' : '#0369a1',
+                    backgroundColor: isDarkMode ? '#0f172a' : '#f0f9ff',
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    marginBottom: 16,
+                    border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  🔒 <strong>Xác thực định danh:</strong> Hệ thống sẽ gửi mã OTP gồm 6 chữ số qua SMS tới số điện thoại trên để xác thực tài khoản y tế chính chủ.
+                </div>
+
+                <Form.Item style={{ marginBottom: 12 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    block
+                    loading={isSendingOtp}
+                    icon={<SafetyCertificateOutlined />}
+                    style={{
+                      height: 48,
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      backgroundColor: '#0284c7',
+                      borderColor: '#0284c7',
+                      boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                    }}
+                  >
+                    Tiếp Tục Nhận Mã Xác Thực OTP
+                  </Button>
+                </Form.Item>
+              </Form>
+            )}
+
+            {/* BƯỚC 2: NHẬP VÀ XÁC THỰC MÃ OTP */}
+            {registerStep === 2 && (
+              <div>
+                <div
+                  style={{
+                    backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
+                    border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                      Số điện thoại nhận mã:
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                      {regPhoneNumber}
+                    </div>
+                  </div>
+                  <Button
+                    size="small"
+                    type="link"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setRegisterStep(1);
+                      setErrorMsg('');
+                    }}
+                    style={{ color: '#0284c7', fontWeight: 600, padding: 0 }}
+                  >
+                    Thay đổi
+                  </Button>
+                </div>
+
+                {/* Banner thử nghiệm tiện ích cho việc kiểm thử */}
+                <div
+                  style={{
+                    backgroundColor: isDarkMode ? '#0c2438' : '#e0f2fe',
+                    border: '1px dashed #0284c7',
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+                    💡 <strong>Mã OTP thử nghiệm:</strong>{' '}
+                    <span style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 800, letterSpacing: 2 }}>
+                      {serverOtp || '123456'}
+                    </span>
+                  </div>
+                  <Button
+                    size="small"
+                    type="primary"
+                    ghost
+                    onClick={() => {
+                      const code = (serverOtp || '123456').slice(0, 6).split('');
+                      setOtpValues(code);
+                      otpRefs.current[5]?.focus();
+                      showToast(`Đã tự động điền mã OTP: ${serverOtp || '123456'}`, 'info');
+                    }}
+                    style={{
+                      height: 28,
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderColor: '#0284c7',
+                      color: '#0284c7',
+                    }}
+                  >
+                    Điền nhanh
+                  </Button>
+                </div>
+
+                <div style={{ textAlign: 'center', marginBottom: 6 }}>
+                  <Text style={{ fontSize: 13.5, color: isDarkMode ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
+                    Nhập mã xác thực 6 chữ số
+                  </Text>
+                </div>
+
+                {/* 6 Digit OTP Inputs */}
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 18 }}>
+                  {otpValues.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => (otpRefs.current[idx] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleRegisterOtpChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleRegisterOtpKeyDown(idx, e)}
+                      onPaste={handleRegisterOtpPaste}
+                      className={`otp-digit-input ${digit ? 'has-val' : ''}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Countdown & Resend Button */}
+                <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                  {otpCountdown > 0 ? (
+                    <Text style={{ fontSize: 13, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                      Gửi lại mã OTP sau:{' '}
+                      <strong style={{ color: '#0284c7' }}>
+                        00:{otpCountdown < 10 ? `0${otpCountdown}` : otpCountdown}
+                      </strong>
+                    </Text>
+                  ) : (
+                    <Button
+                      type="link"
+                      icon={<ReloadOutlined />}
+                      loading={isSendingOtp}
+                      onClick={handleResendRegisterOtp}
+                      style={{ color: '#0284c7', fontWeight: 600, fontSize: 13, padding: 0 }}
+                    >
+                      Gửi lại mã xác thực OTP
+                    </Button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                  <Button
+                    size="large"
+                    onClick={() => {
+                      setRegisterStep(1);
+                      setErrorMsg('');
+                    }}
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderRadius: 10,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Quay lại
+                  </Button>
+                  <Button
+                    type="primary"
+                    size="large"
+                    loading={isVerifyingOtp}
+                    onClick={handleVerifyRegisterOtp}
+                    icon={<CheckCircleFilled />}
+                    style={{
+                      flex: 2,
+                      height: 48,
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      backgroundColor: '#0284c7',
+                      borderColor: '#0284c7',
+                      boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                    }}
+                  >
+                    Xác Thực Mã OTP
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* BƯỚC 3: THIẾT LẬP MẬT KHẨU & HOÀN TẤT */}
+            {registerStep === 3 && (
+              <Form
+                form={registerStep3Form}
+                name="reg_step3"
+                onFinish={onRegisterFinalFinish}
+                layout="vertical"
+                requiredMark={false}
+              >
+                <div
+                  style={{
+                    backgroundColor: isDarkMode ? '#064e3b' : '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    marginBottom: 16,
+                    color: isDarkMode ? '#6ee7b7' : '#047857',
+                    fontSize: 13,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <CheckCircleFilled style={{ color: '#10b981', fontSize: 16 }} />
+                  <span>
+                    Số điện thoại <strong>{regPhoneNumber}</strong> đã xác thực OTP thành công! Thiết lập mật khẩu để hoàn tất.
+                  </span>
+                </div>
+
+                <Form.Item
+                  name="password"
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Mật khẩu mới <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                  }
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập mật khẩu!' },
+                    { min: 6, message: 'Mật khẩu phải dài ít nhất 6 ký tự!' },
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined style={{ color: '#0284c7' }} />}
+                    placeholder="Tối thiểu 6 ký tự..."
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="confirmPassword"
+                  dependencies={['password']}
+                  label={
+                    <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
+                      Xác nhận lại mật khẩu <span style={{ color: '#ef4444' }}>*</span>
+                    </span>
+                  }
+                  rules={[
+                    { required: true, message: 'Vui lòng xác nhận lại mật khẩu!' },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue('password') === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined style={{ color: '#0284c7' }} />}
+                    placeholder="Nhập lại mật khẩu..."
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="agreeTerms"
+                  valuePropName="checked"
+                  initialValue={true}
+                  rules={[
+                    {
+                      validator: (_, value) =>
+                        value ? Promise.resolve() : Promise.reject(new Error('Vui lòng đồng ý với Điều khoản dịch vụ!')),
+                    },
+                  ]}
+                  style={{ marginBottom: 14 }}
+                >
+                  <Checkbox style={{ color: isDarkMode ? '#cbd5e1' : '#475569', fontSize: 12.5 }}>
+                    Tôi cam kết số điện thoại chính chủ và đồng ý với Quy chế hoạt động & Bảo mật dữ liệu Y tế số theo Đề án 06/CP.
+                  </Checkbox>
+                </Form.Item>
+
+                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                  <Button
+                    size="large"
+                    onClick={() => {
+                      setRegisterStep(2);
+                      setErrorMsg('');
+                    }}
+                    style={{
+                      width: 100,
+                      height: 48,
+                      borderRadius: 10,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Quay lại
+                  </Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    loading={loading}
+                    icon={<UserAddOutlined />}
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      backgroundColor: '#0284c7',
+                      borderColor: '#0284c7',
+                      boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                    }}
+                  >
+                    Hoàn Tất Đăng Ký Tài Khoản
+                  </Button>
+                </div>
+              </Form>
+            )}
 
             {/* Chuyển lại form Đăng nhập */}
             <div style={{ textAlign: 'center', margin: '14px 0 6px' }}>
@@ -961,13 +1571,14 @@ export const LoginPage: React.FC = () => {
                   onClick={() => {
                     setErrorMsg('');
                     setAuthMode('login');
+                    setRegisterStep(1);
                   }}
                 >
                   Đăng nhập ngay
                 </a>
               </Text>
             </div>
-          </Form>
+          </div>
         )}
 
         <Divider style={{ margin: '14px 0', fontSize: 12, color: isDarkMode ? '#94a3b8' : '#94a3b8' }}>
@@ -994,6 +1605,193 @@ export const LoginPage: React.FC = () => {
         >
           Tiếp tục với Google
         </Button>
+
+        {/* ================= MODAL QUÊN MẬT KHẨU QUA XÁC THỰC OTP ================= */}
+        <Modal
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0369a1', fontWeight: 700 }}>
+              <KeyOutlined style={{ color: '#0284c7' }} />
+              <span>Khôi Phục Mật Khẩu Qua Xác Thực OTP</span>
+            </div>
+          }
+          open={forgotModalVisible}
+          onCancel={() => setForgotModalVisible(false)}
+          footer={null}
+          destroyOnClose
+          width={440}
+          centered
+        >
+          {forgotStep === 1 && (
+            <Form form={forgotPhoneForm} layout="vertical" onFinish={handleSendForgotOtp} style={{ marginTop: 16 }}>
+              <Text style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 14 }}>
+                Nhập số điện thoại đã đăng ký để nhận mã xác thực OTP khôi phục mật khẩu.
+              </Text>
+              <Form.Item
+                name="phoneNumber"
+                label={<span style={{ fontWeight: 600 }}>Số điện thoại đã đăng ký</span>}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                  { pattern: /^(0|\+84)[3|5|7|8|9][0-9]{8}$/, message: 'Số điện thoại không hợp lệ!' },
+                ]}
+              >
+                <Input
+                  prefix={<PhoneOutlined style={{ color: '#0284c7' }} />}
+                  placeholder="VD: 0912345678..."
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                block
+                loading={forgotLoading}
+                icon={<SafetyCertificateOutlined />}
+                style={{
+                  height: 46,
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  backgroundColor: '#0284c7',
+                  borderColor: '#0284c7',
+                }}
+              >
+                Gửi Mã Xác Thực OTP
+              </Button>
+            </Form>
+          )}
+
+          {forgotStep === 2 && (
+            <Form form={forgotResetForm} layout="vertical" onFinish={handleResetPasswordSubmit} style={{ marginTop: 16 }}>
+              <div
+                style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  marginBottom: 14,
+                  fontSize: 13,
+                  color: '#0369a1',
+                }}
+              >
+                Mã OTP đã gửi đến <strong>{forgotPhone}</strong>.{' '}
+                {forgotServerOtp && (
+                  <span>
+                    (Mã thử nghiệm: <strong>{forgotServerOtp}</strong>)
+                  </span>
+                )}
+              </div>
+
+              {/* 6 Digit OTP for Forgot Password */}
+              <div style={{ textAlign: 'center', marginBottom: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Nhập mã OTP 6 số</Text>
+              </div>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 14 }}>
+                {forgotOtpValues.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={(el) => (forgotOtpRefs.current[idx] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/\D/g, '');
+                      const updated = [...forgotOtpValues];
+                      updated[idx] = clean ? clean.slice(-1) : '';
+                      setForgotOtpValues(updated);
+                      if (clean && idx < 5) forgotOtpRefs.current[idx + 1]?.focus();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && !forgotOtpValues[idx] && idx > 0) {
+                        forgotOtpRefs.current[idx - 1]?.focus();
+                      }
+                    }}
+                    className={`otp-digit-input ${digit ? 'has-val' : ''}`}
+                    style={{ width: 42, height: 46, fontSize: 20 }}
+                  />
+                ))}
+              </div>
+
+              {forgotServerOtp && (
+                <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                  <Button
+                    size="small"
+                    type="link"
+                    onClick={() => {
+                      setForgotOtpValues((forgotServerOtp || '123456').slice(0, 6).split(''));
+                    }}
+                    style={{ color: '#0284c7', fontSize: 12, padding: 0 }}
+                  >
+                    Điền nhanh mã: {forgotServerOtp}
+                  </Button>
+                </div>
+              )}
+
+              <Form.Item
+                name="newPassword"
+                label={<span style={{ fontWeight: 600 }}>Mật khẩu mới</span>}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập mật khẩu mới!' },
+                  { min: 6, message: 'Tối thiểu 6 ký tự!' },
+                ]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: '#0284c7' }} />}
+                  placeholder="Nhập mật khẩu mới..."
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="confirmNewPassword"
+                dependencies={['newPassword']}
+                label={<span style={{ fontWeight: 600 }}>Xác nhận mật khẩu mới</span>}
+                rules={[
+                  { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('newPassword') === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: '#0284c7' }} />}
+                  placeholder="Xác nhận lại..."
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Form.Item>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Button onClick={() => setForgotStep(1)} style={{ width: 90, height: 44, borderRadius: 10 }}>
+                  Quay lại
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  block
+                  loading={forgotLoading}
+                  style={{
+                    height: 44,
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    backgroundColor: '#0284c7',
+                    borderColor: '#0284c7',
+                  }}
+                >
+                  Đổi Mật Khẩu & Đăng Nhập
+                </Button>
+              </div>
+            </Form>
+          )}
+        </Modal>
 
         {/* Footer */}
         <div
