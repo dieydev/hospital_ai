@@ -872,7 +872,7 @@ export const PatientHomePage: React.FC = () => {
               className="medpro-service-card"
               style={{ '--card-index': 10 } as React.CSSProperties}
               onClick={() => {
-                showToast('Dịch vụ Y tế tại nhà & Lấy mẫu xét nghiệm: 1900 1150', 'info');
+                navigate('/booking?mode=byPackage&search=tại nhà');
               }}
             >
               <div className="medpro-card-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
@@ -898,7 +898,7 @@ export const PatientHomePage: React.FC = () => {
               className="medpro-service-card"
               style={{ '--card-index': 12 } as React.CSSProperties}
               onClick={() => {
-                showToast('Hệ thống Nhà thuốc liên kết An Khang - 1900 1572', 'info');
+                navigate('/huong-dan');
               }}
             >
               <div className="medpro-card-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
@@ -1668,7 +1668,13 @@ export const PatientHomePage: React.FC = () => {
             <Col xs={24} sm={12} md={6} key={doc.id}>
               <div className="medpro-doc-card">
                 <div style={{ position: 'relative', marginBottom: 12 }}>
-                  <Avatar src={doc.avatar} size={74} style={{ border: '3px solid #0284c7', backgroundColor: '#e0f2fe' }} />
+                  <Avatar
+                    src={doc.avatar}
+                    icon={<UserOutlined style={{ fontSize: 36, color: '#0284c7' }} />}
+                    onError={() => false}
+                    size={74}
+                    style={{ border: '3px solid #0284c7', backgroundColor: '#e0f2fe' }}
+                  />
                   {doc.isSpecialist && (
                     <Tag
                       color="blue"
@@ -2231,7 +2237,13 @@ export const PatientHomePage: React.FC = () => {
         {viewingDoctor && (
           <div>
             <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 14 }}>
-              <Avatar src={viewingDoctor.avatar} size={76} style={{ border: '2px solid #0284c7' }} />
+              <Avatar
+                src={viewingDoctor.avatar}
+                icon={<UserOutlined style={{ fontSize: 38, color: '#0284c7' }} />}
+                onError={() => false}
+                size={76}
+                style={{ border: '2px solid #0284c7', backgroundColor: '#e0f2fe' }}
+              />
               <div>
                 <h3 style={{ margin: 0, color: '#0f172a' }}>{viewingDoctor.name}</h3>
                 <div style={{ color: '#0284c7', fontWeight: 600 }}>{viewingDoctor.department}</div>

@@ -14,19 +14,25 @@ export const ElderlyModeWidget: React.FC = () => {
     }
   });
 
-  // Đồng bộ class trên document.body khi state thay đổi
-  useEffect(() => {
+  const applyMode = (active: boolean) => {
     try {
-      if (isElderlyMode) {
+      if (active) {
+        document.documentElement.classList.add('elderly-mode');
         document.body.classList.add('elderly-mode');
         localStorage.setItem(ELDERLY_MODE_STORAGE_KEY, 'true');
       } else {
+        document.documentElement.classList.remove('elderly-mode');
         document.body.classList.remove('elderly-mode');
         localStorage.setItem(ELDERLY_MODE_STORAGE_KEY, 'false');
       }
     } catch {
       // ignore
     }
+  };
+
+  // Đồng bộ class trên document.documentElement & document.body khi state thay đổi
+  useEffect(() => {
+    applyMode(isElderlyMode);
   }, [isElderlyMode]);
 
   // Lắng nghe sự kiện custom nếu header hoặc drawer thay đổi trạng thái
@@ -34,6 +40,7 @@ export const ElderlyModeWidget: React.FC = () => {
     const handleStorageChange = () => {
       const active = localStorage.getItem(ELDERLY_MODE_STORAGE_KEY) === 'true';
       setIsElderlyMode(active);
+      applyMode(active);
     };
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('dmedical_elderly_mode_change', handleStorageChange as EventListener);
@@ -43,9 +50,14 @@ export const ElderlyModeWidget: React.FC = () => {
     };
   }, []);
 
-  const toggleElderlyMode = () => {
+  const toggleElderlyMode = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const nextState = !isElderlyMode;
     setIsElderlyMode(nextState);
+    applyMode(nextState);
     if (nextState) {
       showToast('Đã BẬT Chế độ Chữ To & Dễ Đọc dành cho Người Cao Tuổi!', 'success');
     } else {

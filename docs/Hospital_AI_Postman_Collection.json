@@ -1,0 +1,436 @@
+{
+	"info": {
+		"_postman_id": "c1f72a91-4d2b-478e-9cb3-hospitalai01",
+		"name": "Hospital AI - Microservices API Gateway",
+		"description": "Bộ sưu tập Postman Collection đầy đủ cho Hệ thống Y tế Số Thông minh Hospital AI.\nGateway chạy tại: http://localhost:5000",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication (Identity)",
+			"item": [
+				{
+					"name": "Login - Admin / Doctor / Staff",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+									"    console.log(\"Saved JWT Token successfully\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Đăng nhập lấy JWT Token. Script sẽ tự động lưu token vào biến collection {{jwt_token}} để các request sau tự động sử dụng."
+					}
+				},
+				{
+					"name": "Login - Doctor Duy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+									"    console.log(\"Saved Doctor JWT Token successfully\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"dr.duy\",\n  \"password\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Get List Doctors",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/doctors",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "doctors"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Patient Service",
+			"item": [
+				{
+					"name": "Get List Patients",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/patients?pageIndex=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "patients"],
+							"query": [
+								{
+									"key": "pageIndex",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Patient by CCCD / Phone",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/patients/search?keyword=089204000916",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "patients", "search"],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "089204000916"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Patient Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"Trần Thị B\",\n  \"gender\": \"Nữ\",\n  \"dateOfBirth\": \"1998-08-20T00:00:00\",\n  \"identityCardNumber\": \"079198009988\",\n  \"phoneNumber\": \"0912345678\",\n  \"email\": \"tranthib@gmail.com\",\n  \"address\": \"456 Nguyễn Trãi, Quận 5, TP.HCM\",\n  \"bloodType\": \"O+\",\n  \"drugAllergies\": \"Penicillin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/patients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "patients"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Queue & Appointments",
+			"item": [
+				{
+					"name": "Get Departments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/queue/departments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "queue", "departments"]
+						}
+					}
+				},
+				{
+					"name": "Get Today Queue",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/queue",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "queue"]
+						}
+					}
+				},
+				{
+					"name": "Issue Queue Ticket",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"81f76881-0e57-4d31-8f9f-3710bd141137\",\n  \"departmentId\": \"d01a1111-1111-1111-1111-111111111111\",\n  \"isPriority\": false,\n  \"reasonForVisit\": \"Khám đau đầu, chóng mặt thường xuyên\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/queue/issue",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "queue", "issue"]
+						}
+					}
+				},
+				{
+					"name": "Get Appointments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "appointments"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Examination & Clinical AI",
+			"item": [
+				{
+					"name": "Get Examinations List",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/examinations",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "examinations"]
+						}
+					}
+				},
+				{
+					"name": "Ask Clinical AI Assistant",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"prompt\": \"Bệnh nhân nam 45 tuổi, sốt cao 39 độ 3 ngày kèm ho khan, khó thở nhẹ, SpO2 96%. Đề xuất chẩn đoán phân biệt và cận lâm sàng cần làm?\",\n  \"patientContext\": \"Nam, 45 tuổi, tiền sử viêm gan B, không dị ứng thuốc\",\n  \"examinationId\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/ask",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "ai", "ask"]
+						}
+					}
+				},
+				{
+					"name": "Get AI Logs (MongoDB Audit)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/ailogs",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "ailogs"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Billing & Payment",
+			"item": [
+				{
+					"name": "Get Billing List",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/billing",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "billing"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Gateway Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

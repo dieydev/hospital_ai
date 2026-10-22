@@ -1230,6 +1230,8 @@ export const PatientBookingPage: React.FC = () => {
                             <div style={{ position: 'relative', display: 'inline-block', margin: '0 auto 12px' }}>
                               <Avatar
                                 src={doc.avatar}
+                                icon={<UserOutlined style={{ fontSize: 36, color: '#0284c7' }} />}
+                                onError={() => false}
                                 size={76}
                                 style={{
                                   border: '3px solid #0284c7',
@@ -1611,6 +1613,8 @@ export const PatientBookingPage: React.FC = () => {
                         >
                           <Avatar
                             src={doc.avatar}
+                            icon={<UserOutlined style={{ fontSize: 36, color: '#0284c7' }} />}
+                            onError={() => false}
                             size={72}
                             style={{
                               border: '3px solid #0284c7',

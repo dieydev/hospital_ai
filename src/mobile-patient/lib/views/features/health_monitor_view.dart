@@ -157,7 +157,7 @@ class _HealthMonitorViewState extends State<HealthMonitorView> {
                     ),
                     const SizedBox(height: 14),
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
@@ -166,16 +166,37 @@ class _HealthMonitorViewState extends State<HealthMonitorView> {
                         children: [
                           const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 16),
                           const SizedBox(width: 8),
-                          Text(
-                            'Cập nhật gần nhất: Hôm nay, 07:30',
-                            style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                          Expanded(
+                            child: Text(
+                              'Cập nhật: Hôm nay, 07:30',
+                              style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const Spacer(),
-                          Text(
-                            'Xem báo cáo',
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Báo cáo tổng hợp sức khỏe đang được cập nhật')),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Báo cáo',
+                                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+                                ],
+                              ),
+                            ),
                           ),
-                          const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
                         ],
                       ),
                     ),
@@ -362,8 +383,15 @@ class _HealthMonitorViewState extends State<HealthMonitorView> {
             children: [
               Icon(metric['icon'] as IconData, color: metric['color'] as Color, size: 18),
               const SizedBox(width: 8),
-              Text(metric['title'] as String, style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
-              const Spacer(),
+              Expanded(
+                child: Text(
+                  metric['title'] as String,
+                  style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Text(
                 '${metric['current']} ${metric['unit']}',
                 style: GoogleFonts.sora(fontSize: 15, fontWeight: FontWeight.w700, color: metric['color'] as Color),
@@ -373,20 +401,35 @@ class _HealthMonitorViewState extends State<HealthMonitorView> {
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: history.map((h) => Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Text(h['value']!, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A))),
+            children: history.map((h) => Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          h['value']!,
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(h['date']!, style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF94A3B8))),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(h['date']!, style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF94A3B8))),
-              ],
+              ),
             )).toList(),
           ),
           const SizedBox(height: 10),

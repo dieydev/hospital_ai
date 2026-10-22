@@ -28,6 +28,19 @@ export const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  // Khôi phục Chế độ Chữ To Dễ Đọc (Elderly Mode) khi người dùng truy cập trang
+  useEffect(() => {
+    try {
+      const isElderly = localStorage.getItem('dmedical_elderly_mode') === 'true';
+      if (isElderly) {
+        document.documentElement.classList.add('elderly-mode');
+        document.body.classList.add('elderly-mode');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   return (
     <ConfigProvider
       locale={viVN}

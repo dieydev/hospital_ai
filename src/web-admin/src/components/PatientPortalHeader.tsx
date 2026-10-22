@@ -60,6 +60,13 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     const handleSync = () => {
       const active = localStorage.getItem(ELDERLY_MODE_STORAGE_KEY) === 'true';
       setIsElderlyMode(active);
+      if (active) {
+        document.documentElement.classList.add('elderly-mode');
+        document.body.classList.add('elderly-mode');
+      } else {
+        document.documentElement.classList.remove('elderly-mode');
+        document.body.classList.remove('elderly-mode');
+      }
     };
     window.addEventListener('storage', handleSync);
     window.addEventListener('dmedical_elderly_mode_change', handleSync as EventListener);
@@ -74,10 +81,12 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     setIsElderlyMode(nextState);
     try {
       if (nextState) {
+        document.documentElement.classList.add('elderly-mode');
         document.body.classList.add('elderly-mode');
         localStorage.setItem(ELDERLY_MODE_STORAGE_KEY, 'true');
         showToast('Đã BẬT Chế độ Chữ To & Dễ Đọc dành cho Người Cao Tuổi!', 'success');
       } else {
+        document.documentElement.classList.remove('elderly-mode');
         document.body.classList.remove('elderly-mode');
         localStorage.setItem(ELDERLY_MODE_STORAGE_KEY, 'false');
         showToast('Đã chuyển về Giao diện Tiêu chuẩn.', 'info');

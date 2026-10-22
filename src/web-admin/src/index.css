@@ -534,5 +534,135 @@ html.dark-mode .medical-sidebar .ant-layout-sider-children::-webkit-scrollbar-th
   background: #38bdf8 !important;
 }
 
+/* ==========================================================================
+   CHẾ ĐỘ TRỢ NĂNG CHỮ TO DỄ ĐỌC (ELDERLY ACCESSIBILITY MODE)
+   ========================================================================== */
+html.elderly-mode {
+  font-size: 19px !important;
+}
+
+body.elderly-mode {
+  font-size: 18px !important;
+  line-height: 1.75 !important;
+  zoom: 1.15; /* Phóng to toàn bộ giao diện 15% trên các trình duyệt hiện đại */
+}
+
+/* Tăng kích thước chữ và độ tương phản rõ rệt trên trang */
+body.elderly-mode h1,
+body.elderly-mode .medpro-hero-main-title {
+  font-size: 34px !important;
+  font-weight: 900 !important;
+  color: #0c4a6e !important;
+  line-height: 1.35 !important;
+}
+
+body.elderly-mode h2,
+body.elderly-mode .ant-typography h2 {
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  color: #0c4a6e !important;
+}
+
+body.elderly-mode h3,
+body.elderly-mode .ant-typography h3 {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #0369a1 !important;
+}
+
+body.elderly-mode p,
+body.elderly-mode .ant-typography,
+body.elderly-mode .medpro-hero-bullet-item {
+  font-size: 17px !important;
+  line-height: 1.7 !important;
+  color: #0f172a !important;
+}
+
+body.elderly-mode .marquee-track {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+body.elderly-mode .medpro-search-bar-wrap {
+  height: 64px !important;
+  border: 2px solid #0284c7 !important;
+}
+
+body.elderly-mode .medpro-search-input,
+body.elderly-mode .medpro-search-input input {
+  font-size: 17px !important;
+}
+
+body.elderly-mode .medpro-search-action-btn {
+  font-size: 16px !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  font-weight: 800 !important;
+}
+
+body.elderly-mode .medpro-quick-tag-label {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+body.elderly-mode .medpro-quick-tag-pill {
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  padding: 6px 14px !important;
+}
+
+body.elderly-mode .medpro-hero-bullet-item strong {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  color: #0c4a6e !important;
+}
+
+body.elderly-mode .medpro-service-card {
+  min-height: 145px !important;
+  padding: 16px 10px !important;
+  border: 2px solid #bae6fd !important;
+}
+
+body.elderly-mode .medpro-card-title {
+  font-size: 15.5px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.4 !important;
+}
+
+body.elderly-mode .booking-navbar {
+  padding: 14px 0 !important;
+}
+
+body.elderly-mode .booking-nav-item {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+body.elderly-mode .booking-brand-title {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+}
+
+body.elderly-mode .booking-brand-subtitle {
+  font-size: 14px !important;
+}
+
+body.elderly-mode .ant-btn {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  min-height: 48px !important;
+}
+
+body.elderly-mode .ant-input,
+body.elderly-mode .ant-picker,
+body.elderly-mode .ant-select-selector {
+  font-size: 17px !important;
+  min-height: 50px !important;
+  border-width: 2px !important;
+  border-color: #0284c7 !important;
+}
+
+
 
 

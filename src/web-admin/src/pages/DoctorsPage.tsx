@@ -10,6 +10,7 @@ import {
   TrophyOutlined,
   InfoCircleOutlined,
   ReadOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
@@ -28,16 +29,22 @@ export const DoctorsPage: React.FC = () => {
   // Danh sách các khoa để lọc
   const departmentsList = [
     { key: 'all', label: 'Tất Cả Bác Sĩ' },
-    { key: 'Khoa Nội Tổng Hợp', label: 'Khoa Nội' },
-    { key: 'Khoa Tiêu Hóa', label: 'Khoa Tiêu Hóa' },
-    { key: 'Khoa Tim Mạch', label: 'Khoa Tim Mạch' },
-    { key: 'Khoa Nhi', label: 'Khoa Nhi' },
+    { key: 'Khoa Nội Tổng Hợp', label: 'Khoa Nội Tổng Hợp' },
+    { key: 'Khoa Tiêu Hóa & Gan Mật', label: 'Khoa Tiêu Hóa' },
+    { key: 'Khoa Tim Mạch Can Thiệp', label: 'Khoa Tim Mạch' },
+    { key: 'Khoa Nhi & Tiêm Chủng', label: 'Khoa Nhi' },
+    { key: 'Khoa Ngoại Tổng Quát & Chấn Thương', label: 'Khoa Ngoại' },
     { key: 'Khoa Tai Mũi Họng', label: 'Khoa Tai Mũi Họng' },
-    { key: 'Khoa Mắt', label: 'Khoa Mắt' },
+    { key: 'Khoa Mắt Kỹ Thuật Cao', label: 'Khoa Mắt' },
+    { key: 'Khoa Da Liễu & Thẩm Mỹ Da', label: 'Khoa Da Liễu' },
+    { key: 'Khoa Chẩn Đoán Hình Ảnh & Thăm Dò', label: 'CĐ Hình Ảnh' },
   ];
 
   const filteredDoctors = DOCTORS_CATALOG.filter((doc) => {
-    const matchDept = selectedDeptFilter === 'all' || doc.department === selectedDeptFilter;
+    const matchDept =
+      selectedDeptFilter === 'all' ||
+      doc.department.toLowerCase().includes(selectedDeptFilter.toLowerCase()) ||
+      doc.department === selectedDeptFilter;
     const matchSearch =
       !searchKeyword ||
       doc.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
@@ -187,11 +194,14 @@ export const DoctorsPage: React.FC = () => {
                   <div style={{ position: 'relative' }}>
                     <Avatar
                       src={doc.avatar}
+                      icon={<UserOutlined style={{ fontSize: 36, color: '#0284c7' }} />}
+                      onError={() => false}
                       size={76}
                       style={{
                         borderRadius: 18,
                         boxShadow: '0 6px 16px rgba(2, 132, 199, 0.15)',
                         border: '2px solid #bae6fd',
+                        backgroundColor: '#e0f2fe',
                       }}
                     />
                     <CheckCircleFilled
@@ -345,11 +355,14 @@ export const DoctorsPage: React.FC = () => {
             <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 20 }}>
               <Avatar
                 src={detailModalDoctor.avatar}
+                icon={<UserOutlined style={{ fontSize: 40, color: '#0284c7' }} />}
+                onError={() => false}
                 size={84}
                 style={{
                   borderRadius: 20,
                   border: '3px solid #bae6fd',
                   boxShadow: '0 6px 18px rgba(2, 132, 199, 0.15)',
+                  backgroundColor: '#e0f2fe',
                 }}
               />
               <div>
