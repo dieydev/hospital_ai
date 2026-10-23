@@ -52,6 +52,25 @@ export const showConfirmDelete = (title: string, text: string) => {
   });
 };
 
+export const showConfirmAlert = (title: string, text: string, onConfirm?: () => void) => {
+  return Swal.fire({
+    icon: 'warning',
+    title,
+    text,
+    showCancelButton: true,
+    confirmButtonColor: '#0284c7',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Xác nhận',
+    cancelButtonText: 'Hủy bỏ',
+    reverseButtons: true,
+  }).then((res) => {
+    if (res.isConfirmed && onConfirm) {
+      onConfirm();
+    }
+    return res;
+  });
+};
+
 export const showToast = (title: string, icon: 'success' | 'error' | 'warning' | 'info' = 'success') => {
   const Toast = Swal.mixin({
     toast: true,

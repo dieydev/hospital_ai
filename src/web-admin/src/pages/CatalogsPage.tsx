@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tabs, Button, Tag, Typography, Modal, Form, Input, Select, InputNumber, Progress, Tooltip, Row, Col, Statistic, Space } from 'antd';
+import { Card, Table, Tabs, Button, Tag, Typography, Modal, Form, Input, Select, InputNumber, Progress, Tooltip, Row, Col, Statistic } from 'antd';
 import {
   PlusOutlined,
   AppstoreOutlined,
@@ -10,7 +10,6 @@ import {
   SettingOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
@@ -118,6 +117,8 @@ export const CatalogsPage: React.FC = () => {
             viTri: d.location || `Phòng ${101 + index} - Tầng 1`,
             truongKhoa: d.headDoctor || 'Bác sĩ Trưởng Khoa',
             soBacSi: d.doctorCount || 4,
+            maxSlots: d.maxSlots || 40,
+            bookedSlots: d.bookedSlots || 0,
             trangThai: 'Hoạt động',
           }));
           // Giữ các khoa chuẩn nếu API ít hơn

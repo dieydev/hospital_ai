@@ -28,7 +28,6 @@ import {
   SafetyCertificateOutlined,
   GlobalOutlined,
   CrownOutlined,
-  TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';

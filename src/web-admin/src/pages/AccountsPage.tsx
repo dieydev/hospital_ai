@@ -14,7 +14,6 @@ import {
   Row,
   Col,
   Statistic,
-  Badge,
   Tooltip,
   Divider,
 } from 'antd';
@@ -161,7 +160,6 @@ export const AccountsPage: React.FC = () => {
   const totalAccounts = accounts.length;
   const doctorCount = accounts.filter((a) => a.roles.includes('Doctor')).length;
   const staffCount = accounts.filter((a) => a.roles.includes('Receptionist') || a.roles.includes('Nurse')).length;
-  const patientCount = accounts.filter((a) => a.roles.includes('Patient')).length;
   const activeCount = accounts.filter((a) => a.isActive).length;
 
   const getRoleTag = (roles: string[]) => {
