@@ -30,6 +30,8 @@ import {
   ScheduleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  CameraOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { accountService, UserAccountItem, CreateAccountPayload } from '../services/accountService';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/sweetAlert';
@@ -38,6 +40,24 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+const DOCTOR_AVATARS = [
+  { label: 'BS. Nam Chuyên khoa', url: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200' },
+  { label: 'BS. Nam Trưởng khoa', url: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200' },
+  { label: 'BS. Nữ Nhi khoa', url: 'https://images.unsplash.com/photo-1594824813589-3d1421008064?w=200' },
+  { label: 'BS. Nữ Sản khoa', url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200' },
+  { label: 'BS. Ngoại khoa', url: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=200' },
+  { label: 'BS. Minh họa Vector', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=MedicalDoc' },
+];
+
+const PATIENT_AVATARS = [
+  { label: 'Bệnh nhân Nam', url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200' },
+  { label: 'Bệnh nhân Nam trẻ', url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200' },
+  { label: 'Bệnh nhân Nữ', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200' },
+  { label: 'Bệnh nhân Nữ trẻ', url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200' },
+  { label: 'Người cao tuổi', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200' },
+  { label: 'Avatar Hoạt họa', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PatientVN' },
+];
 
 export const AccountsPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
@@ -56,6 +76,55 @@ export const AccountsPage: React.FC = () => {
   const [isResetPassModalOpen, setIsResetPassModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserAccountItem | null>(null);
   const [resetPassForm] = Form.useForm();
+
+  // Modal cập nhật Ảnh đại diện
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [selectedUserForAvatar, setSelectedUserForAvatar] = useState<UserAccountItem | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [avatarSaving, setAvatarSaving] = useState(false);
+
+  const handleOpenAvatarModal = (record: UserAccountItem) => {
+    setSelectedUserForAvatar(record);
+    setAvatarPreview(record.avatarUrl || '');
+    setIsAvatarModalOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showErrorAlert('Ảnh quá lớn', 'Vui lòng chọn ảnh dung lượng dưới 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setAvatarPreview(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!selectedUserForAvatar) return;
+    setAvatarSaving(true);
+    try {
+      const targetUrl = avatarPreview.trim();
+      await accountService.updateAccount(selectedUserForAvatar.id, { avatarUrl: targetUrl });
+      showSuccessAlert(
+        'Cập nhật thành công!',
+        `Đã đổi ảnh đại diện cho tài khoản "${selectedUserForAvatar.fullName}".`
+      );
+      setIsAvatarModalOpen(false);
+      setSelectedUserForAvatar(null);
+      loadData();
+    } catch {
+      showErrorAlert('Thất bại', 'Không thể cập nhật ảnh đại diện.');
+    } finally {
+      setAvatarSaving(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -197,19 +266,45 @@ export const AccountsPage: React.FC = () => {
       key: 'user',
       render: (_: any, record: UserAccountItem) => (
         <Space size={12}>
-          <Avatar
-            size={42}
-            src={record.avatarUrl}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: record.roles.includes('Doctor')
-                ? '#0284c7'
-                : record.roles.includes('Admin')
-                ? '#7c3aed'
-                : '#10b981',
-              border: '2px solid #bae6fd',
-            }}
-          />
+          <Tooltip title="Nhấp để đổi ảnh đại diện">
+            <div
+              style={{ position: 'relative', cursor: 'pointer' }}
+              onClick={() => handleOpenAvatarModal(record)}
+            >
+              <Avatar
+                size={44}
+                src={record.avatarUrl}
+                icon={<UserOutlined />}
+                style={{
+                  backgroundColor: record.roles.includes('Doctor')
+                    ? '#0284c7'
+                    : record.roles.includes('Admin')
+                    ? '#7c3aed'
+                    : '#10b981',
+                  border: '2px solid #bae6fd',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: -2,
+                  right: -2,
+                  background: '#0284c7',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  width: 18,
+                  height: 18,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 10,
+                  border: '1.5px solid #fff',
+                }}
+              >
+                <CameraOutlined />
+              </div>
+            </div>
+          </Tooltip>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
               {record.fullName}
@@ -280,10 +375,18 @@ export const AccountsPage: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 160,
+      width: 180,
       align: 'center' as const,
       render: (_: any, record: UserAccountItem) => (
-        <Space size={8}>
+        <Space size={6}>
+          <Tooltip title="Cập nhật ảnh đại diện">
+            <Button
+              size="small"
+              icon={<CameraOutlined />}
+              onClick={() => handleOpenAvatarModal(record)}
+            />
+          </Tooltip>
+
           <Tooltip title={record.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}>
             <Button
               size="small"
@@ -666,6 +769,139 @@ export const AccountsPage: React.FC = () => {
             </Button>
           </div>
         </Form>
+      </Modal>
+
+      {/* Modal Cập nhật Ảnh đại diện cho Bác sĩ & Bệnh nhân */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0369a1' }}>
+            <CameraOutlined style={{ color: '#0284c7' }} />
+            <span>Cập nhật Ảnh đại diện: {selectedUserForAvatar?.fullName}</span>
+          </div>
+        }
+        open={isAvatarModalOpen}
+        onCancel={() => {
+          setIsAvatarModalOpen(false);
+          setSelectedUserForAvatar(null);
+        }}
+        footer={null}
+        destroyOnClose
+        width={520}
+      >
+        <div style={{ padding: '8px 0' }}>
+          {/* Khu vực xem trước ảnh */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+            <Avatar
+              size={96}
+              src={avatarPreview}
+              icon={<UserOutlined />}
+              style={{
+                border: '3px solid #0284c7',
+                boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)',
+                backgroundColor: '#0284c7',
+                marginBottom: 10,
+              }}
+            />
+            <Text strong style={{ fontSize: 15, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+              {selectedUserForAvatar?.fullName}
+            </Text>
+            <Tag
+              color={
+                selectedUserForAvatar?.roles.includes('Doctor')
+                  ? 'blue'
+                  : selectedUserForAvatar?.roles.includes('Admin')
+                  ? 'purple'
+                  : 'green'
+              }
+              style={{ marginTop: 4 }}
+            >
+              {selectedUserForAvatar?.roles.includes('Doctor')
+                ? 'Bác sĩ lâm sàng'
+                : selectedUserForAvatar?.roles.includes('Admin')
+                ? 'Quản trị viên'
+                : 'Bệnh nhân'}
+            </Tag>
+          </div>
+
+          <Divider style={{ margin: '14px 0' }}>Tùy chọn tải ảnh</Divider>
+
+          {/* 1. Tải ảnh từ thiết bị */}
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: 'block', fontSize: 13, marginBottom: 8 }}>
+              1. Tải ảnh lên từ máy tính:
+            </Text>
+            <input
+              type="file"
+              id="avatar-file-upload-input"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => document.getElementById('avatar-file-upload-input')?.click()}
+              style={{ width: '100%', borderRadius: 8, height: 38 }}
+            >
+              Chọn tệp ảnh từ máy tính (PNG, JPG, WebP)
+            </Button>
+          </div>
+
+          {/* 2. Nhập URL ảnh trực tiếp */}
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: 'block', fontSize: 13, marginBottom: 8 }}>
+              2. Hoặc dán đường dẫn (URL) ảnh:
+            </Text>
+            <Input
+              placeholder="https://example.com/avatar.jpg"
+              value={avatarPreview}
+              onChange={(e) => setAvatarPreview(e.target.value)}
+              allowClear
+              style={{ borderRadius: 8 }}
+            />
+          </div>
+
+          {/* 3. Bộ sưu tập ảnh mẫu chuẩn Y tế & Bệnh nhân */}
+          <div>
+            <Text strong style={{ display: 'block', fontSize: 13, marginBottom: 8 }}>
+              3. Hoặc chọn nhanh ảnh mẫu chất lượng cao:
+            </Text>
+            <Row gutter={[10, 10]}>
+              {(selectedUserForAvatar?.roles.includes('Doctor') ? DOCTOR_AVATARS : PATIENT_AVATARS).map((item, idx) => (
+                <Col span={4} key={idx} style={{ textAlign: 'center' }}>
+                  <Tooltip title={item.label}>
+                    <div
+                      onClick={() => setAvatarPreview(item.url)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: 3,
+                        borderRadius: 10,
+                        border: avatarPreview === item.url ? '2.5px solid #0284c7' : '1px solid #e2e8f0',
+                        backgroundColor: avatarPreview === item.url ? '#e0f2fe' : 'transparent',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <Avatar size={44} src={item.url} icon={<UserOutlined />} />
+                    </div>
+                  </Tooltip>
+                </Col>
+              ))}
+            </Row>
+          </div>
+
+          <Divider style={{ margin: '18px 0 14px' }} />
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <Button onClick={() => setIsAvatarModalOpen(false)}>Hủy bỏ</Button>
+            <Button
+              type="primary"
+              loading={avatarSaving}
+              onClick={handleSaveAvatar}
+              style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
+            >
+              Lưu ảnh đại diện
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
