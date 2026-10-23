@@ -31,7 +31,8 @@ class ApiService {
               e.type == DioExceptionType.connectionTimeout ||
               e.type == DioExceptionType.sendTimeout;
 
-          if (isNetworkIssue &&
+          if (!AppConstants.useProduction &&
+              isNetworkIssue &&
               e.requestOptions.extra['retried_fallback'] != true) {
             final isUsbCurrent = _dio.options.baseUrl.contains('127.0.0.1');
             final fallbackBaseUrl = isUsbCurrent

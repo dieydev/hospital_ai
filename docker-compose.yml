@@ -23,6 +23,7 @@ services:
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
+      - Authentication__Google__ClientId=522428211167-ei79mb8vac5spld5m3djc4jes5llgken.apps.googleusercontent.com
     networks:
       - hospitalai_network
     depends_on:

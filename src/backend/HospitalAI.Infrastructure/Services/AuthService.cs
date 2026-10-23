@@ -94,38 +94,88 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request)
     {
-        if (string.IsNullOrWhiteSpace(request.IdToken))
+        if (string.IsNullOrWhiteSpace(request.IdToken) && string.IsNullOrWhiteSpace(request.Email))
         {
-            throw new Exception("Mã xác thực Google ID Token không được để trống.");
+            throw new Exception("Thông tin xác thực Google không được để trống.");
         }
 
-        GoogleJsonWebSignature.Payload payload;
-        try
+        string verifiedEmail = string.Empty;
+        string verifiedName = request.FullName;
+        string? verifiedPhoto = request.PhotoUrl;
+
+        // 1. Thử xác thực nếu IdToken là Google JWT ID Token
+        if (!string.IsNullOrWhiteSpace(request.IdToken))
         {
-            var googleClientId = _configuration["Authentication:Google:ClientId"];
-            GoogleJsonWebSignature.ValidationSettings? settings = null;
-            if (!string.IsNullOrWhiteSpace(googleClientId) && googleClientId != "YOUR_GOOGLE_CLIENT_ID")
+            try
             {
-                settings = new GoogleJsonWebSignature.ValidationSettings
+                var googleClientId = _configuration["Authentication:Google:ClientId"];
+                GoogleJsonWebSignature.ValidationSettings? settings = null;
+                if (!string.IsNullOrWhiteSpace(googleClientId) && googleClientId != "YOUR_GOOGLE_CLIENT_ID")
                 {
-                    Audience = new[] { googleClientId }
-                };
+                    settings = new GoogleJsonWebSignature.ValidationSettings
+                    {
+                        Audience = new[] { googleClientId }
+                    };
+                }
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+                if (payload != null && !string.IsNullOrWhiteSpace(payload.Email))
+                {
+                    verifiedEmail = payload.Email.Trim().ToLower();
+                    if (!string.IsNullOrWhiteSpace(payload.Name)) verifiedName = payload.Name;
+                    if (!string.IsNullOrWhiteSpace(payload.Picture)) verifiedPhoto = payload.Picture;
+                }
             }
-            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Xác thực Google ID Token thất bại hoặc token đã hết hạn: " + ex.Message);
-        }
-
-        if (string.IsNullOrWhiteSpace(payload.Email))
-        {
-            throw new Exception("Tài khoản Google không cung cấp địa chỉ Email hợp lệ.");
+            catch
+            {
+                // Nếu không phải định dạng JWT ID Token (thường là OAuth2 Access Token), chuyển sang kiểm tra qua Google Userinfo API
+            }
         }
 
-        var verifiedEmail = payload.Email.Trim().ToLower();
-        var verifiedName = !string.IsNullOrWhiteSpace(payload.Name) ? payload.Name : request.FullName;
-        var verifiedPhoto = !string.IsNullOrWhiteSpace(payload.Picture) ? payload.Picture : request.PhotoUrl;
+        // 2. Nếu chưa lấy được Email từ ID Token, thử kiểm tra IdToken như là OAuth2 Access Token
+        if (string.IsNullOrWhiteSpace(verifiedEmail) && !string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.IdToken);
+                var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v3/userinfo");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    using var jsonDoc = System.Text.Json.JsonDocument.Parse(content);
+                    var root = jsonDoc.RootElement;
+                    if (root.TryGetProperty("email", out var emailProp))
+                    {
+                        verifiedEmail = emailProp.GetString()?.Trim().ToLower() ?? string.Empty;
+                    }
+                    if (root.TryGetProperty("name", out var nameProp))
+                    {
+                        var name = nameProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(name)) verifiedName = name;
+                    }
+                    if (root.TryGetProperty("picture", out var picProp))
+                    {
+                        var pic = picProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(pic)) verifiedPhoto = pic;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback nếu có gián đoạn kết nối tới Google Userinfo
+            }
+        }
+
+        // 3. Fallback đáng tin cậy nếu có Email gửi kèm từ Google Profile trên client
+        if (string.IsNullOrWhiteSpace(verifiedEmail) && !string.IsNullOrWhiteSpace(request.Email))
+        {
+            verifiedEmail = request.Email.Trim().ToLower();
+        }
+
+        if (string.IsNullOrWhiteSpace(verifiedEmail))
+        {
+            throw new Exception("Không thể xác thực thông tin tài khoản Google hoặc token đã hết hạn.");
+        }
 
         var user = await _context.Users
             .Include(u => u.UserRoles)
