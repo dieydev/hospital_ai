@@ -53,6 +53,19 @@ const mockAccounts: UserAccountItem[] = [
   },
   {
     id: 'usr-doc-02',
+    username: 'dr.ha',
+    fullName: 'ThS. BS. Trần Thị Thu Hà',
+    email: 'thuha.md@hospital-ai.vn',
+    phoneNumber: '0912345001',
+    roles: ['Doctor'],
+    department: 'Khoa Nội Tổng Hợp',
+    title: 'Bác sĩ Nội khoa • 8 năm KN',
+    isActive: true,
+    createdAt: '2026-02-15T08:20:00Z',
+    avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150',
+  },
+  {
+    id: 'usr-doc-02b',
     username: 'bs_minhtam',
     fullName: 'ThS. BS. Trần Minh Tâm',
     email: 'minhtam.md@hospitalai.vn',
@@ -62,7 +75,7 @@ const mockAccounts: UserAccountItem[] = [
     title: 'Phó khoa Nội tiêu hóa',
     isActive: true,
     createdAt: '2026-03-01T10:15:00Z',
-    avatarUrl: 'https://images.unsplash.com/photo-1594824813589-3d1421008064?w=150',
+    avatarUrl: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150',
   },
   {
     id: 'usr-doc-03',
