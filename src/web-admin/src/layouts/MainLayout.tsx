@@ -27,6 +27,8 @@ import {
   ExperimentOutlined,
   SafetyCertificateOutlined,
   GlobalOutlined,
+  CrownOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -163,6 +165,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     </div>
   );
 
+  const isAdmin = user?.vaiTro?.some((r) => r.toLowerCase() === 'admin');
+
   const menuItems = [
     {
       type: 'group' as const,
@@ -292,6 +296,22 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       type: 'group' as const,
       label: collapsed ? null : 'QUẢN TRỊ & BÁO CÁO',
       children: [
+        ...(isAdmin
+          ? [
+              {
+                key: '/accounts',
+                icon: <CrownOutlined style={{ fontSize: 17, color: '#7c3aed' }} />,
+                label: (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 600 }}>Quản lý Tài khoản</span>
+                    <span className="sidebar-badge" style={{ backgroundColor: '#f3e8ff', color: '#7c3aed' }}>
+                      Admin
+                    </span>
+                  </div>
+                ),
+              },
+            ]
+          : []),
         {
           key: '/catalogs',
           icon: <AppstoreOutlined style={{ fontSize: 17 }} />,

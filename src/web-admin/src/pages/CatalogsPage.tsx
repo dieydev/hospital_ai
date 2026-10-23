@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tabs, Button, Tag, Typography, Modal, Form, Input, Select, InputNumber } from 'antd';
-import { PlusOutlined, AppstoreOutlined, MedicineBoxOutlined, TeamOutlined, ReadOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { Card, Table, Tabs, Button, Tag, Typography, Modal, Form, Input, Select, InputNumber, Progress, Tooltip, Row, Col, Statistic, Space } from 'antd';
+import {
+  PlusOutlined,
+  AppstoreOutlined,
+  MedicineBoxOutlined,
+  TeamOutlined,
+  ReadOutlined,
+  ApartmentOutlined,
+  SettingOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+} from '@ant-design/icons';
 import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
@@ -15,19 +26,24 @@ export const CatalogsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
+  // Modal Cấu hình Slot Khoa
+  const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
+  const [selectedDeptForSlot, setSelectedDeptForSlot] = useState<any>(null);
+  const [slotForm] = Form.useForm();
+
   const [departmentsData, setDepartmentsData] = useState([
-    { id: 'dept-01', maKhoa: 'KNOI', tenKhoa: 'Khoa Nội Tổng Hợp', viTri: 'Phòng 102 - Tầng 1', truongKhoa: 'BS. CKII. Nguyễn Thanh Duy', soBacSi: 6, trangThai: 'Hoạt động' },
-    { id: 'dept-02', maKhoa: 'KNHI', tenKhoa: 'Khoa Nhi', viTri: 'Phòng 108 - Tầng 1', truongKhoa: 'BS. CKI. Phạm Minh Đức', soBacSi: 4, trangThai: 'Hoạt động' },
-    { id: 'dept-03', maKhoa: 'KMAT', tenKhoa: 'Khoa Mắt', viTri: 'Phòng 201 - Tầng 2', truongKhoa: 'BS. CKI. Trần Ngọc Mai', soBacSi: 3, trangThai: 'Hoạt động' },
-    { id: 'dept-04', maKhoa: 'KTMH', tenKhoa: 'Khoa Tai Mũi Họng', viTri: 'Phòng 204 - Tầng 2', truongKhoa: 'BS. CKII. Lê Văn Tuấn', soBacSi: 4, trangThai: 'Hoạt động' },
-    { id: 'dept-05', maKhoa: 'KTIM', tenKhoa: 'Khoa Tim Mạch', viTri: 'Phòng 208 - Tầng 2', truongKhoa: 'TS. BS. Huỳnh Quốc Dũng', soBacSi: 5, trangThai: 'Hoạt động' },
-    { id: 'dept-06', maKhoa: 'KTHOA', tenKhoa: 'Khoa Tiêu Hóa', viTri: 'Phòng 212 - Tầng 2', truongKhoa: 'BS. CKII. Đinh Khắc Vương', soBacSi: 4, trangThai: 'Hoạt động' },
-    { id: 'dept-07', maKhoa: 'KNGOAI', tenKhoa: 'Khoa Ngoại Tổng Quát', viTri: 'Phòng 301 - Tầng 3', truongKhoa: 'BS. CKII. Đỗ Hoàng Giang', soBacSi: 6, trangThai: 'Hoạt động' },
-    { id: 'dept-08', maKhoa: 'KRHM', tenKhoa: 'Khoa Răng Hàm Mặt', viTri: 'Phòng 215 - Tầng 2', truongKhoa: 'BS. CKI. Hoàng Trọng Nghĩa', soBacSi: 3, trangThai: 'Hoạt động' },
-    { id: 'dept-09', maKhoa: 'KDL', tenKhoa: 'Khoa Da Liễu', viTri: 'Phòng 305 - Tầng 3', truongKhoa: 'BS. CKI. Nguyễn Phương Anh', soBacSi: 3, trangThai: 'Hoạt động' },
-    { id: 'dept-10', maKhoa: 'KSAN', tenKhoa: 'Khoa Sản Phụ Khoa', viTri: 'Phòng 308 - Tầng 3', truongKhoa: 'BS. CKII. Lê Thị Kim Phượng', soBacSi: 5, trangThai: 'Hoạt động' },
-    { id: 'dept-11', maKhoa: 'KCC', tenKhoa: 'Khoa Cấp Cứu & Hồi Sức', viTri: 'Tầng Trệt - Khu A', truongKhoa: 'BS. CKI. Trịnh Văn Thành', soBacSi: 8, trangThai: 'Hoạt động 24/7' },
-    { id: 'dept-12', maKhoa: 'KCDHA', tenKhoa: 'Khoa Chẩn Đoán Hình Ảnh', viTri: 'Phòng 110 - Tầng 1', truongKhoa: 'ThS. BS. Phan Hoàng Nam', soBacSi: 4, trangThai: 'Hoạt động' },
+    { id: 'dept-01', maKhoa: 'KNOI', tenKhoa: 'Khoa Nội Tổng Hợp', viTri: 'Phòng 102 - Tầng 1', truongKhoa: 'BS. CKII. Nguyễn Thanh Duy', soBacSi: 6, trangThai: 'Hoạt động', maxSlots: 50, bookedSlots: 32 },
+    { id: 'dept-02', maKhoa: 'KNHI', tenKhoa: 'Khoa Nhi', viTri: 'Phòng 108 - Tầng 1', truongKhoa: 'BS. CKI. Phạm Minh Đức', soBacSi: 4, trangThai: 'Hoạt động', maxSlots: 40, bookedSlots: 28 },
+    { id: 'dept-03', maKhoa: 'KMAT', tenKhoa: 'Khoa Mắt', viTri: 'Phòng 201 - Tầng 2', truongKhoa: 'BS. CKI. Trần Ngọc Mai', soBacSi: 3, trangThai: 'Hoạt động', maxSlots: 35, bookedSlots: 19 },
+    { id: 'dept-04', maKhoa: 'KTMH', tenKhoa: 'Khoa Tai Mũi Họng', viTri: 'Phòng 204 - Tầng 2', truongKhoa: 'BS. CKII. Lê Văn Tuấn', soBacSi: 4, trangThai: 'Hoạt động', maxSlots: 40, bookedSlots: 22 },
+    { id: 'dept-05', maKhoa: 'KTIM', tenKhoa: 'Khoa Tim Mạch', viTri: 'Phòng 208 - Tầng 2', truongKhoa: 'TS. BS. Huỳnh Quốc Dũng', soBacSi: 5, trangThai: 'Hoạt động', maxSlots: 45, bookedSlots: 41 },
+    { id: 'dept-06', maKhoa: 'KTHOA', tenKhoa: 'Khoa Tiêu Hóa', viTri: 'Phòng 212 - Tầng 2', truongKhoa: 'BS. CKII. Đinh Khắc Vương', soBacSi: 4, trangThai: 'Hoạt động', maxSlots: 40, bookedSlots: 25 },
+    { id: 'dept-07', maKhoa: 'KNGOAI', tenKhoa: 'Khoa Ngoại Tổng Quát', viTri: 'Phòng 301 - Tầng 3', truongKhoa: 'BS. CKII. Đỗ Hoàng Giang', soBacSi: 6, trangThai: 'Hoạt động', maxSlots: 50, bookedSlots: 30 },
+    { id: 'dept-08', maKhoa: 'KRHM', tenKhoa: 'Khoa Răng Hàm Mặt', viTri: 'Phòng 215 - Tầng 2', truongKhoa: 'BS. CKI. Hoàng Trọng Nghĩa', soBacSi: 3, trangThai: 'Hoạt động', maxSlots: 30, bookedSlots: 18 },
+    { id: 'dept-09', maKhoa: 'KDL', tenKhoa: 'Khoa Da Liễu', viTri: 'Phòng 305 - Tầng 3', truongKhoa: 'BS. CKI. Nguyễn Phương Anh', soBacSi: 3, trangThai: 'Hoạt động', maxSlots: 35, bookedSlots: 15 },
+    { id: 'dept-10', maKhoa: 'KSAN', tenKhoa: 'Khoa Sản Phụ Khoa', viTri: 'Phòng 308 - Tầng 3', truongKhoa: 'BS. CKII. Lê Thị Kim Phượng', soBacSi: 5, trangThai: 'Hoạt động', maxSlots: 40, bookedSlots: 34 },
+    { id: 'dept-11', maKhoa: 'KCC', tenKhoa: 'Khoa Cấp Cứu & Hồi Sức', viTri: 'Tầng Trệt - Khu A', truongKhoa: 'BS. CKI. Trịnh Văn Thành', soBacSi: 8, trangThai: 'Hoạt động 24/7', maxSlots: 100, bookedSlots: 46 },
+    { id: 'dept-12', maKhoa: 'KCDHA', tenKhoa: 'Khoa Chẩn Đoán Hình Ảnh', viTri: 'Phòng 110 - Tầng 1', truongKhoa: 'ThS. BS. Phan Hoàng Nam', soBacSi: 4, trangThai: 'Hoạt động', maxSlots: 60, bookedSlots: 45 },
   ]);
 
   const [doctorsData, setDoctorsData] = useState([
@@ -113,6 +129,37 @@ export const CatalogsPage: React.FC = () => {
       .catch(() => {});
   }, []);
 
+  const handleOpenSlotModal = (dept: any) => {
+    setSelectedDeptForSlot(dept);
+    slotForm.setFieldsValue({
+      maxSlots: dept.maxSlots || 40,
+      bookedSlots: dept.bookedSlots || 0,
+      trangThai: dept.trangThai || 'Hoạt động',
+    });
+    setIsSlotModalOpen(true);
+  };
+
+  const handleSaveSlotConfig = (values: any) => {
+    if (!selectedDeptForSlot) return;
+    setDepartmentsData((prev) =>
+      prev.map((d) =>
+        d.id === selectedDeptForSlot.id
+          ? {
+              ...d,
+              maxSlots: values.maxSlots,
+              bookedSlots: values.bookedSlots,
+              trangThai: values.trangThai,
+            }
+          : d
+      )
+    );
+    showSuccessAlert(
+      'Cập nhật Slot thành công!',
+      `Đã cập nhật hạn mức ${values.maxSlots} suất khám cho ${selectedDeptForSlot.tenKhoa}.`
+    );
+    setIsSlotModalOpen(false);
+  };
+
   const handleOpenAddModal = () => {
     form.resetFields();
     setIsModalOpen(true);
@@ -127,6 +174,8 @@ export const CatalogsPage: React.FC = () => {
         viTri: values.viTri || 'Tầng 1 - Khu Khám bệnh',
         truongKhoa: values.truongKhoa || 'Đang cập nhật',
         soBacSi: values.soBacSi || 3,
+        maxSlots: values.maxSlots || 40,
+        bookedSlots: 0,
         trangThai: 'Hoạt động',
       };
       setDepartmentsData([newDept, ...departmentsData]);
@@ -219,20 +268,132 @@ export const CatalogsPage: React.FC = () => {
           items={[
             {
               key: 'departments',
-              label: (<span><ApartmentOutlined /> Khoa / Phòng Khám</span>),
+              label: (<span><ApartmentOutlined /> Khoa / Phòng Khám & Slot</span>),
               children: (
-                <Table
-                  dataSource={departmentsData}
-                  columns={[
-                    { title: 'Mã Khoa', dataIndex: 'maKhoa', key: 'maKhoa', render: (c: string) => <Tag color="cyan" style={{ fontWeight: 700 }}>{c}</Tag> },
-                    { title: 'Tên Khoa / Phòng', dataIndex: 'tenKhoa', key: 'tenKhoa', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
-                    { title: 'Vị trí phòng khám', dataIndex: 'viTri', key: 'viTri' },
-                    { title: 'Trưởng Khoa', dataIndex: 'truongKhoa', key: 'truongKhoa', render: (tk: string) => <Tag color="blue">{tk}</Tag> },
-                    { title: 'Nhân sự', dataIndex: 'soBacSi', key: 'soBacSi', render: (cnt: number) => `${cnt} Bác sĩ` },
-                    { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', render: (s: string) => <Tag color="green">{s}</Tag> },
-                  ]}
-                  rowKey="id"
-                />
+                <div>
+                  {/* Dải thống kê Slot toàn viện */}
+                  <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                    <Col xs={12} sm={6}>
+                      <Card size="small" style={{ borderRadius: 10, border: '1px solid #bae6fd', background: isDarkMode ? '#1e293b' : '#f0f9ff' }}>
+                        <Statistic
+                          title={<span style={{ fontSize: 12, color: '#64748b' }}>Tổng Slot toàn viện</span>}
+                          value={departmentsData.reduce((acc, cur) => acc + (cur.maxSlots || 0), 0)}
+                          prefix={<CalendarOutlined style={{ color: '#0284c7' }} />}
+                          valueStyle={{ fontSize: 18, fontWeight: 700, color: '#0369a1' }}
+                          suffix="suất"
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Card size="small" style={{ borderRadius: 10, border: '1px solid #fed7aa', background: isDarkMode ? '#1e293b' : '#fffbeb' }}>
+                        <Statistic
+                          title={<span style={{ fontSize: 12, color: '#64748b' }}>Đã tiếp nhận / Đặt lịch</span>}
+                          value={departmentsData.reduce((acc, cur) => acc + (cur.bookedSlots || 0), 0)}
+                          prefix={<TeamOutlined style={{ color: '#f59e0b' }} />}
+                          valueStyle={{ fontSize: 18, fontWeight: 700, color: '#d97706' }}
+                          suffix="lượt"
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Card size="small" style={{ borderRadius: 10, border: '1px solid #bbf7d0', background: isDarkMode ? '#1e293b' : '#f0fdf4' }}>
+                        <Statistic
+                          title={<span style={{ fontSize: 12, color: '#64748b' }}>Slot còn trống hôm nay</span>}
+                          value={departmentsData.reduce((acc, cur) => acc + Math.max(0, (cur.maxSlots || 0) - (cur.bookedSlots || 0)), 0)}
+                          prefix={<CheckCircleOutlined style={{ color: '#10b981' }} />}
+                          valueStyle={{ fontSize: 18, fontWeight: 700, color: '#16a34a' }}
+                          suffix="chỗ"
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Card size="small" style={{ borderRadius: 10, border: '1px solid #e2e8f0', background: isDarkMode ? '#1e293b' : '#f8fafc' }}>
+                        <Statistic
+                          title={<span style={{ fontSize: 12, color: '#64748b' }}>Công suất phục vụ</span>}
+                          value={Math.round(
+                            (departmentsData.reduce((acc, cur) => acc + (cur.bookedSlots || 0), 0) /
+                              Math.max(1, departmentsData.reduce((acc, cur) => acc + (cur.maxSlots || 0), 0))) *
+                              100
+                          )}
+                          prefix={<MedicineBoxOutlined style={{ color: '#6366f1' }} />}
+                          valueStyle={{ fontSize: 18, fontWeight: 700, color: '#4f46e5' }}
+                          suffix="%"
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+
+                  <Table
+                    dataSource={departmentsData}
+                    columns={[
+                      { title: 'Mã Khoa', dataIndex: 'maKhoa', key: 'maKhoa', width: 95, render: (c: string) => <Tag color="cyan" style={{ fontWeight: 700 }}>{c}</Tag> },
+                      { title: 'Tên Khoa / Phòng', dataIndex: 'tenKhoa', key: 'tenKhoa', width: 190, render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
+                      { title: 'Vị trí phòng khám', dataIndex: 'viTri', key: 'viTri', width: 170 },
+                      { title: 'Trưởng Khoa', dataIndex: 'truongKhoa', key: 'truongKhoa', width: 180, render: (tk: string) => <Tag color="blue">{tk}</Tag> },
+                      { title: 'Nhân sự', dataIndex: 'soBacSi', key: 'soBacSi', width: 100, render: (cnt: number) => `${cnt} Bác sĩ` },
+                      {
+                        title: 'Suất khám / Slot trong ngày',
+                        key: 'slots',
+                        width: 230,
+                        render: (_: any, record: any) => {
+                          const max = record.maxSlots || 40;
+                          const booked = record.bookedSlots || 0;
+                          const remain = Math.max(0, max - booked);
+                          const percent = Math.min(100, Math.round((booked / max) * 100));
+                          const isFull = remain === 0;
+
+                          return (
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
+                                <span>
+                                  Đã nhận: <strong style={{ color: '#0369a1' }}>{booked}</strong>/{max}
+                                </span>
+                                <span style={{ fontWeight: 600, color: isFull ? '#f43f5e' : remain <= 5 ? '#f59e0b' : '#10b981' }}>
+                                  {isFull ? 'Hết slot' : `Còn ${remain} slot`}
+                                </span>
+                              </div>
+                              <Progress
+                                percent={percent}
+                                size="small"
+                                showInfo={false}
+                                strokeColor={isFull ? '#f43f5e' : percent >= 80 ? '#f59e0b' : '#0284c7'}
+                              />
+                            </div>
+                          );
+                        },
+                      },
+                      {
+                        title: 'Trạng thái',
+                        dataIndex: 'trangThai',
+                        key: 'trangThai',
+                        width: 120,
+                        render: (s: string) => <Tag color={s.includes('Hoạt động') ? 'green' : 'default'}>{s}</Tag>,
+                      },
+                      {
+                        title: 'Thao tác',
+                        key: 'actions',
+                        width: 110,
+                        align: 'center' as const,
+                        render: (_: any, record: any) => (
+                          <Tooltip title="Cấu hình số Slot khám của khoa">
+                            <Button
+                              size="small"
+                              type="primary"
+                              ghost
+                              icon={<SettingOutlined />}
+                              onClick={() => handleOpenSlotModal(record)}
+                            >
+                              Sửa Slot
+                            </Button>
+                          </Tooltip>
+                        ),
+                      },
+                    ]}
+                    rowKey="id"
+                    pagination={{ pageSize: 8 }}
+                    scroll={{ x: 1000 }}
+                  />
+                </div>
               ),
             },
             {
@@ -342,6 +503,14 @@ export const CatalogsPage: React.FC = () => {
               <Form.Item label="Số lượng Bác sĩ" name="soBacSi" initialValue={4}>
                 <InputNumber min={1} max={50} style={{ width: '100%' }} />
               </Form.Item>
+              <Form.Item
+                label="Hạn mức Slot khám tối đa / ngày"
+                name="maxSlots"
+                initialValue={40}
+                rules={[{ required: true, message: 'Vui lòng nhập số slot tối đa' }]}
+              >
+                <InputNumber min={5} max={300} style={{ width: '100%' }} />
+              </Form.Item>
             </>
           )}
 
@@ -429,6 +598,50 @@ export const CatalogsPage: React.FC = () => {
               </Form.Item>
             </>
           )}
+        </Form>
+      </Modal>
+
+      {/* Modal Cấu hình Hạn mức Slot Khoa Phòng */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0369a1' }}>
+            <SettingOutlined style={{ color: '#0284c7' }} />
+            <span>Cấu hình Suất khám & Slot: {selectedDeptForSlot?.tenKhoa}</span>
+          </div>
+        }
+        open={isSlotModalOpen}
+        onCancel={() => setIsSlotModalOpen(false)}
+        onOk={() => slotForm.submit()}
+        okText="Lưu cấu hình"
+        cancelText="Hủy"
+        destroyOnClose
+        width={460}
+      >
+        <Form form={slotForm} layout="vertical" onFinish={handleSaveSlotConfig} style={{ marginTop: 16 }}>
+          <Form.Item
+            name="maxSlots"
+            label="Hạn mức Slot khám tối đa trong ngày"
+            rules={[{ required: true, message: 'Vui lòng nhập số slot tối đa' }]}
+            extra="Số lượt bệnh nhân tối đa mà chuyên khoa có thể tiếp nhận trong 1 ngày làm việc"
+          >
+            <InputNumber min={5} max={300} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item
+            name="bookedSlots"
+            label="Số lượt đã tiếp nhận / Đã đăng ký hôm nay"
+            rules={[{ required: true, message: 'Vui lòng nhập số lượt đã nhận' }]}
+          >
+            <InputNumber min={0} max={300} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item name="trangThai" label="Trạng thái tiếp nhận">
+            <Select>
+              <Option value="Hoạt động">Hoạt động (Tiếp nhận bình thường)</Option>
+              <Option value="Tạm ngưng nhận bệnh">Tạm ngưng nhận bệnh</Option>
+              <Option value="Hoạt động 24/7">Hoạt động 24/7 (Cấp cứu)</Option>
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
     </div>

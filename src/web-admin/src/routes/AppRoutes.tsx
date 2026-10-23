@@ -10,6 +10,7 @@ import { MedicalRecordsPage } from '../pages/MedicalRecordsPage';
 import { BillingPage } from '../pages/BillingPage';
 import { AIAssistantPage } from '../pages/AIAssistantPage';
 import { CatalogsPage } from '../pages/CatalogsPage';
+import { AccountsPage } from '../pages/AccountsPage';
 import { AuditLogPage } from '../pages/AuditLogPage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ProfilePage } from '../pages/ProfilePage';
@@ -28,6 +29,9 @@ import { useAuthStore } from '../store/useAuthStore';
 
 export const AppRoutes: React.FC = () => {
   const user = useAuthStore((state) => state.user);
+
+  // Kiểm tra vai trò Admin
+  const isAdmin = user?.vaiTro?.some((r) => r.toLowerCase() === 'admin');
 
   // Kiểm tra vai trò: Cán bộ y tế & Quản trị viên nội bộ mới được vào hệ thống quản lý nội bộ
   const isStaffOrAdmin = user?.vaiTro?.some((r) =>
@@ -97,6 +101,10 @@ export const AppRoutes: React.FC = () => {
                   <Route path="/billing" element={<BillingPage />} />
                   <Route path="/ai-assistant" element={<AIAssistantPage />} />
                   <Route path="/catalogs" element={<CatalogsPage />} />
+                  <Route
+                    path="/accounts"
+                    element={isAdmin ? <AccountsPage /> : <Navigate to="/dashboard" replace />}
+                  />
                   <Route path="/audit-logs" element={<AuditLogPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
