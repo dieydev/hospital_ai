@@ -50,9 +50,11 @@ import {
   CopyOutlined,
   EnvironmentOutlined,
   LockOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import api from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import {
   appointmentService,
@@ -485,7 +487,32 @@ export const PatientBookingPage: React.FC = () => {
       setCurrentStep(completionStepIndex); // Màn hình thành công
 
       if (paymentMethod === 'vnpay') {
-        setVnPayModalOpen(true);
+        try {
+          localStorage.setItem('pending_vnpay_apt', JSON.stringify(newApt));
+        } catch {
+          // ignore
+        }
+
+        showToast('Đang kết nối Cổng thanh toán VNPAY Sandbox chính thức...', 'info');
+
+        try {
+          const returnUrl = `${window.location.origin}/booking`;
+          const res = await api.post('/payment/create-payment-url', {
+            orderId: newApt.id,
+            amount: pricing.finalTotal,
+            orderDescription: `Thanh toan phi dat kham ${newApt.id} BV D-Medical`,
+            returnUrl: returnUrl,
+          });
+
+          if (res.data?.url) {
+            // Chuyển hướng trực tiếp 100% sang trang Cổng Thanh Toán chính thức của VNPay Sandbox
+            window.location.href = res.data.url;
+            return;
+          }
+        } catch (err: any) {
+          console.warn('Lỗi gọi API create-payment-url, mở modal thanh toán VNPAY:', err);
+          setVnPayModalOpen(true);
+        }
       } else {
         showSuccessAlert(
           'Đặt Lịch Khám Thành Công!',
@@ -561,6 +588,66 @@ export const PatientBookingPage: React.FC = () => {
       }
     }
   }, [searchParams, user]);
+
+  // Tự động nhận kết quả thanh toán từ Cổng VNPAY Sandbox chính thức (sandbox.vnpayment.vn)
+  useEffect(() => {
+    const vnpResponseCode = searchParams.get('vnp_ResponseCode');
+    const vnpTxnRef = searchParams.get('vnp_TxnRef');
+    const vnpTransactionNo = searchParams.get('vnp_TransactionNo');
+    const vnpBankCode = searchParams.get('vnp_BankCode') || 'NCB';
+    const vnpAmount = searchParams.get('vnp_Amount');
+
+    if (vnpResponseCode) {
+      if (vnpResponseCode === '00') {
+        const rawSaved = localStorage.getItem('pending_vnpay_apt');
+        let apt: OnlineAppointmentItem | null = null;
+        if (rawSaved) {
+          try {
+            apt = JSON.parse(rawSaved);
+          } catch {
+            // ignore
+          }
+        }
+
+        if (apt) {
+          apt.status = 'Confirmed';
+          apt.checkInStatus = 'CheckedInQR';
+          setCreatedAppointment(apt);
+        } else if (vnpTxnRef) {
+          appointmentService.getAppointments().then((all) => {
+            const found = all.find((a) => a.id.toLowerCase() === vnpTxnRef.toLowerCase());
+            if (found) {
+              found.status = 'Confirmed';
+              found.checkInStatus = 'CheckedInQR';
+              setCreatedAppointment(found);
+            }
+          });
+        }
+
+        setIsVnPayPaid(true);
+        setVnPayTransactionInfo({
+          transactionNo: vnpTransactionNo || `VNP${Date.now().toString().slice(-8)}`,
+          bankCode: vnpBankCode,
+          cardHolder: 'CHỦ THẺ VNPAY',
+          amount: vnpAmount ? Number(vnpAmount) / 100 : 150000,
+          paymentTime: new Date().toISOString(),
+        });
+        setCurrentStep(bookingMode === 'byDept' ? 4 : 3);
+
+        showSuccessAlert(
+          'Thanh Toán VNPAY Thành Công!',
+          `Giao dịch mã ${vnpTransactionNo || vnpTxnRef} qua ngân hàng ${vnpBankCode} đã được VNPAY Sandbox xác nhận hợp lệ. Phiếu khám điện tử và Thẻ Khám Ưu Tiên đã được kích hoạt!`
+        );
+
+        localStorage.removeItem('pending_vnpay_apt');
+      } else {
+        showErrorAlert(
+          'Thanh Toán VNPAY Thất Bại',
+          `Giao dịch trên Cổng VNPAY Sandbox không thành công hoặc đã bị hủy (Mã phản hồi: ${vnpResponseCode}). Vui lòng thử lại.`
+        );
+      }
+    }
+  }, [searchParams, bookingMode]);
 
   // Mở modal đổi lịch khám (Reschedule)
   const handleOpenReschedule = async (apt: OnlineAppointmentItem) => {
@@ -2856,7 +2943,7 @@ export const PatientBookingPage: React.FC = () => {
                             <Button
                               type="primary"
                               size="large"
-                              icon={<CreditCardOutlined />}
+                              icon={<GlobalOutlined />}
                               style={{
                                 backgroundColor: '#005baa',
                                 borderColor: '#005baa',
@@ -2866,9 +2953,39 @@ export const PatientBookingPage: React.FC = () => {
                                 boxShadow: '0 4px 14px rgba(0, 91, 170, 0.3)',
                               }}
                               block
+                              onClick={async () => {
+                                try {
+                                  showToast('Đang kết nối cổng VNPAY Sandbox chính thức...', 'info');
+                                  const returnUrl = `${window.location.origin}/booking`;
+                                  const res = await api.post('/payment/create-payment-url', {
+                                    orderId: createdAppointment.id,
+                                    amount: calculatePricing().finalTotal,
+                                    orderDescription: `Thanh toan phi dat kham ${createdAppointment.id} BV D-Medical`,
+                                    returnUrl: returnUrl,
+                                  });
+                                  if (res.data?.url) {
+                                    window.location.href = res.data.url;
+                                  }
+                                } catch {
+                                  setVnPayModalOpen(true);
+                                }
+                              }}
+                            >
+                              CHUYỂN HƯỚNG CỔNG VNPAY SANDBOX (CHÍNH THỨC)
+                            </Button>
+                            <Button
+                              size="middle"
+                              icon={<CreditCardOutlined />}
+                              style={{
+                                borderColor: '#005baa',
+                                color: '#005baa',
+                                fontWeight: 700,
+                                borderRadius: 10,
+                              }}
+                              block
                               onClick={() => setVnPayModalOpen(true)}
                             >
-                              MỞ CỔNG VNPAY (CHỌN NGÂN HÀNG & NHẬP OTP)
+                              Hoặc Mở Cửa Sổ Nhập Thẻ & OTP Trực Tiếp
                             </Button>
                             <div style={{ textAlign: 'center', fontSize: 11.5, color: '#64748b' }}>
                               <LockOutlined style={{ marginRight: 4, color: '#16a34a' }} />

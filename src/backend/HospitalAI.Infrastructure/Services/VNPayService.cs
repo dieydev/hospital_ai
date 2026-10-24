@@ -27,7 +27,7 @@ public class VNPayService : IPaymentService
         var vnp_TmnCode = _configuration["Vnpay:TmnCode"];
         var vnp_HashSecret = _configuration["Vnpay:HashSecret"];
         var vnp_Url = _configuration["Vnpay:BaseUrl"];
-        var vnp_ReturnUrl = _configuration["Vnpay:ReturnUrl"];
+        var vnp_ReturnUrl = !string.IsNullOrEmpty(model.ReturnUrl) ? model.ReturnUrl : _configuration["Vnpay:ReturnUrl"];
         var vnp_Command = _configuration["Vnpay:Command"];
         var vnp_Version = _configuration["Vnpay:Version"];
 
