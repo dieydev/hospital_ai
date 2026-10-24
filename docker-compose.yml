@@ -6,11 +6,16 @@ services:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=@Duy12345
       - MSSQL_PID=Developer
+      - MSSQL_MEMORY_LIMIT_MB=1400
+    deploy:
+      resources:
+        limits:
+          memory: 1800M
     volumes:
       - mssql_data:/var/opt/mssql
     networks:
       - hospitalai_network
-    restart: always
+    restart: unless-stopped
 
   identity-service:
     container_name: hospitalai-identity-service
@@ -19,16 +24,22 @@ services:
       dockerfile: services/HospitalAI.IdentityService/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - DOTNET_gcServer=0
+      - DOTNET_GCHeapHardLimitPercent=75
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
       - Authentication__Google__ClientId=522428211167-ei79mb8vac5spld5m3djc4jes5llgken.apps.googleusercontent.com
+    deploy:
+      resources:
+        limits:
+          memory: 450M
     networks:
       - hospitalai_network
     depends_on:
       - sqlserver
-    restart: always
+    restart: unless-stopped
 
   patient-service:
     container_name: hospitalai-patient-service
@@ -37,15 +48,21 @@ services:
       dockerfile: services/HospitalAI.PatientService/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - DOTNET_gcServer=0
+      - DOTNET_GCHeapHardLimitPercent=75
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
+    deploy:
+      resources:
+        limits:
+          memory: 400M
     networks:
       - hospitalai_network
     depends_on:
       - sqlserver
-    restart: always
+    restart: unless-stopped
 
   queue-service:
     container_name: hospitalai-queue-service
@@ -54,15 +71,21 @@ services:
       dockerfile: services/HospitalAI.QueueService/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - DOTNET_gcServer=0
+      - DOTNET_GCHeapHardLimitPercent=75
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
+    deploy:
+      resources:
+        limits:
+          memory: 400M
     networks:
       - hospitalai_network
     depends_on:
       - sqlserver
-    restart: always
+    restart: unless-stopped
 
   examination-service:
     container_name: hospitalai-examination-service
@@ -71,7 +94,9 @@ services:
       dockerfile: services/HospitalAI.ExaminationService/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - DOTNET_gcServer=0
+      - DOTNET_GCHeapHardLimitPercent=75
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
       - MongoDb__ConnectionString=mongodb://hospitalai_admin:HospitalAIMongo2026SecurePass@mongodb:27017/HospitalAI_AI_Logs?authSource=admin
       - MongoDb__DatabaseName=HospitalAI_AI_Logs
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
@@ -85,12 +110,16 @@ services:
       - Vnpay__Version=2.1.0
       - Vnpay__Locale=vn
       - Vnpay__ReturnUrl=https://dmedical.site/api/payment/vnpay-return
+    deploy:
+      resources:
+        limits:
+          memory: 450M
     networks:
       - hospitalai_network
     depends_on:
       - sqlserver
       - mongodb
-    restart: always
+    restart: unless-stopped
 
   api-gateway:
     container_name: hospitalai-api-gateway
@@ -99,8 +128,14 @@ services:
       dockerfile: services/HospitalAI.Gateway/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - DOTNET_gcServer=0
+      - DOTNET_GCHeapHardLimitPercent=75
     ports:
       - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
     networks:
       - hospitalai_network
     depends_on:
@@ -108,7 +143,7 @@ services:
       - patient-service
       - queue-service
       - examination-service
-    restart: always
+    restart: unless-stopped
 
   web-admin:
     container_name: hospitalai-web-admin
@@ -117,11 +152,15 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:80"
+    deploy:
+      resources:
+        limits:
+          memory: 250M
     networks:
       - hospitalai_network
     depends_on:
       - api-gateway
-    restart: always
+    restart: unless-stopped
 
   mongodb:
     image: mongo:7.0
@@ -130,14 +169,19 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=hospitalai_admin
       - MONGO_INITDB_ROOT_PASSWORD=HospitalAIMongo2026SecurePass
       - MONGO_INITDB_DATABASE=HospitalAI_AI_Logs
+    deploy:
+      resources:
+        limits:
+          memory: 450M
     volumes:
       - mongo_data:/data/db
     networks:
       - hospitalai_network
-    restart: always
+    restart: unless-stopped
 
 networks:
   hospitalai_network:
+    name: hospital_ai_hospitalai_network
     driver: bridge
 
 volumes:
