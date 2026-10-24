@@ -23,12 +23,23 @@ namespace HospitalAI.ExaminationService.Controllers
         }
 
         [HttpPost("create-payment-url")]
-        [Authorize]
+        [AllowAnonymous]
         public async Task<IActionResult> CreatePaymentUrl([FromBody] PaymentInformationModel model)
         {
             if (!Guid.TryParse(model.OrderId, out Guid billingId))
             {
-                return BadRequest(new { message = "Mã hóa đơn thanh toán không hợp lệ." });
+                // Cho phép tạo link thanh toán VNPay linh hoạt cho lịch hẹn khám hoặc gói khám trực tuyến
+                if (model.Amount > 0)
+                {
+                    if (string.IsNullOrWhiteSpace(model.OrderDescription))
+                    {
+                        model.OrderDescription = $"Thanh toan phi dat kham {model.OrderId}";
+                    }
+                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                    var paymentUrl = _paymentService.CreatePaymentUrl(model, ip);
+                    return Ok(new { Url = paymentUrl, Amount = model.Amount });
+                }
+                return BadRequest(new { message = "Mã hóa đơn hoặc số tiền thanh toán không hợp lệ." });
             }
 
             var billing = await _dbContext.Billings

@@ -77,6 +77,14 @@ services:
       - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
+      - Vnpay__TmnCode=3EKPO0UC
+      - Vnpay__HashSecret=PSKDJCFTWHVARXRNHOVHXRNSSXOVLGLR
+      - Vnpay__BaseUrl=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - Vnpay__Command=pay
+      - Vnpay__CurrCode=VND
+      - Vnpay__Version=2.1.0
+      - Vnpay__Locale=vn
+      - Vnpay__ReturnUrl=https://dmedical.site/api/payment/vnpay-return
     networks:
       - hospitalai_network
     depends_on:

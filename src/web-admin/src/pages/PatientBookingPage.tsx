@@ -49,6 +49,7 @@ import {
   HomeOutlined,
   CopyOutlined,
   EnvironmentOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
@@ -65,6 +66,7 @@ import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
 import { isPatientProfileComplete, isPatientUser } from '../utils/authHelper';
 import { AIChatDrawer } from '../components/AIChatDrawer';
+import { VnPayCheckoutModal } from '../components/VnPayCheckoutModal';
 import { DepartmentIcon } from '../components/DepartmentIcon';
 import {
   DEPARTMENTS_CATALOG,
@@ -93,12 +95,21 @@ export const PatientBookingPage: React.FC = () => {
   const [bookingMode, setBookingMode] = useState<'byDept' | 'byDoctor' | 'byPackage' | 'byFollowUp'>('byDept');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPackage, setSelectedPackage] = useState<HealthPackageOption | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'vietqr' | 'kiosk'>('vietqr');
+  const [paymentMethod, setPaymentMethod] = useState<'vnpay' | 'vietqr' | 'kiosk'>('vnpay');
   const [hasBhyt, setHasBhyt] = useState(true);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
-  // VietQR Online Simulated Payment State
+  // VNPay & VietQR Online Payment States
   const [isVietQrPaid, setIsVietQrPaid] = useState(false);
+  const [isVnPayPaid, setIsVnPayPaid] = useState(false);
+  const [vnPayModalOpen, setVnPayModalOpen] = useState(false);
+  const [vnPayTransactionInfo, setVnPayTransactionInfo] = useState<{
+    transactionNo: string;
+    bankCode: string;
+    cardHolder: string;
+    amount: number;
+    paymentTime: string;
+  } | null>(null);
 
   // Doctor & Package Detail Modal States
   const [viewingDoctor, setViewingDoctor] = useState<DoctorOption | null>(null);
@@ -448,7 +459,7 @@ export const PatientBookingPage: React.FC = () => {
       } else if (!reason) {
         reason = 'Đăng ký đặt lịch khám trực tuyến qua Web Portal';
       }
-      reason += ` • [Thanh toán: ${paymentMethod === 'vietqr' ? 'VietQR Online (Ưu tiên)' : 'Kiosk tại viện'} | ${hasBhyt ? `BHYT giảm ${pricing.effectiveBhyt.toLocaleString('vi-VN')}đ` : 'Tự túc'} | Tạm tính: ${pricing.finalTotal.toLocaleString('vi-VN')}đ]`;
+      reason += ` • [Thanh toán: ${paymentMethod === 'vnpay' ? 'VNPAY Online (Thẻ ATM/OTP)' : paymentMethod === 'vietqr' ? 'VietQR Online' : 'Kiosk tại viện'} | ${hasBhyt ? `BHYT giảm ${pricing.effectiveBhyt.toLocaleString('vi-VN')}đ` : 'Tự túc'} | Tạm tính: ${pricing.finalTotal.toLocaleString('vi-VN')}đ]`;
 
       const newApt = await appointmentService.createAppointment({
         patientCode: patientCode,
@@ -469,11 +480,18 @@ export const PatientBookingPage: React.FC = () => {
 
       setCreatedAppointment(newApt);
       setIsVietQrPaid(false);
+      setIsVnPayPaid(false);
+      setVnPayTransactionInfo(null);
       setCurrentStep(completionStepIndex); // Màn hình thành công
-      showSuccessAlert(
-        'Đặt Lịch Khám Thành Công!',
-        `Phiếu khám điện tử và Mã QR của bạn đã được khởi tạo. Không cần bốc số thứ tự STT khi tới bệnh viện!`
-      );
+
+      if (paymentMethod === 'vnpay') {
+        setVnPayModalOpen(true);
+      } else {
+        showSuccessAlert(
+          'Đặt Lịch Khám Thành Công!',
+          `Phiếu khám điện tử và Mã QR của bạn đã được khởi tạo. Không cần bốc số thứ tự STT khi tới bệnh viện!`
+        );
+      }
     } catch (err: any) {
       if (err.errorFields) {
         showToast('Vui lòng điền đầy đủ các thông tin bắt buộc!', 'warning');
@@ -735,6 +753,8 @@ export const PatientBookingPage: React.FC = () => {
     setSelectedSlot('');
     setCreatedAppointment(null);
     setIsVietQrPaid(false);
+    setIsVnPayPaid(false);
+    setVnPayTransactionInfo(null);
     setBookingForTarget('self');
     setSlotShiftFilter('ALL');
     if (user) {
@@ -2348,39 +2368,93 @@ export const PatientBookingPage: React.FC = () => {
                       <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a', marginBottom: 8 }}>
                         Hình thức thanh toán viện phí:
                       </div>
-                      <Row gutter={[12, 12]}>
-                        <Col xs={24} sm={12}>
+                      <Row gutter={[10, 10]}>
+                        <Col xs={24} sm={8}>
+                          <div
+                            className={`payment-method-card ${paymentMethod === 'vnpay' ? 'selected' : ''}`}
+                            onClick={() => setPaymentMethod('vnpay')}
+                            style={{
+                              borderColor: paymentMethod === 'vnpay' ? '#005baa' : undefined,
+                              backgroundColor: paymentMethod === 'vnpay' ? '#f0f9ff' : undefined,
+                              position: 'relative',
+                            }}
+                          >
+                            <Tag
+                              color="blue"
+                              style={{
+                                position: 'absolute',
+                                top: -8,
+                                right: -4,
+                                fontSize: 10,
+                                fontWeight: 800,
+                                borderRadius: 8,
+                                margin: 0,
+                              }}
+                            >
+                              Khuyên Dùng
+                            </Tag>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div
+                                style={{
+                                  backgroundColor: '#005baa',
+                                  color: '#ffffff',
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 6,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 900,
+                                  fontSize: 10,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                VNPAY
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 800, fontSize: 12.5, color: '#005baa' }}>
+                                  Cổng VNPAY (ATM & OTP)
+                                </div>
+                                <div style={{ fontSize: 10.5, color: '#64748b' }}>
+                                  Thẻ ATM, Ngân hàng, OTP
+                                </div>
+                              </div>
+                            </div>
+                            <Radio checked={paymentMethod === 'vnpay'} />
+                          </div>
+                        </Col>
+                        <Col xs={24} sm={8}>
                           <div
                             className={`payment-method-card ${paymentMethod === 'vietqr' ? 'selected' : ''}`}
                             onClick={() => setPaymentMethod('vietqr')}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <QrcodeOutlined style={{ fontSize: 24, color: '#0284c7' }} />
-                              <div>
-                                <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>
-                                  VietQR / Napas 247
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <QrcodeOutlined style={{ fontSize: 22, color: '#0284c7', flexShrink: 0 }} />
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 800, fontSize: 12.5, color: '#0f172a' }}>
+                                  VietQR Napas 247
                                 </div>
-                                <div style={{ fontSize: 11, color: '#0284c7', fontWeight: 600 }}>
-                                  Ưu tiên vào thẳng buồng khám, không qua quầy
+                                <div style={{ fontSize: 10.5, color: '#64748b' }}>
+                                  Quét QR chuyển khoản
                                 </div>
                               </div>
                             </div>
                             <Radio checked={paymentMethod === 'vietqr'} />
                           </div>
                         </Col>
-                        <Col xs={24} sm={12}>
+                        <Col xs={24} sm={8}>
                           <div
                             className={`payment-method-card ${paymentMethod === 'kiosk' ? 'selected' : ''}`}
                             onClick={() => setPaymentMethod('kiosk')}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <CreditCardOutlined style={{ fontSize: 24, color: '#64748b' }} />
-                              <div>
-                                <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>
-                                  Thanh toán tại Kiosk / Viện
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <CreditCardOutlined style={{ fontSize: 22, color: '#64748b', flexShrink: 0 }} />
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 800, fontSize: 12.5, color: '#0f172a' }}>
+                                  Tại Kiosk / Viện
                                 </div>
-                                <div style={{ fontSize: 11, color: '#64748b' }}>
-                                  Thanh toán tại quầy tiếp đón hoặc kiosk sảnh
+                                <div style={{ fontSize: 10.5, color: '#64748b' }}>
+                                  Tại quầy tiếp đón
                                 </div>
                               </div>
                             </div>
@@ -2473,8 +2547,11 @@ export const PatientBookingPage: React.FC = () => {
 
                           <div className="summary-item-row">
                             <span className="summary-item-label">Phương thức:</span>
-                            <Tag color={paymentMethod === 'vietqr' ? 'blue' : 'default'} style={{ margin: 0, fontWeight: 700 }}>
-                              {paymentMethod === 'vietqr' ? 'VietQR Napas 247' : 'Kiosk tại viện'}
+                            <Tag
+                              color={paymentMethod === 'vnpay' ? 'blue' : paymentMethod === 'vietqr' ? 'cyan' : 'default'}
+                              style={{ margin: 0, fontWeight: 700 }}
+                            >
+                              {paymentMethod === 'vnpay' ? 'Cổng VNPAY (ATM/OTP)' : paymentMethod === 'vietqr' ? 'VietQR Napas 247' : 'Kiosk tại viện'}
                             </Tag>
                           </div>
                         </div>
@@ -2489,7 +2566,9 @@ export const PatientBookingPage: React.FC = () => {
                         </div>
 
                         <div className="summary-guarantee-note">
-                          {paymentMethod === 'vietqr' ? (
+                          {paymentMethod === 'vnpay' ? (
+                            <span>Thanh toán bảo mật qua <strong>Cổng VNPAY</strong> (Hỗ trợ 40+ Ngân hàng, thẻ ATM, OTP). Được cấp <strong>Thẻ Khám Ưu Tiên</strong> vào thẳng buồng khám!</span>
+                          ) : paymentMethod === 'vietqr' ? (
                             <span>Thanh toán trực tuyến qua VietQR được cấp <strong>Thẻ Khám Ưu Tiên</strong>. Đến viện vào thẳng buồng khám theo giờ hẹn!</span>
                           ) : (
                             <span>Sau khi đặt thành công, hệ thống cấp <strong>Mã QR Tiếp Nhận</strong>. Quý khách quét QR tại Kiosk sảnh A để thanh toán và nhận số phòng.</span>
@@ -2550,13 +2629,13 @@ export const PatientBookingPage: React.FC = () => {
               <Title level={2} style={{ color: '#0369a1', fontWeight: 900, margin: '0 0 8px' }}>
                 Đặt khám thành công
               </Title>
-              <Paragraph style={{ color: '#64748b', fontSize: 14, maxWidth: 550, margin: '0 auto 24px' }}>
-                Lịch hẹn đã được xác nhận. Vui lòng <strong>lưu mã QR</strong> hoặc thanh toán trực tuyến qua <strong>VietQR</strong> bên dưới để nhận Thẻ Khám Ưu Tiên.
+              <Paragraph style={{ color: '#64748b', fontSize: 14, maxWidth: 620, margin: '0 auto 24px' }}>
+                Lịch hẹn đã được xác nhận. Vui lòng <strong>lưu mã QR</strong> hoặc thanh toán trực tuyến qua <strong>VNPAY / VietQR</strong> bên dưới để nhận Thẻ Khám Ưu Tiên.
               </Paragraph>
 
               <Row gutter={[24, 24]} style={{ maxWidth: 1000, margin: '0 auto 24px', textAlign: 'left' }}>
                 {/* Thẻ 1: Phiếu Khám Tiếp Nhận Điện Tử */}
-                <Col xs={24} md={paymentMethod === 'vietqr' ? 12 : 24}>
+                <Col xs={24} md={paymentMethod === 'kiosk' ? 24 : 12}>
                   <div id="qr-ticket-card" className="qr-ticket-wrapper" style={{ height: '100%' }}>
                     <div style={{ marginBottom: 10, textAlign: 'center' }}>
                       <img
@@ -2662,7 +2741,147 @@ export const PatientBookingPage: React.FC = () => {
                   </div>
                 </Col>
 
-                {/* Thẻ 2: Thanh Toán Viện Phí Qua VietQR (Chỉ hiển thị nếu chọn VietQR) */}
+                {/* Thẻ 2A: Thanh Toán Viện Phí Qua Cổng VNPAY (Chỉ hiển thị nếu chọn VNPAY) */}
+                {paymentMethod === 'vnpay' && (
+                  <Col xs={24} md={12}>
+                    <div
+                      className={`vietqr-wrapper-card ${isVnPayPaid ? 'paid' : ''}`}
+                      style={{
+                        borderColor: isVnPayPaid ? '#10b981' : '#005baa',
+                        boxShadow: '0 8px 24px rgba(0, 91, 170, 0.1)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div
+                            style={{
+                              backgroundColor: '#005baa',
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: 900,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                            }}
+                          >
+                            VNPAY
+                          </div>
+                          <span style={{ fontWeight: 800, fontSize: 14.5, color: '#005baa' }}>
+                            CỔNG THANH TOÁN VNPAY
+                          </span>
+                        </div>
+                        {isVnPayPaid ? (
+                          <Tag color="green" style={{ margin: 0, fontWeight: 800, padding: '2px 10px', borderRadius: 12 }}>
+                            ĐÃ THANH TOÁN
+                          </Tag>
+                        ) : (
+                          <Tag color="processing" style={{ margin: 0, fontWeight: 700, padding: '2px 8px', borderRadius: 12 }}>
+                            CHỜ THANH TOÁN
+                          </Tag>
+                        )}
+                      </div>
+
+                      <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px' }}>
+                        Thanh toán bảo mật trực tiếp qua Thẻ ATM, Tài khoản Ngân hàng (NCB, VCB, BIDV, MB...) và xác thực OTP:
+                      </p>
+
+                      <div
+                        style={{
+                          backgroundColor: isVnPayPaid ? '#f0fdf4' : '#f0f9ff',
+                          padding: '16px',
+                          borderRadius: 12,
+                          border: isVnPayPaid ? '1px solid #bbf7d0' : '1px solid #bae6fd',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                          marginBottom: 16,
+                          fontSize: 13,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748b' }}>Số tiền viện phí:</span>
+                          <strong style={{ color: '#005baa', fontSize: 16 }}>
+                            {calculatePricing().finalTotal.toLocaleString('vi-VN')} VND
+                          </strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748b' }}>Đơn vị thụ hưởng:</span>
+                          <strong style={{ color: '#0f172a' }}>BV Đa Khoa D-Medical</strong>
+                        </div>
+                        {isVnPayPaid && vnPayTransactionInfo && (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#64748b' }}>Mã GD VNPAY:</span>
+                              <strong style={{ fontFamily: 'monospace', color: '#005baa' }}>{vnPayTransactionInfo.transactionNo}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#64748b' }}>Ngân hàng:</span>
+                              <strong>{vnPayTransactionInfo.bankCode}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#64748b' }}>Chủ thẻ:</span>
+                              <strong>{vnPayTransactionInfo.cardHolder}</strong>
+                            </div>
+                          </>
+                        )}
+                        {!isVnPayPaid && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#64748b' }}>Ngân hàng thử nghiệm:</span>
+                            <span style={{ color: '#0284c7', fontWeight: 700 }}>NCB (Quốc Dân)</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {isVnPayPaid ? (
+                          <div
+                            style={{
+                              padding: 10,
+                              borderRadius: 8,
+                              backgroundColor: '#ecfdf5',
+                              border: '1px solid #a7f3d0',
+                              color: '#065f46',
+                              textAlign: 'center',
+                              fontSize: 12.5,
+                              fontWeight: 700,
+                            }}
+                          >
+                            <CheckCircleFilled style={{ color: '#10b981', marginRight: 6 }} />
+                            Đã xác thực chữ ký số VNPAY! Thẻ Khám Ưu Tiên đã kích hoạt.
+                          </div>
+                        ) : (
+                          <>
+                            <Button
+                              type="primary"
+                              size="large"
+                              icon={<CreditCardOutlined />}
+                              style={{
+                                backgroundColor: '#005baa',
+                                borderColor: '#005baa',
+                                fontWeight: 800,
+                                height: 44,
+                                borderRadius: 10,
+                                boxShadow: '0 4px 14px rgba(0, 91, 170, 0.3)',
+                              }}
+                              block
+                              onClick={() => setVnPayModalOpen(true)}
+                            >
+                              MỞ CỔNG VNPAY (CHỌN NGÂN HÀNG & NHẬP OTP)
+                            </Button>
+                            <div style={{ textAlign: 'center', fontSize: 11.5, color: '#64748b' }}>
+                              <LockOutlined style={{ marginRight: 4, color: '#16a34a' }} />
+                              Bảo mật theo tiêu chuẩn quốc tế PCI-DSS & 3D-Secure
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </Col>
+                )}
+
+                {/* Thẻ 2B: Thanh Toán Viện Phí Qua VietQR (Chỉ hiển thị nếu chọn VietQR) */}
                 {paymentMethod === 'vietqr' && (
                   <Col xs={24} md={12}>
                     <div className={`vietqr-wrapper-card ${isVietQrPaid ? 'paid' : ''}`}>
@@ -3328,6 +3547,27 @@ export const PatientBookingPage: React.FC = () => {
             identityNumber: updated.soCCCD || '',
           });
         }}
+      />
+
+      {/* VNPay Official & Sandbox Checkout Modal (Bank selection, Card info, OTP verification) */}
+      <VnPayCheckoutModal
+        open={vnPayModalOpen}
+        onCancel={() => setVnPayModalOpen(false)}
+        onSuccess={(info) => {
+          setIsVnPayPaid(true);
+          setVnPayTransactionInfo(info);
+          if (createdAppointment) {
+            appointmentService.updateStatus(createdAppointment.id, 'Confirmed').catch(() => {});
+          }
+          showSuccessAlert(
+            'Thanh Toán VNPAY Thành Công!',
+            `Đã xác nhận giao dịch ${info.transactionNo} qua ${info.bankCode}. Bạn đã được cấp Thẻ Khám Ưu Tiên vào thẳng buồng khám!`
+          );
+        }}
+        orderId={createdAppointment?.id || `APT-${Date.now().toString().slice(-6)}`}
+        amount={calculatePricing().finalTotal}
+        orderDescription={`Thanh toan phi dat kham ${createdAppointment?.id || ''} BV D-Medical`}
+        patientName={createdAppointment?.patientName || form.getFieldValue('fullName')}
       />
 
       {/* Portal Footer */}
