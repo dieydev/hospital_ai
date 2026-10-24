@@ -59,10 +59,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const birthYear = raw.dateOfBirth ? dayjs(raw.dateOfBirth).year() : (currentUser?.namSinh || undefined);
         const formattedDob = dob ? dayjs(dob).format('YYYY-MM-DD') : undefined;
 
-        const cccd = raw.identityCardNumber || raw.soCCCD || currentUser?.soCCCD || '';
-        const address = raw.address || raw.diaChi || currentUser?.diaChi || '';
+        const rawCccd = raw.identityCardNumber || raw.soCCCD;
+        const isRawCccdDummy = !rawCccd || rawCccd.startsWith('P') || rawCccd.startsWith('CD') || rawCccd === '0900000000';
+        const cccd = !isRawCccdDummy ? rawCccd : (currentUser?.soCCCD || '');
+
+        const rawPhone = raw.phoneNumber || raw.soDienThoai;
+        const isRawPhoneDummy = !rawPhone || rawPhone === '0900000000';
+        const phone = !isRawPhoneDummy ? rawPhone : (currentUser?.soDienThoai || '');
+
+        const rawAddress = raw.address || raw.diaChi;
+        const isRawAddressDummy = !rawAddress || rawAddress === 'Chưa cập nhật';
+        const address = !isRawAddressDummy ? rawAddress : (currentUser?.diaChi || '');
+
         const isAddressValid = Boolean(address && address.trim().length >= 5 && address.trim() !== 'Chưa cập nhật');
-        const isCccdValid = Boolean(cccd && cccd.trim().length >= 9 && !cccd.startsWith('CD') && !cccd.startsWith('P'));
+        const isCccdValid = Boolean(cccd && cccd.trim().length >= 9 && !cccd.startsWith('CD') && !cccd.startsWith('P') && cccd !== '0900000000');
 
         const isProfileComplete = Boolean(
           isStaffOrAdmin ||
@@ -73,8 +83,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         const rawFullName = raw.fullName || currentUser?.hoTen || '';
         let resolvedFullName = rawFullName;
-        if (!resolvedFullName || resolvedFullName === 'Bệnh nhân' || resolvedFullName.includes('nh\uFFFD') || resolvedFullName.includes('?')) {
-          if (finalRoles.includes('Admin')) {
+        if (!resolvedFullName || resolvedFullName === 'Bệnh nhân' || resolvedFullName.startsWith('Bệnh nhân 09') || resolvedFullName.includes('nh\uFFFD') || resolvedFullName.includes('?')) {
+          if (currentUser?.hoTen && currentUser.hoTen !== 'Bệnh nhân' && !currentUser.hoTen.startsWith('Bệnh nhân 09')) {
+            resolvedFullName = currentUser.hoTen;
+          } else if (finalRoles.includes('Admin')) {
             resolvedFullName = 'Quản trị viên Hệ thống';
           } else if (finalRoles.includes('Receptionist')) {
             resolvedFullName = 'Nhân viên Lễ tân';
@@ -87,10 +99,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         const syncedUser: UserAccount = {
           id: raw.id || currentUser?.id || `pat-${Date.now()}`,
-          tenDangNhap: raw.username || currentUser?.tenDangNhap || raw.phoneNumber || '',
+          tenDangNhap: raw.username || currentUser?.tenDangNhap || phone || '',
           hoTen: resolvedFullName,
           email: raw.email || currentUser?.email || '',
-          soDienThoai: raw.phoneNumber || currentUser?.soDienThoai || '',
+          soDienThoai: phone,
           vaiTro: finalRoles,
           chuyenKhoa: raw.specialty || currentUser?.chuyenKhoa,
           chucDanh: raw.title || currentUser?.chucDanh,

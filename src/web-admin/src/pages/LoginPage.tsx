@@ -242,12 +242,15 @@ export const LoginPage: React.FC = () => {
 
       if (idx >= 0) {
         const existing = userList[idx];
-        // Giữ nguyên các trường đã điền đầy đủ trước đó nếu authUser hiện tại chưa có
-        if (!authUser.soCCCD && (existing.soCCCD || existing.identityCardNumber)) {
+        const isCccdPlaceholder = !authUser.soCCCD || authUser.soCCCD.startsWith('P') || authUser.soCCCD.startsWith('CD') || authUser.soCCCD === authUser.soDienThoai || authUser.soCCCD === '0900000000';
+        if (isCccdPlaceholder && (existing.soCCCD || existing.identityCardNumber)) {
           authUser.soCCCD = existing.soCCCD || existing.identityCardNumber;
         }
-        if (!authUser.soDienThoai && (existing.soDienThoai || existing.phoneNumber)) {
+        if ((!authUser.soDienThoai || authUser.soDienThoai === '0900000000') && (existing.soDienThoai || existing.phoneNumber)) {
           authUser.soDienThoai = existing.soDienThoai || existing.phoneNumber;
+        }
+        if ((!authUser.hoTen || authUser.hoTen === 'Bệnh nhân' || authUser.hoTen.startsWith('Bệnh nhân 09')) && (existing.hoTen || existing.fullName)) {
+          authUser.hoTen = existing.hoTen || existing.fullName;
         }
         if (!authUser.ngaySinh && (existing.ngaySinh || existing.dateOfBirth)) {
           authUser.ngaySinh = existing.ngaySinh || existing.dateOfBirth;
@@ -255,7 +258,7 @@ export const LoginPage: React.FC = () => {
         if (!authUser.namSinh && existing.namSinh) {
           authUser.namSinh = existing.namSinh;
         }
-        if (!authUser.diaChi && (existing.diaChi || existing.address)) {
+        if ((!authUser.diaChi || authUser.diaChi === 'Chưa cập nhật') && (existing.diaChi || existing.address)) {
           authUser.diaChi = existing.diaChi || existing.address;
         }
         if (!authUser.maTheBHYT && (existing.maTheBHYT || existing.healthInsuranceNumber)) {
@@ -920,35 +923,48 @@ export const LoginPage: React.FC = () => {
         }
 
         // 3. Hợp nhất thông tin hồ sơ: Ưu tiên dữ liệu đã điền đầy đủ từ CSDL backend hoặc local storage
-        const baseUser = backendUser || localExisting || {};
+        const rawCccd = backendUser?.identityCardNumber || backendUser?.soCCCD;
+        const isBackendCccdValid = Boolean(rawCccd && !rawCccd.startsWith('P') && !rawCccd.startsWith('CD') && rawCccd !== '0900000000');
+        const resolvedCccd = isBackendCccdValid ? rawCccd : (localExisting?.identityCardNumber || localExisting?.soCCCD || '');
+
+        const isBackendPhoneValid = Boolean(backendUser?.phoneNumber && backendUser.phoneNumber !== '0900000000');
+        const resolvedPhone = isBackendPhoneValid ? backendUser.phoneNumber : (localExisting?.phoneNumber || localExisting?.soDienThoai || '');
+
+        const isBackendNameValid = Boolean(backendUser?.fullName && backendUser.fullName !== 'Bệnh nhân' && backendUser.fullName !== 'Bệnh nhân Google' && !backendUser.fullName.startsWith('Bệnh nhân 09'));
+        const resolvedName = isBackendNameValid ? backendUser.fullName : (localExisting?.fullName || localExisting?.hoTen || googleUser.name || 'Bệnh nhân');
+
+        const isBackendAddressValid = Boolean(backendUser?.address && backendUser.address !== 'Chưa cập nhật');
+        const resolvedAddress = isBackendAddressValid ? backendUser.address : (localExisting?.address || localExisting?.diaChi || '');
+
+        const resolvedDob = backendUser?.dateOfBirth || backendUser?.ngaySinh || localExisting?.dateOfBirth || localExisting?.ngaySinh;
+        const resolvedBirthYear = backendUser?.namSinh || localExisting?.namSinh || (resolvedDob ? dayjs(resolvedDob).year() : undefined);
+
         const isComplete = Boolean(
-          baseUser.isProfileComplete === true ||
-          ((baseUser.identityCardNumber || baseUser.soCCCD) &&
-          (baseUser.dateOfBirth || baseUser.ngaySinh) &&
-          (baseUser.address || baseUser.diaChi))
+          backendUser?.isProfileComplete === true ||
+          (resolvedCccd && resolvedCccd.length >= 9 && resolvedDob && resolvedAddress && resolvedAddress.length >= 5)
         );
 
         const patientUser = {
-          id: baseUser.id || `pat-google-${Date.now()}`,
+          id: backendUser?.id || localExisting?.id || `pat-google-${Date.now()}`,
           username: googleUser.email,
-          fullName: baseUser.fullName || baseUser.hoTen || googleUser.name || 'Bệnh nhân Google',
+          fullName: resolvedName,
           email: googleUser.email,
-          phoneNumber: baseUser.phoneNumber || baseUser.soDienThoai || '',
+          phoneNumber: resolvedPhone,
           roles: ['Patient'],
-          avatarUrl: googleUser.picture || baseUser.avatarUrl,
-          patientCode: baseUser.patientCode || baseUser.maBenhNhan,
-          maBenhNhan: baseUser.patientCode || baseUser.maBenhNhan,
-          identityCardNumber: baseUser.identityCardNumber || baseUser.soCCCD,
-          soCCCD: baseUser.identityCardNumber || baseUser.soCCCD,
-          dateOfBirth: baseUser.dateOfBirth || baseUser.ngaySinh,
-          ngaySinh: baseUser.dateOfBirth || baseUser.ngaySinh,
-          namSinh: baseUser.namSinh,
-          gender: baseUser.gender || baseUser.gioiTinh || 'Nam',
-          gioiTinh: baseUser.gender || baseUser.gioiTinh || 'Nam',
-          address: baseUser.address || baseUser.diaChi,
-          diaChi: baseUser.address || baseUser.diaChi,
-          healthInsuranceNumber: baseUser.healthInsuranceNumber || baseUser.maTheBHYT,
-          maTheBHYT: baseUser.healthInsuranceNumber || baseUser.maTheBHYT,
+          avatarUrl: googleUser.picture || backendUser?.avatarUrl || localExisting?.avatarUrl,
+          patientCode: backendUser?.patientCode || localExisting?.patientCode || localExisting?.maBenhNhan,
+          maBenhNhan: backendUser?.patientCode || localExisting?.patientCode || localExisting?.maBenhNhan,
+          identityCardNumber: resolvedCccd,
+          soCCCD: resolvedCccd,
+          dateOfBirth: resolvedDob,
+          ngaySinh: resolvedDob,
+          namSinh: resolvedBirthYear,
+          gender: backendUser?.gender || localExisting?.gender || localExisting?.gioiTinh || 'Nam',
+          gioiTinh: backendUser?.gender || localExisting?.gender || localExisting?.gioiTinh || 'Nam',
+          address: resolvedAddress,
+          diaChi: resolvedAddress,
+          healthInsuranceNumber: backendUser?.healthInsuranceNumber || localExisting?.healthInsuranceNumber || localExisting?.maTheBHYT,
+          maTheBHYT: backendUser?.healthInsuranceNumber || localExisting?.healthInsuranceNumber || localExisting?.maTheBHYT,
           isProfileComplete: isComplete,
         };
 

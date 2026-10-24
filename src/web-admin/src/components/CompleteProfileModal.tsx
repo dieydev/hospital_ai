@@ -30,7 +30,7 @@ import {
 import dayjs from 'dayjs';
 import { useAuthStore } from '../store/useAuthStore';
 import { UserAccount } from '../types';
-import { showSuccessAlert, showToast } from '../utils/sweetAlert';
+import { showSuccessAlert, showErrorAlert, showToast } from '../utils/sweetAlert';
 import api from '../services/api';
 
 const { Title, Text } = Typography;
@@ -133,7 +133,11 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           // ignore
         }
       } catch (apiErr: any) {
-        console.warn('Backend complete-profile fallback:', apiErr?.response?.data || apiErr.message);
+        const errorMsg = apiErr?.response?.data?.message || apiErr.message;
+        console.error('Lỗi lưu CSDL hồ sơ bệnh nhân:', errorMsg);
+        showErrorAlert('Không thể lưu hồ sơ', errorMsg || 'Có lỗi xảy ra khi lưu vào hệ thống máy chủ.');
+        setLoading(false);
+        return;
       }
 
       // 2. Cập nhật state Auth & Local User

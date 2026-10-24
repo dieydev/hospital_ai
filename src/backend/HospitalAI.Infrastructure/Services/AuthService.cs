@@ -606,14 +606,61 @@ public class AuthService : IAuthService
         }
 
         var cccd = request.IdentityCardNumber.Trim();
-        var duplicateCCCD = await _context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd && p.UserId != user.Id && p.UserId != null);
-        if (duplicateCCCD)
-        {
-            throw new Exception($"Số CCCD {cccd} đã được đăng ký bởi bệnh nhân khác.");
-        }
 
-        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id)
-            ?? await _context.Patients.FirstOrDefaultAsync(p => p.IdentityCardNumber == cccd && p.UserId == null);
+        // 1. Tìm hồ sơ bệnh nhân theo CCCD trong CSDL (nếu đã có sẵn)
+        var existingPatientWithCccd = await _context.Patients
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.IdentityCardNumber == cccd);
+
+        // 2. Tìm hồ sơ bệnh nhân hiện đang gán cho tài khoản này
+        Patient? patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+        if (existingPatientWithCccd != null && (patient == null || existingPatientWithCccd.Id != patient.Id))
+        {
+            // CCCD này đã tồn tại trong CSDL. Kiểm tra quyền sở hữu hồ sơ:
+            if (existingPatientWithCccd.UserId == null)
+            {
+                // Hồ sơ chưa liên kết tài khoản nào -> Gán trực tiếp cho tài khoản này
+                if (patient != null && patient.Id != existingPatientWithCccd.Id)
+                {
+                    _context.Patients.Remove(patient);
+                }
+                patient = existingPatientWithCccd;
+                patient.UserId = user.Id;
+            }
+            else if (existingPatientWithCccd.UserId != user.Id)
+            {
+                // Hồ sơ đang được gán cho một UserId khác. Kiểm tra xem tài khoản đó là ai:
+                var previousOwner = await _context.Users
+                    .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.Id == existingPatientWithCccd.UserId);
+
+                bool isStaffOrAdmin = previousOwner?.UserRoles.Any(ur => ur.Role != null && (ur.Role.Name == "Doctor" || ur.Role.Name == "Admin" || ur.Role.Name == "Receptionist")) ?? false;
+                bool isSamePerson = previousOwner != null && (
+                    (!string.IsNullOrEmpty(previousOwner.Email) && previousOwner.Email.ToLower() == user.Email?.ToLower()) ||
+                    (!string.IsNullOrEmpty(previousOwner.PhoneNumber) && previousOwner.PhoneNumber == request.PhoneNumber?.Trim()) ||
+                    previousOwner.PhoneNumber == "0900000000" ||
+                    previousOwner.Username.StartsWith("pat-")
+                );
+
+                if (isStaffOrAdmin || isSamePerson)
+                {
+                    // Tài khoản trước là tài khoản cán bộ y tế (như dr.duy) hoặc tài khoản thử nghiệm của cùng một người
+                    // -> Chuyển liên kết hồ sơ Bệnh nhân sang đúng tài khoản Bệnh nhân thực tế hiện tại
+                    if (patient != null && patient.Id != existingPatientWithCccd.Id)
+                    {
+                        _context.Patients.Remove(patient);
+                    }
+                    patient = existingPatientWithCccd;
+                    patient.UserId = user.Id;
+                }
+                else
+                {
+                    throw new Exception($"Số CCCD {cccd} đã được đăng ký bởi bệnh nhân khác trên hệ thống.");
+                }
+            }
+        }
 
         if (patient == null)
         {
@@ -634,7 +681,7 @@ public class AuthService : IAuthService
                 Address = request.Address.Trim(),
                 HealthInsuranceNumber = request.HealthInsuranceNumber?.Trim(),
                 EmergencyContactName = request.EmergencyContactName?.Trim(),
-                EmergencyContactPhone = request.EmergencyContactPhone?.Trim(),
+                EmergencyContactPhone = request.EmergencyContactPhone?.Trim() ?? request.PhoneNumber?.Trim(),
                 EmergencyContactRelation = request.EmergencyContactRelation?.Trim(),
                 CreatedAt = DateTime.UtcNow
             };
@@ -653,13 +700,13 @@ public class AuthService : IAuthService
             patient.Address = request.Address.Trim();
             patient.HealthInsuranceNumber = request.HealthInsuranceNumber?.Trim();
             patient.EmergencyContactName = request.EmergencyContactName?.Trim();
-            patient.EmergencyContactPhone = request.EmergencyContactPhone?.Trim();
+            patient.EmergencyContactPhone = request.EmergencyContactPhone?.Trim() ?? request.PhoneNumber?.Trim();
             patient.EmergencyContactRelation = request.EmergencyContactRelation?.Trim();
             _context.Patients.Update(patient);
         }
 
         user.FullName = request.FullName.Trim();
-        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && request.PhoneNumber.Trim() != "0900000000")
         {
             user.PhoneNumber = request.PhoneNumber.Trim();
         }
@@ -980,11 +1027,11 @@ public class AuthService : IAuthService
             resolvedFullName = "BS. CKII. Nguyễn Thanh Duy";
             resolvedTitle ??= "Bác sĩ Điều trị";
         }
-        else if (patient != null && !string.IsNullOrWhiteSpace(patient.FullName))
+        else if (patient != null && !string.IsNullOrWhiteSpace(patient.FullName) && patient.FullName != "Bệnh nhân mới" && !patient.FullName.StartsWith("Bệnh nhân 09"))
         {
             resolvedFullName = patient.FullName;
         }
-        else if (!string.IsNullOrWhiteSpace(user.FullName))
+        else if (!string.IsNullOrWhiteSpace(user.FullName) && user.FullName != "Bệnh nhân")
         {
             resolvedFullName = user.FullName;
         }
@@ -993,13 +1040,29 @@ public class AuthService : IAuthService
             resolvedFullName = "Bệnh nhân";
         }
 
+        // Lọc bỏ mã CCCD tạm thời sinh tự động để không hiển thị số rác cho người dùng
+        bool isDummyCccd = string.IsNullOrWhiteSpace(patient?.IdentityCardNumber) || 
+                           patient.IdentityCardNumber.StartsWith("P") || 
+                           patient.IdentityCardNumber.StartsWith("CD") || 
+                           patient.IdentityCardNumber == user.PhoneNumber ||
+                           patient.IdentityCardNumber == "0900000000";
+
+        string? validCccd = isDummyCccd ? null : patient?.IdentityCardNumber;
+
+        bool isDummyPhone = string.IsNullOrWhiteSpace(user.PhoneNumber) || user.PhoneNumber == "0900000000";
+        string validPhone = !isDummyPhone ? user.PhoneNumber : (patient?.EmergencyContactPhone ?? string.Empty);
+
+        bool isAddressValid = !string.IsNullOrWhiteSpace(patient?.Address) && patient.Address != "Chưa cập nhật";
+
         bool isComplete = roles.Any(r => r == "Admin" || r == "Doctor" || r == "Receptionist" || r == "Nurse") ||
             (patient != null &&
-            !string.IsNullOrWhiteSpace(patient.IdentityCardNumber) &&
-            patient.FullName != "Bệnh nhân mới" &&
-            !string.IsNullOrWhiteSpace(patient.FullName) &&
-            !string.IsNullOrWhiteSpace(patient.Address) &&
-            patient.Address != "Chưa cập nhật");
+            !isDummyCccd &&
+            !string.IsNullOrWhiteSpace(validCccd) &&
+            !string.IsNullOrWhiteSpace(resolvedFullName) &&
+            resolvedFullName != "Bệnh nhân" &&
+            resolvedFullName != "Bệnh nhân mới" &&
+            !resolvedFullName.StartsWith("Bệnh nhân 09") &&
+            isAddressValid);
 
         return new UserProfileDto
         {
@@ -1007,16 +1070,16 @@ public class AuthService : IAuthService
             Username = user.Username,
             FullName = resolvedFullName,
             Email = user.Email,
-            PhoneNumber = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber : (patient?.EmergencyContactPhone ?? user.Username ?? string.Empty),
+            PhoneNumber = validPhone,
             Specialty = resolvedSpecialty,
             Title = resolvedTitle,
             Roles = roles,
             AvatarUrl = !string.IsNullOrWhiteSpace(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(resolvedFullName)}",
             PatientCode = patient?.PatientCode,
-            IdentityCardNumber = patient?.IdentityCardNumber,
-            Gender = patient?.Gender,
+            IdentityCardNumber = validCccd,
+            Gender = patient?.Gender ?? "Nam",
             DateOfBirth = patient?.DateOfBirth,
-            Address = patient?.Address,
+            Address = isAddressValid ? patient?.Address : null,
             HealthInsuranceNumber = patient?.HealthInsuranceNumber,
             IsProfileComplete = isComplete
         };
