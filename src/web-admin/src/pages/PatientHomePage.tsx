@@ -1910,6 +1910,213 @@ export const PatientHomePage: React.FC = () => {
         />
       </section>
 
+      {/* 10. GOOGLE MAPS LOCATION & HOSPITAL DIRECTIONS */}
+      <section style={{ maxWidth: 1200, margin: '0 auto 64px', padding: '0 20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              backgroundColor: '#e0f2fe',
+              color: '#0284c7',
+              borderRadius: 20,
+              fontSize: 13,
+              fontWeight: 700,
+              border: '1px solid #bae6fd',
+              marginBottom: 10,
+            }}
+          >
+            <EnvironmentOutlined />
+            <span>VỊ TRÍ & BẢN ĐỒ BỆNH VIỆN</span>
+          </div>
+          <Title level={2} style={{ color: '#0f172a', fontWeight: 800, margin: '0 0 8px' }}>
+            Vị Trí & Chỉ Đường Đến D-Medical
+          </Title>
+          <Paragraph style={{ color: '#64748b', fontSize: 14, maxWidth: 680, margin: '0 auto' }}>
+            Bệnh viện Đa khoa D-Medical tọa lạc tại vị trí trung tâm Quận 5, thuận tiện kết nối giao thông. 
+            Quý khách có thể dễ dàng đến khám bằng ô tô, xe máy hoặc các tuyến xe buýt công cộng.
+          </Paragraph>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: 20,
+            border: '1px solid #bae6fd',
+            boxShadow: '0 10px 30px rgba(2, 132, 199, 0.1)',
+            overflow: 'hidden',
+          }}
+        >
+          <Row>
+            {/* Left Column: Hospital Access & Details */}
+            <Col xs={24} lg={9} style={{ padding: '32px 28px', backgroundColor: '#f0f9ff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor: '#0284c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      fontSize: 22,
+                    }}
+                  >
+                    <MedicineBoxOutlined />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0369a1' }}>
+                      Bệnh Viện Đa Khoa D-Medical
+                    </h3>
+                    <span style={{ fontSize: 12, color: '#64748b' }}>
+                      Trung tâm Khám Chữa Bệnh Thông Minh & Kỹ Thuật Cao
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 20 }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <EnvironmentOutlined style={{ color: '#0284c7', fontSize: 18, marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>ĐỊA CHỈ TRỤ SỞ CHÍNH</div>
+                      <div style={{ fontSize: 14, color: '#0f172a', fontWeight: 700, marginTop: 2 }}>
+                        215 Hồng Bàng, Phường 11, Quận 5, TP. Hồ Chí Minh
+                      </div>
+                      <div style={{ fontSize: 12.5, color: '#475569', marginTop: 4 }}>
+                        • <strong>Cổng 1 (Đường Hồng Bàng):</strong> Tiếp nhận Khám Ngoại trú, Khám BHYT & Dịch vụ.<br />
+                        • <strong>Cổng 2 (Đường Mạc Cửu):</strong> Cấp cứu 24/7 & Lối vào hầm giữ xe B1-B2.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <ClockCircleOutlined style={{ color: '#0284c7', fontSize: 18, marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>GIỜ MỞ CỬA & TIẾP ĐÓN</div>
+                      <div style={{ fontSize: 13.5, color: '#0f172a', fontWeight: 600, marginTop: 2 }}>
+                        Thứ 2 - Chủ Nhật: <strong>06:30 - 17:00</strong>
+                      </div>
+                      <div style={{ fontSize: 12.5, color: '#dc2626', fontWeight: 700, marginTop: 2 }}>
+                        Khoa Cấp cứu & Hồi sức: Trực 24/24 tất cả các ngày
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <ShopOutlined style={{ color: '#0284c7', fontSize: 18, marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>PHƯƠNG TIỆN DI CHUYỂN</div>
+                      <div style={{ fontSize: 12.5, color: '#334155', marginTop: 2, lineHeight: 1.5 }}>
+                        • <strong>Xe Buýt:</strong> Tuyến 01, 05, 06, 56, 139, 150 dừng đối diện cổng viện.<br />
+                        • <strong>Bãi đỗ ô tô & xe máy:</strong> Hầm B1-B2 với sức chứa hơn 1.000 xe, tự động nhận diện biển số.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #bae6fd', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<EnvironmentOutlined />}
+                  style={{
+                    backgroundColor: '#0284c7',
+                    borderColor: '#0284c7',
+                    fontWeight: 700,
+                    borderRadius: 10,
+                    height: 44,
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                  }}
+                  onClick={() => {
+                    window.open('https://www.google.com/maps/dir/?api=1&destination=215+Hồng+Bàng,+Phường+11,+Quận+5,+Hồ+Chí+Minh', '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  Chỉ Đường Trên Google Maps
+                </Button>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button
+                    style={{
+                      flex: 1,
+                      borderColor: '#fca5a5',
+                      color: '#dc2626',
+                      fontWeight: 700,
+                      borderRadius: 10,
+                      backgroundColor: '#fef2f2',
+                    }}
+                    icon={<PhoneFilled />}
+                    onClick={() => {
+                      window.location.href = 'tel:19001150';
+                    }}
+                  >
+                    1900 1150 (Cấp cứu)
+                  </Button>
+                  <Button
+                    style={{
+                      flex: 1,
+                      borderColor: '#bae6fd',
+                      color: '#0284c7',
+                      fontWeight: 700,
+                      borderRadius: 10,
+                    }}
+                    onClick={() => navigate('/booking')}
+                  >
+                    Đặt Lịch Khám
+                  </Button>
+                </div>
+              </div>
+            </Col>
+
+            {/* Right Column: Google Maps Interactive Embed */}
+            <Col xs={24} lg={15} style={{ position: 'relative', minHeight: 460 }}>
+              <iframe
+                title="Bản đồ Bệnh viện Đa khoa D-Medical"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.651036329068!2d106.6579224!3d10.7575128!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752eec89e13e59%3A0xb35a09c25608b47e!2zMjE1IEjhu5NuZyBCw6BuZywgUGjGsOG7nW5nIDExLCBRdeG6rW4gNSwgSOG7kyBDaMOtIE1pbmg!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s"
+                width="100%"
+                height="100%"
+                style={{
+                  border: 0,
+                  display: 'block',
+                  minHeight: 460,
+                  width: '100%',
+                }}
+                allowFullScreen={true}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 14,
+                  left: 14,
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(6px)',
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+                  border: '1px solid #bae6fd',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  color: '#0369a1',
+                }}
+              >
+                <EnvironmentOutlined style={{ color: '#ef4444', fontSize: 16 }} />
+                <span>215 Hồng Bàng, P.11, Q.5, TP.HCM</span>
+              </div>
+            </Col>
+          </Row>
+        </div>
+      </section>
+
       {/* MODAL TRA CỨU LỊCH HẸN & XEM LẠI MÃ QR */}
       <Modal
         title={
