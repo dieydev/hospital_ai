@@ -341,9 +341,15 @@ export const AppointmentsPage: React.FC = () => {
           <div style={{ fontWeight: 600, color: isDarkMode ? '#38bdf8' : '#0284c7', display: 'flex', alignItems: 'center', gap: 6 }}>
             <MedicineBoxOutlined /> {record.departmentName}
           </div>
-          <Text style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#64748b' }}>
-            {record.doctorName}
-          </Text>
+          {record.doctorName?.includes('sắp xếp') ? (
+            <Tag color="cyan" style={{ margin: '2px 0 0', fontSize: 11, borderRadius: 4, fontWeight: 700 }}>
+              🏥 {record.doctorName}
+            </Tag>
+          ) : (
+            <Text style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#64748b' }}>
+              {record.doctorName || 'Bệnh viện sắp xếp'}
+            </Text>
+          )}
         </div>
       ),
     },

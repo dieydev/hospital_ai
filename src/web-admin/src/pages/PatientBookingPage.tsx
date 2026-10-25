@@ -177,9 +177,9 @@ export const PatientBookingPage: React.FC = () => {
       if (foundDept) {
         setSelectedDept(foundDept);
         setBookingMode('byDept');
-        const docs = DOCTORS_CATALOG.filter((d) => d.department === foundDept.name);
-        setSelectedDoctor(docs.length > 0 ? docs[0] : null);
-        setCurrentStep(1); // Sang bước chọn bác sĩ
+        // Không ép buộc chọn bác sĩ, mặc định để bệnh viện sắp xếp
+        setSelectedDoctor(null);
+        setCurrentStep(1); // Sang bước chọn bác sĩ (hoặc tiếp tục để BV sắp xếp)
       }
     }
 
@@ -201,8 +201,7 @@ export const PatientBookingPage: React.FC = () => {
         setBookingMode('byPackage');
         const matchedDept = DEPARTMENTS_CATALOG.find((d) => d.id === foundPkg.departmentId) || DEPARTMENTS_CATALOG[0];
         setSelectedDept(matchedDept);
-        const docs = DOCTORS_CATALOG.filter((d) => d.department === matchedDept.name);
-        setSelectedDoctor(docs.length > 0 ? docs[0] : null);
+        setSelectedDoctor(null); // Gói khám bệnh viện tự phân công bác sĩ
         setCurrentStep(1); // Nhảy thẳng vào chọn ngày giờ
       }
     }
@@ -343,8 +342,7 @@ export const PatientBookingPage: React.FC = () => {
     setSelectedPackage(pkg);
     const matchedDept = DEPARTMENTS_CATALOG.find((d) => d.id === pkg.departmentId) || DEPARTMENTS_CATALOG[0];
     setSelectedDept(matchedDept);
-    const docs = DOCTORS_CATALOG.filter((d) => d.department === matchedDept.name);
-    setSelectedDoctor(docs.length > 0 ? docs[0] : null);
+    setSelectedDoctor(null); // Gói khám bệnh viện tự phân công bác sĩ
     setCurrentStep(1); // Bước tiếp theo là Chọn Ngày & Giờ
     showToast(`Đã chọn ${pkg.name}. Vui lòng chọn ngày & giờ khám!`, 'success');
   };
@@ -405,9 +403,8 @@ export const PatientBookingPage: React.FC = () => {
     if (!ensureAuthenticated('chọn chuyên khoa khám')) return;
     setSelectedDept(dept);
     setSelectedPackage(null);
-    const docs = DOCTORS_CATALOG.filter((d) => d.department === dept.name);
-    setSelectedDoctor(docs.length > 0 ? docs[0] : null);
-    setCurrentStep(1); // Sang bước chọn bác sĩ của khoa
+    setSelectedDoctor(null); // Mặc định không bắt buộc chọn bác sĩ, BV sẽ sắp xếp
+    setCurrentStep(1); // Sang bước chọn bác sĩ của khoa (tùy chọn)
   };
 
   // Handle submit booking
@@ -461,6 +458,9 @@ export const PatientBookingPage: React.FC = () => {
       } else if (!reason) {
         reason = 'Đăng ký đặt lịch khám trực tuyến qua Web Portal';
       }
+      if (!selectedDoctor) {
+        reason += ' • [Bác sĩ: Bệnh viện tự động sắp xếp khi tiếp nhận]';
+      }
       reason += ` • [Thanh toán: ${paymentMethod === 'vnpay' ? 'VNPAY Online (Thẻ ATM/OTP)' : paymentMethod === 'vietqr' ? 'VietQR Online' : 'Kiosk tại viện'} | ${hasBhyt ? `BHYT giảm ${pricing.effectiveBhyt.toLocaleString('vi-VN')}đ` : 'Tự túc'} | Tạm tính: ${pricing.finalTotal.toLocaleString('vi-VN')}đ]`;
 
       const newApt = await appointmentService.createAppointment({
@@ -470,7 +470,7 @@ export const PatientBookingPage: React.FC = () => {
         patientGender: values.gender || 'Nam',
         patientAge: values.birthYear ? new Date().getFullYear() - Number(values.birthYear) : 30,
         departmentName: selectedPackage ? `${selectedDept.name} (${selectedPackage.name})` : selectedDept.name,
-        doctorName: selectedDoctor ? selectedDoctor.name : `BS. Chuyên khoa ${selectedDept.name.replace(/^Khoa\s+/i, '')}`,
+        doctorName: selectedDoctor ? selectedDoctor.name : 'Bệnh viện sắp xếp bác sĩ',
         appointmentDate: selectedDate,
         appointmentTime: appointmentTime,
         symptomsReason: reason,
@@ -869,7 +869,7 @@ export const PatientBookingPage: React.FC = () => {
     if (isDeptMode) {
       return [
         { title: 'Chuyên khoa', icon: <MedicineBoxOutlined /> },
-        { title: 'Bác sĩ', icon: <UserOutlined /> },
+        { title: 'Bác sĩ (Tùy chọn)', icon: <UserOutlined /> },
         { title: 'Ngày & Giờ', icon: <ClockCircleOutlined /> },
         { title: 'Thông tin & Xác nhận', icon: <CheckCircleOutlined /> },
       ];
@@ -898,7 +898,7 @@ export const PatientBookingPage: React.FC = () => {
   const getStepTitle = () => {
     if (isDeptMode) {
       if (currentStep === 0) return 'Chọn Chuyên Khoa';
-      if (currentStep === 1) return 'Chọn Bác Sĩ';
+      if (currentStep === 1) return 'Chọn Bác Sĩ (Không bắt buộc)';
       if (currentStep === 2) return 'Ngày & Giờ Hẹn';
       return 'Thông Tin & Xác Nhận';
     }
@@ -1256,7 +1256,35 @@ export const PatientBookingPage: React.FC = () => {
 
                             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
                               <span style={{ color: '#15803d', fontWeight: 600 }}>Hỗ trợ BHYT</span>
-                              <span style={{ color: '#64748b' }}>Tiếp nhận tại viện</span>
+                              <span style={{ color: '#0284c7', fontWeight: 600 }}>BV sắp xếp hoặc tự chọn BS</span>
+                            </div>
+
+                            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                              <Button
+                                size="small"
+                                type="primary"
+                                style={{ flex: 1, backgroundColor: '#0284c7', borderRadius: 8, fontWeight: 700, fontSize: 12 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!ensureAuthenticated('đặt khám theo chuyên khoa')) return;
+                                  setSelectedDept(dept);
+                                  setSelectedPackage(null);
+                                  setSelectedDoctor(null);
+                                  setCurrentStep(2); // Đi thẳng vào chọn ngày giờ, BV sẽ sắp xếp bác sĩ
+                                }}
+                              >
+                                Đặt khám (BV sắp xếp BS) ➔
+                              </Button>
+                              <Button
+                                size="small"
+                                style={{ borderColor: '#bae6fd', color: '#0369a1', borderRadius: 8, fontWeight: 600, fontSize: 12 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectDept(dept);
+                                }}
+                              >
+                                Chọn Bác sĩ
+                              </Button>
                             </div>
                           </div>
                         </Col>
@@ -1276,6 +1304,38 @@ export const PatientBookingPage: React.FC = () => {
                     <Text style={{ color: '#64748b', fontSize: 13.5 }}>
                       Lựa chọn các Bác sĩ CKII, Thạc sĩ, Tiến sĩ có thâm niên từ các bệnh viện tuyến đầu
                     </Text>
+
+                    <div
+                      style={{
+                        maxWidth: 680,
+                        margin: '14px auto 0',
+                        padding: '10px 16px',
+                        borderRadius: 12,
+                        backgroundColor: '#f0f9ff',
+                        border: '1px solid #bae6fd',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#0369a1' }}>
+                        <TeamOutlined style={{ fontSize: 16 }} />
+                        <span>Không bắt buộc chọn bác sĩ: Nếu chưa rõ bác sĩ, bạn có thể để Bệnh viện tự động sắp xếp khi đến viện.</span>
+                      </div>
+                      <Button
+                        size="small"
+                        type="link"
+                        style={{ color: '#0284c7', fontWeight: 700, padding: 0, whiteSpace: 'nowrap' }}
+                        onClick={() => {
+                          setBookingMode('byDept');
+                          setSelectedDoctor(null);
+                        }}
+                      >
+                        Để BV sắp xếp ➔
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="doctor-filter-tabs-wrap">
@@ -1656,43 +1716,161 @@ export const PatientBookingPage: React.FC = () => {
             </div>
           )}
 
-          {/* ================= STEP 1 CHO CHUYÊN KHOA: CHỌN BÁC SĨ ================= */}
+          {/* ================= STEP 1 CHO CHUYÊN KHOA: CHỌN BÁC SĨ (TÙY CHỌN) ================= */}
           {isDeptMode && currentStep === 1 && (
             <div>
               <div style={{ marginBottom: 24, textAlign: 'center' }}>
                 <Title level={3} style={{ color: '#0369a1', fontWeight: 800, margin: 0 }}>
-                  Chọn bác sĩ khám
+                  Chọn bác sĩ khám (Không bắt buộc)
                 </Title>
                 <Text style={{ color: '#64748b', fontSize: 14 }}>
-                  Chuyên khoa: <strong style={{ color: '#0284c7' }}>{selectedDept.name}</strong>
+                  Chuyên khoa: <strong style={{ color: '#0284c7' }}>{selectedDept.name}</strong> • Bạn có thể chọn đích danh bác sĩ hoặc để Bệnh viện tự động sắp xếp khi đến khám.
                 </Text>
               </div>
 
+              {/* THẺ LỰA CHỌN KHUYÊN DÙNG: BỆNH VIỆN TỰ ĐỘNG SẮP XẾP BÁC SĨ */}
+              <div
+                onClick={() => {
+                  setSelectedDoctor(null);
+                }}
+                style={{
+                  maxWidth: 820,
+                  margin: '0 auto 24px',
+                  padding: '20px 24px',
+                  borderRadius: 16,
+                  border: !selectedDoctor ? '2.5px solid #0284c7' : '1.5px solid #bae6fd',
+                  backgroundColor: !selectedDoctor ? '#f0f9ff' : '#ffffff',
+                  boxShadow: !selectedDoctor ? '0 10px 30px rgba(2, 132, 199, 0.12)' : '0 4px 14px rgba(0,0,0,0.03)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  position: 'relative',
+                }}
+              >
+                {!selectedDoctor && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -12,
+                      right: 20,
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      fontSize: 12,
+                      fontWeight: 800,
+                      padding: '3px 12px',
+                      borderRadius: 20,
+                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <CheckCircleFilled /> ĐANG CHỌN (MẶC ĐỊNH)
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      width: 58,
+                      height: 58,
+                      borderRadius: 16,
+                      background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      fontSize: 28,
+                      flexShrink: 0,
+                      boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                    }}
+                  >
+                    <TeamOutlined />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 260 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
+                        Bệnh viện tự động sắp xếp bác sĩ
+                      </span>
+                      <Tag color="cyan" style={{ margin: 0, fontWeight: 700, borderRadius: 6 }}>
+                        Khuyên dùng
+                      </Tag>
+                      <Tag color="green" style={{ margin: 0, fontWeight: 700, borderRadius: 6 }}>
+                        Tiếp nhận nhanh nhất
+                      </Tag>
+                    </div>
+
+                    <div style={{ fontSize: 13.5, color: '#334155', marginTop: 6, lineHeight: 1.5 }}>
+                      Bạn không cần chọn bác sĩ trước. Khi đến bệnh viện và quét mã QR tại quầy tiếp đón/Kiosk, hệ thống sẽ tự động phân công bác sĩ chuyên khoa còn trống lịch sớm nhất để bạn vào khám ngay mà không cần chờ đợi.
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', marginLeft: 'auto' }}>
+                    <Button
+                      type={!selectedDoctor ? 'primary' : 'default'}
+                      style={{
+                        backgroundColor: !selectedDoctor ? '#0284c7' : undefined,
+                        borderColor: '#0284c7',
+                        color: !selectedDoctor ? '#ffffff' : '#0284c7',
+                        fontWeight: 700,
+                        borderRadius: 10,
+                        height: 38,
+                        padding: '0 18px',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDoctor(null);
+                        setCurrentStep(2);
+                      }}
+                    >
+                      {!selectedDoctor ? 'Tiếp tục chọn Ngày & Giờ ➔' : 'Chọn BV sắp xếp & Tiếp tục ➔'}
+                    </Button>
+                    {!selectedDoctor && (
+                      <span style={{ fontSize: 12, color: '#0284c7', fontWeight: 600 }}>
+                        (Hoặc bấm nút tiếp tục phía dưới)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* TIÊU ĐỀ PHÂN CÁCH DANH SÁCH BÁC SĨ */}
+              <div style={{ maxWidth: 820, margin: '28px auto 18px', textAlign: 'center' }}>
+                <Divider style={{ borderColor: '#bae6fd' }}>
+                  <span style={{ color: '#0369a1', fontWeight: 700, fontSize: 14 }}>
+                    HOẶC CHỌN ĐÍCH DANH BÁC SĨ MONG MUỐN ({filteredDoctors.length} Bác sĩ)
+                  </span>
+                </Divider>
+                <div style={{ fontSize: 13, color: '#64748b', marginTop: -6 }}>
+                  Nếu bạn muốn khám với bác sĩ chuyên gia cụ thể, hãy chọn bác sĩ dưới đây (không bắt buộc)
+                </div>
+              </div>
+
               {filteredDoctors.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <MedicineBoxOutlined style={{ fontSize: 48, color: '#94a3b8' }} />
-                  <p style={{ marginTop: 12, color: '#64748b' }}>
-                    Khoa đang phân công bác sĩ trực ca tiếp nhận. Bạn có thể tiếp tục với bác sĩ trực ca của khoa.
+                <div
+                  style={{
+                    maxWidth: 620,
+                    margin: '0 auto 20px',
+                    textAlign: 'center',
+                    padding: '28px 20px',
+                    borderRadius: 14,
+                    backgroundColor: '#f8fafc',
+                    border: '1px dashed #cbd5e1',
+                  }}
+                >
+                  <MedicineBoxOutlined style={{ fontSize: 40, color: '#94a3b8' }} />
+                  <p style={{ marginTop: 12, color: '#64748b', fontSize: 14 }}>
+                    Khoa hiện đang phân công bác sĩ theo kíp trực bệnh viện. Bạn có thể tiếp tục với phương thức <strong>Bệnh viện sắp xếp bác sĩ</strong>.
                   </p>
                   <Button
                     type="primary"
-                    style={{ backgroundColor: '#0284c7' }}
+                    style={{ backgroundColor: '#0284c7', borderRadius: 10, fontWeight: 700 }}
                     onClick={() => {
-                      if (!ensureAuthenticated('chọn bác sĩ trực ca')) return;
-                      setSelectedDoctor({
-                        id: 'doc-default',
-                        name: `BS. Chuyên Khoa ${selectedDept.name.replace(/^Khoa\s+/i, '')}`,
-                        department: selectedDept.name,
-                        title: 'Bác sĩ Khám & Điều trị',
-                        experience: 'Lịch khám theo kíp trực bệnh viện',
-                        avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80',
-                        rating: 5.0,
-                        consultationFee: selectedDept.price || 150000,
-                      });
+                      setSelectedDoctor(null);
                       setCurrentStep(2);
                     }}
                   >
-                    Khám với bác sĩ trực ca
+                    Tiếp tục (BV sắp xếp bác sĩ) ➔
                   </Button>
                 </div>
               ) : (
@@ -1716,8 +1894,23 @@ export const PatientBookingPage: React.FC = () => {
                             textAlign: 'center',
                             transition: 'all 0.2s ease',
                             boxShadow: isSelected ? '0 8px 24px rgba(2, 132, 199, 0.16)' : 'none',
+                            position: 'relative',
                           }}
                         >
+                          {isSelected && (
+                            <Tag
+                              color="blue"
+                              style={{
+                                position: 'absolute',
+                                top: 12,
+                                right: 12,
+                                margin: 0,
+                                fontWeight: 700,
+                              }}
+                            >
+                              Đã chọn
+                            </Tag>
+                          )}
                           <Avatar
                             src={doc.avatar}
                             icon={<UserOutlined style={{ fontSize: 36, color: '#0284c7' }} />}
@@ -1749,7 +1942,7 @@ export const PatientBookingPage: React.FC = () => {
                             }}
                             block
                           >
-                            {isSelected ? 'Đã chọn bác sĩ này' : 'Đặt khám với Bác sĩ'}
+                            {isSelected ? 'Đã chọn bác sĩ này' : 'Chọn Bác sĩ này'}
                           </Button>
                         </div>
                       </Col>
@@ -1758,20 +1951,49 @@ export const PatientBookingPage: React.FC = () => {
                 </Row>
               )}
 
-              <div style={{ marginTop: 28, display: 'flex', justifyContent: 'space-between' }}>
+              {/* THANH ĐIỀU HƯỚNG DƯỚI BƯỚC 1 */}
+              <div
+                style={{
+                  marginTop: 28,
+                  padding: '16px 20px',
+                  borderRadius: 14,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #bae6fd',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
                 <Button icon={<ArrowLeftOutlined />} onClick={() => setCurrentStep(0)}>
                   Quay lại chọn Khoa
                 </Button>
-                {selectedDoctor && (
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {selectedDoctor && (
+                    <Button
+                      type="dashed"
+                      onClick={() => {
+                        setSelectedDoctor(null);
+                        showToast('Đã bỏ chọn bác sĩ. Bệnh viện sẽ tự động sắp xếp bác sĩ khi đến khám!', 'info');
+                      }}
+                    >
+                      Bỏ chọn bác sĩ (Để BV sắp xếp)
+                    </Button>
+                  )}
+
                   <Button
                     type="primary"
                     icon={<ArrowRightOutlined />}
-                    style={{ backgroundColor: '#0284c7' }}
+                    style={{ backgroundColor: '#0284c7', height: 40, borderRadius: 10, fontWeight: 700 }}
                     onClick={() => setCurrentStep(2)}
                   >
-                    Tiếp tục chọn Giờ khám
+                    {selectedDoctor
+                      ? `Tiếp tục với ${selectedDoctor.name} ➔`
+                      : 'Tiếp tục (Bệnh viện sắp xếp bác sĩ) ➔'}
                   </Button>
-                )}
+                </div>
               </div>
             </div>
           )}
@@ -1810,17 +2032,26 @@ export const PatientBookingPage: React.FC = () => {
                   <Avatar
                     size={42}
                     src={selectedDoctor?.avatar}
-                    icon={<UserOutlined />}
-                    style={{ backgroundColor: '#0284c7' }}
+                    icon={!selectedDoctor ? <TeamOutlined style={{ fontSize: 20, color: '#0284c7' }} /> : <UserOutlined />}
+                    style={{ backgroundColor: selectedDoctor ? '#0284c7' : '#e0f2fe', border: '1.5px solid #bae6fd' }}
                   />
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 14.5, color: '#0f172a' }}>
-                      {selectedDoctor?.name || `BS. Trực ca ${selectedDept.name.replace(/^Khoa\s+/i, '')}`}
+                      {selectedDoctor ? selectedDoctor.name : 'Bệnh viện sắp xếp bác sĩ'}
                     </div>
-                    <div style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
                       <span>{selectedDept.name}</span>
-                      {bookingMode === 'byFollowUp' && (
+                      {selectedDoctor ? (
+                        <Tag color="blue" style={{ margin: 0, fontSize: 10.5, borderRadius: 6, fontWeight: 700 }}>
+                          Bác sĩ chỉ định
+                        </Tag>
+                      ) : (
                         <Tag color="cyan" style={{ margin: 0, fontSize: 10.5, borderRadius: 6, fontWeight: 700 }}>
+                          BV tự phân công tại viện
+                        </Tag>
+                      )}
+                      {bookingMode === 'byFollowUp' && (
+                        <Tag color="purple" style={{ margin: 0, fontSize: 10.5, borderRadius: 6, fontWeight: 700 }}>
                           Tái khám theo hẹn
                         </Tag>
                       )}
@@ -1833,9 +2064,9 @@ export const PatientBookingPage: React.FC = () => {
                   type="link"
                   icon={<SwapOutlined />}
                   style={{ color: '#0284c7', fontWeight: 700, fontSize: 13 }}
-                  onClick={() => setCurrentStep(0)}
+                  onClick={() => setCurrentStep(isDeptMode ? 1 : 0)}
                 >
-                  Đổi Bác sĩ / Chuyên khoa khác
+                  {selectedDoctor ? 'Đổi bác sĩ / Để BV sắp xếp' : 'Chọn bác sĩ cụ thể'}
                 </Button>
               </div>
 
@@ -2068,8 +2299,9 @@ export const PatientBookingPage: React.FC = () => {
                   showIcon
                   message={
                     <span>
-                      Đã chọn giờ hẹn: <strong>{selectedSlot}</strong> ngày <strong>{dayjs(selectedDate).format('DD/MM/YYYY')}</strong> cùng{' '}
-                      <strong>{selectedDoctor?.name || selectedDept.name}</strong>.
+                      Đã chọn giờ hẹn: <strong>{selectedSlot}</strong> ngày <strong>{dayjs(selectedDate).format('DD/MM/YYYY')}</strong> tại{' '}
+                      <strong>{selectedDept.name}</strong> •{' '}
+                      <strong>{selectedDoctor ? `BS. ${selectedDoctor.name}` : 'Bệnh viện sắp xếp bác sĩ (Tự động)'}</strong>.
                     </span>
                   }
                   style={{ marginBottom: 24, borderRadius: 12 }}
@@ -2089,7 +2321,7 @@ export const PatientBookingPage: React.FC = () => {
                   }}
                 >
                   {isDeptMode
-                    ? 'Quay lại chọn Bác sĩ'
+                    ? 'Quay lại chọn Bác sĩ / Để BV sắp xếp'
                     : bookingMode === 'byPackage'
                     ? 'Quay lại chọn Gói khám'
                     : bookingMode === 'byDoctor'
@@ -2599,7 +2831,19 @@ export const PatientBookingPage: React.FC = () => {
 
                           <div className="summary-item-row">
                             <span className="summary-item-label">Bác sĩ khám:</span>
-                            <strong className="summary-item-value">{selectedDoctor?.name || `BS. Trực ca ${selectedDept.name.replace(/^Khoa\s+/i, '')}`}</strong>
+                            <strong className="summary-item-value">
+                              {selectedDoctor ? (
+                                <span>
+                                  {selectedDoctor.name}
+                                  <Tag color="blue" style={{ marginLeft: 6, fontSize: 11, borderRadius: 4 }}>Chỉ định</Tag>
+                                </span>
+                              ) : (
+                                <span>
+                                  Bệnh viện sắp xếp bác sĩ
+                                  <Tag color="cyan" style={{ marginLeft: 6, fontSize: 11, borderRadius: 4 }}>Tự động tại viện</Tag>
+                                </span>
+                              )}
+                            </strong>
                           </div>
 
                           <div className="summary-item-row">
@@ -2800,9 +3044,17 @@ export const PatientBookingPage: React.FC = () => {
                         <span style={{ color: '#64748b' }}>Chuyên khoa:</span>
                         <strong style={{ color: '#0284c7' }}>{createdAppointment.departmentName}</strong>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#64748b' }}>Bác sĩ phụ trách:</span>
-                        <span>{createdAppointment.doctorName}</span>
+                        <span>
+                          {createdAppointment.doctorName.includes('sắp xếp') ? (
+                            <Tag color="cyan" style={{ margin: 0, fontWeight: 700, borderRadius: 6 }}>
+                              🏥 {createdAppointment.doctorName}
+                            </Tag>
+                          ) : (
+                            <strong style={{ color: '#0f172a' }}>{createdAppointment.doctorName}</strong>
+                          )}
+                        </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748b' }}>Ngày & Giờ khám:</span>
@@ -2811,6 +3063,23 @@ export const PatientBookingPage: React.FC = () => {
                         </strong>
                       </div>
                     </div>
+
+                    {createdAppointment.doctorName.includes('sắp xếp') && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          backgroundColor: '#f0fdf4',
+                          border: '1px solid #bbf7d0',
+                          fontSize: 12,
+                          color: '#15803d',
+                          fontWeight: 600,
+                        }}
+                      >
+                        ℹ️ Bệnh viện sẽ phân công bác sĩ tiếp nhận ngay khi bạn quét mã QR tại Kiosk sảnh A.
+                      </div>
+                    )}
 
                     <div
                       style={{

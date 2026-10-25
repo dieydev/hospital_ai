@@ -81,51 +81,63 @@ export interface HospitalVideoItem {
 export const HOSPITAL_VIDEOS: HospitalVideoItem[] = [
   {
     id: 'v1',
-    title: 'Khuôn viên khám bệnh & Hệ thống phòng mổ vô khuẩn Hybrid',
-    description: 'Quy mô hơn 500 giường bệnh tiện nghi, hệ thống phòng mổ áp lực dương vô khuẩn một chiều và trung tâm chẩn đoán hình ảnh kỹ thuật cao.',
-    duration: '03:45',
-    category: 'Cơ sở vật chất',
+    title: 'TS.BS Bùi Thế Dũng: Khám tim mạch định kỳ, ai cần khám và cần làm những xét nghiệm gì?',
+    description: 'Tiến sĩ Bác sĩ Bùi Thế Dũng (Trưởng khoa Bệnh viện Đại học Y Dược TP.HCM) hướng dẫn quy trình khám tim mạch định kỳ, chỉ định đo điện tim ECG, siêu âm tim và theo dõi huyết áp.',
+    duration: '05:20',
+    category: 'Bác sĩ Tim Mạch',
     resolution: 'Full HD 1080p',
-    thumbnail: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&auto=format&fit=crop&q=80',
-    videoUrl: '/videos/hospital_tour.mp4',
-    tag: 'Cơ sở vật chất',
+    thumbnail: 'https://i.ytimg.com/vi/Kvnp7Y2h1sc/hqdefault.jpg',
+    videoUrl: 'https://www.youtube-nocookie.com/embed/Kvnp7Y2h1sc?autoplay=1&rel=0&modestbranding=1',
+    tag: 'TS.BS BV Đại học Y Dược',
     badgeColor: '#0284c7',
   },
   {
     id: 'v2',
-    title: 'Quy trình tiếp nhận tự động qua Kiosk QR Code',
-    description: 'Hướng dẫn chi tiết quy trình đặt lịch trước, nhận mã QR thông minh và làm thủ tục check-in tự động tại sảnh A không cần bốc số.',
-    duration: '02:18',
-    category: 'Hướng dẫn người bệnh',
+    title: 'Bác sĩ Tim Mạch: Dấu hiệu nhận biết & Điều trị bệnh mạch vành (BVĐK Tâm Anh)',
+    description: 'Chuyên gia, Bác sĩ chuyên khoa Tim mạch tư vấn chi tiết về cơ chế mảng xơ vữa gây hẹp tắc mạch vành, các cơn đau thắt ngực khó thở và phác đồ can thiệp bảo vệ tim.',
+    duration: '04:15',
+    category: 'Bác sĩ Tim Mạch',
     resolution: 'Full HD 1080p',
-    thumbnail: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80',
-    videoUrl: '/videos/kiosk_checkin.mp4',
-    tag: 'Tiếp nhận thông minh',
-    badgeColor: '#059669',
-  },
-  {
-    id: 'v3',
-    title: 'Ứng dụng công nghệ hỗ trợ bác sĩ chẩn đoán & cảnh báo kê đơn',
-    description: 'Cơ chế hoạt động của Hospital AI: Hỗ trợ phân tích phim chụp MRI/CT và tự động kiểm tra cảnh báo dị ứng, tương tác thuốc theo Dược thư.',
-    duration: '04:12',
-    category: 'Công nghệ y khoa',
-    resolution: 'Full HD 1080p',
-    thumbnail: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80',
-    videoUrl: '/videos/ai_diagnosis.mp4',
-    tag: 'Công nghệ chẩn đoán',
+    thumbnail: 'https://i.ytimg.com/vi/TfPbm4ekX6A/hqdefault.jpg',
+    videoUrl: 'https://www.youtube-nocookie.com/embed/TfPbm4ekX6A?autoplay=1&rel=0&modestbranding=1',
+    tag: 'Tư vấn Tim mạch',
     badgeColor: '#0369a1',
   },
   {
-    id: 'v4',
-    title: 'Tư vấn chuyên khoa & Tầm soát sớm nguy cơ tim mạch',
-    description: 'Bác sĩ chuyên khoa II chia sẻ về các dấu hiệu cảnh báo bệnh lý tim mạch, phình mạch máu và các bước thăm khám định kỳ.',
-    duration: '03:30',
-    category: 'Tư vấn sức khỏe',
+    id: 'v3',
+    title: 'Khoa Tiêu Hóa & Gan Mật: Điều trị chuyên sâu bệnh lý dạ dày, đại tràng & gan - mật - tụy',
+    description: 'Đội ngũ Bác sĩ chuyên khoa Tiêu hóa chia sẻ về công nghệ nội soi dải tần ánh sáng hẹp NBI không đau, chẩn đoán sớm polyp, vi khuẩn HP và viêm loét dạ dày tá tràng.',
+    duration: '03:52',
+    category: 'Bác sĩ Tiêu Hóa',
     resolution: 'Full HD 1080p',
-    thumbnail: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800&auto=format&fit=crop&q=80',
-    videoUrl: '/videos/doctor_consultation.mp4',
-    tag: 'Tư vấn chuyên gia',
+    thumbnail: 'https://i.ytimg.com/vi/Ogw3IhkaS4M/hqdefault.jpg',
+    videoUrl: 'https://www.youtube-nocookie.com/embed/Ogw3IhkaS4M?autoplay=1&rel=0&modestbranding=1',
+    tag: 'Bác sĩ Tiêu Hóa',
+    badgeColor: '#059669',
+  },
+  {
+    id: 'v4',
+    title: 'Bác Sĩ Trần Minh: 8 lưu ý khi Khám Sức Khỏe Tổng Quát vô cùng quan trọng',
+    description: 'Bác sĩ chuyên khoa hướng dẫn chi tiết những việc người bệnh cần chuẩn bị trước khi khám tổng quát: nhịn ăn sáng, siêu âm ổ bụng, xét nghiệm máu và chụp X-Quang chuẩn xác.',
+    duration: '06:10',
+    category: 'Khám Tổng Quát',
+    resolution: 'Full HD 1080p',
+    thumbnail: 'https://i.ytimg.com/vi/OYMICtubyQM/hqdefault.jpg',
+    videoUrl: 'https://www.youtube-nocookie.com/embed/OYMICtubyQM?autoplay=1&rel=0&modestbranding=1',
+    tag: 'Tư vấn Bác sĩ',
     badgeColor: '#0284c7',
+  },
+  {
+    id: 'v5',
+    title: 'Quy trình Khám Bệnh Thông Minh: Đặt lịch trực tuyến & check-in Kiosk tại viện',
+    description: 'Hướng dẫn quy trình tiếp đón công nghệ số tại bệnh viện: Đặt lịch trên Web Portal, nhận mã QR điện tử và làm thủ tục vào phòng khám ngay không cần xếp hàng bốc số.',
+    duration: '02:45',
+    category: 'Hướng dẫn người bệnh',
+    resolution: 'Full HD 1080p',
+    thumbnail: 'https://i.ytimg.com/vi/FgfTqylY93s/hqdefault.jpg',
+    videoUrl: 'https://www.youtube-nocookie.com/embed/FgfTqylY93s?autoplay=1&rel=0&modestbranding=1',
+    tag: 'Tiếp đón thông minh',
+    badgeColor: '#0d9488',
   },
 ];
 
@@ -173,9 +185,12 @@ export const PatientHomePage: React.FC = () => {
 
   const currentVideo = HOSPITAL_VIDEOS[activeVideoIndex];
 
+  const isYouTubeUrl = (url: string) =>
+    url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube-nocookie.com');
+
   const handleSelectVideo = (index: number) => {
     setActiveVideoIndex(index);
-    setIsPlayingInline(false);
+    setIsPlayingInline(true);
     if (mainVideoRef.current) {
       mainVideoRef.current.pause();
       mainVideoRef.current.currentTime = 0;
@@ -184,6 +199,10 @@ export const PatientHomePage: React.FC = () => {
   };
 
   const handleTogglePlay = () => {
+    if (isYouTubeUrl(currentVideo.videoUrl)) {
+      setIsPlayingInline(true);
+      return;
+    }
     if (mainVideoRef.current) {
       if (mainVideoRef.current.paused) {
         mainVideoRef.current.play().then(() => setIsPlayingInline(true)).catch(() => { });
@@ -1394,11 +1413,15 @@ export const PatientHomePage: React.FC = () => {
           {/* Header */}
           <div className="video-header-row">
             <div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>
+                <VideoCameraOutlined />
+                <span>VIDEO BÁC SĨ TƯ VẤN & HƯỚNG DẪN KHÁM BỆNH</span>
+              </div>
               <h2 className="video-section-title">
-                Cơ sở vật chất & Quy trình khám bệnh
+                Chuyên Mục Bác Sĩ Tư Vấn Sức Khỏe & Quy Trình Y Khoa
               </h2>
               <p className="video-section-subtitle">
-                Trực quan hóa không gian khám chữa bệnh, trang thiết bị chẩn đoán hình ảnh và quy trình tiếp đón không chờ đợi tại Bệnh viện Đa khoa Hospital AI.
+                Xem video tư vấn y khoa từ các Bác sĩ chuyên khoa đầu ngành (Tim mạch, Tiêu hóa, Khám tổng quát) và hướng dẫn quy trình khám chữa bệnh thông minh.
               </p>
             </div>
             <div>
@@ -1418,18 +1441,40 @@ export const PatientHomePage: React.FC = () => {
             {/* Left 15 Col: Video Player Screen */}
             <Col xs={24} lg={15}>
               <div className="video-main-player-wrap">
-                <video
-                  ref={mainVideoRef}
-                  className="video-element"
-                  src={currentVideo.videoUrl}
-                  poster={currentVideo.thumbnail}
-                  controls={isPlayingInline}
-                  playsInline
-                  preload="metadata"
-                  onPlay={() => setIsPlayingInline(true)}
-                  onPause={() => setIsPlayingInline(false)}
-                  onEnded={() => setIsPlayingInline(false)}
-                />
+                {isYouTubeUrl(currentVideo.videoUrl) ? (
+                  isPlayingInline ? (
+                    <iframe
+                      className="video-element"
+                      src={currentVideo.videoUrl}
+                      title={currentVideo.title}
+                      style={{ width: '100%', height: '100%', border: 0 }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                      <img
+                        src={currentVideo.thumbnail}
+                        alt={currentVideo.title}
+                        className="video-element"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  )
+                ) : (
+                  <video
+                    ref={mainVideoRef}
+                    className="video-element"
+                    src={currentVideo.videoUrl}
+                    poster={currentVideo.thumbnail}
+                    controls={isPlayingInline}
+                    playsInline
+                    preload="metadata"
+                    onPlay={() => setIsPlayingInline(true)}
+                    onPause={() => setIsPlayingInline(false)}
+                    onEnded={() => setIsPlayingInline(false)}
+                  />
+                )}
 
                 {/* Custom Overlay when not playing */}
                 {!isPlayingInline && (
@@ -1444,8 +1489,8 @@ export const PatientHomePage: React.FC = () => {
                       type="button"
                       className="video-play-center-btn"
                       onClick={handleTogglePlay}
-                      title="Bấm để phát video"
-                      aria-label="Bấm để phát video"
+                      title="Bấm để phát video bác sĩ tư vấn"
+                      aria-label="Bấm để phát video bác sĩ tư vấn"
                     >
                       <PlayCircleFilled />
                     </button>
@@ -2440,14 +2485,24 @@ export const PatientHomePage: React.FC = () => {
               boxShadow: '0 12px 36px rgba(2, 132, 199, 0.25)',
             }}
           >
-            <video
-              src={currentVideo.videoUrl}
-              poster={currentVideo.thumbnail}
-              controls
-              autoPlay
-              playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
+            {isYouTubeUrl(currentVideo.videoUrl) ? (
+              <iframe
+                src={currentVideo.videoUrl}
+                title={currentVideo.title}
+                style={{ width: '100%', height: '100%', border: 0 }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : (
+              <video
+                src={currentVideo.videoUrl}
+                poster={currentVideo.thumbnail}
+                controls
+                autoPlay
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            )}
           </div>
           <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 260 }}>
