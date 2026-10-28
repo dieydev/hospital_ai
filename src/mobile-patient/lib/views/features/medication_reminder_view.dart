@@ -714,7 +714,7 @@ class _MedicationReminderViewState extends State<MedicationReminderView> {
                                     icon: const Icon(Icons.event_available_rounded, size: 16, color: Color(0xFF7C3AED)),
                                     label: Text(
                                       'Đặt Lại Hẹn Mới',
-                                      style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                                      style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
                                     ),
                                   ),
                                 ),

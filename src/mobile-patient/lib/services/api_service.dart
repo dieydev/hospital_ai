@@ -181,22 +181,12 @@ class ApiService {
     try {
       final response = await _dio.post('/auth/complete-profile', data: data);
       return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
     } catch (e) {
-      // Fallback trả về user hoàn thiện
-      return {
-        'id': data['id'] ?? 'pat_${DateTime.now().millisecondsSinceEpoch}',
-        'fullName': data['fullName'],
-        'identityCardNumber': data['identityCardNumber'],
-        'gender': data['gender'] ?? 'Nam',
-        'dateOfBirth': data['dateOfBirth'],
-        'address': data['address'],
-        'healthInsuranceNumber': data['healthInsuranceNumber'],
-        'patientCode': 'BN2026${DateTime.now().microsecond.toString().padLeft(6, '0')}',
-        'isProfileComplete': true,
-      };
+      throw Exception("Cập nhật hồ sơ bệnh nhân thất bại: $e");
     }
   }
-
   Future<dynamic> get(String endpoint) async {
     try {
       final response = await _dio.get(endpoint);

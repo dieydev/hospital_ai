@@ -150,26 +150,7 @@ class AuthProvider extends ChangeNotifier {
       newPassword: newPassword,
     );
     // Tự động đăng nhập với mật khẩu mới vừa đặt
-    try {
-      await login(phoneNumber, newPassword);
-    } catch (_) {
-      // Fallback offline/demo: tạo session tạm để user vào được app
-      _isAuthenticated = true;
-      _token = 'demo_reset_token_${DateTime.now().millisecondsSinceEpoch}';
-      _user ??= PatientModel(
-        id: 'pat_${DateTime.now().millisecondsSinceEpoch}',
-        maBenhNhan: '',
-        hoTen: 'Bệnh nhân',
-        gioiTinh: 'Nam',
-        ngaySinh: '',
-        soCCCD: '',
-        diaChi: '',
-        soDienThoai: phoneNumber,
-        isProfileComplete: false,
-      );
-      await _storage.write(key: 'auth_token', value: _token!);
-      notifyListeners();
-    }
+    await login(phoneNumber, newPassword);
   }
 
   /// Đăng ký tài khoản Bệnh nhân với đầy đủ thông tin định danh y tế
@@ -311,29 +292,7 @@ class AuthProvider extends ChangeNotifier {
       await _persistUser(_user!);
       notifyListeners();
     } catch (e) {
-      // Cập nhật local nếu offline
-      _user = _user?.copyWith(
-        hoTen: fullName.trim(),
-        soCCCD: cccd.trim(),
-        ngaySinh: dateOfBirth.trim(),
-        gioiTinh: gender,
-        diaChi: address.trim(),
-        maTheBHYT: healthInsuranceNumber?.trim(),
-        isProfileComplete: true,
-      ) ?? PatientModel(
-        id: 'pat_${DateTime.now().millisecondsSinceEpoch}',
-        maBenhNhan: 'BN2026${DateTime.now().millisecond.toString().padLeft(6, '0')}',
-        hoTen: fullName.trim(),
-        gioiTinh: gender,
-        ngaySinh: dateOfBirth.trim(),
-        soCCCD: cccd.trim(),
-        diaChi: address.trim(),
-        maTheBHYT: healthInsuranceNumber?.trim(),
-        soDienThoai: _user?.soDienThoai ?? '',
-        isProfileComplete: true,
-      );
-      if (_user != null) await _persistUser(_user!);
-      notifyListeners();
+      rethrow;
     }
   }
 
@@ -386,20 +345,11 @@ class AuthProvider extends ChangeNotifier {
 
   /// Đổi mật khẩu tài khoản người dùng
   Future<bool> changePassword(String currentPassword, String newPassword) async {
-    try {
-      await _apiService.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-      return true;
-    } catch (e) {
-      final msg = e.toString();
-      // Nếu offline / demo fallback
-      if (msg.contains('Không thể kết nối') || msg.contains('Kết nối mạng')) {
-        return true;
-      }
-      rethrow;
-    }
+    await _apiService.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    return true;
   }
 
   Future<void> logout() async {

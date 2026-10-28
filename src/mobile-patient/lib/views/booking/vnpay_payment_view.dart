@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:dio/dio.dart';
 
 class VnPayPaymentView extends StatefulWidget {
   final String paymentUrl;
@@ -47,7 +48,14 @@ class _VnPayPaymentViewState extends State<VnPayPaymentView> with SingleTickerPr
             if (request.url.contains('vnpay-return') || request.url.contains('Error.html')) {
               Uri uri = Uri.parse(request.url);
               String? responseCode = uri.queryParameters['vnp_ResponseCode'];
-              
+
+              // Đảm bảo gọi callback đến backend để cập nhật trạng thái hóa đơn trong CSDL
+              if (request.url.contains('vnpay-return')) {
+                try {
+                  Dio().get(request.url);
+                } catch (_) {}
+              }
+
               if (responseCode == '00') {
                 Navigator.pop(context, true); // Success
               } else {

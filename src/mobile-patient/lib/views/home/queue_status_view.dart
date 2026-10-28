@@ -44,6 +44,10 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
 
   @override
   void dispose() {
+    // Dừng polling thời gian thực để chống rò rỉ tài nguyên và tiết kiệm pin
+    try {
+      context.read<QueueProvider>().stopRealtimePolling();
+    } catch (_) {}
     _tabController.dispose();
     _searchTicketCtrl.dispose();
     super.dispose();

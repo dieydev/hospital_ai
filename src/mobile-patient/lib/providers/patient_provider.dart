@@ -155,14 +155,10 @@ class PatientProvider extends ChangeNotifier {
         final all = items
             .map((e) => ExaminationRecord.fromJson(Map<String, dynamic>.from(e)))
             .toList();
-        // Filter by patientId
+        // Filter strictly by patientId (Chống lộ thông tin y tế của bệnh nhân khác)
         _examinations = all
-            .where((r) => r.patientId == patientId || r.patientId.isEmpty)
+            .where((r) => r.patientId == patientId)
             .toList();
-        if (_examinations.isEmpty) {
-          // If no match by ID, show all (for demo with mismatched IDs)
-          _examinations = all;
-        }
       } catch (e2) {
         _examinations = [];
         _error = e2.toString();

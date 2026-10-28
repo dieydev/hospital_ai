@@ -805,6 +805,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     );
                   },
                 );
+                if (!mounted) return;
                 if (picked != null) {
                   setState(() {
                     _selectedDate = picked;
