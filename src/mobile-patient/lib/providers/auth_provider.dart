@@ -162,6 +162,7 @@ class AuthProvider extends ChangeNotifier {
     required String dateOfBirth,
     required String gender,
     required String address,
+    String? otpCode,
   }) async {
     DateTime? dob;
     try {
@@ -185,6 +186,7 @@ class AuthProvider extends ChangeNotifier {
       'gender': gender,
       'address': address.trim(),
       'role': 'Patient',
+      if (otpCode != null && otpCode.isNotEmpty) 'otpCode': otpCode,
     });
     if (regRes.isNotEmpty) {
       _user = PatientModel.fromJson(regRes);
@@ -214,6 +216,7 @@ class AuthProvider extends ChangeNotifier {
         dateOfBirth: dob ?? '',
         gender: gender ?? 'Nam',
         address: address ?? 'Chưa cập nhật',
+        otpCode: otpCode,
       );
     } else {
       await _apiService.register({
@@ -222,6 +225,7 @@ class AuthProvider extends ChangeNotifier {
         'password': password,
         'fullName': 'Bệnh nhân mới',
         'role': 'Patient',
+        'otpCode': otpCode,
       });
       await login(phoneNumber, password);
     }

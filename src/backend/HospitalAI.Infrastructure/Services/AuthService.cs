@@ -58,11 +58,8 @@ public class AuthService : IAuthService
         var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
         if (patient == null && roles.Contains("Patient"))
         {
-            var currentYear = DateTime.Now.Year;
-            var prefix = $"BN{currentYear}";
-            var count = await _context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
-            var newPatientCode = $"{prefix}{(count + 1):D6}";
-            var cccd = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber.Trim() : $"CD{(count + 1):D9}";
+            var newPatientCode = await GeneratePatientCodeAsync();
+            var cccd = !string.IsNullOrWhiteSpace(user.PhoneNumber) ? user.PhoneNumber.Trim() : $"CD{newPatientCode.Substring(2):D9}";
             if (await _context.Patients.AnyAsync(p => p.IdentityCardNumber == cccd))
             {
                 cccd = $"P{DateTime.UtcNow.Ticks % 1000000000000:D12}";
@@ -243,6 +240,41 @@ public class AuthService : IAuthService
             throw new Exception($"Số điện thoại {normalizedPhone} đã tồn tại trong hệ thống. Vui lòng đăng nhập.");
         }
 
+        // Xác thực mã OTP nếu có yêu cầu đăng ký qua OTP hoặc OTP được gửi lên
+        if (!string.IsNullOrWhiteSpace(request.OtpCode))
+        {
+            if (!_otpStore.TryGetValue(normalizedPhone, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
+            {
+                _otpStore.TryRemove(normalizedPhone, out _);
+                throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng xác thực lại.");
+            }
+
+            if (storedOtp.FailedAttempts >= 5)
+            {
+                _otpStore.TryRemove(normalizedPhone, out _);
+                throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
+            }
+
+            if (storedOtp.Code != request.OtpCode.Trim())
+            {
+                var nextAttempts = storedOtp.FailedAttempts + 1;
+                if (nextAttempts >= 5)
+                {
+                    _otpStore.TryRemove(normalizedPhone, out _);
+                    throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
+                }
+                _otpStore[normalizedPhone] = (storedOtp.Code, storedOtp.ExpiresAt, nextAttempts);
+                throw new Exception($"Mã OTP không chính xác. Bạn còn {5 - nextAttempts} lần thử.");
+            }
+
+            _otpStore.TryRemove(normalizedPhone, out _);
+        }
+        else if (_otpStore.ContainsKey(normalizedPhone))
+        {
+            // Số điện thoại đã kích hoạt gửi OTP nhưng không cung cấp OTP khi hoàn tất đăng ký
+            throw new Exception("Vui lòng nhập mã OTP để xác thực số điện thoại đăng ký.");
+        }
+
         // Đăng ký tài khoản công khai luôn cố định vai trò là 'Patient' (Bệnh nhân)
         // Quyền 'Admin', 'Doctor', 'Receptionist' phải do Bệnh viện tự cấp phát nội bộ
         var roleName = "Patient";
@@ -276,14 +308,11 @@ public class AuthService : IAuthService
 
         if (roleName == "Patient")
         {
-            var currentYear = DateTime.Now.Year;
-            var prefix = $"BN{currentYear}";
-            var count = await _context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
-            patientCode = $"{prefix}{(count + 1):D6}";
+            patientCode = await GeneratePatientCodeAsync();
 
             var cccd = !string.IsNullOrWhiteSpace(request.IdentityCardNumber)
                 ? request.IdentityCardNumber.Trim()
-                : (!string.IsNullOrWhiteSpace(newUser.PhoneNumber) ? newUser.PhoneNumber.Trim() : $"CD{(count + 1):D9}");
+                : (!string.IsNullOrWhiteSpace(newUser.PhoneNumber) ? newUser.PhoneNumber.Trim() : $"CD{patientCode.Substring(2):D9}");
 
             if (!string.IsNullOrWhiteSpace(request.IdentityCardNumber))
             {
@@ -685,10 +714,7 @@ public class AuthService : IAuthService
 
         if (patient == null)
         {
-            var currentYear = DateTime.Now.Year;
-            var prefix = $"BN{currentYear}";
-            var count = await _context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
-            var patientCode = $"{prefix}{(count + 1):D6}";
+            var patientCode = await GeneratePatientCodeAsync();
 
             patient = new Patient
             {
@@ -1262,5 +1288,28 @@ public class AuthService : IAuthService
             HealthInsuranceNumber = patient?.HealthInsuranceNumber,
             IsProfileComplete = isComplete
         };
+    }
+
+    private async Task<string> GeneratePatientCodeAsync()
+    {
+        var currentYear = DateTime.Now.Year;
+        var prefix = $"BN{currentYear}";
+
+        var maxCode = await _context.Patients
+            .Where(p => p.PatientCode.StartsWith(prefix))
+            .OrderByDescending(p => p.PatientCode)
+            .Select(p => p.PatientCode)
+            .FirstOrDefaultAsync();
+
+        int nextNumber = 1;
+        if (!string.IsNullOrEmpty(maxCode) && maxCode.Length >= prefix.Length + 6)
+        {
+            var suffix = maxCode.Substring(prefix.Length);
+            if (int.TryParse(suffix, out int currentMax))
+            {
+                nextNumber = currentMax + 1;
+            }
+        }
+        return $"{prefix}{nextNumber:D6}";
     }
 }

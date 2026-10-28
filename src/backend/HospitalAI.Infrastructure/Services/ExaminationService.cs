@@ -82,11 +82,24 @@ public class ExaminationService : IExaminationService
 
         var doctor = await _context.Users.FindAsync(dto.DoctorId);
 
-        var countToday = await _context.Examinations
-            .Where(e => e.ExaminationDate.Date == DateTime.UtcNow.Date)
-            .CountAsync();
+        var datePrefix = $"LK{DateTime.UtcNow:yyyyMMdd}-";
+        var lastExam = await _context.Examinations
+            .Where(e => e.ExaminationCode.StartsWith(datePrefix))
+            .OrderByDescending(e => e.ExaminationCode)
+            .Select(e => e.ExaminationCode)
+            .FirstOrDefaultAsync();
 
-        var examCode = $"LK{DateTime.UtcNow:yyyyMMdd}-{(countToday + 1):D4}";
+        var nextNum = 1;
+        if (!string.IsNullOrEmpty(lastExam) && lastExam.Length > datePrefix.Length)
+        {
+            var suffix = lastExam.Substring(datePrefix.Length);
+            if (int.TryParse(suffix, out var parsed))
+            {
+                nextNum = parsed + 1;
+            }
+        }
+
+        var examCode = $"{datePrefix}{nextNum:D4}";
 
         var exam = new Examination
         {

@@ -171,8 +171,22 @@ public class PatientService : IPatientService
         var currentYear = DateTime.Now.Year;
         var prefix = $"BN{currentYear}";
 
-        var count = await _context.Patients.CountAsync(p => p.PatientCode.StartsWith(prefix));
-        return $"{prefix}{(count + 1):D6}";
+        var maxCode = await _context.Patients
+            .Where(p => p.PatientCode.StartsWith(prefix))
+            .OrderByDescending(p => p.PatientCode)
+            .Select(p => p.PatientCode)
+            .FirstOrDefaultAsync();
+
+        int nextNumber = 1;
+        if (!string.IsNullOrEmpty(maxCode) && maxCode.Length >= prefix.Length + 6)
+        {
+            var suffix = maxCode.Substring(prefix.Length);
+            if (int.TryParse(suffix, out int currentMax))
+            {
+                nextNumber = currentMax + 1;
+            }
+        }
+        return $"{prefix}{nextNumber:D6}";
     }
 
     private static PatientDto MapToDto(Patient p)

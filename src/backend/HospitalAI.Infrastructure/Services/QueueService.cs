@@ -13,6 +13,7 @@ namespace HospitalAI.Infrastructure.Services;
 public class QueueService : IQueueService
 {
     private readonly HospitalDbContext _context;
+    private static readonly System.Threading.SemaphoreSlim _ticketLock = new(1, 1);
 
     public QueueService(HospitalDbContext context)
     {
@@ -71,29 +72,38 @@ public class QueueService : IQueueService
         if (department == null)
             throw new KeyNotFoundException($"Không tìm thấy khoa phòng với ID {dto.DepartmentId}");
 
-        var today = DateTime.UtcNow.Date;
-        var lastSequence = await _context.QueueTickets
-            .Where(q => q.DepartmentId == dto.DepartmentId && q.CreatedAt.Date == today)
-            .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
-
-        var ticket = new QueueTicket
+        // Đồng bộ hóa luồng cấp số (Chống trùng lặp số thứ tự khi nhiều bệnh nhân lấy số cùng tích tắc)
+        await _ticketLock.WaitAsync();
+        try
         {
-            Id = Guid.NewGuid(),
-            PatientId = dto.PatientId,
-            DepartmentId = dto.DepartmentId,
-            SequenceNumber = lastSequence + 1,
-            Status = "Waiting",
-            Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
-            CreatedAt = DateTime.UtcNow
-        };
+            var today = DateTime.UtcNow.Date;
+            var lastSequence = await _context.QueueTickets
+                .Where(q => q.DepartmentId == dto.DepartmentId && q.CreatedAt.Date == today)
+                .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
 
-        _context.QueueTickets.Add(ticket);
-        await _context.SaveChangesAsync();
+            var ticket = new QueueTicket
+            {
+                Id = Guid.NewGuid(),
+                PatientId = dto.PatientId,
+                DepartmentId = dto.DepartmentId,
+                SequenceNumber = lastSequence + 1,
+                Status = "Waiting",
+                Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        ticket.Patient = patient;
-        ticket.Department = department;
+            _context.QueueTickets.Add(ticket);
+            await _context.SaveChangesAsync();
 
-        return MapToDto(ticket);
+            ticket.Patient = patient;
+            ticket.Department = department;
+
+            return MapToDto(ticket);
+        }
+        finally
+        {
+            _ticketLock.Release();
+        }
     }
 
     public async Task<QueueTicketDto> UpdateQueueTicketStatusAsync(Guid ticketId, string status)

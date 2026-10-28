@@ -465,35 +465,6 @@ namespace HospitalAI.QueueService.Controllers
             EnsureDataLoaded();
             EnsureSlotsLoaded();
 
-            // 1. Kiểm tra khung giờ có bị khóa hoặc hết chỗ không
-            var slotStartTime = model.AppointmentTime.Split('-')[0].Trim();
-            lock (_lock)
-            {
-                var matchedSlot = _cachedSlots!.FirstOrDefault(s =>
-                    s.TimeSlot == model.AppointmentTime ||
-                    s.TimeSlot.StartsWith(slotStartTime) ||
-                    slotStartTime.StartsWith(s.TimeSlot.Split('-')[0].Trim()));
-
-                if (matchedSlot != null)
-                {
-                    if (matchedSlot.IsLocked)
-                    {
-                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} hiện đang bị tạm khóa bởi Bệnh viện. Quý khách vui lòng chọn khung giờ khác!" });
-                    }
-
-                    var count = _cachedAppointments!
-                        .Where(a => a.AppointmentDate == model.AppointmentDate &&
-                                    a.Status != "Cancelled" &&
-                                    (a.AppointmentTime == slotStartTime || a.AppointmentTime == matchedSlot.TimeSlot || a.AppointmentTime.StartsWith(slotStartTime)))
-                        .Count();
-
-                    if (count >= matchedSlot.MaxCapacity)
-                    {
-                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} vào ngày {model.AppointmentDate} đã đủ số lượng khám ({count}/{matchedSlot.MaxCapacity}). Quý khách vui lòng chọn khung giờ khác!" });
-                    }
-                }
-            }
-
             model.Id = $"apt-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
             model.Status = "Pending";
             var qrPayload = new
@@ -531,8 +502,34 @@ namespace HospitalAI.QueueService.Controllers
                 model.AppointmentType = "New";
             }
 
+            // Nguyên tử hóa (Atomic Check & Add): Giữ khóa lock xuyên suốt kiểm tra định mức và lưu trữ (Chống Overbooking TOCTOU)
+            var slotStartTime = model.AppointmentTime.Split('-')[0].Trim();
             lock (_lock)
             {
+                var matchedSlot = _cachedSlots!.FirstOrDefault(s =>
+                    s.TimeSlot == model.AppointmentTime ||
+                    s.TimeSlot.StartsWith(slotStartTime) ||
+                    slotStartTime.StartsWith(s.TimeSlot.Split('-')[0].Trim()));
+
+                if (matchedSlot != null)
+                {
+                    if (matchedSlot.IsLocked)
+                    {
+                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} hiện đang bị tạm khóa bởi Bệnh viện. Quý khách vui lòng chọn khung giờ khác!" });
+                    }
+
+                    var count = _cachedAppointments!
+                        .Where(a => a.AppointmentDate == model.AppointmentDate &&
+                                    a.Status != "Cancelled" &&
+                                    (a.AppointmentTime == slotStartTime || a.AppointmentTime == matchedSlot.TimeSlot || a.AppointmentTime.StartsWith(slotStartTime)))
+                        .Count();
+
+                    if (count >= matchedSlot.MaxCapacity)
+                    {
+                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} vào ngày {model.AppointmentDate} đã đủ số lượng khám ({count}/{matchedSlot.MaxCapacity}). Quý khách vui lòng chọn khung giờ khác!" });
+                    }
+                }
+
                 _cachedAppointments!.Add(model);
                 SaveToFile();
             }

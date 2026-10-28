@@ -39,6 +39,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
   bool _isLoading = false;
   bool _agreeTerms = true;
   String? _demoOtp;
+  String _enteredOtp = '';
   String? _phoneError;
 
   Timer? _countdownTimer;
@@ -242,11 +243,13 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
       return;
     }
 
-    // Kiểm tra OTP hợp lệ (Demo OTP hoặc 123456)
-    if (_demoOtp != null && otp != _demoOtp && otp != '123456') {
+    // Kiểm tra OTP nếu có mã mẫu từ hệ thống
+    if (_demoOtp != null && otp != _demoOtp) {
       _showToast('Mã OTP không chính xác. Vui lòng nhập: $_demoOtp', isError: true);
       return;
     }
+
+    _enteredOtp = otp;
 
     setState(() {
       _step = 3; // Chuyển sang bước 3: Thiết lập mật khẩu
@@ -358,6 +361,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
         dateOfBirth: dob,
         gender: _selectedGender,
         address: address,
+        otpCode: _enteredOtp,
       );
       if (!mounted) return;
 
