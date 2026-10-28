@@ -19,7 +19,7 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _tokenGenerator;
     private readonly IConfiguration _configuration;
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt)> _otpStore = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt, int FailedAttempts)> _otpStore = new();
 
     public AuthService(HospitalDbContext context, IPasswordHasher passwordHasher, IJwtTokenGenerator tokenGenerator, IConfiguration configuration)
     {
@@ -166,15 +166,10 @@ public class AuthService : IAuthService
             }
         }
 
-        // 3. Fallback đáng tin cậy nếu có Email gửi kèm từ Google Profile trên client
-        if (string.IsNullOrWhiteSpace(verifiedEmail) && !string.IsNullOrWhiteSpace(request.Email))
-        {
-            verifiedEmail = request.Email.Trim().ToLower();
-        }
-
+        // Bắt buộc Email phải được xác thực từ Google ID Token hoặc Google Userinfo API (Chống giả mạo danh tính)
         if (string.IsNullOrWhiteSpace(verifiedEmail))
         {
-            throw new Exception("Không thể xác thực thông tin tài khoản Google hoặc token đã hết hạn.");
+            throw new Exception("Không thể xác thực thông tin tài khoản Google hoặc token không hợp lệ.");
         }
 
         var user = await _context.Users
@@ -376,7 +371,7 @@ public class AuthService : IAuthService
 
         // Tạo mã OTP ngẫu nhiên 6 chữ số
         var otpCode = Random.Shared.Next(100000, 999999).ToString();
-        _otpStore[normalizedPhone] = (otpCode, DateTime.UtcNow.AddMinutes(5));
+        _otpStore[normalizedPhone] = (otpCode, DateTime.UtcNow.AddMinutes(5), 0);
 
         return new SendOtpResponseDto
         {
@@ -420,7 +415,7 @@ public class AuthService : IAuthService
         // Tạo mã OTP đặt lại mật khẩu, lưu vào store dùng key riêng "forgot_"
         var otpCode = Random.Shared.Next(100000, 999999).ToString();
         var storeKey = $"forgot_{normalizedPhone}";
-        _otpStore[storeKey] = (otpCode, DateTime.UtcNow.AddMinutes(5));
+        _otpStore[storeKey] = (otpCode, DateTime.UtcNow.AddMinutes(5), 0);
 
         return new SendOtpResponseDto
         {
@@ -443,18 +438,32 @@ public class AuthService : IAuthService
         var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
         var storeKey = $"forgot_{normalizedPhone}";
 
-        bool isValidOtp = false;
-        if (_otpStore.TryGetValue(storeKey, out var storedOtp))
+        if (!_otpStore.TryGetValue(storeKey, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
         {
-            if (storedOtp.ExpiresAt >= DateTime.UtcNow && storedOtp.Code == request.OtpCode.Trim())
-            {
-                isValidOtp = true;
-                _otpStore.TryRemove(storeKey, out _);
-            }
+            _otpStore.TryRemove(storeKey, out _);
+            throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
         }
 
-        if (!isValidOtp)
-            throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
+        // Chống Brute-Force: Giới hạn tối đa 5 lần thử sai
+        if (storedOtp.FailedAttempts >= 5)
+        {
+            _otpStore.TryRemove(storeKey, out _);
+            throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
+        }
+
+        if (storedOtp.Code != request.OtpCode.Trim())
+        {
+            var nextAttempts = storedOtp.FailedAttempts + 1;
+            if (nextAttempts >= 5)
+            {
+                _otpStore.TryRemove(storeKey, out _);
+                throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
+            }
+            _otpStore[storeKey] = (storedOtp.Code, storedOtp.ExpiresAt, nextAttempts);
+            throw new Exception($"Mã OTP không chính xác. Bạn còn {5 - nextAttempts} lần thử.");
+        }
+
+        _otpStore.TryRemove(storeKey, out _);
 
         var user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhone);
         if (user == null)
@@ -482,20 +491,32 @@ public class AuthService : IAuthService
 
         var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
 
-        bool isValidOtp = false;
-        if (_otpStore.TryGetValue(normalizedPhone, out var storedOtp))
+        if (!_otpStore.TryGetValue(normalizedPhone, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
         {
-            if (storedOtp.ExpiresAt >= DateTime.UtcNow && storedOtp.Code == request.OtpCode.Trim())
-            {
-                isValidOtp = true;
-                _otpStore.TryRemove(normalizedPhone, out _);
-            }
-        }
-
-        if (!isValidOtp)
-        {
+            _otpStore.TryRemove(normalizedPhone, out _);
             throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại.");
         }
+
+        // Chống Brute-Force: Giới hạn tối đa 5 lần thử sai
+        if (storedOtp.FailedAttempts >= 5)
+        {
+            _otpStore.TryRemove(normalizedPhone, out _);
+            throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
+        }
+
+        if (storedOtp.Code != request.OtpCode.Trim())
+        {
+            var nextAttempts = storedOtp.FailedAttempts + 1;
+            if (nextAttempts >= 5)
+            {
+                _otpStore.TryRemove(normalizedPhone, out _);
+                throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
+            }
+            _otpStore[normalizedPhone] = (storedOtp.Code, storedOtp.ExpiresAt, nextAttempts);
+            throw new Exception($"Mã OTP không chính xác. Bạn còn {5 - nextAttempts} lần thử.");
+        }
+
+        _otpStore.TryRemove(normalizedPhone, out _);
 
         var user = await _context.Users
             .Include(u => u.UserRoles)
@@ -997,6 +1018,164 @@ public class AuthService : IAuthService
         {
             throw new Exception("Mật khẩu phải có độ dài tối thiểu 6 ký tự.");
         }
+    }
+
+    public async Task<List<UserAccountItemDto>> GetUsersAsync()
+    {
+        var users = await _context.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .AsNoTracking()
+            .OrderByDescending(u => u.CreatedAt)
+            .ToListAsync();
+
+        var userIds = users.Select(u => u.Id).ToList();
+        var staffList = await _context.StaffProfiles
+            .Include(s => s.Department)
+            .Where(s => userIds.Contains(s.UserId))
+            .AsNoTracking()
+            .ToListAsync();
+        var staffMap = staffList.ToDictionary(s => s.UserId, s => s);
+
+        var patientList = await _context.Patients
+            .Where(p => p.UserId.HasValue && userIds.Contains(p.UserId.Value))
+            .AsNoTracking()
+            .ToListAsync();
+        var patientMap = patientList.ToDictionary(p => p.UserId!.Value, p => p);
+
+        var result = new List<UserAccountItemDto>();
+        foreach (var u in users)
+        {
+            var roles = u.UserRoles.Select(ur => ur.Role?.Name ?? "").Where(r => !string.IsNullOrEmpty(r)).ToList();
+            staffMap.TryGetValue(u.Id, out var staff);
+            patientMap.TryGetValue(u.Id, out var patient);
+
+            var fullName = staff?.FullName
+                ?? (patient != null && !string.IsNullOrWhiteSpace(patient.FullName) ? patient.FullName : u.FullName);
+            if (string.IsNullOrWhiteSpace(fullName)) fullName = u.Username;
+
+            var dept = staff?.Department?.DepartmentName ?? u.Specialty;
+            var title = staff?.Title ?? u.Title;
+
+            result.Add(new UserAccountItemDto
+            {
+                Id = u.Id.ToString(),
+                Username = u.Username,
+                FullName = fullName,
+                Email = u.Email ?? "",
+                PhoneNumber = u.PhoneNumber ?? "",
+                Roles = roles.Any() ? roles : new List<string> { "Patient" },
+                Department = dept,
+                Title = title,
+                IsActive = u.IsActive,
+                CreatedAt = u.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                AvatarUrl = u.AvatarUrl ?? $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(u.Username)}"
+            });
+        }
+        return result;
+    }
+
+    public async Task<UserAccountItemDto> CreateUserAccountAsync(CreateAccountPayloadDto payload)
+    {
+        var username = payload.Username.Trim();
+        if (await _context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower()))
+        {
+            throw new Exception($"Tên đăng nhập '{username}' đã tồn tại trong hệ thống.");
+        }
+
+        var rawPassword = !string.IsNullOrWhiteSpace(payload.Password) ? payload.Password : "HospitalAI@2026";
+        ValidatePasswordStrong(rawPassword);
+
+        var roleName = string.IsNullOrWhiteSpace(payload.Role) ? "Doctor" : payload.Role;
+        var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        if (role == null)
+        {
+            role = new Role { Name = roleName, Description = $"Vai trò {roleName}" };
+            _context.Roles.Add(role);
+            await _context.SaveChangesAsync();
+        }
+
+        var newUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Username = username,
+            PasswordHash = _passwordHasher.HashPassword(rawPassword),
+            FullName = payload.FullName.Trim(),
+            Email = payload.Email.Trim(),
+            PhoneNumber = payload.PhoneNumber.Trim(),
+            Specialty = payload.Department,
+            Title = payload.Title,
+            IsActive = true,
+            AvatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={Uri.EscapeDataString(username)}",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        newUser.UserRoles.Add(new UserRole { UserId = newUser.Id, RoleId = role.Id });
+        _context.Users.Add(newUser);
+
+        Department? dept = null;
+        if (!string.IsNullOrWhiteSpace(payload.Department))
+        {
+            dept = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentName == payload.Department);
+        }
+
+        if (roleName == "Doctor" || roleName == "Nurse" || roleName == "Receptionist")
+        {
+            if (dept == null)
+            {
+                dept = await _context.Departments.FirstOrDefaultAsync();
+            }
+
+            if (dept != null)
+            {
+                var staffProfile = new StaffProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = newUser.Id,
+                    DepartmentId = dept.Id,
+                    FullName = payload.FullName.Trim(),
+                    Title = payload.Title ?? (roleName == "Doctor" ? "Bác sĩ Điều trị" : "Nhân viên"),
+                    IsAvailable = true
+                };
+                _context.StaffProfiles.Add(staffProfile);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new UserAccountItemDto
+        {
+            Id = newUser.Id.ToString(),
+            Username = newUser.Username,
+            FullName = newUser.FullName,
+            Email = newUser.Email,
+            PhoneNumber = newUser.PhoneNumber,
+            Roles = new List<string> { roleName },
+            Department = dept?.DepartmentName ?? payload.Department,
+            Title = payload.Title,
+            IsActive = newUser.IsActive,
+            CreatedAt = newUser.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+            AvatarUrl = newUser.AvatarUrl
+        };
+    }
+
+    public async Task<bool> ToggleUserStatusAsync(Guid userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) throw new Exception("Không tìm thấy tài khoản người dùng.");
+        user.IsActive = !user.IsActive;
+        await _context.SaveChangesAsync();
+        return user.IsActive;
+    }
+
+    public async Task<bool> AdminResetPasswordAsync(Guid userId, string newPassword)
+    {
+        ValidatePasswordStrong(newPassword);
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) throw new Exception("Không tìm thấy tài khoản người dùng.");
+        user.PasswordHash = _passwordHasher.HashPassword(newPassword);
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     private async Task<UserProfileDto> BuildUserProfileDtoAsync(User user, List<string> roles, Patient? patient = null)

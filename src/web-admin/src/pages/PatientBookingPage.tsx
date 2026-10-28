@@ -613,6 +613,7 @@ export const PatientBookingPage: React.FC = () => {
           apt.status = 'Confirmed';
           apt.checkInStatus = 'CheckedInQR';
           setCreatedAppointment(apt);
+          appointmentService.updateStatus(apt.id, 'Confirmed').catch(() => {});
         } else if (vnpTxnRef) {
           appointmentService.getAppointments().then((all) => {
             const found = all.find((a) => a.id.toLowerCase() === vnpTxnRef.toLowerCase());
@@ -620,6 +621,7 @@ export const PatientBookingPage: React.FC = () => {
               found.status = 'Confirmed';
               found.checkInStatus = 'CheckedInQR';
               setCreatedAppointment(found);
+              appointmentService.updateStatus(found.id, 'Confirmed').catch(() => {});
             }
           });
         }

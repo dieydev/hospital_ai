@@ -180,3 +180,39 @@ public class DoctorDto
     public string Avatar { get; set; } = string.Empty;
 }
 
+public class UserAccountItemDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
+    public string? Department { get; set; }
+    public string? Title { get; set; }
+    public bool IsActive { get; set; }
+    public string CreatedAt { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
+}
+
+public class CreateAccountPayloadDto
+{
+    [Required(ErrorMessage = "Tên đăng nhập không được để trống")]
+    public string Username { get; set; } = string.Empty;
+    public string? Password { get; set; }
+    [Required(ErrorMessage = "Họ tên không được để trống")]
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Số điện thoại không được để trống")]
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string Role { get; set; } = "Doctor";
+    public string? Department { get; set; }
+    public string? Title { get; set; }
+}
+
+public class AdminResetPasswordDto
+{
+    [Required(ErrorMessage = "Mật khẩu mới không được để trống")]
+    public string NewPassword { get; set; } = string.Empty;
+}
+

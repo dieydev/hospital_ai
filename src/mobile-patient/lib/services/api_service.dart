@@ -170,26 +170,10 @@ class ApiService {
         data: {'phoneNumber': phoneNumber, 'otpCode': otpCode},
       );
       return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
     } catch (e) {
-      // Nếu offline hoặc môi trường dev: chấp nhận 123456 hoặc 6 chữ số
-      if (otpCode.trim() == '123456' || otpCode.trim().length == 6) {
-        return {
-          'token': 'dev_demo_jwt_token_${DateTime.now().millisecondsSinceEpoch}',
-          'user': {
-            'id': 'pat_${DateTime.now().millisecondsSinceEpoch}',
-            'username': phoneNumber,
-            'phoneNumber': phoneNumber,
-            'fullName': 'Bệnh nhân mới',
-            'isProfileComplete': false,
-            'patientCode': '',
-            'identityCardNumber': '',
-            'gender': 'Nam',
-            'dateOfBirth': '',
-            'address': 'Chưa cập nhật',
-          }
-        };
-      }
-      throw Exception('Mã xác thực OTP không chính xác. Vui lòng thử lại.');
+      throw Exception('Xác thực OTP thất bại. Vui lòng kiểm tra lại kết nối!');
     }
   }
 

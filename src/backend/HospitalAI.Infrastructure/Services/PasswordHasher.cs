@@ -38,12 +38,8 @@ public class PasswordHasher : Application.Interfaces.IPasswordHasher
             using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
             var key = pbkdf2.GetBytes(KeySize);
 
-            for (var i = 0; i < KeySize; i++)
-            {
-                if (hashBytes[SaltSize + i] != key[i]) return false;
-            }
-
-            return true;
+            // Constant-time comparison chống Timing Attack
+            return CryptographicOperations.FixedTimeEquals(hashBytes.AsSpan(SaltSize, KeySize), key);
         }
         catch
         {

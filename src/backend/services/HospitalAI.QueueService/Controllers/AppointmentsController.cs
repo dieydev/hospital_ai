@@ -96,8 +96,9 @@ namespace HospitalAI.QueueService.Controllers
         private readonly IHubContext<QueueHub> _hubContext;
         private readonly HospitalDbContext _dbContext;
         private static readonly object _lock = new();
-        private static readonly string _filePath = Path.Combine(AppContext.BaseDirectory, "appointments_data.json");
-        private static readonly string _slotFilePath = Path.Combine(AppContext.BaseDirectory, "time_slots_quota.json");
+        private static readonly string _dataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? AppContext.BaseDirectory;
+        private static readonly string _filePath = Path.Combine(_dataDir, "appointments_data.json");
+        private static readonly string _slotFilePath = Path.Combine(_dataDir, "time_slots_quota.json");
         
         private static List<OnlineAppointmentItem>? _cachedAppointments;
         private static List<TimeSlotQuotaItem>? _cachedSlots;
@@ -243,6 +244,7 @@ namespace HospitalAI.QueueService.Controllers
         {
             try
             {
+                if (!Directory.Exists(_dataDir)) Directory.CreateDirectory(_dataDir);
                 var json = JsonSerializer.Serialize(_cachedAppointments, new JsonSerializerOptions { WriteIndented = true });
                 System.IO.File.WriteAllText(_filePath, json);
             }
@@ -256,6 +258,7 @@ namespace HospitalAI.QueueService.Controllers
         {
             try
             {
+                if (!Directory.Exists(_dataDir)) Directory.CreateDirectory(_dataDir);
                 var json = JsonSerializer.Serialize(_cachedSlots, new JsonSerializerOptions { WriteIndented = true });
                 System.IO.File.WriteAllText(_slotFilePath, json);
             }
@@ -537,7 +540,13 @@ namespace HospitalAI.QueueService.Controllers
             // Đồng bộ xuống CSDL EF Core nếu kết nối hoạt động
             try
             {
-                var patient = await _dbContext.Patients.FirstOrDefaultAsync(p => p.EmergencyContactPhone == model.PatientPhone || p.PatientCode == model.PatientCode);
+                var patient = await _dbContext.Patients
+                    .Include(p => p.User)
+                    .FirstOrDefaultAsync(p =>
+                        p.PatientCode == model.PatientCode ||
+                        (p.User != null && p.User.PhoneNumber == model.PatientPhone) ||
+                        p.EmergencyContactPhone == model.PatientPhone ||
+                        (!string.IsNullOrEmpty(model.IdentityCardNumber) && p.IdentityCardNumber == model.IdentityCardNumber));
                 var schedule = await _dbContext.DoctorSchedules.FirstOrDefaultAsync();
 
                 if (patient != null && schedule != null)

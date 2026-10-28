@@ -147,5 +147,79 @@ namespace HospitalAI.ExaminationService.Controllers
             
             return BadRequest(new { Message = "Thanh toán thất bại hoặc bị hủy bởi người dùng", Success = false });
         }
+
+        /// <summary>
+        /// VNPay Server-to-Server IPN Webhook (Đảm bảo cập nhật giao dịch ngay cả khi người dùng đóng trình duyệt)
+        /// </summary>
+        [HttpGet("vnpay-ipn")]
+        [AllowAnonymous]
+        public async Task<IActionResult> PaymentIpn()
+        {
+            var dict = Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString());
+            var isValidSignature = _paymentService.ValidateSignature(dict);
+            if (!isValidSignature)
+            {
+                return Ok(new { RspCode = "97", Message = "Invalid Signature" });
+            }
+
+            var vnp_ResponseCode = Request.Query["vnp_ResponseCode"].ToString();
+            var vnp_TxnRef = Request.Query["vnp_TxnRef"].ToString();
+
+            if (!long.TryParse(Request.Query["vnp_Amount"], out long rawPaidAmount))
+            {
+                return Ok(new { RspCode = "04", Message = "Invalid Amount" });
+            }
+
+            var actualPaidAmount = rawPaidAmount / 100;
+
+            if (Guid.TryParse(vnp_TxnRef, out Guid billingId))
+            {
+                var billing = await _dbContext.Billings
+                    .Include(b => b.Items)
+                    .FirstOrDefaultAsync(b => b.Id == billingId);
+
+                if (billing == null)
+                {
+                    return Ok(new { RspCode = "01", Message = "Order not found" });
+                }
+
+                if (billing.Status == "Paid")
+                {
+                    return Ok(new { RspCode = "02", Message = "Order already confirmed" });
+                }
+
+                if (actualPaidAmount < (long)billing.TotalAmount)
+                {
+                    return Ok(new { RspCode = "04", Message = "Invalid amount" });
+                }
+
+                if (vnp_ResponseCode == "00")
+                {
+                    billing.Status = "Paid";
+                    billing.PaidAt = DateTime.UtcNow;
+                    billing.PaymentMethod = "VNPay";
+                    billing.TransactionRef = vnp_TxnRef;
+
+                    if (billing.BillingType == "ServiceOrder")
+                    {
+                        var item = billing.Items.FirstOrDefault();
+                        if (item != null && item.ReferenceId.HasValue)
+                        {
+                            var serviceOrder = await _dbContext.ServiceOrders.FirstOrDefaultAsync(s => s.Id == item.ReferenceId.Value);
+                            if (serviceOrder != null) serviceOrder.Status = "Paid";
+                        }
+                    }
+
+                    await _dbContext.SaveChangesAsync();
+                    return Ok(new { RspCode = "00", Message = "Confirm Success" });
+                }
+                else
+                {
+                    return Ok(new { RspCode = "00", Message = "Confirm Success (Payment Failed at Gate)" });
+                }
+            }
+
+            return Ok(new { RspCode = "00", Message = "Confirm Success" });
+        }
     }
 }

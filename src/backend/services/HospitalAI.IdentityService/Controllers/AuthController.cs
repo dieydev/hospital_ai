@@ -300,4 +300,76 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Lấy danh sách tài khoản hệ thống (Chỉ dành cho Quản trị viên Admin)
+    /// </summary>
+    [HttpGet("users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetUsers()
+    {
+        try
+        {
+            var users = await _authService.GetUsersAsync();
+            return Ok(users);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Tạo mới tài khoản cán bộ y tế / người dùng (Chỉ dành cho Quản trị viên Admin)
+    /// </summary>
+    [HttpPost("users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateAccountPayloadDto payload)
+    {
+        try
+        {
+            var user = await _authService.CreateUserAccountAsync(payload);
+            return Ok(user);
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Khóa / Mở khóa tài khoản người dùng (Chỉ dành cho Quản trị viên Admin)
+    /// </summary>
+    [HttpPut("users/{id:guid}/toggle-status")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ToggleUserStatus(Guid id)
+    {
+        try
+        {
+            var isActive = await _authService.ToggleUserStatusAsync(id);
+            return Ok(new { success = true, isActive });
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Đặt lại mật khẩu cho tài khoản người dùng (Chỉ dành cho Quản trị viên Admin)
+    /// </summary>
+    [HttpPost("users/{id:guid}/reset-password")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AdminResetPassword(Guid id, [FromBody] AdminResetPasswordDto request)
+    {
+        try
+        {
+            var success = await _authService.AdminResetPasswordAsync(id, request.NewPassword);
+            return Ok(new { success, message = "Đặt lại mật khẩu thành công!" });
+        }
+        catch (System.Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

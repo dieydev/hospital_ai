@@ -18,4 +18,8 @@ public interface IAuthService
     Task<bool> CheckPhoneExistsAsync(string phoneNumber);
     Task<bool> UpdateAvatarAsync(string userIdOrUsername, string avatarUrl);
     Task<List<DoctorDto>> GetDoctorsAsync();
+    Task<List<UserAccountItemDto>> GetUsersAsync();
+    Task<UserAccountItemDto> CreateUserAccountAsync(CreateAccountPayloadDto payload);
+    Task<bool> ToggleUserStatusAsync(Guid userId);
+    Task<bool> AdminResetPasswordAsync(Guid userId, string newPassword);
 }
