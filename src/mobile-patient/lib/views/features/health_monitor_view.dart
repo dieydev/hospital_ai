@@ -83,7 +83,7 @@ class _HealthMonitorViewState extends State<HealthMonitorView> {
       'title': 'Nhiệt độ cơ thể',
       'unit': '°C',
       'icon': Icons.thermostat_rounded,
-      'color': const Color(0xFF8B5CF6),
+      'color': const Color(0xFF0284C7),
       'current': '36.6',
       'status': 'Bình thường',
       'statusColor': const Color(0xFF10B981),

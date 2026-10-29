@@ -387,23 +387,23 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                                           margin: const EdgeInsets.symmetric(vertical: 4),
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFF5F3FF),
+                                            color: const Color(0xFFF0F9FF),
                                             borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: const Color(0xFFDDD6FE)),
+                                            border: Border.all(color: const Color(0xFFBAE6FD)),
                                           ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Row(
                                                 children: [
-                                                  const Icon(Icons.event_repeat_rounded, size: 18, color: Color(0xFF7C3AED)),
+                                                  const Icon(Icons.event_repeat_rounded, size: 18, color: Color(0xFF0284C7)),
                                                   const SizedBox(width: 8),
                                                   Text(
                                                     'CHỈ ĐỊNH TÁI KHÁM & LỜI DẶN',
                                                     style: GoogleFonts.inter(
                                                       fontSize: 12,
                                                       fontWeight: FontWeight.bold,
-                                                      color: const Color(0xFF6D28D9),
+                                                      color: const Color(0xFF0369A1),
                                                     ),
                                                   ),
                                                 ],
@@ -430,7 +430,7 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                                         height: 44,
                                         child: ElevatedButton.icon(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF7C3AED),
+                                            backgroundColor: const Color(0xFF0284C7),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                             elevation: 0,
                                           ),
@@ -892,13 +892,13 @@ class _MedicalHistoryViewState extends State<MedicalHistoryView> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F3FF),
+                          color: const Color(0xFFF0F9FF),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFDDD6FE)),
+                          border: Border.all(color: const Color(0xFFBAE6FD)),
                         ),
                         child: Text(
                           record.followUpAppointment,
-                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF5B21B6), height: 1.4, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF0369A1), height: 1.4, fontWeight: FontWeight.w600),
                         ),
                       ),
                       const SizedBox(height: 16),

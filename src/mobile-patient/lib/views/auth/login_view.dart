@@ -106,6 +106,10 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
     _countdownTimer?.cancel();
     setState(() => _secondsRemaining = 60);
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
       if (_secondsRemaining > 0) {
         setState(() => _secondsRemaining--);
       } else {

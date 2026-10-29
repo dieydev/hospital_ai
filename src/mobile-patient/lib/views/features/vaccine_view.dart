@@ -105,7 +105,7 @@ class _VaccineViewState extends State<VaccineView> with SingleTickerProviderStat
           'schedule': 'Theo khuyến cáo hàng năm',
           'price': 'Liên hệ cơ sở y tế',
           'available': false,
-          'color': const Color(0xFF8B5CF6),
+          'color': const Color(0xFF0284C7),
           'icon': Icons.coronavirus_rounded,
         },
       ],

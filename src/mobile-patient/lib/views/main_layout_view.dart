@@ -43,11 +43,9 @@ class _MainLayoutViewState extends State<MainLayoutView> {
           children: [
             const ProfileWarningBanner(),
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                switchInCurve: Curves.easeIn,
-                switchOutCurve: Curves.easeOut,
-                child: pages[_currentIndex],
+              child: IndexedStack(
+                index: _currentIndex,
+                children: pages,
               ),
             ),
           ],

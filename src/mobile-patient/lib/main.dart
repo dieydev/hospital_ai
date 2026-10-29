@@ -34,6 +34,7 @@ class HospitalAiPatientApp extends StatelessWidget {
       title: 'D-Medical',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      scrollBehavior: const SmoothScrollBehavior(),
       home: Consumer2<AuthProvider, SettingsProvider>(
         builder: (context, auth, settings, _) {
           if (auth.isAuthenticated) {

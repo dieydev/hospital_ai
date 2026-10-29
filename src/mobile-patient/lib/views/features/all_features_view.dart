@@ -77,7 +77,7 @@ class AllFeaturesView extends StatelessWidget {
                         'title': 'Đặt lịch tái khám định kỳ',
                         'desc': 'Đặt hẹn theo chỉ định bác sĩ và liên kết bệnh án cũ',
                         'icon': Icons.event_repeat_rounded,
-                        'color': const Color(0xFF7C3AED),
+                        'color': const Color(0xFF0284C7),
                         'onTap': (BuildContext ctx) => ProfileGuard.check(ctx, onAllowed: () {
                           Navigator.push(ctx, MaterialPageRoute(builder: (_) => const BookAppointmentView(isFollowUp: true)));
                         }),
@@ -95,7 +95,7 @@ class AllFeaturesView extends StatelessWidget {
                         'title': 'Kết quả cận lâm sàng',
                         'desc': 'Xét nghiệm máu, X-Quang, CT, MRI trực tuyến',
                         'icon': Icons.biotech_rounded,
-                        'color': const Color(0xFF8B5CF6),
+                        'color': const Color(0xFF0284C7),
                         'onTap': (BuildContext ctx) => ProfileGuard.check(ctx, onAllowed: () {
                           Navigator.push(ctx, MaterialPageRoute(builder: (_) => const MedicalHistoryView()));
                         }),

@@ -116,7 +116,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
         children: [
           FloatingActionButton.extended(
             heroTag: 'fab_followup',
-            backgroundColor: const Color(0xFF7C3AED),
+            backgroundColor: const Color(0xFF0284C7),
             onPressed: () {
               Navigator.push(
                 context,
@@ -192,13 +192,13 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isSpecial ? const Color(0xFF7C3AED) : const Color(0xFF0284C7))
-              : (isSpecial ? const Color(0xFFF5F3FF) : Colors.white),
+              ? (isSpecial ? const Color(0xFF0284C7) : const Color(0xFF0284C7))
+              : (isSpecial ? const Color(0xFFF0F9FF) : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? (isSpecial ? const Color(0xFF7C3AED) : const Color(0xFF0284C7))
-                : (isSpecial ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+                ? (isSpecial ? const Color(0xFF0284C7) : const Color(0xFF0284C7))
+                : (isSpecial ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD)),
           ),
         ),
         child: Text(
@@ -208,7 +208,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             color: isSelected
                 ? Colors.white
-                : (isSpecial ? const Color(0xFF6D28D9) : const Color(0xFF334155)),
+                : (isSpecial ? const Color(0xFF0369A1) : const Color(0xFF334155)),
           ),
         ),
       ),
@@ -284,7 +284,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+        border: Border.all(color: isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF0284C7).withValues(alpha: 0.08),
@@ -308,7 +308,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 Icon(
                   isFollowUp ? Icons.repeat_rounded : Icons.assignment_outlined,
                   size: 18,
-                  color: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                  color: isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -316,7 +316,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                    color: isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF0369A1),
                   ),
                 ),
                 if (isFollowUp) ...[
@@ -324,7 +324,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEDE9FE),
+                      color: const Color(0xFFF0F9FF),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -332,7 +332,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                       style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF7C3AED),
+                        color: const Color(0xFF0284C7),
                       ),
                     ),
                   ),
@@ -399,7 +399,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   height: 42,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                      backgroundColor: isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
@@ -419,7 +419,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   height: 38,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFDDD6FE)),
+                      side: const BorderSide(color: Color(0xFFBAE6FD)),
                       backgroundColor: const Color(0xFFFAF5FF),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -437,10 +437,10 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                         ),
                       ).then((_) => _loadAppointments());
                     },
-                    icon: const Icon(Icons.event_repeat_rounded, size: 16, color: Color(0xFF7C3AED)),
+                    icon: const Icon(Icons.event_repeat_rounded, size: 16, color: Color(0xFF0284C7)),
                     label: Text(
                       'Đặt lịch tái khám với Bác sĩ này',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF0284C7)),
                     ),
                   ),
                 ),
@@ -533,7 +533,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEDE9FE),
+                  color: const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -541,7 +541,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF7C3AED),
+                    color: const Color(0xFF0284C7),
                   ),
                 ),
               ),
@@ -552,7 +552,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
               style: GoogleFonts.sora(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                color: isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF0369A1),
               ),
             ),
             const SizedBox(height: 4),
@@ -569,12 +569,12 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD),
+                  color: isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: (isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7)).withValues(alpha: 0.1),
+                    color: (isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7)).withValues(alpha: 0.1),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -587,11 +587,11 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 backgroundColor: Colors.white,
                 eyeStyle: QrEyeStyle(
                   eyeShape: QrEyeShape.square,
-                  color: isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                  color: isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF0369A1),
                 ),
                 dataModuleStyle: QrDataModuleStyle(
                   dataModuleShape: QrDataModuleShape.square,
-                  color: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                  color: isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7),
                 ),
               ),
             ),
@@ -604,7 +604,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
                 color: isFollowUp ? const Color(0xFFFAF5FF) : const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD),
+                  color: isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD),
                 ),
               ),
               child: Column(
@@ -629,20 +629,20 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFF0F9FF),
+                color: isFollowUp ? const Color(0xFFF0F9FF) : const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+                border: Border.all(color: isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.qr_code_scanner_rounded, color: isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, size: 20),
+                  Icon(Icons.qr_code_scanner_rounded, color: isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Quý khách chỉ cần xuất trình mã QR này tại phòng khám để vào khám ngay (Hệ thống đã bỏ hoàn toàn số thứ tự STT giấy).',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: isFollowUp ? const Color(0xFF5B21B6) : const Color(0xFF0369A1),
+                        color: isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF0369A1),
                         height: 1.35,
                       ),
                     ),
@@ -655,16 +655,16 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(40),
-                side: BorderSide(color: isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+                side: BorderSide(color: isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              icon: Icon(Icons.info_outline, size: 16, color: isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary),
+              icon: Icon(Icons.info_outline, size: 16, color: isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary),
               label: Text(
                 'Xem toàn bộ thông tin khám trong Mã QR',
                 style: GoogleFonts.inter(
                   fontSize: 12.5,
                   fontWeight: FontWeight.bold,
-                  color: isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary,
+                  color: isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary,
                 ),
               ),
               onPressed: () => _showQrDataDetailsModal(parentContext, qrPayload),
@@ -676,7 +676,7 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
               height: 46,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                  backgroundColor: isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () => Navigator.pop(ctx),

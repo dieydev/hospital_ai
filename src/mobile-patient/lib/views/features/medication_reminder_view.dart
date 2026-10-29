@@ -641,12 +641,12 @@ class _MedicationReminderViewState extends State<MedicationReminderView> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFEDE9FE),
+                                              color: const Color(0xFFF0F9FF),
                                               borderRadius: BorderRadius.circular(6),
                                             ),
                                             child: Text(
                                               'TÁI KHÁM',
-                                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
+                                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF0284C7)),
                                             ),
                                           ),
                                         ],
@@ -693,7 +693,7 @@ class _MedicationReminderViewState extends State<MedicationReminderView> {
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(color: Color(0xFF7C3AED)),
+                                      side: const BorderSide(color: Color(0xFF0284C7)),
                                       backgroundColor: const Color(0xFFFAF5FF),
                                       padding: const EdgeInsets.symmetric(vertical: 9),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -711,10 +711,10 @@ class _MedicationReminderViewState extends State<MedicationReminderView> {
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.event_available_rounded, size: 16, color: Color(0xFF7C3AED)),
+                                    icon: const Icon(Icons.event_available_rounded, size: 16, color: Color(0xFF0284C7)),
                                     label: Text(
                                       'Đặt Lại Hẹn Mới',
-                                      style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
+                                      style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: const Color(0xFF0284C7)),
                                     ),
                                   ),
                                 ),

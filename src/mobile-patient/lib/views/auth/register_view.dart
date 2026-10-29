@@ -85,6 +85,10 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     _countdownTimer?.cancel();
     setState(() => _secondsRemaining = 60);
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_secondsRemaining > 0) {
         setState(() => _secondsRemaining--);
       } else {

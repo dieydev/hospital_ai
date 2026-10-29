@@ -158,7 +158,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('✓ Đã nạp đợt khám ${record.examinationCode}. Vui lòng chọn ngày & giờ tái khám!'),
-        backgroundColor: const Color(0xFF7C3AED),
+        backgroundColor: const Color(0xFF0284C7),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -182,10 +182,18 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('✓ Đã nạp đợt khám $aptId. Vui lòng chọn ngày & giờ tái khám!'),
-        backgroundColor: const Color(0xFF7C3AED),
+        backgroundColor: const Color(0xFF0284C7),
         duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _symptomsController.dispose();
+    _previousRecordController.dispose();
+    _followUpNotesController.dispose();
+    super.dispose();
   }
 
   @override
@@ -343,12 +351,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 9),
                       decoration: BoxDecoration(
-                        color: _isFollowUp ? const Color(0xFF7C3AED) : Colors.transparent,
+                        color: _isFollowUp ? const Color(0xFF0284C7) : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _isFollowUp
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.25),
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.25),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -642,10 +650,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isSelected ? (_isFollowUp ? const Color(0xFFF5F3FF) : AppTheme.primary.withValues(alpha: 0.05)) : AppTheme.surface,
+                        color: isSelected ? (_isFollowUp ? const Color(0xFFF0F9FF) : AppTheme.primary.withValues(alpha: 0.05)) : AppTheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary) : AppTheme.borderSubtle,
+                          color: isSelected ? (_isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary) : AppTheme.borderSubtle,
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -657,7 +665,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSelected ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary) : AppTheme.borderSubtle,
+                              color: isSelected ? (_isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary) : AppTheme.borderSubtle,
                               width: 2,
                             ),
                             boxShadow: [
@@ -707,7 +715,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                                 style: GoogleFonts.inter(
                                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.bold, 
                                   fontSize: 15, 
-                                  color: isSelected ? (_isFollowUp ? const Color(0xFF6D28D9) : AppTheme.primaryDark) : AppTheme.textPrimary
+                                  color: isSelected ? (_isFollowUp ? const Color(0xFF0369A1) : AppTheme.primaryDark) : AppTheme.textPrimary
                                 )
                               ),
                             ),
@@ -715,10 +723,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEDE9FE),
+                                  color: const Color(0xFFF0F9FF),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: Text('Bác sĩ điều trị', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED))),
+                                child: Text('Bác sĩ điều trị', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF0284C7))),
                               ),
                           ],
                         ),
@@ -726,12 +734,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Text(
                             '$docTitle • $docDept', 
-                            style: GoogleFonts.inter(fontSize: 12, color: isSelected ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary) : AppTheme.textSecondary)
+                            style: GoogleFonts.inter(fontSize: 12, color: isSelected ? (_isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary) : AppTheme.textSecondary)
                           ),
                         ),
                         trailing: Icon(
                           Icons.check_circle,
-                          color: isSelected ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary) : Colors.transparent,
+                          color: isSelected ? (_isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary) : Colors.transparent,
                           size: 24,
                         ),
                       ),
@@ -757,16 +765,16 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: _isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFF0F9FF),
+                  color: _isFollowUp ? const Color(0xFFF0F9FF) : const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+                  border: Border.all(color: _isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD)),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       _isFollowUp ? Icons.event_repeat_rounded : Icons.medical_services_outlined,
                       size: 20,
-                      color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary,
+                      color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -782,7 +790,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                             style: GoogleFonts.inter(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w500,
-                              color: _isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                              color: _isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF0369A1),
                             ),
                           ),
                         ],
@@ -807,20 +815,20 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
+                  color: const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFDDD6FE)),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.flash_on_rounded, size: 16, color: Color(0xFF7C3AED)),
+                        const Icon(Icons.flash_on_rounded, size: 16, color: Color(0xFF0284C7)),
                         const SizedBox(width: 6),
                         Text(
                           'GỢI Ý LỊCH TÁI KHÁM THEO CHỈ ĐỊNH',
-                          style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: const Color(0xFF6D28D9)),
+                          style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
                         ),
                       ],
                     ),
@@ -865,7 +873,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     return Theme(
                       data: Theme.of(context).copyWith(
                         colorScheme: ColorScheme.light(
-                          primary: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary,
+                          primary: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary,
                           onPrimary: Colors.white,
                           onSurface: AppTheme.textPrimary,
                         ),
@@ -889,11 +897,11 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, width: 1.5),
+                  border: Border.all(color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary, width: 1.5),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_month_rounded, color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, size: 28),
+                    Icon(Icons.calendar_month_rounded, color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary, size: 28),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
@@ -903,12 +911,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                           const SizedBox(height: 2),
                           Text(
                             'Thứ ${_getVietnameseDayOfWeek(_selectedDate.weekday)}, ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                            style: GoogleFonts.sora(fontWeight: FontWeight.bold, fontSize: 14, color: _isFollowUp ? const Color(0xFF6D28D9) : AppTheme.primaryDark),
+                            style: GoogleFonts.sora(fontWeight: FontWeight.bold, fontSize: 14, color: _isFollowUp ? const Color(0xFF0369A1) : AppTheme.primaryDark),
                           ),
                         ],
                       ),
                     ),
-                    Icon(Icons.edit_calendar, size: 20, color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary),
+                    Icon(Icons.edit_calendar, size: 20, color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary),
                   ],
                 ),
               ),
@@ -985,14 +993,14 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                           color: isBlocked
                               ? const Color(0xFFF1F5F9)
                               : isSelected
-                                  ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary)
+                                  ? (_isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary)
                                   : AppTheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isBlocked
                                 ? const Color(0xFFE2E8F0)
                                 : isSelected
-                                    ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary)
+                                    ? (_isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary)
                                     : AppTheme.borderSubtle,
                             width: isSelected ? 2 : 1,
                           ),
@@ -1053,7 +1061,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                                 style: GoogleFonts.inter(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w500,
-                                  color: isSelected ? Colors.white70 : (_isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7)),
+                                  color: isSelected ? Colors.white70 : (_isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7)),
                                 ),
                               ),
                           ],
@@ -1074,7 +1082,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
           children: [
             Row(
               children: [
-                Icon(Icons.assignment_turned_in, color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, size: 24),
+                Icon(Icons.assignment_turned_in, color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary, size: 24),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -1082,7 +1090,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     style: GoogleFonts.sora(
                       fontWeight: FontWeight.bold, 
                       fontSize: 16, 
-                      color: _isFollowUp ? const Color(0xFF6D28D9) : AppTheme.primaryDark
+                      color: _isFollowUp ? const Color(0xFF0369A1) : AppTheme.primaryDark
                     ),
                   ),
                 ),
@@ -1123,7 +1131,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                       height: 44,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, width: 2),
+                        border: Border.all(color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary, width: 2),
                       ),
                       child: ClipOval(
                         child: avatarUrl.isNotEmpty
@@ -1170,10 +1178,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFF0F9FF),
+                color: _isFollowUp ? const Color(0xFFF0F9FF) : const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD),
+                  color: _isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD),
                 ),
               ),
               child: Column(
@@ -1184,7 +1192,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                       Icon(
                         _isFollowUp ? Icons.history_rounded : Icons.medical_services_outlined,
                         size: 20,
-                        color: _isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
+                        color: _isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7),
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -1192,7 +1200,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: _isFollowUp ? const Color(0xFF6D28D9) : const Color(0xFF0369A1),
+                          color: _isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF0369A1),
                         ),
                       ),
                     ],
@@ -1234,10 +1242,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
-                              color: _isFollowUp ? const Color(0xFF7C3AED) : Colors.white,
+                              color: _isFollowUp ? const Color(0xFF0284C7) : Colors.white,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: _isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFFCBD5E1),
+                                color: _isFollowUp ? const Color(0xFF0284C7) : const Color(0xFFCBD5E1),
                               ),
                             ),
                             child: Center(
@@ -1262,7 +1270,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                       decoration: InputDecoration(
                         labelText: 'Mã Bệnh Án (EMR) / Đơn thuốc trước',
                         hintText: 'Ví dụ: EMR2026-0015',
-                        prefixIcon: const Icon(Icons.folder_shared_outlined, color: Color(0xFF7C3AED), size: 20),
+                        prefixIcon: const Icon(Icons.folder_shared_outlined, color: Color(0xFF0284C7), size: 20),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -1276,7 +1284,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                       decoration: InputDecoration(
                         labelText: 'Lời dặn hoặc chỉ định tái khám của Bác sĩ',
                         hintText: 'Ví dụ: Tái khám sau 7 ngày, kiểm tra lại vùng họng...',
-                        prefixIcon: const Icon(Icons.note_alt_outlined, color: Color(0xFF7C3AED), size: 20),
+                        prefixIcon: const Icon(Icons.note_alt_outlined, color: Color(0xFF0284C7), size: 20),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -1318,7 +1326,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, width: 1.5),
+                      borderSide: BorderSide(color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primary, width: 1.5),
                     ),
                     contentPadding: const EdgeInsets.all(12),
                   ),
@@ -1330,21 +1338,21 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFFEF3C7),
+                color: _isFollowUp ? const Color(0xFFF0F9FF) : const Color(0xFFFEF3C7),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFFDE68A)),
+                border: Border.all(color: _isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFFDE68A)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: _isFollowUp ? const Color(0xFF7C3AED) : const Color(0xFFD97706), size: 20),
+                  Icon(Icons.info_outline, color: _isFollowUp ? const Color(0xFF0284C7) : const Color(0xFFD97706), size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _isFollowUp
                           ? 'Quý khách vui lòng mang theo đơn thuốc hoặc kết quả khám cũ và đến trước 15 phút để làm thủ tục xác nhận tại quầy tiếp nhận.'
                           : 'Quý khách vui lòng đến trước 15 phút để làm thủ tục xác nhận tại quầy tiếp nhận.',
-                      style: GoogleFonts.inter(fontSize: 12, color: _isFollowUp ? const Color(0xFF5B21B6) : const Color(0xFF92400E), height: 1.4),
+                      style: GoogleFonts.inter(fontSize: 12, color: _isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF92400E), height: 1.4),
                     ),
                   ),
                 ],
@@ -1374,10 +1382,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
+          color: isSelected ? const Color(0xFF0284C7) : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFDDD6FE),
+            color: isSelected ? const Color(0xFF0284C7) : const Color(0xFFBAE6FD),
           ),
         ),
         child: Text(
@@ -1385,7 +1393,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
           style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            color: isSelected ? Colors.white : const Color(0xFF6D28D9),
+            color: isSelected ? Colors.white : const Color(0xFF0369A1),
           ),
         ),
       ),
@@ -1405,9 +1413,9 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F3FF),
+            color: const Color(0xFFF0F9FF),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFDDD6FE)),
+            border: Border.all(color: const Color(0xFFBAE6FD)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1415,10 +1423,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFEDE9FE),
+                  color: Color(0xFFF0F9FF),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.event_repeat_rounded, color: Color(0xFF7C3AED), size: 24),
+                child: const Icon(Icons.event_repeat_rounded, color: Color(0xFF0284C7), size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1427,12 +1435,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   children: [
                     Text(
                       'Cổng Đặt Lịch Tái Khám Định Kỳ',
-                      style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF6D28D9)),
+                      style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Hệ thống tự động liên kết hồ sơ bệnh án điện tử (EMR) cũ, giúp bác sĩ nắm rõ chẩn đoán và kết quả xét nghiệm trước đó.',
-                      style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF5B21B6), height: 1.4),
+                      style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF0369A1), height: 1.4),
                     ),
                   ],
                 ),
@@ -1445,7 +1453,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
         // Section: Đợt khám trước đó
         Row(
           children: [
-            const Icon(Icons.history_edu_rounded, size: 18, color: Color(0xFF7C3AED)),
+            const Icon(Icons.history_edu_rounded, size: 18, color: Color(0xFF0284C7)),
             const SizedBox(width: 6),
             Text(
               'Chọn đợt khám / Bệnh án cần tái khám:',
@@ -1461,7 +1469,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
         const SizedBox(height: 12),
 
         if (patientProvider.isLoading)
-          const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Color(0xFF7C3AED))))
+          const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Color(0xFF0284C7))))
         else if (exams.isNotEmpty) ...[
           ...exams.map((exam) {
             final isSelected = _previousRecordController.text == exam.examinationCode;
@@ -1469,10 +1477,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFF5F3FF) : Colors.white,
+                color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFE2E8F0),
+                  color: isSelected ? const Color(0xFF0284C7) : const Color(0xFFE2E8F0),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: [
@@ -1491,12 +1499,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEDE9FE),
+                          color: const Color(0xFFF0F9FF),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           exam.examinationCode.isNotEmpty ? exam.examinationCode : 'EMR',
-                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
+                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF0284C7)),
                         ),
                       ),
                       const Spacer(),
@@ -1551,7 +1559,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     height: 38,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7C3AED),
+                        backgroundColor: const Color(0xFF0284C7),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         elevation: 0,
                       ),
@@ -1579,10 +1587,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFF5F3FF) : Colors.white,
+                color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFE2E8F0),
+                  color: isSelected ? const Color(0xFF0284C7) : const Color(0xFFE2E8F0),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: [
@@ -1601,12 +1609,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEDE9FE),
+                          color: const Color(0xFFF0F9FF),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           aptId,
-                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF7C3AED)),
+                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF0284C7)),
                         ),
                       ),
                       const Spacer(),
@@ -1621,7 +1629,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     height: 38,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7C3AED),
+                        backgroundColor: const Color(0xFF0284C7),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         elevation: 0,
                       ),
@@ -1678,7 +1686,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 controller: _previousRecordController,
                 decoration: InputDecoration(
                   hintText: 'Ví dụ: EMR2026-0015 hoặc số toa thuốc...',
-                  prefixIcon: const Icon(Icons.badge_outlined, size: 20, color: Color(0xFF7C3AED)),
+                  prefixIcon: const Icon(Icons.badge_outlined, size: 20, color: Color(0xFF0284C7)),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
@@ -1691,7 +1699,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 controller: _followUpNotesController,
                 decoration: InputDecoration(
                   hintText: 'Lời dặn tái khám của Bác sĩ (ví dụ: Tái khám sau 7 ngày)...',
-                  prefixIcon: const Icon(Icons.note_alt_outlined, size: 20, color: Color(0xFF7C3AED)),
+                  prefixIcon: const Icon(Icons.note_alt_outlined, size: 20, color: Color(0xFF0284C7)),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
@@ -1716,10 +1724,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFF5F3FF) : Colors.white,
+                  color: isSelected ? const Color(0xFFF0F9FF) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFE2E8F0),
+                    color: isSelected ? const Color(0xFF0284C7) : const Color(0xFFE2E8F0),
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -1729,7 +1737,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                   leading: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFF1F5F9),
+                      color: isSelected ? const Color(0xFF0284C7) : const Color(0xFFF1F5F9),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -1743,7 +1751,7 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected ? const Color(0xFF6D28D9) : AppTheme.textPrimary,
+                      color: isSelected ? const Color(0xFF0369A1) : AppTheme.textPrimary,
                     ),
                   ),
                 ),
@@ -1938,16 +1946,16 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _isFollowUp ? const Color(0xFFF5F3FF) : const Color(0xFFE0F2FE),
+                  color: _isFollowUp ? const Color(0xFFF0F9FF) : const Color(0xFFE0F2FE),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _isFollowUp ? const Color(0xFFDDD6FE) : const Color(0xFFBAE6FD)),
+                  border: Border.all(color: _isFollowUp ? const Color(0xFFBAE6FD) : const Color(0xFFBAE6FD)),
                 ),
                 child: Text(
                   _isFollowUp ? '🔄 PHIẾU HẸN TÁI KHÁM (ĐÃ BỎ STT)' : 'MÃ QR TIẾP NHẬN (ĐÃ BỎ STT)',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primaryDark,
+                    color: _isFollowUp ? const Color(0xFF0284C7) : AppTheme.primaryDark,
                   ),
                 ),
               ),

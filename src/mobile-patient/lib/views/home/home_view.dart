@@ -206,10 +206,10 @@ class _HomeViewState extends State<HomeView> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFDDD6FE), width: 1.2),
+          border: Border.all(color: const Color(0xFFBAE6FD), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+              color: const Color(0xFF0284C7).withValues(alpha: 0.08),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -220,11 +220,11 @@ class _HomeViewState extends State<HomeView> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F3FF),
+                color: const Color(0xFFF0F9FF),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFEDE9FE)),
+                border: Border.all(color: const Color(0xFFF0F9FF)),
               ),
-              child: const Icon(Icons.event_repeat_rounded, color: Color(0xFF7C3AED), size: 28),
+              child: const Icon(Icons.event_repeat_rounded, color: Color(0xFF0284C7), size: 28),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -236,7 +236,7 @@ class _HomeViewState extends State<HomeView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEDE9FE),
+                          color: const Color(0xFFF0F9FF),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -244,7 +244,7 @@ class _HomeViewState extends State<HomeView> {
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF7C3AED),
+                            color: const Color(0xFF0284C7),
                           ),
                         ),
                       ),
@@ -272,7 +272,7 @@ class _HomeViewState extends State<HomeView> {
                     const SizedBox(height: 2),
                     Text(
                       followUpNote,
-                      style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF6D28D9), fontWeight: FontWeight.w500),
+                      style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF0369A1), fontWeight: FontWeight.w500),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -283,7 +283,7 @@ class _HomeViewState extends State<HomeView> {
             const SizedBox(width: 8),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
+                backgroundColor: const Color(0xFF0284C7),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -392,7 +392,7 @@ class _HomeViewState extends State<HomeView> {
         'iconWidget': _buildDualIcon(
           Icons.biotech_rounded,
           badgeIcon: Icons.search_rounded,
-          iconColor: const Color(0xFF8B5CF6),
+          iconColor: const Color(0xFF0284C7),
           badgeColor: const Color(0xFF06B6D4),
         ),
         'onTap': () {
@@ -420,7 +420,7 @@ class _HomeViewState extends State<HomeView> {
         'iconWidget': _buildDualIcon(
           Icons.event_repeat_rounded,
           badgeIcon: Icons.calendar_month_rounded,
-          iconColor: const Color(0xFF7C3AED),
+          iconColor: const Color(0xFF0284C7),
           badgeColor: const Color(0xFF0284C7),
         ),
         'onTap': () {

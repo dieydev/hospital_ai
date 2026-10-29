@@ -1,26 +1,38 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AppTheme {
-  // New Design System Tokens
-  static const Color primary = Color(0xFF0284C7); // Sky 600
-  static const Color primaryDark = Color(0xFF0369A1); // Sky 700
-  static const Color primaryDeep = Color(0xFF062A3D); // Gradient in topbar/CTA
-  static const Color accentMint = Color(0xFF14B8A6); // LIVE, badge success
-  static const Color background = Color(0xFFF4F8FA);
-  static const Color surface = Colors.white;
-  static const Color borderSubtle = Color(0xFFE3EDF1);
-  
-  static const Color textPrimary = Color(0xFF0B2431);
-  static const Color textSecondary = Color(0xFF4A6373);
+/// Lớp điều khiển cuộn mượt mà chuẩn iOS Bouncing Physics cho toàn bộ App
+class SmoothScrollBehavior extends MaterialScrollBehavior {
+  const SmoothScrollBehavior();
 
-  // Keep old names for compatibility, point to new tokens where applicable
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+  }
+}
+
+class AppTheme {
+  // Bảng màu Y tế Số Chuẩn Bắt buộc (Strict Medical AI Theme - AGENTS.md)
+  static const Color primary = Color(0xFF0284C7); // Sky 600 - Nút bấm, Link, Active, Accent
+  static const Color primaryDark = Color(0xFF0369A1); // Sky 700 - Tiêu đề, Header, Highlight
+  static const Color primaryDeep = Color(0xFF0B2431); // Slate Deep
+  static const Color accentMint = Color(0xFF14B8A6); // LIVE, Badge Success
+  static const Color background = Color(0xFFF0F9FF); // Background Soft Light
+  static const Color surface = Colors.white; // Card Background Pure White
+  static const Color borderSubtle = Color(0xFFBAE6FD); // Sky 200 - Border Color
+  
+  static const Color textPrimary = Color(0xFF0F172A); // Slate 900 - Text Main / Headings
+  static const Color textSecondary = Color(0xFF334155); // Slate 700 - Text Sub-label / Form Label
+  static const Color textMuted = Color(0xFF64748B); // Slate 500 - Text Muted / Secondary
+  static const Color textPlaceholder = Color(0xFF94A3B8); // Slate 400 - Text Placeholder / Disabled
+
+  // Tương thích ngược với các module cũ
   static const Color primaryColor = primary;
   static const Color textMain = textPrimary;
   static const Color textSub = textSecondary;
-  static const Color textMuted = textSecondary;
 
-  // Standard Premium Medical Gradient
+  // Background Gradient chuẩn (Trang web & Banner)
   static const LinearGradient premiumGradient = LinearGradient(
     colors: [
       Color(0xFFE0F2FE), // Sky 100
@@ -31,12 +43,12 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
-  // Important CTA Shadow
+  // Card Box Shadow: 0 10px 30px rgba(2, 132, 199, 0.1)
   static List<BoxShadow> get prominentShadow => [
-    BoxShadow(
-      color: primary.withValues(alpha: 0.14),
-      blurRadius: 34,
-      offset: const Offset(0, 14),
+    const BoxShadow(
+      color: Color.fromRGBO(2, 132, 199, 0.1),
+      blurRadius: 30,
+      offset: Offset(0, 10),
     )
   ];
 
@@ -45,6 +57,13 @@ class AppTheme {
       useMaterial3: true,
       primaryColor: primary,
       scaffoldBackgroundColor: background,
+      splashFactory: InkSparkle.splashFactory,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: primaryDark,
         foregroundColor: Colors.white,
@@ -80,11 +99,30 @@ class AppTheme {
           side: const BorderSide(color: borderSubtle, width: 1),
         ),
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: borderSubtle),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: borderSubtle),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: primary, width: 1.8),
+        ),
+        hintStyle: GoogleFonts.inter(color: textPlaceholder, fontSize: 14),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(48),
+          elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
         ),
