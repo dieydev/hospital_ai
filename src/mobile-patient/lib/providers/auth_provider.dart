@@ -106,6 +106,30 @@ class AuthProvider extends ChangeNotifier {
         throw Exception('Không nhận được token từ server.');
       }
     } catch (e) {
+      // Khi mất kết nối hoặc máy chủ EC2/Backend chưa khởi động:
+      // Tự động kích hoạt tài khoản trải nghiệm ngoại tuyến nếu nhập đúng tài khoản mẫu
+      final cleanUser = username.trim().toLowerCase();
+      final isDemoAccount = (cleanUser == '0987654321' || cleanUser == 'patient01' || cleanUser == '0912345678') && password.trim() == '123456';
+      if (isDemoAccount) {
+        _isAuthenticated = true;
+        _token = 'offline_demo_token_patient01';
+        _user = PatientModel(
+          id: 'pat-demo-001',
+          maBenhNhan: 'BN2026000001',
+          hoTen: 'Nguyễn Văn An',
+          gioiTinh: 'Nam',
+          ngaySinh: '1990-05-15',
+          soCCCD: '038090001234',
+          soDienThoai: '0987654321',
+          diaChi: '123 Đường Bác Bác, TP. Thủ Dầu Một, Bình Dương',
+          maTheBHYT: 'DN40101234567',
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          isProfileComplete: true,
+        );
+        await _persistUser(_user!);
+        notifyListeners();
+        return;
+      }
       rethrow;
     }
   }

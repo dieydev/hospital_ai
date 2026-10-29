@@ -564,6 +564,37 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
                     fontSize: 13, color: AppTheme.textSecondary)),
             const SizedBox(height: 28),
 
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                setState(() {
+                  _usernameController.text = '0987654321';
+                  _passwordController.text = '123456';
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, color: AppTheme.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tài khoản mẫu: 0987654321 • MK: 123456 (Chạm để điền nhanh)',
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             _buildLabel('Số điện thoại / Tên đăng nhập'),
             const SizedBox(height: 8),
             _buildTextField(
