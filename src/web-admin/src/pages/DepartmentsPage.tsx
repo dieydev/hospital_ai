@@ -96,7 +96,7 @@ export const DepartmentsPage: React.FC = () => {
       </section>
 
       {/* Main Content */}
-      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 16px 50px' }}>
+      <main style={{ maxWidth: 1480, width: '95%', margin: '0 auto', padding: '36px 16px 50px' }}>
         {/* 4 Thống kê Chuyên khoa với CountUp */}
         <Row gutter={[16, 16]} style={{ marginBottom: 36 }}>
           {[

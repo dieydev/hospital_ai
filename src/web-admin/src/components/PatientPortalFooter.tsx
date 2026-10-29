@@ -13,7 +13,7 @@ export const PatientPortalFooter: React.FC = () => {
 
   return (
     <footer className="hospital-portal-footer">
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1520, width: '95%', margin: '0 auto' }}>
         <Row gutter={[32, 32]}>
           <Col xs={24} md={8}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>

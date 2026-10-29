@@ -1018,7 +1018,7 @@ export const PatientHomePage: React.FC = () => {
       </div>
 
       {/* Promotional Banner Advertising Slider (Medpro Style Carousel with 5 Ad Slides) */}
-      <section style={{ maxWidth: 1200, margin: '28px auto 36px', padding: '0 20px' }}>
+      <section style={{ maxWidth: 1520, width: '95%', margin: '28px auto 36px', padding: '0 20px' }}>
         <div className="hospital-carousel-wrap">
           {/* Floating Navigation Arrows */}
           <button
@@ -1600,7 +1600,7 @@ export const PatientHomePage: React.FC = () => {
       </section>
 
       {/* 5. Khối Chuyên Khoa Nổi Bật */}
-      <section style={{ maxWidth: 1200, margin: '0 auto 40px', padding: '0 20px' }}>
+      <section style={{ maxWidth: 1520, width: '95%', margin: '0 auto 40px', padding: '0 20px' }}>
         <div className="medpro-section-header">
           <div>
             <div className="medpro-section-title">Chuyên Khoa Khám Bệnh Nổi Bật</div>
@@ -1697,7 +1697,7 @@ export const PatientHomePage: React.FC = () => {
       </section>
 
       {/* 6. Khối Bác Sĩ Chuyên Gia Tiêu Biểu */}
-      <section style={{ maxWidth: 1200, margin: '0 auto 40px', padding: '0 20px' }}>
+      <section style={{ maxWidth: 1520, width: '95%', margin: '0 auto 40px', padding: '0 20px' }}>
         <div className="medpro-section-header">
           <div>
             <div className="medpro-section-title">Bác Sĩ Tư Vấn Khám Bệnh Nổi Bật</div>
@@ -1779,7 +1779,7 @@ export const PatientHomePage: React.FC = () => {
       </section>
 
       {/* 7. Khối Gói Khám Sức Khỏe Toàn Diện */}
-      <section style={{ maxWidth: 1200, margin: '0 auto 40px', padding: '0 20px' }}>
+      <section style={{ maxWidth: 1520, width: '95%', margin: '0 auto 40px', padding: '0 20px' }}>
         <div className="medpro-section-header">
           <div>
             <div className="medpro-section-title">Gói Khám Sức Khỏe & Tầm Soát Chuyên Sâu</div>
@@ -1851,7 +1851,7 @@ export const PatientHomePage: React.FC = () => {
       </section>
 
       {/* 8. Quy Trình Khám Bệnh 3 Bước Tiếp Nhận Không Chờ Đợi */}
-      <section className="patient-journey-wrap" style={{ maxWidth: 1200, margin: '36px auto 30px', padding: '32px 24px' }}>
+      <section className="patient-journey-wrap" style={{ maxWidth: 1520, width: '95%', margin: '36px auto 30px', padding: '32px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <Title level={2} style={{ color: '#0f172a', fontWeight: 800, margin: '0 0 6px' }}>
             Quy trình tiếp nhận và khám bệnh
@@ -1921,7 +1921,7 @@ export const PatientHomePage: React.FC = () => {
       </section>
 
       {/* 9. FAQ & Testimonials */}
-      <section style={{ maxWidth: 1200, margin: '0 auto 48px', padding: '0 20px' }}>
+      <section style={{ maxWidth: 1520, width: '95%', margin: '0 auto 48px', padding: '0 20px' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <Title level={2} style={{ color: '#0f172a', fontWeight: 800, margin: '0 0 6px' }}>
             Câu hỏi thường gặp
@@ -1956,7 +1956,7 @@ export const PatientHomePage: React.FC = () => {
       </section>
 
       {/* 10. GOOGLE MAPS LOCATION (COMPACT & ELEGANT) */}
-      <section style={{ maxWidth: 1200, margin: '0 auto 36px', padding: '0 20px' }}>
+      <section style={{ maxWidth: 1520, width: '95%', margin: '0 auto 36px', padding: '0 20px' }}>
         <div
           style={{
             backgroundColor: '#ffffff',

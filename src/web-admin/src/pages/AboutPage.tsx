@@ -67,7 +67,7 @@ export const AboutPage: React.FC = () => {
       </section>
 
       {/* Nội dung chính */}
-      <main style={{ maxWidth: 1180, margin: '0 auto', padding: '40px 16px' }}>
+      <main style={{ maxWidth: 1480, width: '95%', margin: '0 auto', padding: '40px 16px' }}>
         {/* 4 Thống kê nổi bật với hiệu ứng nhảy số tự động */}
         <Row gutter={[20, 20]} style={{ marginBottom: 48 }}>
           {[

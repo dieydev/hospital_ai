@@ -163,7 +163,7 @@ export const NewsPage: React.FC = () => {
       </section>
 
       {/* Main Content */}
-      <main style={{ maxWidth: 1180, margin: '0 auto', padding: '36px 16px' }}>
+      <main style={{ maxWidth: 1480, width: '95%', margin: '0 auto', padding: '36px 16px' }}>
         {/* Category Filter Pills */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 32, justifyContent: 'center' }}>
           {categories.map((cat) => (

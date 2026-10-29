@@ -930,7 +930,7 @@ export const PatientBookingPage: React.FC = () => {
       />
 
       {/* 2. Breadcrumb & Page Banner */}
-      <div style={{ maxWidth: 1200, margin: '20px auto 0', padding: '0 20px' }}>
+      <div style={{ maxWidth: 1480, width: '95%', margin: '20px auto 0', padding: '0 20px' }}>
         <Breadcrumb
           items={[
             { title: <Link to="/"><HomeOutlined /> Trang chủ</Link> },

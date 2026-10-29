@@ -141,7 +141,7 @@ export const GuidePage: React.FC = () => {
       </section>
 
       {/* Nội dung chính */}
-      <main style={{ maxWidth: 1180, margin: '0 auto', padding: '40px 16px' }}>
+      <main style={{ maxWidth: 1480, width: '95%', margin: '0 auto', padding: '40px 16px' }}>
         {/* Quy trình 4 bước */}
         <section style={{ marginBottom: 54 }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
