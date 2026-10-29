@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +33,33 @@ class BookAppointmentView extends StatefulWidget {
 
 class _BookAppointmentViewState extends State<BookAppointmentView> {
   int _currentStep = 0;
+
+  /// Tính tuổi từ chuỗi ngày sinh (ISO 8601 hoặc dd/MM/yyyy)
+  int _calculateAge(String ngaySinh) {
+    try {
+      DateTime dob;
+      if (ngaySinh.contains('-') && ngaySinh.length >= 8) {
+        dob = DateTime.parse(ngaySinh.substring(0, 10));
+      } else if (ngaySinh.contains('/')) {
+        final parts = ngaySinh.split('/');
+        if (parts.length == 3) {
+          dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+        } else {
+          return 0;
+        }
+      } else {
+        return 0;
+      }
+      final now = DateTime.now();
+      int age = now.year - dob.year;
+      if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+        age--;
+      }
+      return age < 0 ? 0 : age;
+    } catch (_) {
+      return 0;
+    }
+  }
 
   // Form selections
   String? _selectedDepartment;
@@ -1751,6 +1778,8 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       'patientName': user.hoTen,
       'patientPhone': user.soDienThoai,
       'patientGender': user.gioiTinh,
+      'identityCardNumber': user.soCCCD,
+      'patientAge': _calculateAge(user.ngaySinh),
       'departmentName': _selectedDepartment,
       'doctorName': _selectedDoctor,
       'appointmentDate': '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',

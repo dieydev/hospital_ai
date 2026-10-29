@@ -10,8 +10,9 @@ class ApiService {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 6),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 45),
+        sendTimeout: const Duration(seconds: 30),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -45,8 +46,9 @@ class ApiService {
               final retryDio = Dio(
                 BaseOptions(
                   baseUrl: fallbackBaseUrl,
-                  connectTimeout: const Duration(seconds: 5),
-                  receiveTimeout: const Duration(seconds: 10),
+                  connectTimeout: const Duration(seconds: 25),
+                  receiveTimeout: const Duration(seconds: 40),
+                  sendTimeout: const Duration(seconds: 25),
                   headers: newOptions.headers,
                 ),
               );

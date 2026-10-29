@@ -10,7 +10,7 @@ class AppConstants {
   // Cấu hình IP máy chủ Backend API Gateway cục bộ khi dev
   // - Máy tính host IP Wi-Fi hiện tại: 192.168.1.29
   // - Đã hỗ trợ adb reverse tcp:5000 tcp:5000 khi cắm cáp USB (127.0.0.1)
-  static const String serverHostIp = '192.168.1.29';
+  static const String serverHostIp = '192.168.1.14';
   static const int serverPort = 5000;
   
   // Đặt = true để dùng domain chính thức dmedical.site cho điện thoại thật / 4G
