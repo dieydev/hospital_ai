@@ -32,13 +32,15 @@ class ApiService {
               e.type == DioExceptionType.connectionTimeout ||
               e.type == DioExceptionType.sendTimeout;
 
-          if (!AppConstants.useProduction &&
-              isNetworkIssue &&
-              e.requestOptions.extra['retried_fallback'] != true) {
-            final isUsbCurrent = _dio.options.baseUrl.contains('127.0.0.1');
-            final fallbackBaseUrl = isUsbCurrent
-                ? 'http://${AppConstants.serverHostIp}:${AppConstants.serverPort}/api'
-                : 'http://127.0.0.1:${AppConstants.serverPort}/api';
+          if (isNetworkIssue && e.requestOptions.extra['retried_fallback'] != true) {
+            String fallbackBaseUrl;
+            if (_dio.options.baseUrl.contains('dmedical.site')) {
+              fallbackBaseUrl = 'http://${AppConstants.serverHostIp}:${AppConstants.serverPort}/api';
+            } else if (_dio.options.baseUrl.contains('127.0.0.1')) {
+              fallbackBaseUrl = 'http://${AppConstants.serverHostIp}:${AppConstants.serverPort}/api';
+            } else {
+              fallbackBaseUrl = 'https://dmedical.site/api';
+            }
 
             try {
               final newOptions = e.requestOptions;
