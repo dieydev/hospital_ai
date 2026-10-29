@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../providers/appointment_provider.dart';
 import '../../providers/queue_provider.dart';
 import '../appointment/medical_history_view.dart';
@@ -19,6 +20,51 @@ class _NotificationsViewState extends State<NotificationsView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final Set<String> _readItems = {};
+  final ApiService _apiService = ApiService();
+  List<Map<String, dynamic>> _serverNotifications = [];
+
+  Future<void> _loadServerNotifications() async {
+    final user = context.read<AuthProvider>().user;
+    if (user == null) return;
+    final phone = user.soDienThoai ?? user.soCCCD;
+    if (phone.isEmpty) return;
+
+    try {
+      final list = await _apiService.fetchMyNotifications(phone);
+      final List<Map<String, dynamic>> parsed = [];
+      for (final item in list) {
+        final type = item['type']?.toString() ?? 'SYSTEM';
+        final isQueue = type == 'QUEUE_APPROACHING';
+        final isPrescription = type == 'PRESCRIPTION_COMPLETED';
+
+        parsed.add({
+          'id': item['id']?.toString() ?? '',
+          'title': item['title']?.toString() ?? 'Thông báo từ Bệnh viện',
+          'desc': item['body']?.toString() ?? '',
+          'time': 'Vừa xong',
+          'icon': isQueue
+              ? Icons.notifications_active_rounded
+              : isPrescription
+                  ? Icons.medical_services_rounded
+                  : Icons.campaign_rounded,
+          'color': isQueue
+              ? const Color(0xFF0284C7)
+              : isPrescription
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFFF59E0B),
+          'type': isQueue || isPrescription ? 'appointment' : 'system',
+          'priority': 'high',
+          'metadata': item['metadata'] ?? {},
+        });
+      }
+      if (mounted) {
+        setState(() {
+          _serverNotifications = parsed;
+        });
+      }
+    } catch (_) {
+    }
+  }
 
   @override
   void initState() {
@@ -31,6 +77,7 @@ class _NotificationsViewState extends State<NotificationsView>
               user.soDienThoai ?? '',
               patientCode: user.maBenhNhan,
             );
+        _loadServerNotifications();
       }
     });
   }
@@ -105,6 +152,9 @@ class _NotificationsViewState extends State<NotificationsView>
     final queueProvider = context.watch<QueueProvider>();
 
     final List<Map<String, dynamic>> dynamicAppointmentNotifs = [];
+
+    // 0. Thông báo đẩy thời gian thực từ Máy chủ (FCM Alert)
+    dynamicAppointmentNotifs.addAll(_serverNotifications);
 
     // 1. Thông báo số thứ tự hàng chờ trực tiếp
     if (queueProvider.myTicket != null) {

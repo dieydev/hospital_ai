@@ -53,6 +53,11 @@ public class ExaminationDto
     public string? DietaryAdvice { get; set; }
     public string? FollowUpAppointment { get; set; }
     public string? DigitalSignature { get; set; }
+    public bool IsDigitallySigned { get; set; }
+    public DateTime? SignedAt { get; set; }
+    public string? DoctorLicenseNumber { get; set; }
+    public string? SignatureCertificateSerial { get; set; }
+    public string? SignatureHash { get; set; }
 
     public List<PrescriptionDetailDto> PrescriptionDetails { get; set; } = new();
     public List<ServiceOrderDetailDto> ServiceOrderDetails { get; set; } = new();
@@ -111,6 +116,11 @@ public class CreateExaminationDto
     public string? DietaryAdvice { get; set; }
     public string? FollowUpAppointment { get; set; }
     public string? DigitalSignature { get; set; }
+    public bool IsDigitallySigned { get; set; }
+    public DateTime? SignedAt { get; set; }
+    public string? DoctorLicenseNumber { get; set; }
+    public string? SignatureCertificateSerial { get; set; }
+    public string? SignatureHash { get; set; }
 
     public List<PrescriptionDetailDto> PrescriptionDetails { get; set; } = new();
     public List<ServiceOrderDetailDto> ServiceOrderDetails { get; set; } = new();
@@ -134,4 +144,42 @@ public class ServiceOrderDetailDto
     public decimal Price { get; set; }
     public string? Result { get; set; }
     public string Status { get; set; } = "Đã có kết quả";
+}
+
+public class SignExaminationRequestDto
+{
+    public string? DoctorLicenseNumber { get; set; } // So CCHN bac si
+    public string? CertificateSerial { get; set; }   // Serial chung thu so SmartCA
+    public string? PinCode { get; set; }             // Ma PIN / OTP xac thuc ky so
+    public string? Notes { get; set; }
+}
+
+public class DigitalSignatureResultDto
+{
+    public Guid ExaminationId { get; set; }
+    public string ExaminationCode { get; set; } = string.Empty;
+    public bool IsDigitallySigned { get; set; }
+    public string DigitalSignature { get; set; } = string.Empty;
+    public string SignatureHash { get; set; } = string.Empty;
+    public DateTime SignedAt { get; set; }
+    public string DoctorName { get; set; } = string.Empty;
+    public string DoctorLicenseNumber { get; set; } = string.Empty;
+    public string CertificateSerial { get; set; } = string.Empty;
+    public string CertificateAuthority { get; set; } = "Ban Cơ yếu Chính phủ / Bộ Y Tế SmartCA";
+    public string VerificationUrl { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+}
+
+public class VerifySignatureResponseDto
+{
+    public bool IsValid { get; set; }
+    public string ExaminationCode { get; set; } = string.Empty;
+    public string PatientName { get; set; } = string.Empty;
+    public string DoctorName { get; set; } = string.Empty;
+    public string DoctorLicenseNumber { get; set; } = string.Empty;
+    public string CertificateSerial { get; set; } = string.Empty;
+    public DateTime? SignedAt { get; set; }
+    public string SignatureHash { get; set; } = string.Empty;
+    public string IntegrityStatus { get; set; } = string.Empty; // Ho so toan ven, chua bi chinh sua
+    public string CertificateIssuer { get; set; } = string.Empty;
 }

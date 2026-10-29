@@ -60,6 +60,7 @@ builder.Services.AddDbContext<HospitalDbContext>(options =>
     ));
 
 builder.Services.AddScoped<IExaminationService, ExaminationService>();
+builder.Services.AddSingleton<IFcmNotificationService, FcmNotificationService>();
 builder.Services.AddScoped<IPaymentService, VNPayService>();
 builder.Services.AddSingleton<MongoDbContext>();
 builder.Services.AddScoped<IAILogService, AILogService>();

@@ -60,6 +60,8 @@ builder.Services.AddDbContext<HospitalDbContext>(options =>
     ));
 
 builder.Services.AddScoped<IQueueService, QueueService>();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IFcmNotificationService, FcmNotificationService>();
 
 var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT";
 var issuer = builder.Configuration["JwtSettings:Issuer"] ?? "HospitalAI.Backend";

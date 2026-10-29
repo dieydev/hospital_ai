@@ -12,4 +12,6 @@ public interface IExaminationService
     Task<ExaminationDto> CreateExaminationAsync(CreateExaminationDto dto);
     Task<ExaminationDto> UpdateExaminationAsync(Guid id, CreateExaminationDto dto);
     Task<bool> DeleteExaminationAsync(Guid id);
+    Task<DigitalSignatureResultDto> SignExaminationAsync(Guid id, SignExaminationRequestDto dto, string? doctorName);
+    Task<VerifySignatureResponseDto> VerifySignatureAsync(Guid id);
 }

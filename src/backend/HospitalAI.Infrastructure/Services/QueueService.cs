@@ -13,11 +13,13 @@ namespace HospitalAI.Infrastructure.Services;
 public class QueueService : IQueueService
 {
     private readonly HospitalDbContext _context;
+    private readonly IFcmNotificationService? _fcmService;
     private static readonly System.Threading.SemaphoreSlim _ticketLock = new(1, 1);
 
-    public QueueService(HospitalDbContext context)
+    public QueueService(HospitalDbContext context, IFcmNotificationService? fcmService = null)
     {
         _context = context;
+        _fcmService = fcmService;
     }
 
     public async Task<List<DepartmentDto>> GetDepartmentsAsync()
@@ -137,6 +139,48 @@ public class QueueService : IQueueService
 
         nextTicket.Status = "Calling";
         await _context.SaveChangesAsync();
+
+        if (_fcmService != null)
+        {
+            try
+            {
+                var patientPhone = nextTicket.Patient?.IdentityCardNumber ?? "";
+                var patientName = nextTicket.Patient?.FullName ?? "Bệnh nhân";
+                var deptName = nextTicket.Department?.DepartmentName ?? "Phòng khám";
+
+                _ = _fcmService.SendPushNotificationAsync(new PushNotificationDto
+                {
+                    RecipientPhoneOrId = patientPhone,
+                    Title = $"🔔 ĐANG GỌI SỐ KHÁM: #{nextTicket.SequenceNumber}",
+                    Body = $"Kính mời bệnh nhân {patientName} vào {deptName} ({nextTicket.Department?.Location}) để thăm khám với Bác sĩ.",
+                    Type = "QUEUE_APPROACHING",
+                    Priority = "HIGH",
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "sequenceNumber", nextTicket.SequenceNumber.ToString() },
+                        { "status", "Calling" }
+                    }
+                });
+
+                var upcomingTickets = await _context.QueueTickets
+                    .Include(q => q.Patient)
+                    .Where(q => q.DepartmentId == departmentId && q.CreatedAt.Date == today && q.Status == "Waiting")
+                    .OrderBy(q => q.Priority == "Emergency" ? 0 : q.Priority == "Priority" ? 1 : 2)
+                    .ThenBy(q => q.SequenceNumber)
+                    .Take(2)
+                    .ToListAsync();
+
+                for (int i = 0; i < upcomingTickets.Count; i++)
+                {
+                    var upTicket = upcomingTickets[i];
+                    var upPhone = upTicket.Patient?.IdentityCardNumber ?? "";
+                    var upName = upTicket.Patient?.FullName ?? "Bệnh nhân";
+                    var remainingAhead = i + 1;
+                    _ = _fcmService.SendQueueApproachingAlertAsync(upPhone, upName, upTicket.SequenceNumber, deptName, remainingAhead);
+                }
+            }
+            catch { }
+        }
 
         return MapToDto(nextTicket);
     }

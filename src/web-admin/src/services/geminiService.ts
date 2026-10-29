@@ -567,6 +567,31 @@ Trả về danh sách các cảnh báo lâm sàng rõ ràng, ngắn gọn, phân
       modelUsed: 'Hospital AI Local Medical Engine',
     };
   },
-};
 
-export default geminiService;
+  /**
+   * Phân tích Hình ảnh Y khoa (X-Quang, CT, MRI, Xét nghiệm) qua Gemini Vision
+   */
+  async analyzeMedicalImage(data: {
+    imageBase64: string;
+    mimeType?: string;
+    modality?: string;
+    clinicalNote?: string;
+    patientAge?: number;
+    patientGender?: string;
+  }) {
+    const response = await api.post('/ai/analyze-image', data);
+    return response.data;
+  },
+
+  /**
+   * Kiểm tra Tương tác Thuốc Đa đơn Dược thư Quốc gia
+   */
+  async checkDrugInteractions(data: {
+    medicines: Array<{ medicineName: string; dosage?: string }>;
+    patientAllergies?: string;
+    patientConditions?: string;
+  }) {
+    const response = await api.post('/ai/check-drug-interactions', data);
+    return response.data;
+  },
+};

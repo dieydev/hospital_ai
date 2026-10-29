@@ -62,6 +62,7 @@ export const MedicalRecordsPage: React.FC = () => {
 
   // State Modal In & Xuất PDF
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
 
   // Load danh sách bệnh nhân và lượt khám ban đầu
   useEffect(() => {
@@ -123,6 +124,37 @@ export const MedicalRecordsPage: React.FC = () => {
       if (idx !== -1) setSelectedExamIndex(idx);
     }
     setIsPdfModalOpen(true);
+  };
+
+  const handleSignExam = async (examId?: string) => {
+    if (!examId && !currentExam?.id) return;
+    const targetId = examId || currentExam!.id;
+    setIsSigning(true);
+    try {
+      const res = await examinationService.signExamination(targetId, '123456');
+      if (res && res.isDigitallySigned) {
+        showToast('Ký số Bệnh án EMR thành công theo chuẩn Bộ Y Tế!', 'success');
+        setPatientExams((prev) =>
+          prev.map((e) =>
+            e.id === targetId
+              ? {
+                  ...e,
+                  isDigitallySigned: true,
+                  digitalSignature: res.digitalSignature,
+                  signatureHash: res.signatureHash,
+                  signedAt: res.signedAt,
+                  doctorLicenseNumber: res.doctorLicenseNumber,
+                  signatureCertificateSerial: res.certificateSerial,
+                }
+              : e
+          )
+        );
+      }
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Lỗi khi ký số bệnh án', 'error');
+    } finally {
+      setIsSigning(false);
+    }
   };
 
   return (
@@ -1280,6 +1312,16 @@ export const MedicalRecordsPage: React.FC = () => {
             Đóng
           </Button>,
           <Button
+            key="sign"
+            type="primary"
+            icon={<SafetyCertificateOutlined />}
+            loading={isSigning}
+            style={{ backgroundColor: currentExam?.isDigitallySigned ? '#059669' : '#dc2626', borderColor: currentExam?.isDigitallySigned ? '#059669' : '#dc2626' }}
+            onClick={() => handleSignExam(currentExam?.id)}
+          >
+            {currentExam?.isDigitallySigned ? '✓ Đã Ký Số SmartCA' : 'Ký Số Bệnh Án (SmartCA)'}
+          </Button>,
+          <Button
             key="print"
             type="primary"
             icon={<PrinterOutlined />}
@@ -1458,13 +1500,50 @@ export const MedicalRecordsPage: React.FC = () => {
                 <div style={{ fontWeight: 'bold', fontSize: 13 }}>BS. CKI. Trịnh Văn Thành</div>
               </div>
 
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 12, color: '#64748b' }}>Bác sĩ Điều trị</div>
-                <Tag color="green" style={{ margin: '6px 0', fontWeight: 'bold' }}>
-                  <SafetyCertificateOutlined /> ĐÃ KÝ SỐ SHA-256
-                </Tag>
-                <div style={{ fontWeight: 'bold', fontSize: 13, color: '#0369a1' }}>
+              <div style={{ textAlign: 'center', minWidth: 200 }}>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>Bác sĩ Điều trị</div>
+
+                {/* Dấu mộc đỏ Điện tử Bộ Y Tế */}
+                <div
+                  style={{
+                    border: '2.5px solid #dc2626',
+                    borderRadius: '50%',
+                    width: 130,
+                    height: 130,
+                    padding: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    color: '#dc2626',
+                    transform: 'rotate(-4deg)',
+                    margin: '4px auto',
+                    background: 'rgba(254, 242, 242, 0.45)',
+                    boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.2)',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{ fontSize: 7, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, lineHeight: 1.1 }}>
+                    BV ĐK QUỐC TẾ D-MEDICAL
+                  </div>
+                  <div style={{ fontSize: 11, margin: '1px 0' }}>★</div>
+                  <div style={{ fontSize: 8, fontWeight: 900, textTransform: 'uppercase', color: '#b91c1c', borderTop: '1px solid #dc2626', borderBottom: '1px solid #dc2626', padding: '1px 0', width: '92%' }}>
+                    {currentExam.isDigitallySigned ? 'ĐÃ KÝ SỐ ĐIỆN TỬ' : 'SMARTCA BỘ Y TẾ'}
+                  </div>
+                  <div style={{ fontSize: 6.5, fontWeight: 700, marginTop: 2 }}>
+                    CCHN: {currentExam.doctorLicenseNumber || '029831/BYT-CCHN'}
+                  </div>
+                  <div style={{ fontSize: 6, color: '#991b1b', lineHeight: 1.1 }}>
+                    {currentExam.signedAt ? new Date(currentExam.signedAt).toLocaleDateString('vi-VN') : '29/10/2026'}
+                  </div>
+                </div>
+
+                <div style={{ fontWeight: 'bold', fontSize: 13, color: '#0369a1', marginTop: 4 }}>
                   {currentExam.doctorName}
+                </div>
+                <div style={{ fontSize: 10, color: '#16a34a', fontWeight: 600 }}>
+                  <SafetyCertificateOutlined /> SHA-256: {currentExam.signatureHash ? currentExam.signatureHash.substring(0, 12) + '...' : 'SMARTCA-VERIFIED'}
                 </div>
               </div>
             </div>

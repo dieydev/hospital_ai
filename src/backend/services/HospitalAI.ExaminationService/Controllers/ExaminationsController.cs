@@ -125,4 +125,56 @@ public class ExaminationsController : ControllerBase
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Ký số Bác sĩ vào Hồ sơ Bệnh án EMR theo chuẩn Bộ Y Tế
+    /// </summary>
+    [HttpPost("{id:guid}/sign")]
+    [Authorize(Roles = "Doctor,Admin")]
+    public async Task<IActionResult> SignExamination(Guid id, [FromBody] SignExaminationRequestDto dto)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID lượt khám không hợp lệ." });
+
+        try
+        {
+            var doctorName = User.FindFirstValue(ClaimTypes.Name) ?? "Bác sĩ lâm sàng";
+            var result = await _examinationService.SignExaminationAsync(id, dto, doctorName);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Xác thực tính toàn vẹn Chữ ký số EMR (Hỗ trợ quét QR trên bản in PDF)
+    /// </summary>
+    [HttpGet("{id:guid}/verify-signature")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifySignature(Guid id)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã ID lượt khám không hợp lệ." });
+
+        try
+        {
+            var result = await _examinationService.VerifySignatureAsync(id);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
 }

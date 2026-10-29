@@ -49,6 +49,11 @@ public class Examination
     public string? DietaryAdvice { get; set; } // CheDoDinhDuong
     public string? FollowUpAppointment { get; set; } // LichTaiKham
     public string? DigitalSignature { get; set; } // ChuKySo
+    public bool IsDigitallySigned { get; set; } = false;
+    public DateTime? SignedAt { get; set; }
+    public string? DoctorLicenseNumber { get; set; } // So CCHN Bac si
+    public string? SignatureCertificateSerial { get; set; } // Serial Chung thu so
+    public string? SignatureHash { get; set; } // Ma bam toan ven SHA-256
 
     public ICollection<PrescriptionDetail> PrescriptionDetails { get; set; } = new List<PrescriptionDetail>();
     public ICollection<ServiceOrderDetail> ServiceOrderDetails { get; set; } = new List<ServiceOrderDetail>();

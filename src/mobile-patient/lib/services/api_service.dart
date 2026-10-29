@@ -240,4 +240,37 @@ class ApiService {
     }
     return 'Lỗi không xác định. Vui lòng thử lại.';
   }
+
+  /// Đăng ký FCM Device Token để nhận Push Notification
+  Future<void> registerDeviceToken(String userIdentifier, String token, {String platform = 'Android'}) async {
+    try {
+      await _dio.post('/notifications/register-token', data: {
+        'userIdentifier': userIdentifier,
+        'deviceToken': token,
+        'platform': platform,
+      });
+    } catch (_) {}
+  }
+
+  /// Lấy danh sách thông báo từ hệ thống
+  Future<List<dynamic>> fetchMyNotifications(String phoneOrId) async {
+    try {
+      final response = await _dio.get('/notifications/my-notifications', queryParameters: {
+        'phoneOrId': phoneOrId,
+      });
+      if (response.data is List) {
+        return response.data as List<dynamic>;
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Đánh dấu thông báo đã đọc
+  Future<void> markNotificationRead(String id) async {
+    try {
+      await _dio.post('/notifications/mark-read/$id');
+    } catch (_) {}
+  }
 }

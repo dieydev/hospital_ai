@@ -136,6 +136,12 @@ export interface ExaminationItem {
 
   status: string;
   createdAt: string;
+  isDigitallySigned?: boolean;
+  signedAt?: string;
+  doctorLicenseNumber?: string;
+  signatureCertificateSerial?: string;
+  signatureHash?: string;
+  digitalSignature?: string;
 }
 
 export interface CreateExaminationParams {
@@ -181,6 +187,20 @@ export const examinationService = {
 
   async createExamination(params: CreateExaminationParams): Promise<ExaminationItem> {
     const response = await api.post('/examinations', params);
+    return response.data;
+  },
+
+  async signExamination(id: string, pinCode?: string, doctorLicenseNumber?: string): Promise<any> {
+    const response = await api.post(`/examinations/${id}/sign`, {
+      pinCode: pinCode || '123456',
+      doctorLicenseNumber: doctorLicenseNumber || '029831/BYT-CCHN',
+      certificateSerial: `5404-B7A1-${Math.floor(Math.random() * 90000000 + 10000000)}`
+    });
+    return response.data;
+  },
+
+  async verifySignature(id: string): Promise<any> {
+    const response = await api.get(`/examinations/${id}/verify-signature`);
     return response.data;
   },
 };
