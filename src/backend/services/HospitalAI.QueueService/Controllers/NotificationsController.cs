@@ -95,3 +95,4 @@ public class NotificationsController : ControllerBase
         return Ok(new { success = ok, message = "Đã gửi thông báo thử nghiệm thành công." });
     }
 }
+

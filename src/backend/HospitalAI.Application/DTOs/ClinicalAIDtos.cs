@@ -65,3 +65,4 @@ public class CheckDrugInteractionsResponseDto
     public int LatencyMs { get; set; }
     public bool Success { get; set; } = true;
 }
+

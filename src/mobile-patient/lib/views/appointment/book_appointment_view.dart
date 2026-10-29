@@ -624,11 +624,53 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: CircleAvatar(
-                          radius: 26,
-                          backgroundColor: isSelected ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary) : AppTheme.background,
-                          backgroundImage: docAvatar.isNotEmpty ? NetworkImage(docAvatar) : null,
-                          child: docAvatar.isEmpty ? Icon(Icons.person, size: 28, color: isSelected ? Colors.white : AppTheme.textSecondary) : null,
+                        leading: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected ? (_isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary) : AppTheme.borderSubtle,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: docAvatar.isNotEmpty
+                                ? Image.network(
+                                    docAvatar,
+                                    fit: BoxFit.cover,
+                                    width: 52,
+                                    height: 52,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: AppTheme.primary.withValues(alpha: 0.1),
+                                      child: const Icon(Icons.person_rounded, size: 28, color: AppTheme.primary),
+                                    ),
+                                    loadingBuilder: (context, child, progress) {
+                                      if (progress == null) return child;
+                                      return Container(
+                                        color: AppTheme.background,
+                                        child: const Center(
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    color: AppTheme.primary.withValues(alpha: 0.1),
+                                    child: const Icon(Icons.person_rounded, size: 28, color: AppTheme.primary),
+                                  ),
+                          ),
                         ),
                         title: Row(
                           children: [
@@ -1049,11 +1091,30 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 ),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary,
-                      backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl.isEmpty ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _isFollowUp ? const Color(0xFF7C3AED) : AppTheme.primary, width: 2),
+                      ),
+                      child: ClipOval(
+                        child: avatarUrl.isNotEmpty
+                            ? Image.network(
+                                avatarUrl,
+                                fit: BoxFit.cover,
+                                width: 44,
+                                height: 44,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: AppTheme.primary.withValues(alpha: 0.1),
+                                  child: const Icon(Icons.person_rounded, size: 24, color: AppTheme.primary),
+                                ),
+                              )
+                            : Container(
+                                color: AppTheme.primary.withValues(alpha: 0.1),
+                                child: const Icon(Icons.person_rounded, size: 24, color: AppTheme.primary),
+                              ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

@@ -876,163 +876,366 @@ public class AuthService : IAuthService
         // Danh mục đầy đủ Bác sĩ Chuyên khoa cho từng Khoa phòng tại Bệnh viện D-Medical
         var allSpecialistDoctors = new List<DoctorDto>
         {
-            // 1. Khoa Nội Tổng Hợp
             new DoctorDto
             {
                 Id = duyId,
                 Name = "BS. CKII. Nguyễn Thanh Duy",
                 Dept = "Khoa Nội Tổng Hợp",
-                Title = "Trưởng Khoa Nội • 15 năm KN",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor"
+                Title = "Trưởng Khoa Nội • Bác sĩ Chuyên Khoa II • 15 năm kinh nghiệm BV Chợ Rẫy",
+                Avatar = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&auto=format&fit=crop&q=80"
             },
             new DoctorDto
             {
-                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000002"),
                 Name = "ThS. BS. Trần Thị Thu Hà",
                 Dept = "Khoa Nội Tổng Hợp",
-                Title = "Bác sĩ Nội khoa • 8 năm KN",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=HaDoctor"
+                Title = "Thạc sĩ Y học • Chuyên khoa Nội Tim Mạch • 8 năm kinh nghiệm Nội tim mạch",
+                Avatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&auto=format&fit=crop&q=80"
             },
-
-            // 2. Khoa Nhi
             new DoctorDto
             {
-                Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000003"),
+                Name = "BS. CKI. Lê Hoàng Nam",
+                Dept = "Khoa Nội Tổng Hợp",
+                Title = "Bác sĩ CKI • Chuyên khoa Nội Thần Kinh • 10 năm kinh nghiệm BV Nhân Dân Gia Định",
+                Avatar = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000004"),
+                Name = "ThS. BS. Nguyễn Minh Châu",
+                Dept = "Khoa Nội Tổng Hợp",
+                Title = "Thạc sĩ Y học • Nội Hô Hấp • 9 năm kinh nghiệm BV Phạm Ngọc Thạch",
+                Avatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000005"),
+                Name = "BS. CKI. Phạm Quốc Bảo",
+                Dept = "Khoa Nội Tổng Hợp",
+                Title = "Bác sĩ CKI • Nội Cơ Xương Khớp • 11 năm kinh nghiệm Nội cơ xương khớp",
+                Avatar = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000006"),
+                Name = "BS. CKII. Đinh Khắc Vương",
+                Dept = "Khoa Tiêu Hóa & Gan Mật",
+                Title = "Trưởng Khoa Tiêu Hóa • Bác sĩ CKII • 16 năm kinh nghiệm Gan Mật & Dạ dày",
+                Avatar = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000007"),
+                Name = "BS. Hoàng Lan Anh",
+                Dept = "Khoa Tiêu Hóa & Gan Mật",
+                Title = "Bác sĩ Nội soi Tiêu Hóa NBI • 7 năm kinh nghiệm Nội soi tiêu hóa",
+                Avatar = "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000008"),
+                Name = "TS. BS. Vũ Đức Trọng",
+                Dept = "Khoa Tiêu Hóa & Gan Mật",
+                Title = "Tiến sĩ Y khoa • Chuyên gia Bệnh Gan Mật • 18 năm kinh nghiệm Viêm gan & Xơ gan",
+                Avatar = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000009"),
+                Name = "ThS. BS. Lê Thị Cẩm Tú",
+                Dept = "Khoa Tiêu Hóa & Gan Mật",
+                Title = "Thạc sĩ Bác sĩ • Bệnh học Đại Tràng • 9 năm kinh nghiệm Nội soi đại trực tràng",
+                Avatar = "https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000010"),
+                Name = "BS. CKI. Nguyễn Trọng Nhân",
+                Dept = "Khoa Tiêu Hóa & Gan Mật",
+                Title = "Bác sĩ CKI • Can thiệp Nội soi Tiêu Hóa • 8 năm kinh nghiệm Can thiệp cầm máu tiêu hóa",
+                Avatar = "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000011"),
+                Name = "TS. BS. Huỳnh Quốc Dũng",
+                Dept = "Khoa Tim Mạch Can Thiệp",
+                Title = "Tiến sĩ Y khoa • Trưởng Khoa Tim Mạch • 20 năm kinh nghiệm Can thiệp mạch",
+                Avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000012"),
+                Name = "BS. CKI. Vũ Thu Trang",
+                Dept = "Khoa Tim Mạch Can Thiệp",
+                Title = "Bác sĩ CKI • Siêu âm Tim Doppler 4D • 9 năm kinh nghiệm Tăng huyết áp & Van tim",
+                Avatar = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000013"),
+                Name = "PGS. TS. BS. Ngô Tuấn Anh",
+                Dept = "Khoa Tim Mạch Can Thiệp",
+                Title = "Phó Giáo Sư • Chuyên gia Mạch Vành Cấp • 24 năm kinh nghiệm Viện Tim",
+                Avatar = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000014"),
+                Name = "ThS. BS. Đỗ Hoàng Sơn",
+                Dept = "Khoa Tim Mạch Can Thiệp",
+                Title = "Thạc sĩ Y học • Rối Loạn Nhịp & Điện Sinh Lý • 12 năm kinh nghiệm Holter ECG",
+                Avatar = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000015"),
+                Name = "BS. CKI. Bùi Thị Bích Ngọc",
+                Dept = "Khoa Tim Mạch Can Thiệp",
+                Title = "Bác sĩ CKI • Quản lý Suy Tim & Dự Phòng Đột Quỵ • 8 năm kinh nghiệm Tim mạch dự phòng",
+                Avatar = "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000016"),
                 Name = "BS. CKI. Phạm Minh Đức",
-                Dept = "Khoa Nhi",
-                Title = "Trưởng Khoa Nhi • Chuyên khoa Sơ sinh",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=DucDoctor"
+                Dept = "Khoa Nhi & Tiêm Chủng",
+                Title = "Trưởng Khoa Nhi • Chuyên gia Nhi Khoa Tổng Quát • 12 năm kinh nghiệm Nhi đồng 1",
+                Avatar = "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80"
             },
             new DoctorDto
             {
-                Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
-                Name = "BS. Đặng Hồng Hạnh",
-                Dept = "Khoa Nhi",
-                Title = "Bác sĩ Nhi khoa • Tiêm chủng",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=HanhDoctor"
-            },
-
-            // 3. Khoa Mắt
-            new DoctorDto
-            {
-                Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
-                Name = "BS. CKI. Trần Ngọc Mai",
-                Dept = "Khoa Mắt",
-                Title = "Trưởng Khoa Mắt • Phẫu thuật Phaco",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=MaiDoctor"
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000017"),
+                Name = "ThS. BS. Nguyễn Thị Thảo My",
+                Dept = "Khoa Nhi & Tiêm Chủng",
+                Title = "Thạc sĩ Nhi Khoa • Chuyên gia Hô Hấp Nhi • 8 năm kinh nghiệm BV Nhi Đồng 2",
+                Avatar = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80"
             },
             new DoctorDto
             {
-                Id = Guid.Parse("66666666-6666-6666-6666-666666666666"),
-                Name = "BS. Vũ Hoàng Long",
-                Dept = "Khoa Mắt",
-                Title = "Nhãn khoa & Khúc xạ thị giác",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=LongDoctor"
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000018"),
+                Name = "BS. CKII. Dương Hoàng Nam",
+                Dept = "Khoa Nhi & Tiêm Chủng",
+                Title = "Bác sĩ CKII • Bệnh Truyền Nhiễm & Vắc Xin • 17 năm kinh nghiệm Bệnh Nhiệt Đới & Nhi",
+                Avatar = "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&auto=format&fit=crop&q=80"
             },
-
-            // 4. Khoa Tai Mũi Họng
             new DoctorDto
             {
-                Id = Guid.Parse("77777777-7777-7777-7777-777777777777"),
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000019"),
+                Name = "BS. CKI. Đặng Thùy Dương",
+                Dept = "Khoa Nhi & Tiêm Chủng",
+                Title = "Bác sĩ CKI • Dinh Dưỡng & Phát Triển Trẻ Em • 10 năm kinh nghiệm Dinh dưỡng Lâm sàng",
+                Avatar = "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000020"),
+                Name = "ThS. BS. Trần Gia Bảo",
+                Dept = "Khoa Nhi & Tiêm Chủng",
+                Title = "Thạc sĩ Bác sĩ • Hồi Sức Sơ Sinh & Nhũ Nhi • 9 năm kinh nghiệm Hồi sức sơ sinh",
+                Avatar = "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000021"),
+                Name = "BS. CKII. Nguyễn Văn Toàn",
+                Dept = "Khoa Ngoại Tổng Quát & Chấn Thương",
+                Title = "Trưởng Khoa Ngoại • Phẫu Thuật Viên Nội Soi • 22 năm kinh nghiệm Ngoại Tổng Quát",
+                Avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000022"),
+                Name = "TS. BS. Trần Hải Đăng",
+                Dept = "Khoa Ngoại Tổng Quát & Chấn Thương",
+                Title = "Tiến sĩ Y khoa • Chấn Thương Chỉnh Hình • 16 năm kinh nghiệm Thay khớp háng/gối",
+                Avatar = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000023"),
+                Name = "BS. CKI. Hoàng Văn Hùng",
+                Dept = "Khoa Ngoại Tổng Quát & Chấn Thương",
+                Title = "Bác sĩ CKI • Chấn Thương Thể Thao • 11 năm kinh nghiệm Bác sĩ Thể thao",
+                Avatar = "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000024"),
+                Name = "ThS. BS. Lê Quang Hưng",
+                Dept = "Khoa Ngoại Tổng Quát & Chấn Thương",
+                Title = "Thạc sĩ Bác sĩ • Ngoại Thần Kinh & Cột Sống • 13 năm kinh nghiệm Thoát vị đĩa đệm",
+                Avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000025"),
+                Name = "BS. CKI. Võ Minh Quân",
+                Dept = "Khoa Ngoại Tổng Quát & Chấn Thương",
+                Title = "Bác sĩ CKI • Ngoại Tiết Niệu & Tán Sỏi • 9 năm kinh nghiệm Tán sỏi Laser",
+                Avatar = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000026"),
                 Name = "BS. CKII. Lê Văn Tuấn",
                 Dept = "Khoa Tai Mũi Họng",
-                Title = "Trưởng Khoa TMH • Nội soi vi phẫu",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=TuanDoctor"
+                Title = "Trưởng Khoa TMH • Bác sĩ CKII • 14 năm kinh nghiệm Vi phẫu tai mũi họng",
+                Avatar = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80"
             },
             new DoctorDto
             {
-                Id = Guid.Parse("88888888-8888-8888-8888-888888888888"),
-                Name = "ThS. BS. Nguyễn Mai Linh",
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000027"),
+                Name = "ThS. BS. Nguyễn Mai Phương",
                 Dept = "Khoa Tai Mũi Họng",
-                Title = "Bác sĩ Tai Mũi Họng",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=LinhDoctor"
-            },
-
-            // 5. Khoa Tim Mạch
-            new DoctorDto
-            {
-                Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
-                Name = "TS. BS. Huỳnh Quốc Dũng",
-                Dept = "Khoa Tim Mạch",
-                Title = "Viện Tim Mạch • Can thiệp tim mạch",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=DungDoctor"
+                Title = "Thạc sĩ Bác sĩ • Nội Soi Ống Mềm Không Đau • 8 năm kinh nghiệm Nội soi TMH",
+                Avatar = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80"
             },
             new DoctorDto
             {
-                Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                Name = "BS. CKI. Vũ Thu Trang",
-                Dept = "Khoa Tim Mạch",
-                Title = "Siêu âm Tim & Tăng huyết áp",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=TrangDoctor"
-            },
-
-            // 6. Khoa Tiêu Hóa
-            new DoctorDto
-            {
-                Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                Name = "BS. CKII. Đinh Khắc Vương",
-                Dept = "Khoa Tiêu Hóa",
-                Title = "Trưởng Khoa Tiêu Hóa • Nội soi HP",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=VuongDoctor"
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000028"),
+                Name = "BS. CKI. Đỗ Tuấn Kiệt",
+                Dept = "Khoa Tai Mũi Họng",
+                Title = "Bác sĩ CKI • Phẫu Thuật Coblator & Vi Mũi Xoang • 10 năm kinh nghiệm Phẫu thuật xoang FESS",
+                Avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80"
             },
             new DoctorDto
             {
-                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
-                Name = "BS. Hoàng Lan Anh",
-                Dept = "Khoa Tiêu Hóa",
-                Title = "Bác sĩ Gan Mật & Tiêu hóa",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=LanAnhDoctor"
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000029"),
+                Name = "ThS. BS. Phan Thùy Linh",
+                Dept = "Khoa Tai Mũi Họng",
+                Title = "Thạc sĩ Bác sĩ • Thính Học & Tiền Đình • 9 năm kinh nghiệm Đo thính lực & Ù tai",
+                Avatar = "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80"
             },
-
-            // 7. Khoa Ngoại Tổng Quát
             new DoctorDto
             {
-                Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
-                Name = "BS. CKII. Đỗ Hoàng Giang",
-                Dept = "Khoa Ngoại Tổng Quát",
-                Title = "Trưởng Khoa Ngoại • Phẫu thuật Nội soi",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=GiangDoctor"
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000030"),
+                Name = "BS. CKI. Trương Quốc Việt",
+                Dept = "Khoa Tai Mũi Họng",
+                Title = "Bác sĩ CKI • Họng Thanh Quản & Giọng Nói • 11 năm kinh nghiệm Bệnh lý Dây thanh",
+                Avatar = "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80"
             },
-
-            // 8. Khoa Răng Hàm Mặt
             new DoctorDto
             {
-                Id = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
-                Name = "BS. CKI. Hoàng Trọng Nghĩa",
-                Dept = "Khoa Răng Hàm Mặt",
-                Title = "Chuyên gia Chỉnh nha & Cấy Implant",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=NghiaDoctor"
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000031"),
+                Name = "BS. CKI. Trần Ngọc Mai",
+                Dept = "Khoa Mắt Kỹ Thuật Cao",
+                Title = "Trưởng Khoa Mắt • Phẫu Thuật Viên Phaco • 11 năm kinh nghiệm Bệnh viện Mắt",
+                Avatar = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80"
             },
-
-            // 9. Khoa Da Liễu
             new DoctorDto
             {
-                Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000032"),
+                Name = "TS. BS. Nguyễn Thành Chung",
+                Dept = "Khoa Mắt Kỹ Thuật Cao",
+                Title = "Tiến sĩ Y khoa • Chuyên gia Khúc Xạ & Phaco • 19 năm kinh nghiệm Phẫu thuật Lasik/SMILE",
+                Avatar = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000033"),
+                Name = "ThS. BS. Lê Hồng Vân",
+                Dept = "Khoa Mắt Kỹ Thuật Cao",
+                Title = "Thạc sĩ Bác sĩ • Kiểm Soát Cận Thị Tiến Triển • 8 năm kinh nghiệm Khúc xạ học đường",
+                Avatar = "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000034"),
+                Name = "BS. CKI. Vũ Đình Long",
+                Dept = "Khoa Mắt Kỹ Thuật Cao",
+                Title = "Bác sĩ CKI • Glôcôm & Đáy Mắt Đái Tháo Đường • 13 năm kinh nghiệm Bệnh viện Mắt TP.HCM",
+                Avatar = "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000035"),
+                Name = "ThS. BS. Phạm Bảo Châu",
+                Dept = "Khoa Mắt Kỹ Thuật Cao",
+                Title = "Thạc sĩ Bác sĩ • Tạo Hình Mí Mắt & Thẩm Mỹ Mắt • 10 năm kinh nghiệm Tạo hình Nhãn khoa",
+                Avatar = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000036"),
+                Name = "BS. CKII. Đặng Thu Thủy",
+                Dept = "Khoa Da Liễu & Thẩm Mỹ Da",
+                Title = "Trưởng Khoa Da Liễu • Bác sĩ Chuyên Khoa II • 18 năm kinh nghiệm Da liễu & Laser",
+                Avatar = "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000037"),
+                Name = "ThS. BS. Lê Minh Trí",
+                Dept = "Khoa Da Liễu & Thẩm Mỹ Da",
+                Title = "Thạc sĩ Bác sĩ • Trị Mụn & Sẹo Rỗ Chuẩn Y Khoa • 9 năm kinh nghiệm Thẩm mỹ nội khoa",
+                Avatar = "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000038"),
                 Name = "BS. CKI. Nguyễn Phương Anh",
-                Dept = "Khoa Da Liễu",
-                Title = "Da liễu & Laser Thẩm mỹ da",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=PhuongAnhDoctor"
+                Dept = "Khoa Da Liễu & Thẩm Mỹ Da",
+                Title = "Bác sĩ CKI • Bệnh Tự Miễn & Dị Ứng Da • 10 năm kinh nghiệm BV Da Liễu",
+                Avatar = "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80"
             },
-
-            // 10. Khoa Sản Phụ Khoa
             new DoctorDto
             {
-                Id = Guid.Parse("12121212-1212-1212-1212-121212121212"),
-                Name = "BS. CKII. Lê Thị Kim Phượng",
-                Dept = "Khoa Sản Phụ Khoa",
-                Title = "Trưởng Khoa Sản • Quản lý thai kỳ",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=PhuongSanDoctor"
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000039"),
+                Name = "ThS. BS. Trần Quang Khải",
+                Dept = "Khoa Da Liễu & Thẩm Mỹ Da",
+                Title = "Thạc sĩ Bác sĩ • U Da & Tiểu Phẫu Thẩm Mỹ • 12 năm kinh nghiệm Phẫu thuật Da liễu",
+                Avatar = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80"
             },
-
-            // 11. Khoa Cấp Cứu & Hồi Sức
             new DoctorDto
             {
-                Id = Guid.Parse("13131313-1313-1313-1313-131313131313"),
-                Name = "BS. CKI. Trịnh Văn Thành",
-                Dept = "Khoa Cấp Cứu & Hồi Sức",
-                Title = "Trưởng kíp Cấp cứu 24/7",
-                Avatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=ThanhDoctor"
-            }
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000040"),
+                Name = "BS. CKI. Bùi Yến Nhi",
+                Dept = "Khoa Da Liễu & Thẩm Mỹ Da",
+                Title = "Bác sĩ CKI • Trẻ Hóa & Tiêm Vi Điểm Mesotherapy • 8 năm kinh nghiệm Thẩm mỹ da công nghệ cao",
+                Avatar = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000041"),
+                Name = "TS. BS. Nguyễn Hoàng Nam",
+                Dept = "Khoa Chẩn Đoán Hình Ảnh & Thăm Dò",
+                Title = "Tiến sĩ Y khoa • Trưởng Khoa CĐHA • 20 năm kinh nghiệm MRI & CT Scanner",
+                Avatar = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000042"),
+                Name = "ThS. BS. Đinh Văn Phong",
+                Dept = "Khoa Chẩn Đoán Hình Ảnh & Thăm Dò",
+                Title = "Thạc sĩ Bác sĩ • Siêu Âm Doppler Mạch Máu • 12 năm kinh nghiệm Siêu âm màu 4D/5D",
+                Avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000043"),
+                Name = "BS. CKI. Vũ Thị Thơm",
+                Dept = "Khoa Chẩn Đoán Hình Ảnh & Thăm Dò",
+                Title = "Bác sĩ CKI • Siêu Âm Tuyến Giáp & Nhũ Hoa (TIRADS/BIRADS) • 14 năm kinh nghiệm Tầm soát U tuyến vú",
+                Avatar = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000044"),
+                Name = "ThS. BS. Lâm Quốc Huy",
+                Dept = "Khoa Chẩn Đoán Hình Ảnh & Thăm Dò",
+                Title = "Thạc sĩ Bác sĩ • Can Thiệp Hình Ảnh & Sinh Thiết FNA • 11 năm kinh nghiệm Can thiệp tối thiểu",
+                Avatar = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80"
+            },
+            new DoctorDto
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000045"),
+                Name = "BS. CKI. Lê Thị Diễm Hương",
+                Dept = "Khoa Chẩn Đoán Hình Ảnh & Thăm Dò",
+                Title = "Bác sĩ CKI • X-Quang Kỹ Thuật Số & Đo Loãng Xương DEXA • 9 năm kinh nghiệm Đo mật độ xương",
+                Avatar = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80"
+            },
         };
 
         return allSpecialistDoctors;

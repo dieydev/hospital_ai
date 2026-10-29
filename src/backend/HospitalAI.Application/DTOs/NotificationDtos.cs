@@ -30,3 +30,4 @@ public class TestPushRequestDto
     public string Body { get; set; } = "Đây là thông báo thử nghiệm từ hệ thống Hospital AI.";
     public string Type { get; set; } = "SYSTEM";
 }
+

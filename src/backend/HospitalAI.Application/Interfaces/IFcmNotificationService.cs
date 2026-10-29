@@ -13,3 +13,4 @@ public interface IFcmNotificationService
     Task<List<PushNotificationDto>> GetNotificationsByUserAsync(string userIdentifier);
     Task<bool> MarkAsReadAsync(string notificationId);
 }
+
