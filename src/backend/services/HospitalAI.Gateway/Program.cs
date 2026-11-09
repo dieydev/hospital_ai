@@ -34,7 +34,7 @@ builder.Services.AddRateLimiter(options =>
 
 // Cấu hình CORS bảo mật: Giới hạn HTTP methods cần thiết, cấm wildcard AllowAnyOrigin tùy tiện trong Production
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? new[] { "http://localhost:5173", "http://localhost:3000", "http://localhost:5000" };
+    ?? new[] { "http://localhost:5173", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5000" };
 
 builder.Services.AddCors(options =>
 {

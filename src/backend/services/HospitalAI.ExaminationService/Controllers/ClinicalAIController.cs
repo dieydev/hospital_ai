@@ -1,3 +1,4 @@
+using HospitalAI.ExaminationService.Security;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,7 +36,7 @@ public class AskClinicalAIResponseDto
 
 [ApiController]
 [Route("api/ai")]
-[Authorize(Roles = "Doctor,Admin,Nurse,Receptionist")]
+[Authorize(Roles = "Doctor,Admin")]
 public class ClinicalAIController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
@@ -65,10 +66,25 @@ public class ClinicalAIController : ControllerBase
     [HttpPost("ask")]
     public async Task<IActionResult> AskClinicalAI([FromBody] AskClinicalAIRequestDto request)
     {
-        if (string.IsNullOrWhiteSpace(request.Prompt))
+                if (string.IsNullOrWhiteSpace(request.Prompt))
         {
             return BadRequest(new { message = "Nội dung câu hỏi lâm sàng không được để trống." });
         }
+
+        // --- BẢO VỆ CHỐNG ẢO GIÁC & CHẶN CÂU HỌI LỆCH PHẠM VI (CLINICAL GUARDRAILS) ---
+        var validation = ClinicalGuardrails.ValidateClinicalPrompt(request.Prompt);
+        if (!validation.IsValid)
+        {
+            return Ok(new AskClinicalAIResponseDto
+            {
+                Text = "⚠️ TỪ CHỐI TIẾP NHẬN:\n" + validation.RejectionReason,
+                ModelUsed = "Hospital AI Clinical Safety Guardrail",
+                Sources = new List<string> { "Chính sách An toàn Y tế & Đạo đức AI Hospital AI" },
+                LatencyMs = 5,
+                Success = false
+            });
+        }
+        var sanitizedUserPrompt = validation.SanitizedPrompt ?? request.Prompt;
 
         var stopwatch = Stopwatch.StartNew();
         var apiKey = _configuration["Gemini:ApiKey"] ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
@@ -79,7 +95,7 @@ public class ClinicalAIController : ControllerBase
         var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Doctor";
 
         var fullSystemPrompt = request.SystemPrompt ?? "Bạn là Trợ lý AI Y khoa Lâm sàng Bệnh viện số Hospital AI.";
-        var fullText = $"{fullSystemPrompt}\n\n[Yêu cầu từ Bác sĩ/Nhân viên y tế]: {request.Prompt}";
+        var fullText = $"{fullSystemPrompt}\n\n[Yêu cầu từ Bác sĩ/Nhân viên y tế]: {sanitizedUserPrompt}";
 
         var requestBody = new
         {
@@ -122,7 +138,7 @@ public class ClinicalAIController : ControllerBase
                             var sources = new List<string> { "Hospital AI Clinical Engine (Backend Secured)", "Bộ Y Tế Việt Nam & ICD-10 Standards" };
 
                             // Ghi log kiểm toán tự động vào MongoDB
-                            await SaveLogAsync(userRole, doctorName, request.ActionType, modelName, request.Prompt, resultText, latency, sources);
+                            await SaveLogAsync(userRole, doctorName, request.ActionType, modelName, sanitizedUserPrompt, resultText, latency, sources);
 
                             return Ok(new AskClinicalAIResponseDto
                             {
@@ -145,10 +161,10 @@ public class ClinicalAIController : ControllerBase
         // Fallback Engine cục bộ nếu không có mạng ngoài hoặc không có Gemini Key
         stopwatch.Stop();
         var fallbackLatency = (int)stopwatch.ElapsedMilliseconds;
-        var fallbackText = GenerateLocalFallback(request.Prompt);
+        var fallbackText = GenerateLocalFallback(sanitizedUserPrompt);
         var fallbackSources = new List<string> { "Hospital AI Intranet Decision Engine (Offline Fallback)", "Hướng dẫn Chẩn đoán & Điều trị Bộ Y Tế" };
 
-        await SaveLogAsync(userRole, doctorName, request.ActionType, "Hospital AI Local Medical Engine", request.Prompt, fallbackText, fallbackLatency, fallbackSources);
+        await SaveLogAsync(userRole, doctorName, request.ActionType, "Hospital AI Local Medical Engine", sanitizedUserPrompt, fallbackText, fallbackLatency, fallbackSources);
 
         return Ok(new AskClinicalAIResponseDto
         {
@@ -188,15 +204,134 @@ public class ClinicalAIController : ControllerBase
     private static string GenerateLocalFallback(string prompt)
     {
         var lower = prompt.ToLower();
-        if (lower.Contains("icd-10") || lower.Contains("chẩn đoán"))
+
+        // 0. Xử lý câu hỏi xã giao, chào hỏi
+        if (lower.Contains("chào") || lower.Contains("hello") || lower.Contains("hi ") || lower == "hi" || lower.Contains("alo") || lower.Contains("bạn tên gì") || lower.Contains("bạn là ai"))
         {
-            return "[\n  {\"code\": \"J02.9\", \"name\": \"Viêm họng cấp tính, không đặc hiệu\", \"match\": \"95%\", \"category\": \"CHÍNH\", \"rationale\": \"Đau rát họng cấp tính, họng đỏ\"},\n  {\"code\": \"J03.9\", \"name\": \"Viêm amidan cấp tính\", \"match\": \"85%\", \"category\": \"PHÂN_BIỆT\", \"rationale\": \"Loại trừ amidan quá phát hốc mủ\"}\n]";
+            return "Xin chào Bác sĩ! Tôi là Trợ lý AI Y tế Lâm sàng của Bệnh viện Hospital AI.\n\nTôi sẵn sàng hỗ trợ Bác sĩ tra cứu phác đồ điều trị Bộ Y Tế, đối chiếu Dược thư Quốc gia, gợi ý mã bệnh ICD-10 và rà soát tương tác thuốc. Bác sĩ cần hỗ trợ ca bệnh hoặc triệu chứng nào hôm nay?";
         }
-        if (lower.Contains("tương tác thuốc") || lower.Contains("an toàn") || lower.Contains("dị ứng"))
+
+        // 0.1 Xử lý câu hỏi đùa vui, ngoại hình, tán gẫu (Ví dụ: 'Tôi có đẹp trai k')
+        if (lower.Contains("đẹp trai") || lower.Contains("xinh gái") || lower.Contains("đẹp gái") || lower.Contains("dễ thương") || lower.Contains("người yêu") || lower.Contains("yêu tôi") || lower.Contains("thích tôi"))
         {
-            return "Không phát hiện chống chỉ định tuyệt đối hoặc tương tác nguy hiểm độ 1 giữa các nhóm thuốc đã chọn. Khuyến nghị theo dõi chức năng gan/thận theo phác đồ.";
+            return "Chào bạn! Về độ đẹp trai thì chắc chắn không cần phải làm xét nghiệm máu hay chụp X-quang đâu, thần thái tự tin của bạn đã đạt điểm 10 rồi! 😊\n\nTuy nhiên, tôi là Trợ lý AI Y tế Lâm sàng của Bệnh viện Hospital AI, chuyên môn chính của tôi là hỗ trợ Bác sĩ và Cán bộ y tế tra cứu phác đồ điều trị, đối chiếu dược thư và an toàn đơn thuốc.\n\nNếu bạn có bất kỳ thắc mắc nào về sức khỏe, triệu chứng cơ thể hay dùng thuốc, hãy hỏi tôi nhé!";
         }
-        return "Hệ thống AI Lâm sàng Nội bộ ghi nhận: Bệnh nhân cần được thăm khám thể chất toàn diện, đối chiếu chỉ số sinh hiệu và tiền sử bệnh lý trước khi đưa ra y lệnh điều trị cuối cùng.";
+
+        // 0.2 Xử lý câu hỏi ngoài phạm vi y tế (thời tiết, ăn uống, thể thao, lập trình, thơ ca...)
+        if (lower.Contains("thời tiết") || lower.Contains("ăn gì") || lower.Contains("bóng đá") || lower.Contains("chơi game") || lower.Contains("viết code") || lower.Contains("lập trình") || lower.Contains("kể chuyện") || lower.Contains("hát"))
+        {
+            return "Hệ thống ghi nhận câu hỏi của bạn. Tuy nhiên, tôi là Trợ lý AI chuyên biệt về Y tế & Lâm sàng Bệnh viện.\n\nPhạm vi phục vụ của tôi tập trung vào: Hướng dẫn chẩn đoán theo Bộ Y Tế, gợi ý mã bệnh ICD-10, cảnh báo tương tác thuốc DDI và giải thích kết quả cận lâm sàng.\n\nVui lòng đặt câu hỏi liên quan đến sức khỏe hoặc ca bệnh để được hỗ trợ chuyên môn chính xác nhất!";
+        }
+
+        // 1. Triệu chứng hô hấp dưới, đau ngực, rỉ sắt, viêm phổi
+        if (lower.Contains("rỉ sắt") || (lower.Contains("ngực") && lower.Contains("sốt")) || lower.Contains("viêm phổi") || (lower.Contains("phổi") && (lower.Contains("đau") || lower.Contains("ho"))))
+        {
+            return @"Dựa trên các triệu chứng lâm sàng bạn đã mô tả:
+
+1. Chẩn đoán chính gợi ý:
+• Mã ICD-10: J18.9 - Viêm phổi, không đặc hiệu (Độ phù hợp: 95% - CHẨN ĐOÁN CHÍNH)
+- Lý giải lâm sàng: Bệnh nhân có tam chứng kinh điển gồm sốt cao (38.5°C), đau tức ngực kiểu màng phổi khi hít sâu và ho khạc đờm rỉ sắt. Đây là dấu hiệu đặc trưng của hội chứng đông đặc phế nang tổn thương do phế cầu khuẩn (Streptococcus pneumoniae).
+
+2. Chẩn đoán phân biệt cần loại trừ:
+• Mã ICD-10: J13 - Viêm phổi do Streptococcus pneumoniae (Độ phù hợp: 90%)
+• Mã ICD-10: J20.9 - Viêm phế quản cấp tính (Độ phù hợp: 70% - ít gặp đờm rỉ sắt)
+• Mã ICD-10: R07.1 - Đau ngực khi thở (Dấu hiệu màng phổi đi kèm)
+
+3. Cận lâm sàng khuyến nghị thực hiện:
+• Chụp X-Quang ngực thẳng: Khảo sát đám mờ phế trường hoặc đông đặc thùy phổi.
+• Công thức máu (CBC), CRP định lượng: Đánh giá hội chứng nhiễm trùng toàn thân.
+• Soi tươi và cấy đờm làm kháng sinh đồ.
+
+4. Hướng xử trí ban đầu theo Bộ Y Tế:
+• Kháng sinh phổ rộng đường uống (Amoxicillin/Clavulanate hoặc Cefuroxime) kết hợp Macrolid nếu điều trị ngoại trú.
+• Hạ sốt Paracetamol 500mg khi sốt >= 38.5°C, bù nước điện giải Oresol.";
+        }
+
+        // 2. Viêm họng, amidan, hô hấp trên
+        if (lower.Contains("họng") || lower.Contains("amidan") || lower.Contains("nuốt đau") || lower.Contains("j02"))
+        {
+            return @"Phác đồ gợi ý chẩn đoán & điều trị Viêm họng cấp (ICD-10: J02.9) theo Bộ Y Tế:
+
+1. Chẩn đoán & Phân loại:
+• Chẩn đoán chính: Viêm họng cấp tính, không đặc hiệu (Mã ICD-10: J02.9 - Độ phù hợp: 95%)
+• Chẩn đoán phân biệt: Viêm amidan cấp tính (Mã ICD-10: J03.9 - Độ phù hợp: 85%)
+
+2. Nguyên tắc điều trị:
+• Chỉ định kháng sinh khi có bằng chứng hoặc nghi ngờ nhiễm liên cầu khuẩn tan huyết beta nhóm A (GABHS).
+• Kháng sinh hàng 1: Amoxicillin/Clavulanic acid 1g x 2 lần/ngày (7-10 ngày), hoặc Amoxicillin 500mg x 3 lần/ngày.
+• Bệnh nhân dị ứng Penicillin: Cefuroxime axetil 500mg x 2 lần/ngày hoặc Clarithromycin 500mg x 2 lần/ngày.
+
+3. Điều trị triệu chứng:
+• Paracetamol 500mg uống khi sốt >= 38.5°C (cách nhau 4-6 giờ).
+• Kháng viêm giảm phù nề Alpha Chymotrypsin ngậm dưới lưỡi 2 viên x 3 lần/ngày.
+• Súc họng bằng nước muối sinh lý ấm NaCl 0.9% ngày 3-4 lần.";
+        }
+
+        // 3. Dạ dày, tiêu hóa, GERD
+        if (lower.Contains("dạ dày") || lower.Contains("thượng vị") || lower.Contains("ợ chua") || lower.Contains("trào ngược") || lower.Contains("k29") || lower.Contains("k21"))
+        {
+            return @"Gợi ý chẩn đoán & phác đồ bệnh lý Tiêu hóa theo Bộ Y Tế:
+
+1. Chẩn đoán gợi ý:
+• Mã ICD-10: K21.9 - Bệnh trào ngược dạ dày - thực quản (GERD) (Độ phù hợp: 92%)
+• Mã ICD-10: K29.7 - Viêm dạ dày, không đặc hiệu (Độ phù hợp: 88%)
+
+2. Hướng điều trị khuyến nghị:
+• Thuốc ức chế bơm Proton (PPI): Esomeprazole 40mg hoặc Pantoprazole 40mg uống 1 lần/ngày trước ăn sáng 30-60 phút (uống từ 4-8 tuần).
+• Thuốc kháng acid / bảo vệ niêm mạc: Nhôm hydroxyd + Magnesi hydroxyd uống sau bữa ăn 1-2 giờ hoặc khi đau rát thượng vị.
+• Thay đổi lối sống: Tránh ăn quá no, kiêng đồ chua cay, không nằm ngay sau ăn tối thiểu 2 giờ.";
+        }
+
+        // 4. Tim mạch, Tăng huyết áp
+        if (lower.Contains("huyết áp") || lower.Contains("i10") || lower.Contains("tim mạch"))
+        {
+            return @"Hướng dẫn xử trí Tăng huyết áp (ICD-10: I10) theo khuyến cáo Hội Tim mạch học Việt Nam:
+
+1. Mục tiêu điều trị:
+• Đưa huyết áp về dưới 130/80 mmHg ở người trưởng thành nếu dung nạp tốt.
+
+2. Phác đồ khởi đầu bằng thuốc:
+• Phối hợp đôi liều cố định: Thuốc ức chế men chuyển/chẹn thụ thể (ACEi/ARB) phối hợp Chẹn kênh Canxi (Amlodipine 5mg).
+• Uống 1 lần vào buổi sáng định kỳ.
+
+3. Dặn dò theo dõi:
+• Hạn chế muối (< 5g muối/ngày), đo huyết áp tại nhà sáng - chiều và tái khám định kỳ hàng tháng.";
+        }
+
+        // 5. Tương tác thuốc, an toàn dùng thuốc
+        if (lower.Contains("tương tác thuốc") || lower.Contains("an toàn") || lower.Contains("dị ứng") || lower.Contains("chống chỉ định"))
+        {
+            return @"Kết quả rà soát Dược thư Quốc gia Việt Nam:
+
+1. Đánh giá tương tác:
+• Không ghi nhận tương tác đối kháng mức độ 1 (Chống chỉ định tuyệt đối) đối với đơn thuốc hiện tại.
+• Chú ý khoảng cách uống giữa các nhóm thuốc kháng acid và kháng sinh tối thiểu 2 giờ để tránh giảm hấp thu.
+
+2. Khuyến nghị an toàn lâm sàng:
+• Kiểm tra chức năng gan (AST/ALT) và thận (Creatinine, eGFR) đối với bệnh nhân cao tuổi trước khi kê đơn liều cao.";
+        }
+
+        // 6. Kiểm tra xem có từ khóa y tế hay không
+        var medicalKeywords = new[] { "sốt", "đau", "ho", "bệnh", "thuốc", "khám", "chẩn đoán", "uống", "tiêm", "viêm", "tim", "phổi", "họng", "bụng", "đầu", "máu", "gan", "thận", "huyết áp", "đường", "dị ứng", "triệu chứng", "sinh hiệu", "mệt", "chóng mặt", "buồn nôn", "mờ mắt", "co giật" };
+        var hasMedicalContext = medicalKeywords.Any(k => lower.Contains(k));
+
+        if (!hasMedicalContext)
+        {
+            return "Hệ thống Trợ lý Y tế Lâm sàng Hospital AI ghi nhận câu hỏi của bạn.\n\nTuy nhiên, tôi là Trợ lý AI chuyên biệt về Y tế & Khám chữa bệnh. Nội dung câu hỏi có vẻ chưa đề cập đến vấn đề sức khỏe hoặc chuyên môn lâm sàng.\n\nBạn có thể hỏi tôi về:\n• Gợi ý mã bệnh ICD-10 từ triệu chứng (ví dụ: sốt cao, đau ngực, phát ban, ho đờm...)\n• Tra cứu phác đồ điều trị Bộ Y Tế (ví dụ: Viêm phổi, Viêm họng cấp, Tăng huyết áp...)\n• Kiểm tra tương tác thuốc và liều dùng an toàn theo Dược thư Quốc gia.\n\nVui lòng chia sẻ các triệu chứng hoặc câu hỏi y khoa bạn cần hỗ trợ nhé!";
+        }
+
+        // 7. Có triệu chứng y tế chung nhưng chưa khớp nhóm bệnh cụ thể ở trên
+        return @"Hệ thống Trợ lý Y tế Lâm sàng Hospital AI ghi nhận triệu chứng của bạn:
+
+1. Đánh giá sơ bộ:
+• Cần kết hợp thăm khám thực thể toàn diện (nghe tim phổi, khám họng, đo sinh hiệu Mạch, Nhiệt độ, Huyết áp, SpO2) để đối chiếu triệu chứng.
+
+2. Đề xuất cận lâm sàng định hướng:
+• Xét nghiệm công thức máu toàn phần (CBC).
+• Chỉ định chẩn đoán hình ảnh chuyên khoa phù hợp (X-Quang hoặc Siêu âm).
+
+3. Lưu ý:
+• Kết quả hỗ trợ gợi ý lâm sàng. Quyết định điều trị cuối cùng thuộc về Bác sĩ phụ trách ca bệnh.";
     }
 
     /// <summary>

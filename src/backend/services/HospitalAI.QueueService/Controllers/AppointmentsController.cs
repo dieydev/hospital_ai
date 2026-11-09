@@ -443,7 +443,7 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateAppointment([FromBody] OnlineAppointmentItem model)
         {
             if (string.IsNullOrWhiteSpace(model.PatientName) || string.IsNullOrWhiteSpace(model.PatientPhone) ||

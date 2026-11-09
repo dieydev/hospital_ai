@@ -35,6 +35,81 @@ import { showToast } from '../utils/sweetAlert';
 const { Text, Paragraph, Title } = Typography;
 const { TextArea } = Input;
 
+// Hàm format text và parse JSON / loại bỏ Markdown thô **
+const renderFormattedMessageText = (rawText: string) => {
+  if (!rawText) return null;
+
+  const trimmed = rawText.trim();
+  // 1. Nếu là JSON Array ICD-10
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].code) {
+        return (
+          <div className="space-y-2 mt-1">
+            <div className="font-semibold text-xs text-sky-800 dark:text-sky-300 uppercase tracking-wide mb-1">
+              Gợi ý mã bệnh quốc tế ICD-10:
+            </div>
+            {parsed.map((item: any, idx: number) => (
+              <div key={idx} className="p-2.5 rounded-lg bg-sky-50 dark:bg-slate-800/80 border border-sky-200 dark:border-slate-700 text-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-sm text-purple-700 dark:text-purple-400">ICD-10: {item.code}</span>
+                  <div className="flex gap-1 items-center">
+                    {item.category && (
+                      <Tag color={item.category === 'CHÍNH' ? 'blue' : 'orange'} className="m-0 text-[10px]">
+                        {item.category}
+                      </Tag>
+                    )}
+                    {item.match && (
+                      <Tag color="green" className="m-0 text-[10px] font-semibold">
+                        {item.match}
+                      </Tag>
+                    )}
+                  </div>
+                </div>
+                <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs mb-1">{item.name}</div>
+                {item.rationale && (
+                  <div className="text-slate-600 dark:text-slate-300 text-[11.5px]">
+                    <span className="font-medium text-slate-700 dark:text-slate-200">Lý giải:</span> {item.rationale}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+    } catch {
+      // Bỏ qua nếu không parse được JSON
+    }
+  }
+
+  // 2. Format văn bản: Chuyển **bold** thành <strong> mà không để lộ dấu **
+  const lines = rawText.split('\n');
+  return (
+    <div className="space-y-1">
+      {lines.map((line, lIdx) => {
+        // Tách chuỗi theo dấu **...**
+        const parts = line.split(/(\*\*[^*]+\*\*)/g);
+        return (
+          <div key={lIdx} className="leading-relaxed">
+            {parts.map((part, pIdx) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                const boldContent = part.slice(2, -2);
+                return (
+                  <strong key={pIdx} className="font-bold text-slate-900 dark:text-sky-300">
+                    {boldContent}
+                  </strong>
+                );
+              }
+              return <span key={pIdx}>{part}</span>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const AIAssistantPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -51,7 +126,7 @@ export const AIAssistantPage: React.FC = () => {
   >([
     {
       sender: 'ai',
-      text: 'Xin chào Bác sĩ! Tôi là **Trợ lý Y tế Lâm sàng Hospital AI**.\n\nTôi sẵn sàng hỗ trợ tra cứu phác đồ điều trị Bộ Y tế, đối chiếu dược thư, gợi ý mã bệnh ICD-10 và tóm tắt diễn biến ca bệnh. Mọi dữ liệu lâm sàng nhập vào đều được tự động khử danh tính (De-identified) theo chuẩn HIPAA.',
+      text: 'Xin chào Bác sĩ! Tôi là Trợ lý Y tế Lâm sàng Hospital AI.\n\nTôi sẵn sàng hỗ trợ tra cứu phác đồ điều trị Bộ Y tế, đối chiếu dược thư, gợi ý mã bệnh ICD-10 và tóm tắt diễn biến ca bệnh. Mọi dữ liệu lâm sàng nhập vào đều được tự động khử danh tính (De-identified) theo chuẩn HIPAA.',
       time: '08:00',
       piiSanitized: true,
     },
@@ -317,7 +392,7 @@ export const AIAssistantPage: React.FC = () => {
                             border: m.sender === 'user' ? 'none' : '1px solid #bae6fd',
                           }}
                         >
-                          <div className="whitespace-pre-line text-sm leading-relaxed">{m.text}</div>
+                          <div className="text-sm leading-relaxed">{renderFormattedMessageText(m.text)}</div>
                           {m.sources && m.sources.length > 0 && (
                             <div className="mt-3 pt-2 border-t border-sky-100/50 flex flex-wrap gap-1.5 items-center">
                               <span className="text-[11px] opacity-75 font-semibold">Nguồn tham chiếu:</span>

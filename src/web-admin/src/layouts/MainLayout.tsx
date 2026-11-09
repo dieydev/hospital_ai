@@ -164,9 +164,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     </div>
   );
 
-  const isAdmin = user?.vaiTro?.some((r) => r.toLowerCase() === 'admin');
+  const isAdmin = Boolean(user?.vaiTro?.some((r) => r.toLowerCase() === 'admin'));
+  const isDoctor = Boolean(user?.vaiTro?.some((r) => r.toLowerCase() === 'doctor'));
+  const isNurseOrReceptionist = Boolean(user?.vaiTro?.some((r) =>
+    ['nurse', 'receptionist'].includes(r.toLowerCase())
+  ));
 
-  const menuItems = [
+  // Phân quyền danh mục Menu theo đúng Vai trò (RBAC):
+  // - Admin: Toàn quyền truy cập mọi tính năng, bao gồm Quản lý Tài khoản, Danh mục và Audit Log.
+  // - Doctor: Tập trung Lâm sàng (SOAP, EMR, CLS, AI Y tế, Bệnh nhân, Lịch hẹn, Báo cáo chuyên môn). Ẩn Tiếp đón, Viện phí, Quản lý tài khoản, Audit log.
+  // - Receptionist/Nurse: Tập trung Tiếp đón, Cấp số, Lịch hẹn, Bệnh nhân, Thu viện phí VietQR, BHYT. Ẩn Khám bệnh SOAP, Ký số EMR, AI lâm sàng, Quản lý tài khoản, Audit log.
+  const rawMenuGroups = [
     {
       type: 'group' as const,
       label: collapsed ? null : 'TIẾP ĐÓN & ĐIỀU PHỐI',
@@ -175,6 +183,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           key: '/dashboard',
           icon: <DashboardOutlined style={{ fontSize: 17 }} />,
           label: 'Tổng quan (Dashboard)',
+          allowed: true,
         },
         {
           key: '/reception',
@@ -185,6 +194,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">42</span>
             </div>
           ),
+          allowed: isAdmin || isNurseOrReceptionist,
         },
         {
           key: '/appointments',
@@ -195,6 +205,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">18 mới</span>
             </div>
           ),
+          allowed: true,
         },
         {
           key: '/booking',
@@ -205,11 +216,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>24/7</span>
             </div>
           ),
+          allowed: isAdmin || isNurseOrReceptionist,
         },
         {
           key: '/patients',
           icon: <UserOutlined style={{ fontSize: 17 }} />,
           label: 'Quản lý Bệnh nhân',
+          allowed: true,
         },
       ],
     },
@@ -226,6 +239,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">12 ca</span>
             </div>
           ),
+          allowed: isAdmin || isDoctor,
         },
         {
           key: '/emr',
@@ -236,6 +250,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">9 ký</span>
             </div>
           ),
+          allowed: isAdmin || isDoctor,
         },
         {
           key: '/cls-pacs',
@@ -246,11 +261,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">28</span>
             </div>
           ),
+          allowed: isAdmin || isDoctor,
         },
         {
           key: '/pharmacy',
           icon: <MedicineBoxOutlined style={{ fontSize: 17 }} />,
           label: 'Dược & Nhà thuốc BV',
+          allowed: true,
         },
       ],
     },
@@ -267,11 +284,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">VietQR</span>
             </div>
           ),
+          allowed: isAdmin || isNurseOrReceptionist,
         },
         {
           key: '/insurance',
           icon: <SafetyCertificateOutlined style={{ fontSize: 17 }} />,
           label: 'Giám định BHYT 79a',
+          allowed: isAdmin || isNurseOrReceptionist,
         },
       ],
     },
@@ -288,6 +307,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">AI 2.0</span>
             </div>
           ),
+          allowed: isAdmin || isDoctor,
         },
       ],
     },
@@ -295,40 +315,48 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       type: 'group' as const,
       label: collapsed ? null : 'QUẢN TRỊ & BÁO CÁO',
       children: [
-        ...(isAdmin
-          ? [
-              {
-                key: '/accounts',
-                icon: <CrownOutlined style={{ fontSize: 17, color: '#7c3aed' }} />,
-                label: (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600 }}>Quản lý Tài khoản</span>
-                    <span className="sidebar-badge" style={{ backgroundColor: '#f3e8ff', color: '#7c3aed' }}>
-                      Admin
-                    </span>
-                  </div>
-                ),
-              },
-            ]
-          : []),
+        {
+          key: '/accounts',
+          icon: <CrownOutlined style={{ fontSize: 17, color: '#7c3aed' }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600 }}>Quản lý Tài khoản</span>
+              <span className="sidebar-badge" style={{ backgroundColor: '#f3e8ff', color: '#7c3aed' }}>
+                Admin
+              </span>
+            </div>
+          ),
+          allowed: isAdmin,
+        },
         {
           key: '/catalogs',
           icon: <AppstoreOutlined style={{ fontSize: 17 }} />,
           label: 'Danh mục Hệ thống',
+          allowed: isAdmin,
         },
         {
           key: '/reports',
           icon: <BarChartOutlined style={{ fontSize: 17 }} />,
           label: 'Thống kê & Báo cáo BI',
+          allowed: isAdmin || isDoctor,
         },
         {
           key: '/audit-logs',
           icon: <AuditOutlined style={{ fontSize: 17 }} />,
           label: 'Nhật ký & Kiểm toán',
+          allowed: isAdmin,
         },
       ],
     },
   ];
+
+  // Chỉ hiển thị các nhóm và menu item mà vai trò hiện tại được phép
+  const menuItems = rawMenuGroups
+    .map((group) => ({
+      ...group,
+      children: group.children.filter((item) => item.allowed),
+    }))
+    .filter((group) => group.children.length > 0);
 
   const userMenuItems = [
     {

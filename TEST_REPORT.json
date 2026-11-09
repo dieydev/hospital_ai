@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-11-06T05:11:18.634Z",
+  "summary": {
+    "total": 11,
+    "passes": 11,
+    "warns": 0,
+    "fails": 0
+  },
+  "details": [
+    {
+      "module": "Web Client",
+      "feature": "Trang chủ Cổng thông tin (/)",
+      "status": "PASS",
+      "details": "Status 200",
+      "error": null
+    },
+    {
+      "module": "API Gateway",
+      "feature": "Health Check (/health)",
+      "status": "PASS",
+      "details": "Status: 200, Payload: {\"status\":\"Healthy\",\"gateway\":\"HospitalAI.Gateway\",\"timestamp\":\"2026-11-06T05:11:18.170025Z\"}",
+      "error": null
+    },
+    {
+      "module": "IdentityService",
+      "feature": "Đăng nhập Quản trị viên (admin/123456)",
+      "status": "PASS",
+      "details": "Nhận JWT Token hợp lệ",
+      "error": null
+    },
+    {
+      "module": "QueueService",
+      "feature": "Lấy danh sách khung giờ khám (Quota Slots)",
+      "status": "PASS",
+      "details": "Tìm thấy 11 khung giờ khả dụng",
+      "error": null
+    },
+    {
+      "module": "QueueService",
+      "feature": "Tạo lịch khám bệnh nhân trực tuyến (Atomic Booking)",
+      "status": "PASS",
+      "details": "Mã hẹn: apt-1793941878361",
+      "error": null
+    },
+    {
+      "module": "QueueService",
+      "feature": "Lấy danh sách hàng chờ tiếp nhận (/api/queue)",
+      "status": "PASS",
+      "details": "Status: 200",
+      "error": null
+    },
+    {
+      "module": "PatientService",
+      "feature": "Truy xuất danh sách hồ sơ bệnh nhân",
+      "status": "PASS",
+      "details": "Lấy thành công (5 bản ghi)",
+      "error": null
+    },
+    {
+      "module": "ClinicalAI",
+      "feature": "Hỗ trợ lâm sàng & Gợi ý ICD-10 hợp lệ",
+      "status": "PASS",
+      "details": "Model: Hospital AI Local Medical Engine",
+      "error": null
+    },
+    {
+      "module": "ClinicalAI",
+      "feature": "Bộ lọc Chống ảo giác (Anti-Hallucination Guardrail)",
+      "status": "PASS",
+      "details": "Đã chặn thành công câu hỏi ngoài y khoa",
+      "error": null
+    },
+    {
+      "module": "ClinicalAI",
+      "feature": "Cảnh báo Tương tác thuốc nguy hiểm (Clopidogrel + Omeprazole)",
+      "status": "PASS",
+      "details": "Nguy cơ: HIGH_RISK",
+      "error": null
+    },
+    {
+      "module": "Audit & Logs",
+      "feature": "Truy xuất nhật ký can thiệp AI (/api/ailogs)",
+      "status": "PASS",
+      "details": "Lưu trữ 11 bản ghi kiểm toán",
+      "error": null
+    }
+  ]
+}

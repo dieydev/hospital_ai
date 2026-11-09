@@ -28,6 +28,56 @@ interface Message {
   piiSanitized?: boolean;
 }
 
+// Hàm format text và loại bỏ Markdown thô **
+const renderDrawerMessageText = (rawText: string) => {
+  if (!rawText) return null;
+
+  const trimmed = rawText.trim();
+  // Nếu là JSON Array ICD-10
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].code) {
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+            <div style={{ fontWeight: 600, fontSize: 11, color: '#0369a1' }}>Gợi ý mã bệnh ICD-10:</div>
+            {parsed.map((item: any, idx: number) => (
+              <div key={idx} style={{ padding: '6px 8px', borderRadius: 6, background: '#f0f9ff', border: '1px solid #bae6fd', fontSize: 11 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                  <strong style={{ color: '#7c3aed' }}>{item.code}</strong>
+                  {item.match && <Tag color="green" style={{ fontSize: 9, margin: 0, padding: '0 4px' }}>{item.match}</Tag>}
+                </div>
+                <div style={{ fontWeight: 500 }}>{item.name}</div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const lines = rawText.split('\n');
+  return (
+    <div>
+      {lines.map((line, lIdx) => {
+        const parts = line.split(/(\*\*[^*]+\*\*)/g);
+        return (
+          <div key={lIdx} style={{ minHeight: line.trim() ? undefined : 6 }}>
+            {parts.map((part, pIdx) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={pIdx} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+              }
+              return <span key={pIdx}>{part}</span>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => {
   const { isDarkMode } = useThemeStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -181,7 +231,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ open, onClose }) => 
                   boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 }}
               >
-                {m.text}
+                {renderDrawerMessageText(m.text)}
 
                 {m.icd10 && (
                   <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
