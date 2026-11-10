@@ -14,13 +14,13 @@ public static class DataSeeder
     {
         await context.Database.EnsureCreatedAsync();
 
-        // 1. Seed Roles
-        var roles = new[] { "Admin", "Doctor", "Nurse", "Receptionist", "Patient" };
+        // 1. Seed Roles: 7 Vai trò chuẩn hệ thống + Bệnh nhân
+        var roles = new[] { "Admin", "Doctor", "Receptionist", "Triage", "Pharmacy", "Nurse", "Cashier", "Patient" };
         foreach (var roleName in roles)
         {
             if (!await context.Roles.AnyAsync(r => r.Name == roleName))
             {
-                context.Roles.Add(new Role { Name = roleName, Description = $"Vai trò {roleName} hệ thống" });
+                context.Roles.Add(new Role { Name = roleName, Description = $"Vai trò {roleName} hệ thống bệnh viện" });
             }
         }
         await context.SaveChangesAsync();
@@ -28,6 +28,10 @@ public static class DataSeeder
         var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
         var doctorRole = await context.Roles.FirstAsync(r => r.Name == "Doctor");
         var receptionistRole = await context.Roles.FirstAsync(r => r.Name == "Receptionist");
+        var triageRole = await context.Roles.FirstAsync(r => r.Name == "Triage");
+        var pharmacyRole = await context.Roles.FirstAsync(r => r.Name == "Pharmacy");
+        var nurseRole = await context.Roles.FirstAsync(r => r.Name == "Nurse");
+        var cashierRole = await context.Roles.FirstAsync(r => r.Name == "Cashier");
         var patientRole = await context.Roles.FirstAsync(r => r.Name == "Patient");
 
         // 2. Seed Default Accounts
@@ -76,12 +80,80 @@ public static class DataSeeder
                 FullName = "Lễ tân Trần Thị Hương",
                 Email = "huong.reception@hospital-ai.vn",
                 PhoneNumber = "0912345678",
-                Title = "Nhân viên Lễ tân",
+                Title = "Nhân viên Tiếp nhận",
                 IsActive = true,
                 AvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=Reception"
             };
             recepUser.UserRoles.Add(new UserRole { UserId = recepUser.Id, RoleId = receptionistRole.Id });
             context.Users.Add(recepUser);
+        }
+
+        if (!await context.Users.AnyAsync(u => u.Username == "triage01"))
+        {
+            var triageUser = new User
+            {
+                Username = "triage01",
+                PasswordHash = passwordHasher.HashPassword("123456"),
+                FullName = "Lê Hoàng Nam",
+                Email = "nam.triage@hospital-ai.vn",
+                PhoneNumber = "0923456789",
+                Title = "Nhân viên Sàng lọc & Phân luồng",
+                IsActive = true,
+                AvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=TriageNam"
+            };
+            triageUser.UserRoles.Add(new UserRole { UserId = triageUser.Id, RoleId = triageRole.Id });
+            context.Users.Add(triageUser);
+        }
+
+        if (!await context.Users.AnyAsync(u => u.Username == "pharmacy01"))
+        {
+            var pharmUser = new User
+            {
+                Username = "pharmacy01",
+                PasswordHash = passwordHasher.HashPassword("123456"),
+                FullName = "Dược sĩ Vũ Minh Thảo",
+                Email = "thao.pharmacy@hospital-ai.vn",
+                PhoneNumber = "0934567890",
+                Title = "Dược sĩ Quản lý Kho Dược",
+                IsActive = true,
+                AvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=PharmThao"
+            };
+            pharmUser.UserRoles.Add(new UserRole { UserId = pharmUser.Id, RoleId = pharmacyRole.Id });
+            context.Users.Add(pharmUser);
+        }
+
+        if (!await context.Users.AnyAsync(u => u.Username == "nurse01"))
+        {
+            var nurseUser = new User
+            {
+                Username = "nurse01",
+                PasswordHash = passwordHasher.HashPassword("123456"),
+                FullName = "Hoàng Thị Yến",
+                Email = "yen.nurse@hospital-ai.vn",
+                PhoneNumber = "0945678901",
+                Title = "Điều dưỡng viên Y tế",
+                IsActive = true,
+                AvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=NurseYen"
+            };
+            nurseUser.UserRoles.Add(new UserRole { UserId = nurseUser.Id, RoleId = nurseRole.Id });
+            context.Users.Add(nurseUser);
+        }
+
+        if (!await context.Users.AnyAsync(u => u.Username == "cashier01"))
+        {
+            var cashierUser = new User
+            {
+                Username = "cashier01",
+                PasswordHash = passwordHasher.HashPassword("123456"),
+                FullName = "Đặng Thu Trang",
+                Email = "trang.cashier@hospital-ai.vn",
+                PhoneNumber = "0956789012",
+                Title = "Thu ngân Viện phí Quầy 01",
+                IsActive = true,
+                AvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=CashierTrang"
+            };
+            cashierUser.UserRoles.Add(new UserRole { UserId = cashierUser.Id, RoleId = cashierRole.Id });
+            context.Users.Add(cashierUser);
         }
 
         if (!await context.Users.AnyAsync(u => u.Username == "patient01"))

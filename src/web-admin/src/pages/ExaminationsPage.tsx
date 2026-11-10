@@ -22,6 +22,7 @@ import {
   Tabs,
   Drawer,
   Tooltip,
+  Radio,
 } from 'antd';
 import {
   SaveOutlined,
@@ -306,10 +307,32 @@ export const ExaminationsPage: React.FC = () => {
         await queueService.updateQueueTicketStatus(values.ticketId, 'Finished');
       }
 
-      showSuccessAlert(
-        'Hoàn tất Ca Khám & Kê Đơn Thuốc!',
-        `Đã lưu bệnh án EMR và đơn thuốc điện tử cho bệnh nhân.`
-      );
+      const disp = values.disposition || 'outpatient';
+      const patient = patients.find((p) => p.id === values.patientId);
+      const pName = patient ? patient.hoTen : 'Bệnh nhân';
+
+      if (disp === 'inpatient') {
+        showSuccessAlert(
+          'Chỉ Định Nhập Viện Thành Công!',
+          `Bệnh nhân: ${pName}\n` +
+          `• Khoa điều trị nội trú: ${values.inpatientDepartment || 'Khoa Nội Tổng Hợp'}\n` +
+          `• Chỉ định: ${values.inpatientReason || 'Theo dõi và điều trị tích cực'}\n\n` +
+          `Đã chuyển bệnh án sang bộ phận Tiếp Nhận Nội Trú & bàn giao buồng bệnh!`
+        );
+      } else if (disp === 'transfer') {
+        showSuccessAlert(
+          'Lập Giấy Chuyển Tuyến BHYT Thành Công (Mẫu 14)!',
+          `Bệnh nhân: ${pName}\n` +
+          `• Tuyến tiếp nhận: ${values.transferHospital || 'Bệnh viện Tuyến Trên'}\n` +
+          `• Lý do chuyển tuyến: ${values.transferReason || 'Vượt quá năng lực chuyên môn của cơ sở'}\n\n` +
+          `Đã chốt đối soát chi phí ngoại trú và xuất hồ sơ chuyển viện cho bệnh nhân!`
+        );
+      } else {
+        showSuccessAlert(
+          'Hoàn tất Ca Khám & Kê Đơn Thuốc!',
+          `Đã lưu bệnh án EMR và truyền đơn thuốc điện tử sang Quầy Dược và Thu ngân.`
+        );
+      }
 
       setIsModalOpen(false);
       form.resetFields();
@@ -608,7 +631,36 @@ export const ExaminationsPage: React.FC = () => {
                       name="patientId"
                       rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân!' }]}
                     >
-                      <Select showSearch placeholder="Gõ tên hoặc mã bệnh nhân..." size="large">
+                      <Select
+                        showSearch
+                        placeholder="Gõ tên hoặc mã bệnh nhân..."
+                        size="large"
+                        onChange={(val) => {
+                          const patient = patients.find((p) => p.id === val);
+                          if (patient) {
+                            try {
+                              const cachedVitals = localStorage.getItem(`vitals_${patient.maBenhNhan}`);
+                              if (cachedVitals) {
+                                const parsed = JSON.parse(cachedVitals);
+                                form.setFieldsValue({
+                                  pulseRate: parsed.pulse || 78,
+                                  temperature: parsed.temperature || 36.8,
+                                  bloodPressure: parsed.bloodPressure || '120/80',
+                                  respiratoryRate: parsed.respiratoryRate || 18,
+                                  weight: parsed.weight || 65,
+                                  height: parsed.height || 168,
+                                  chiefComplaint: parsed.initialSymptoms || form.getFieldValue('chiefComplaint'),
+                                });
+                                if (parsed.weight) setWeight(parsed.weight);
+                                if (parsed.height) setHeight(parsed.height);
+                                showToast(`Đã tự động nạp sinh hiệu từ Bàn Sàng Lọc! (HA: ${parsed.bloodPressure}, Mạch: ${parsed.pulse})`, 'info');
+                              }
+                            } catch (e) {
+                              console.warn('Error loading cached vitals', e);
+                            }
+                          }
+                        }}
+                      >
                         {patients.map((p) => (
                           <Option key={p.id} value={p.id}>
                             {p.maBenhNhan} - {p.hoTen} ({p.gioiTinh}, CCCD: {p.soCCCD})
@@ -806,6 +858,100 @@ export const ExaminationsPage: React.FC = () => {
 
                     <Form.Item label="P (Plan) - Kế hoạch Xử trí & Lời dặn Bác sĩ" name="plan">
                       <TextArea rows={2} placeholder="Cho đơn thuốc 5 ngày, nghỉ ngơi, hẹn tái khám sau 5 ngày..." />
+                    </Form.Item>
+
+                    <Divider style={{ margin: '14px 0', borderColor: isDarkMode ? '#334155' : undefined }}>
+                      <Text style={{ fontSize: 13, color: '#0369a1', fontWeight: 600 }}>HƯỚNG XỬ TRÍ KẾT THÚC KHÁM (DISPOSITION)</Text>
+                    </Divider>
+
+                    <Form.Item
+                      label="Quyết định Xử trí của Bác sĩ"
+                      name="disposition"
+                      initialValue="outpatient"
+                    >
+                      <Radio.Group style={{ width: '100%' }}>
+                        <Row gutter={[12, 12]}>
+                          <Col span={8}>
+                            <Radio.Button
+                              value="outpatient"
+                              style={{ width: '100%', textAlign: 'center', height: 'auto', padding: '8px 4px', borderRadius: 8 }}
+                            >
+                              <div style={{ color: '#16a34a', fontWeight: 700 }}>🟢 Ngoại Trú (Ra về)</div>
+                              <div style={{ fontSize: 11, color: '#64748b' }}>Kê đơn thuốc & hẹn tái khám</div>
+                            </Radio.Button>
+                          </Col>
+                          <Col span={8}>
+                            <Radio.Button
+                              value="inpatient"
+                              style={{ width: '100%', textAlign: 'center', height: 'auto', padding: '8px 4px', borderRadius: 8 }}
+                            >
+                              <div style={{ color: '#0284c7', fontWeight: 700 }}>🏥 Chỉ Định Nhập Viện</div>
+                              <div style={{ fontSize: 11, color: '#64748b' }}>Điều trị nội trú tại viện</div>
+                            </Radio.Button>
+                          </Col>
+                          <Col span={8}>
+                            <Radio.Button
+                              value="transfer"
+                              style={{ width: '100%', textAlign: 'center', height: 'auto', padding: '8px 4px', borderRadius: 8 }}
+                            >
+                              <div style={{ color: '#dc2626', fontWeight: 700 }}>🚑 Chuyển Tuyến BHYT</div>
+                              <div style={{ fontSize: 11, color: '#64748b' }}>Chuyển viện tuyến trên</div>
+                            </Radio.Button>
+                          </Col>
+                        </Row>
+                      </Radio.Group>
+                    </Form.Item>
+
+                    <Form.Item
+                      noStyle
+                      shouldUpdate={(prev, curr) => prev.disposition !== curr.disposition}
+                    >
+                      {({ getFieldValue }) => {
+                        const disp = getFieldValue('disposition');
+                        if (disp === 'inpatient') {
+                          return (
+                            <div style={{ backgroundColor: isDarkMode ? '#1e293b' : '#f0f9ff', padding: 12, borderRadius: 8, border: '1px solid #bae6fd', marginBottom: 12 }}>
+                              <Row gutter={12}>
+                                <Col span={12}>
+                                  <Form.Item label="Khoa phòng Nhập viện tiếp nhận" name="inpatientDepartment" initialValue="Khoa Nội Tổng Hợp">
+                                    <Select>
+                                      <Option value="Khoa Hồi Sức Cấp Cứu (ICU)">Khoa Hồi Sức Cấp Cứu (ICU)</Option>
+                                      <Option value="Khoa Nội Tổng Hợp">Khoa Nội Tổng Hợp</Option>
+                                      <Option value="Khoa Tim Mạch Can Thiệp">Khoa Tim Mạch Can Thiệp</Option>
+                                      <Option value="Khoa Ngoại Tiêu Hóa">Khoa Ngoại Tiêu Hóa</Option>
+                                      <Option value="Khoa Chấn Thương Chỉnh Hình">Khoa Chấn Thương Chỉnh Hình</Option>
+                                    </Select>
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item label="Lý do & Chỉ định Nhập viện" name="inpatientReason" initialValue="Theo dõi huyết động và điều trị tích cực">
+                                    <Input placeholder="Nhập lý do nhập viện..." />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </div>
+                          );
+                        }
+                        if (disp === 'transfer') {
+                          return (
+                            <div style={{ backgroundColor: isDarkMode ? '#1e293b' : '#fef2f2', padding: 12, borderRadius: 8, border: '1px solid #fecaca', marginBottom: 12 }}>
+                              <Row gutter={12}>
+                                <Col span={12}>
+                                  <Form.Item label="Bệnh viện Tuyến trên Tiếp nhận" name="transferHospital" initialValue="Bệnh viện Chợ Rẫy">
+                                    <Input placeholder="vd: BV Chợ Rẫy / BV Bạch Mai..." />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item label="Lý do Chuyển Tuyến (Mẫu 14)" name="transferReason" initialValue="Vượt quá năng lực chuyên môn kỹ thuật của cơ sở">
+                                    <Input placeholder="Nhập lý do chuyển viện..." />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     </Form.Item>
                   </div>
                 ),

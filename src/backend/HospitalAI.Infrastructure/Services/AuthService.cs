@@ -1348,7 +1348,7 @@ public class AuthService : IAuthService
             dept = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentName == payload.Department);
         }
 
-        if (roleName == "Doctor" || roleName == "Nurse" || roleName == "Receptionist")
+        if (roleName == "Doctor" || roleName == "Nurse" || roleName == "Receptionist" || roleName == "Triage" || roleName == "Pharmacy" || roleName == "Cashier")
         {
             if (dept == null)
             {
@@ -1363,7 +1363,11 @@ public class AuthService : IAuthService
                     UserId = newUser.Id,
                     DepartmentId = dept.Id,
                     FullName = payload.FullName.Trim(),
-                    Title = payload.Title ?? (roleName == "Doctor" ? "Bác sĩ Điều trị" : "Nhân viên"),
+                    Title = payload.Title ?? (roleName == "Doctor" ? "Bác sĩ Điều trị" :
+                                              roleName == "Receptionist" ? "Nhân viên Tiếp nhận" :
+                                              roleName == "Triage" ? "Nhân viên Sàng lọc bệnh" :
+                                              roleName == "Pharmacy" ? "Dược sĩ Nhà thuốc" :
+                                              roleName == "Cashier" ? "Thu ngân Viện phí" : "Nhân viên Y tế"),
                     IsAvailable = true
                 };
                 _context.StaffProfiles.Add(staffProfile);

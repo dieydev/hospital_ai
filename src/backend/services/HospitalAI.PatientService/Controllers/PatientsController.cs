@@ -23,7 +23,8 @@ public class PatientsController : ControllerBase
 
     private bool IsStaff()
     {
-        return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Nurse") || User.IsInRole("Receptionist");
+        return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") ||
+               User.IsInRole("Triage") || User.IsInRole("Pharmacy") || User.IsInRole("Nurse") || User.IsInRole("Cashier");
     }
 
     private bool IsAuthorizedForPatient(PatientDto patient)
@@ -35,10 +36,10 @@ public class PatientsController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách bệnh nhân (Chỉ dành cho Cán bộ y tế & Quản trị viên)
+    /// Lấy danh sách bệnh nhân (Dành cho Cán bộ y tế & Quản trị viên)
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = "Admin,Doctor,Nurse,Receptionist")]
+    [Authorize(Roles = "Admin,Doctor,Nurse,Receptionist,Triage,Pharmacy,Cashier")]
     public async Task<IActionResult> GetPatients([FromQuery] string? search, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 20)
     {
         pageIndex = Math.Max(1, pageIndex);
@@ -105,10 +106,10 @@ public class PatientsController : ControllerBase
     }
 
     /// <summary>
-    /// Tiếp nhận & Thêm hồ sơ Bệnh nhân mới (Lễ tân, Bác sĩ, Admin)
+    /// Tiếp nhận & Thêm hồ sơ Bệnh nhân mới (Lễ tân, Sàng lọc, Điều dưỡng, Bác sĩ, Admin)
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin,Receptionist,Doctor")]
+    [Authorize(Roles = "Admin,Receptionist,Triage,Nurse,Doctor")]
     public async Task<IActionResult> CreatePatient([FromBody] CreatePatientDto dto)
     {
         try

@@ -23,7 +23,8 @@ public class BillingController : ControllerBase
 
     private bool IsStaff()
     {
-        return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Nurse") || User.IsInRole("Receptionist");
+        return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") ||
+               User.IsInRole("Triage") || User.IsInRole("Pharmacy") || User.IsInRole("Nurse") || User.IsInRole("Cashier");
     }
 
     /// <summary>
@@ -89,10 +90,10 @@ public class BillingController : ControllerBase
     }
 
     /// <summary>
-    /// Thu tiền mặt viện phí tại quầy (Chỉ dành cho Lễ tân / Thu ngân và Admin)
+    /// Thu tiền mặt viện phí tại quầy (Dành cho Thu ngân, Lễ tân và Admin)
     /// </summary>
     [HttpPost("{id}/pay-cash")]
-    [Authorize(Roles = "Receptionist,Admin")]
+    [Authorize(Roles = "Cashier,Receptionist,Admin")]
     public async Task<IActionResult> PayCash(Guid id)
     {
         if (id == Guid.Empty)

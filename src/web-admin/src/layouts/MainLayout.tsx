@@ -164,16 +164,27 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     </div>
   );
 
-  const isAdmin = Boolean(user?.vaiTro?.some((r) => r.toLowerCase() === 'admin'));
-  const isDoctor = Boolean(user?.vaiTro?.some((r) => r.toLowerCase() === 'doctor'));
-  const isNurseOrReceptionist = Boolean(user?.vaiTro?.some((r) =>
-    ['nurse', 'receptionist'].includes(r.toLowerCase())
-  ));
+  const checkRole = (names: string[]) => {
+    const lowerNames = names.map((n) => n.toLowerCase());
+    return Boolean(user?.vaiTro?.some((r) => lowerNames.includes(r.toLowerCase())));
+  };
 
-  // Phân quyền danh mục Menu theo đúng Vai trò (RBAC):
-  // - Admin: Toàn quyền truy cập mọi tính năng, bao gồm Quản lý Tài khoản, Danh mục và Audit Log.
-  // - Doctor: Tập trung Lâm sàng (SOAP, EMR, CLS, AI Y tế, Bệnh nhân, Lịch hẹn, Báo cáo chuyên môn). Ẩn Tiếp đón, Viện phí, Quản lý tài khoản, Audit log.
-  // - Receptionist/Nurse: Tập trung Tiếp đón, Cấp số, Lịch hẹn, Bệnh nhân, Thu viện phí VietQR, BHYT. Ẩn Khám bệnh SOAP, Ký số EMR, AI lâm sàng, Quản lý tài khoản, Audit log.
+  const isAdmin = checkRole(['Admin', 'Quản trị viên']);
+  const isDoctor = checkRole(['Doctor', 'Bác sĩ']);
+  const isReceptionist = checkRole(['Receptionist', 'Nhân viên tiếp nhận', 'Lễ tân']);
+  const isTriage = checkRole(['Triage', 'Nhân viên sàng lọc bệnh']);
+  const isPharmacy = checkRole(['Pharmacy', 'Nhà thuốc', 'Dược sĩ']);
+  const isNurse = checkRole(['Nurse', 'Y tế', 'Điều dưỡng']);
+  const isCashier = checkRole(['Cashier', 'Thu ngân']);
+
+  // Phân quyền danh mục Menu theo đúng 7 Vai trò (RBAC):
+  // 1. Admin: Toàn quyền truy cập mọi tính năng
+  // 2. Bác sĩ: SOAP, EMR, CLS, Tra cứu thuốc, AI Y tế, Bệnh nhân, Lịch hẹn, Báo cáo
+  // 3. Nhân viên tiếp nhận: Tiếp đón & Cấp số, Lịch hẹn, Portal Đặt khám, Bệnh nhân, Thu viện phí, Giám định BHYT
+  // 4. Nhân viên sàng lọc bệnh: Tiếp đón, Phân luồng STT, Lịch hẹn, Bệnh nhân
+  // 5. Nhà thuốc: Dược & Kho thuốc BV, Bệnh nhân
+  // 6. Y tế (Điều dưỡng): Tiếp đón, Lịch hẹn, Hỗ trợ khám SOAP, EMR, Thực hiện CLS, Bệnh nhân
+  // 7. Thu ngân: Quản lý Viện phí (Tiền mặt / VietQR), Giám định BHYT 79a, Báo cáo tài chính, Bệnh nhân
   const rawMenuGroups = [
     {
       type: 'group' as const,
@@ -194,7 +205,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">42</span>
             </div>
           ),
-          allowed: isAdmin || isNurseOrReceptionist,
+          allowed: isAdmin || isReceptionist || isTriage || isNurse,
         },
         {
           key: '/appointments',
@@ -205,7 +216,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">18 mới</span>
             </div>
           ),
-          allowed: true,
+          allowed: isAdmin || isDoctor || isReceptionist || isTriage || isNurse || isCashier,
         },
         {
           key: '/booking',
@@ -216,13 +227,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>24/7</span>
             </div>
           ),
-          allowed: isAdmin || isNurseOrReceptionist,
+          allowed: isAdmin || isReceptionist || isTriage,
         },
         {
           key: '/patients',
           icon: <UserOutlined style={{ fontSize: 17 }} />,
           label: 'Quản lý Bệnh nhân',
-          allowed: true,
+          allowed: isAdmin || isDoctor || isReceptionist || isTriage || isPharmacy || isNurse || isCashier,
         },
       ],
     },
@@ -239,7 +250,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">12 ca</span>
             </div>
           ),
-          allowed: isAdmin || isDoctor,
+          allowed: isAdmin || isDoctor || isNurse,
         },
         {
           key: '/emr',
@@ -250,7 +261,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">9 ký</span>
             </div>
           ),
-          allowed: isAdmin || isDoctor,
+          allowed: isAdmin || isDoctor || isNurse,
         },
         {
           key: '/cls-pacs',
@@ -261,13 +272,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">28</span>
             </div>
           ),
-          allowed: isAdmin || isDoctor,
+          allowed: isAdmin || isDoctor || isNurse,
         },
         {
           key: '/pharmacy',
           icon: <MedicineBoxOutlined style={{ fontSize: 17 }} />,
           label: 'Dược & Nhà thuốc BV',
-          allowed: true,
+          allowed: isAdmin || isPharmacy || isDoctor || isNurse,
         },
       ],
     },
@@ -284,13 +295,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sidebar-badge">VietQR</span>
             </div>
           ),
-          allowed: isAdmin || isNurseOrReceptionist,
+          allowed: isAdmin || isCashier || isReceptionist,
         },
         {
           key: '/insurance',
           icon: <SafetyCertificateOutlined style={{ fontSize: 17 }} />,
           label: 'Giám định BHYT 79a',
-          allowed: isAdmin || isNurseOrReceptionist,
+          allowed: isAdmin || isCashier || isReceptionist,
         },
       ],
     },
@@ -338,7 +349,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           key: '/reports',
           icon: <BarChartOutlined style={{ fontSize: 17 }} />,
           label: 'Thống kê & Báo cáo BI',
-          allowed: isAdmin || isDoctor,
+          allowed: isAdmin || isDoctor || isCashier,
         },
         {
           key: '/audit-logs',
@@ -719,28 +730,42 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}>
                   <Text strong style={{ fontSize: 13.5, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.25, fontWeight: 700 }}>
                     {(!user?.hoTen || user.hoTen === 'Bệnh nhân' || user.hoTen.includes('nh\uFFFD') || user.hoTen.includes('?'))
-                      ? (user?.vaiTro?.includes('Admin')
+                      ? (isAdmin
                           ? 'Quản trị viên Hệ thống'
-                          : user?.vaiTro?.includes('Receptionist')
-                            ? 'Nhân viên Lễ tân'
-                            : user?.vaiTro?.includes('Doctor')
-                              ? 'BS. CKII. Nguyễn Thanh Duy'
-                              : 'Nhân viên Y tế')
+                          : isDoctor
+                            ? 'BS. CKII. Nguyễn Thanh Duy'
+                            : isReceptionist
+                              ? 'Nhân viên Tiếp nhận'
+                              : isTriage
+                                ? 'Nhân viên Sàng lọc bệnh'
+                                : isPharmacy
+                                  ? 'Dược sĩ Nhà thuốc'
+                                  : isNurse
+                                    ? 'Cán bộ Y tế / Điều dưỡng'
+                                    : isCashier
+                                      ? 'Thu ngân Viện phí'
+                                      : 'Cán bộ Y tế')
                       : user.hoTen
                     }
                   </Text>
                   <Text style={{ fontSize: 11.5, color: isDarkMode ? '#94a3b8' : '#64748b', lineHeight: 1.2 }}>
                     {user?.chucDanh
                       ? user.chucDanh
-                      : user?.vaiTro?.includes('Admin')
+                      : isAdmin
                         ? 'Quản trị viên Hệ thống'
-                        : user?.vaiTro?.includes('Doctor')
+                        : isDoctor
                           ? 'Bác sĩ Điều trị'
-                          : user?.vaiTro?.includes('Receptionist')
-                            ? 'Nhân viên Lễ tân Tiếp nhận'
-                            : user?.vaiTro?.includes('Nurse')
-                              ? 'Điều dưỡng viên'
-                              : 'Nhân viên Y tế'
+                          : isReceptionist
+                            ? 'Nhân viên Tiếp nhận'
+                            : isTriage
+                              ? 'Nhân viên Sàng lọc bệnh'
+                              : isPharmacy
+                                ? 'Dược sĩ Nhà thuốc BV'
+                                : isNurse
+                                  ? 'Cán bộ Y tế / Điều dưỡng'
+                                  : isCashier
+                                    ? 'Thu ngân Viện phí'
+                                    : 'Cán bộ Y tế'
                     }
                     {user?.chuyenKhoa ? ` • ${user.chuyenKhoa}` : ''}
                   </Text>

@@ -50,8 +50,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const currentUser = get().user;
 
         const rawRoles: string[] = raw.roles || raw.vaiTro || currentUser?.vaiTro || [];
+        const STAFF_ROLES_LOWER = [
+          'admin', 'doctor', 'receptionist', 'triage', 'pharmacy', 'nurse', 'cashier',
+          'quản trị viên', 'bác sĩ', 'nhân viên tiếp nhận', 'nhân viên sàng lọc bệnh', 'nhà thuốc', 'y tế', 'thu ngân'
+        ];
         const isStaffOrAdmin = rawRoles.some((r: string) =>
-          ['Admin', 'Doctor', 'Nurse', 'Receptionist'].includes(r)
+          STAFF_ROLES_LOWER.includes(r.toLowerCase())
         );
         const finalRoles: UserRole[] = isStaffOrAdmin ? (rawRoles as UserRole[]) : ['Patient'];
 
@@ -81,17 +85,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           (isCccdValid && (formattedDob || birthYear) && isAddressValid)
         );
 
+        const hasRole = (roleKey: string) => finalRoles.some((r: string) => r.toLowerCase() === roleKey.toLowerCase());
+
         const rawFullName = raw.fullName || currentUser?.hoTen || '';
         let resolvedFullName = rawFullName;
         if (!resolvedFullName || resolvedFullName === 'Bệnh nhân' || resolvedFullName.startsWith('Bệnh nhân 09') || resolvedFullName.includes('nh\uFFFD') || resolvedFullName.includes('?')) {
           if (currentUser?.hoTen && currentUser.hoTen !== 'Bệnh nhân' && !currentUser.hoTen.startsWith('Bệnh nhân 09')) {
             resolvedFullName = currentUser.hoTen;
-          } else if (finalRoles.includes('Admin')) {
+          } else if (hasRole('Admin') || hasRole('Quản trị viên')) {
             resolvedFullName = 'Quản trị viên Hệ thống';
-          } else if (finalRoles.includes('Receptionist')) {
-            resolvedFullName = 'Nhân viên Lễ tân';
-          } else if (finalRoles.includes('Doctor')) {
+          } else if (hasRole('Doctor') || hasRole('Bác sĩ')) {
             resolvedFullName = raw.title || 'BS. CKII. Nguyễn Thanh Duy';
+          } else if (hasRole('Receptionist') || hasRole('Nhân viên tiếp nhận')) {
+            resolvedFullName = 'Nhân viên Tiếp nhận';
+          } else if (hasRole('Triage') || hasRole('Nhân viên sàng lọc bệnh')) {
+            resolvedFullName = 'Nhân viên Sàng lọc bệnh';
+          } else if (hasRole('Pharmacy') || hasRole('Nhà thuốc')) {
+            resolvedFullName = 'Dược sĩ Nhà thuốc BV';
+          } else if (hasRole('Nurse') || hasRole('Y tế')) {
+            resolvedFullName = 'Cán bộ Y tế / Điều dưỡng';
+          } else if (hasRole('Cashier') || hasRole('Thu ngân')) {
+            resolvedFullName = 'Thu ngân Viện phí';
           } else {
             resolvedFullName = isStaffOrAdmin ? 'Cán bộ Y tế' : 'Bệnh nhân';
           }

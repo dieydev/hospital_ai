@@ -1,6 +1,22 @@
 // Comprehensive Domain & API Type Definitions for Hospital AI Web Admin
 
-export type UserRole = 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist' | 'Patient';
+export type UserRole =
+  | 'Admin'
+  | 'Doctor'
+  | 'Receptionist'
+  | 'Triage'
+  | 'Pharmacy'
+  | 'Nurse'
+  | 'Cashier'
+  | 'Patient'
+  | 'Quản trị viên'
+  | 'Bác sĩ'
+  | 'Nhân viên tiếp nhận'
+  | 'Nhân viên sàng lọc bệnh'
+  | 'Nhà thuốc'
+  | 'Y tế'
+  | 'Thu ngân'
+  | 'Bệnh nhân';
 
 export interface UserAccount {
   id: string;

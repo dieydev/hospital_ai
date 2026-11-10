@@ -30,14 +30,22 @@ import { useAuthStore } from '../store/useAuthStore';
 export const AppRoutes: React.FC = () => {
   const user = useAuthStore((state) => state.user);
 
-  const isAdmin = Boolean(user?.vaiTro?.some((r) => r.toLowerCase() === 'admin'));
-  const isDoctor = Boolean(user?.vaiTro?.some((r) => r.toLowerCase() === 'doctor'));
-  const isNurseOrReceptionist = Boolean(user?.vaiTro?.some((r) =>
-    ['nurse', 'receptionist'].includes(r.toLowerCase())
-  ));
+  const checkRole = (names: string[]) => {
+    const lowerNames = names.map((n) => n.toLowerCase());
+    return Boolean(user?.vaiTro?.some((r) => lowerNames.includes(r.toLowerCase())));
+  };
 
-  // Kiểm tra vai trò: Cán bộ y tế & Quản trị viên nội bộ mới được vào hệ thống quản lý nội bộ
-  const isStaffOrAdmin = isAdmin || isDoctor || isNurseOrReceptionist;
+  const isAdmin = checkRole(['Admin', 'Quản trị viên']);
+  const isDoctor = checkRole(['Doctor', 'Bác sĩ']);
+  const isReceptionist = checkRole(['Receptionist', 'Nhân viên tiếp nhận', 'Lễ tân']);
+  const isTriage = checkRole(['Triage', 'Nhân viên sàng lọc bệnh']);
+  const isPharmacy = checkRole(['Pharmacy', 'Nhà thuốc', 'Dược sĩ']);
+  const isNurse = checkRole(['Nurse', 'Y tế', 'Điều dưỡng']);
+  const isCashier = checkRole(['Cashier', 'Thu ngân']);
+
+  // Kiểm tra vai trò: Cán bộ y tế & Quản trị viên trong 7 vai trò nội bộ mới được vào hệ thống quản lý
+  const isStaffOrAdmin =
+    isAdmin || isDoctor || isReceptionist || isTriage || isPharmacy || isNurse || isCashier;
 
   return (
     <ErrorBoundary>
@@ -77,7 +85,7 @@ export const AppRoutes: React.FC = () => {
         {/* 404 Trang không tìm thấy */}
         <Route path="/404" element={<NotFoundPage />} />
 
-        {/* Protected Routes dành cho Quản trị viên & Cán bộ y tế */}
+        {/* Protected Routes dành cho Quản trị viên & 7 Vai trò nhân sự */}
         <Route
           path="/*"
           element={
@@ -91,47 +99,56 @@ export const AppRoutes: React.FC = () => {
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
 
-                  {/* Tiếp đón: Admin, Lễ tân, Điều dưỡng */}
+                  {/* Tiếp nhận & Cấp số: Admin, Nhân viên tiếp nhận, Nhân viên sàng lọc bệnh, Y tế */}
                   <Route
                     path="/reception"
-                    element={isAdmin || isNurseOrReceptionist ? <ReceptionPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isReceptionist || isTriage || isNurse ? <ReceptionPage /> : <Navigate to="/dashboard" replace />}
                   />
-                  <Route path="/appointments" element={<AppointmentsPage />} />
+                  <Route
+                    path="/appointments"
+                    element={isAdmin || isDoctor || isReceptionist || isTriage || isNurse || isCashier ? <AppointmentsPage /> : <Navigate to="/dashboard" replace />}
+                  />
                   <Route
                     path="/booking"
-                    element={isAdmin || isNurseOrReceptionist ? <PatientBookingPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isReceptionist || isTriage ? <PatientBookingPage /> : <Navigate to="/dashboard" replace />}
                   />
-                  <Route path="/patients" element={<PatientsPage />} />
+                  <Route
+                    path="/patients"
+                    element={isAdmin || isDoctor || isReceptionist || isTriage || isPharmacy || isNurse || isCashier ? <PatientsPage /> : <Navigate to="/dashboard" replace />}
+                  />
 
-                  {/* Lâm sàng & Chẩn đoán: Admin, Bác sĩ */}
+                  {/* Lâm sàng & Chẩn đoán: Admin, Bác sĩ, Y tế */}
                   <Route
                     path="/examinations"
-                    element={isAdmin || isDoctor ? <ExaminationsPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isDoctor || isNurse ? <ExaminationsPage /> : <Navigate to="/dashboard" replace />}
                   />
                   <Route
                     path="/cls-pacs"
-                    element={isAdmin || isDoctor ? <ExaminationsPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isDoctor || isNurse ? <ExaminationsPage /> : <Navigate to="/dashboard" replace />}
                   />
                   <Route
                     path="/emr"
-                    element={isAdmin || isDoctor ? <MedicalRecordsPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isDoctor || isNurse ? <MedicalRecordsPage /> : <Navigate to="/dashboard" replace />}
                   />
                   <Route
                     path="/ai-assistant"
                     element={isAdmin || isDoctor ? <AIAssistantPage /> : <Navigate to="/dashboard" replace />}
                   />
 
-                  {/* Dược & Nhà thuốc BV: Tra cứu cho cán bộ nội bộ */}
-                  <Route path="/pharmacy" element={<CatalogsPage />} />
+                  {/* Dược & Nhà thuốc BV: Admin, Nhà thuốc, Bác sĩ, Y tế */}
+                  <Route
+                    path="/pharmacy"
+                    element={isAdmin || isPharmacy || isDoctor || isNurse ? <CatalogsPage /> : <Navigate to="/dashboard" replace />}
+                  />
 
-                  {/* Tài chính & Viện phí: Admin, Lễ tân, Thu ngân, Điều dưỡng */}
+                  {/* Tài chính & Viện phí: Admin, Thu ngân, Nhân viên tiếp nhận */}
                   <Route
                     path="/billing"
-                    element={isAdmin || isNurseOrReceptionist ? <BillingPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isCashier || isReceptionist ? <BillingPage /> : <Navigate to="/dashboard" replace />}
                   />
                   <Route
                     path="/insurance"
-                    element={isAdmin || isNurseOrReceptionist ? <BillingPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isCashier || isReceptionist ? <BillingPage /> : <Navigate to="/dashboard" replace />}
                   />
 
                   {/* Quản trị & Cấu hình: CHỈ DÀNH CHO ADMIN */}
@@ -148,10 +165,10 @@ export const AppRoutes: React.FC = () => {
                     element={isAdmin ? <AuditLogPage /> : <Navigate to="/dashboard" replace />}
                   />
 
-                  {/* Thống kê & Báo cáo BI: Admin và Bác sĩ */}
+                  {/* Thống kê & Báo cáo BI: Admin, Bác sĩ, Thu ngân */}
                   <Route
                     path="/reports"
-                    element={isAdmin || isDoctor ? <ReportsPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isDoctor || isCashier ? <ReportsPage /> : <Navigate to="/dashboard" replace />}
                   />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="*" element={<NotFoundPage />} />

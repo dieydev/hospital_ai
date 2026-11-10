@@ -79,7 +79,7 @@ public class QueueController : ControllerBase
     /// Cập nhật trạng thái phiếu hàng chờ (Chỉ dành cho Cán bộ y tế & Quản trị)
     /// </summary>
     [HttpPut("{ticketId:guid}/status")]
-    [Authorize(Roles = "Doctor,Receptionist,Nurse,Admin")]
+    [Authorize(Roles = "Doctor,Receptionist,Triage,Nurse,Cashier,Admin")]
     public async Task<IActionResult> UpdateStatus(Guid ticketId, [FromBody] UpdateQueueStatusDto dto)
     {
         if (ticketId == Guid.Empty)

@@ -32,6 +32,10 @@ import {
   CloseCircleOutlined,
   CameraOutlined,
   UploadOutlined,
+  HeartOutlined,
+  ShopOutlined,
+  SafetyCertificateOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import { accountService, UserAccountItem, CreateAccountPayload } from '../services/accountService';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/sweetAlert';
@@ -227,34 +231,69 @@ export const AccountsPage: React.FC = () => {
 
   // Thống kê nhanh
   const totalAccounts = accounts.length;
-  const doctorCount = accounts.filter((a) => a.roles.includes('Doctor')).length;
-  const staffCount = accounts.filter((a) => a.roles.includes('Receptionist') || a.roles.includes('Nurse')).length;
+  const doctorCount = accounts.filter((a) => a.roles.some((r) => ['Doctor', 'Bác sĩ'].includes(r))).length;
+  const receptionTriageCount = accounts.filter((a) =>
+    a.roles.some((r) => ['Receptionist', 'Triage', 'Nhân viên tiếp nhận', 'Nhân viên sàng lọc bệnh'].includes(r))
+  ).length;
+  const supportStaffCount = accounts.filter((a) =>
+    a.roles.some((r) => ['Pharmacy', 'Nurse', 'Cashier', 'Nhà thuốc', 'Y tế', 'Thu ngân'].includes(r))
+  ).length;
   const activeCount = accounts.filter((a) => a.isActive).length;
 
   const getRoleTag = (roles: string[]) => {
-    if (roles.includes('Admin')) {
+    const has = (key: string) => roles.some((r) => r.toLowerCase() === key.toLowerCase());
+
+    if (has('Admin') || has('Quản trị viên')) {
       return (
         <Tag color="purple" icon={<CrownOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
           Quản trị viên
         </Tag>
       );
     }
-    if (roles.includes('Doctor')) {
+    if (has('Doctor') || has('Bác sĩ')) {
       return (
         <Tag color="blue" icon={<MedicineBoxOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
           Bác sĩ
         </Tag>
       );
     }
-    if (roles.includes('Receptionist') || roles.includes('Nurse')) {
+    if (has('Receptionist') || has('Nhân viên tiếp nhận') || has('Lễ tân')) {
       return (
-        <Tag color="orange" icon={<ScheduleOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
-          Tiếp đón / Thu ngân
+        <Tag color="cyan" icon={<ScheduleOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
+          Nhân viên tiếp nhận
+        </Tag>
+      );
+    }
+    if (has('Triage') || has('Nhân viên sàng lọc bệnh')) {
+      return (
+        <Tag color="volcano" icon={<HeartOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
+          Sàng lọc bệnh
+        </Tag>
+      );
+    }
+    if (has('Pharmacy') || has('Nhà thuốc') || has('Dược')) {
+      return (
+        <Tag color="green" icon={<ShopOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
+          Nhà thuốc
+        </Tag>
+      );
+    }
+    if (has('Nurse') || has('Y tế') || has('Điều dưỡng')) {
+      return (
+        <Tag color="teal" icon={<SafetyCertificateOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
+          Y tế / Điều dưỡng
+        </Tag>
+      );
+    }
+    if (has('Cashier') || has('Thu ngân')) {
+      return (
+        <Tag color="gold" icon={<DollarOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
+          Thu ngân
         </Tag>
       );
     }
     return (
-      <Tag color="green" icon={<UserOutlined />} style={{ borderRadius: 6 }}>
+      <Tag color="default" icon={<UserOutlined />} style={{ borderRadius: 6 }}>
         Bệnh nhân
       </Tag>
     );
@@ -264,58 +303,74 @@ export const AccountsPage: React.FC = () => {
     {
       title: 'Họ tên & Tài khoản',
       key: 'user',
-      render: (_: any, record: UserAccountItem) => (
-        <Space size={12}>
-          <Tooltip title="Nhấp để đổi ảnh đại diện">
-            <div
-              style={{ position: 'relative', cursor: 'pointer' }}
-              onClick={() => handleOpenAvatarModal(record)}
-            >
-              <Avatar
-                size={44}
-                src={record.avatarUrl}
-                icon={<UserOutlined />}
-                style={{
-                  backgroundColor: record.roles.includes('Doctor')
-                    ? '#0284c7'
-                    : record.roles.includes('Admin')
-                    ? '#7c3aed'
-                    : '#10b981',
-                  border: '2px solid #bae6fd',
-                }}
-              />
+      render: (_: any, record: UserAccountItem) => {
+        const has = (key: string) => record.roles.some((r) => r.toLowerCase() === key.toLowerCase());
+        const avatarBg =
+          has('Doctor') || has('Bác sĩ')
+            ? '#0284c7'
+            : has('Admin') || has('Quản trị viên')
+            ? '#7c3aed'
+            : has('Receptionist') || has('Nhân viên tiếp nhận')
+            ? '#06b6d4'
+            : has('Triage') || has('Nhân viên sàng lọc bệnh')
+            ? '#ea580c'
+            : has('Pharmacy') || has('Nhà thuốc')
+            ? '#16a34a'
+            : has('Nurse') || has('Y tế')
+            ? '#0d9488'
+            : has('Cashier') || has('Thu ngân')
+            ? '#ca8a04'
+            : '#64748b';
+
+        return (
+          <Space size={12}>
+            <Tooltip title="Nhấp để đổi ảnh đại diện">
               <div
-                style={{
-                  position: 'absolute',
-                  bottom: -2,
-                  right: -2,
-                  background: '#0284c7',
-                  color: '#fff',
-                  borderRadius: '50%',
-                  width: 18,
-                  height: 18,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 10,
-                  border: '1.5px solid #fff',
-                }}
+                style={{ position: 'relative', cursor: 'pointer' }}
+                onClick={() => handleOpenAvatarModal(record)}
               >
-                <CameraOutlined />
+                <Avatar
+                  size={44}
+                  src={record.avatarUrl}
+                  icon={<UserOutlined />}
+                  style={{
+                    backgroundColor: avatarBg,
+                    border: '2px solid #bae6fd',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: -2,
+                    right: -2,
+                    background: '#0284c7',
+                    color: '#fff',
+                    borderRadius: '50%',
+                    width: 18,
+                    height: 18,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 10,
+                    border: '1.5px solid #fff',
+                  }}
+                >
+                  <CameraOutlined />
+                </div>
+              </div>
+            </Tooltip>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                {record.fullName}
+              </div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>
+                <span>@{record.username}</span>
+                {record.title && <span style={{ marginLeft: 6, color: '#0284c7' }}>• {record.title}</span>}
               </div>
             </div>
-          </Tooltip>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
-              {record.fullName}
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b' }}>
-              <span>@{record.username}</span>
-              {record.title && <span style={{ marginLeft: 6, color: '#0284c7' }}>• {record.title}</span>}
-            </div>
-          </div>
-        </Space>
-      ),
+          </Space>
+        );
+      },
     },
     {
       title: 'Vai trò',
@@ -431,7 +486,7 @@ export const AccountsPage: React.FC = () => {
             Quản trị & Phân quyền Tài khoản
           </Title>
           <Text style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 13 }}>
-            Phân quyền tài khoản Bác sĩ, Nhân viên tiếp đón, Quản trị viên và Bệnh nhân trên hệ thống D-Medical
+            Phân quyền theo 7 vai trò chuẩn bệnh viện: Quản trị viên, Bác sĩ, Tiếp nhận, Sàng lọc bệnh, Nhà thuốc, Y tế, Thu ngân
           </Text>
         </div>
 
@@ -456,8 +511,8 @@ export const AccountsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards Thống kê tài khoản */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={24} sm={12} md={6}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+        <Col xs={24} sm={12} md={6} lg={4} xl={4}>
           <Card
             bordered={false}
             style={{
@@ -468,15 +523,15 @@ export const AccountsPage: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ fontSize: 13, color: '#64748b' }}>Tổng tài khoản</span>}
+              title={<span style={{ fontSize: 12, color: '#64748b' }}>Tổng tài khoản</span>}
               value={totalAccounts}
-              prefix={<UserOutlined style={{ color: '#0284c7', marginRight: 6 }} />}
-              valueStyle={{ fontWeight: 700, color: '#0f172a' }}
+              prefix={<UserOutlined style={{ color: '#0284c7', marginRight: 4 }} />}
+              valueStyle={{ fontWeight: 700, color: '#0f172a', fontSize: 20 }}
             />
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={6} lg={5} xl={5}>
           <Card
             bordered={false}
             style={{
@@ -487,15 +542,15 @@ export const AccountsPage: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ fontSize: 13, color: '#64748b' }}>Bác sĩ & Lâm sàng</span>}
+              title={<span style={{ fontSize: 12, color: '#64748b' }}>Bác sĩ & Lâm sàng</span>}
               value={doctorCount}
-              prefix={<MedicineBoxOutlined style={{ color: '#0284c7', marginRight: 6 }} />}
-              valueStyle={{ fontWeight: 700, color: '#0284c7' }}
+              prefix={<MedicineBoxOutlined style={{ color: '#0284c7', marginRight: 4 }} />}
+              valueStyle={{ fontWeight: 700, color: '#0284c7', fontSize: 20 }}
             />
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={6} lg={5} xl={5}>
           <Card
             bordered={false}
             style={{
@@ -506,15 +561,15 @@ export const AccountsPage: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ fontSize: 13, color: '#64748b' }}>Tiếp đón & Nhân sự</span>}
-              value={staffCount}
-              prefix={<ScheduleOutlined style={{ color: '#f59e0b', marginRight: 6 }} />}
-              valueStyle={{ fontWeight: 700, color: '#f59e0b' }}
+              title={<span style={{ fontSize: 12, color: '#64748b' }}>Tiếp nhận & Sàng lọc</span>}
+              value={receptionTriageCount}
+              prefix={<ScheduleOutlined style={{ color: '#06b6d4', marginRight: 4 }} />}
+              valueStyle={{ fontWeight: 700, color: '#06b6d4', fontSize: 20 }}
             />
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={6} lg={5} xl={5}>
           <Card
             bordered={false}
             style={{
@@ -525,11 +580,30 @@ export const AccountsPage: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ fontSize: 13, color: '#64748b' }}>Đang hoạt động</span>}
+              title={<span style={{ fontSize: 12, color: '#64748b' }}>Dược, Y tế & Thu ngân</span>}
+              value={supportStaffCount}
+              prefix={<ShopOutlined style={{ color: '#16a34a', marginRight: 4 }} />}
+              valueStyle={{ fontWeight: 700, color: '#16a34a', fontSize: 20 }}
+            />
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} md={6} lg={5} xl={5}>
+          <Card
+            bordered={false}
+            style={{
+              borderRadius: 14,
+              boxShadow: '0 10px 30px rgba(2, 132, 199, 0.08)',
+              border: '1px solid #bae6fd',
+              background: isDarkMode ? '#1e293b' : '#ffffff',
+            }}
+          >
+            <Statistic
+              title={<span style={{ fontSize: 12, color: '#64748b' }}>Đang hoạt động</span>}
               value={activeCount}
               suffix={`/ ${totalAccounts}`}
-              prefix={<CheckCircleOutlined style={{ color: '#10b981', marginRight: 6 }} />}
-              valueStyle={{ fontWeight: 700, color: '#10b981' }}
+              prefix={<CheckCircleOutlined style={{ color: '#10b981', marginRight: 4 }} />}
+              valueStyle={{ fontWeight: 700, color: '#10b981', fontSize: 20 }}
             />
           </Card>
         </Col>
@@ -568,7 +642,11 @@ export const AccountsPage: React.FC = () => {
               <Option value="all">Tất cả vai trò</Option>
               <Option value="Admin">Quản trị viên (Admin)</Option>
               <Option value="Doctor">Bác sĩ (Doctor)</Option>
-              <Option value="Receptionist">Tiếp tân / Lễ tân (Receptionist)</Option>
+              <Option value="Receptionist">Nhân viên tiếp nhận (Receptionist)</Option>
+              <Option value="Triage">Nhân viên sàng lọc bệnh (Triage)</Option>
+              <Option value="Pharmacy">Nhà thuốc (Pharmacy)</Option>
+              <Option value="Nurse">Y tế (Nurse)</Option>
+              <Option value="Cashier">Thu ngân (Cashier)</Option>
               <Option value="Patient">Bệnh nhân (Patient)</Option>
             </Select>
           </Col>
@@ -679,11 +757,14 @@ export const AccountsPage: React.FC = () => {
                 rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
               >
                 <Select placeholder="Chọn vai trò">
-                  <Option value="Doctor">Bác sĩ (Doctor)</Option>
-                  <Option value="Receptionist">Tiếp đón / Thu ngân</Option>
                   <Option value="Admin">Quản trị viên (Admin)</Option>
-                  <Option value="Nurse">Điều dưỡng / Y tá</Option>
-                  <Option value="Patient">Bệnh nhân</Option>
+                  <Option value="Doctor">Bác sĩ (Doctor)</Option>
+                  <Option value="Receptionist">Nhân viên tiếp nhận (Receptionist)</Option>
+                  <Option value="Triage">Nhân viên sàng lọc bệnh (Triage)</Option>
+                  <Option value="Pharmacy">Nhà thuốc (Pharmacy)</Option>
+                  <Option value="Nurse">Y tế / Điều dưỡng (Nurse)</Option>
+                  <Option value="Cashier">Thu ngân (Cashier)</Option>
+                  <Option value="Patient">Bệnh nhân (Patient)</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -692,26 +773,38 @@ export const AccountsPage: React.FC = () => {
                 noStyle
                 shouldUpdate={(prev, curr) => prev.role !== curr.role}
               >
-                {({ getFieldValue }) =>
-                  getFieldValue('role') === 'Doctor' ? (
-                    <Form.Item name="department" label="Khoa phòng công tác">
-                      <Select placeholder="Chọn khoa phòng">
-                        <Option value="Khoa Tim Mạch">Khoa Tim Mạch</Option>
-                        <Option value="Khoa Nội Tổng Quát">Khoa Nội Tổng Quát</Option>
-                        <Option value="Khoa Ngoại Tiêu Hóa">Khoa Ngoại Tiêu Hóa</Option>
-                        <Option value="Khoa Nhi">Khoa Nhi</Option>
-                        <Option value="Khoa Chẩn Đoán Hình Ảnh">Khoa Chẩn Đoán Hình Ảnh</Option>
-                        <Option value="Khoa Mắt">Khoa Mắt</Option>
-                        <Option value="Khoa Răng Hàm Mặt">Khoa Răng Hàm Mặt</Option>
-                        <Option value="Khoa Tai Mũi Họng">Khoa Tai Mũi Họng</Option>
-                      </Select>
-                    </Form.Item>
-                  ) : (
+                {({ getFieldValue }) => {
+                  const currentRole = getFieldValue('role');
+                  if (currentRole === 'Doctor') {
+                    return (
+                      <Form.Item name="department" label="Khoa phòng công tác">
+                        <Select placeholder="Chọn khoa phòng">
+                          <Option value="Khoa Tim Mạch">Khoa Tim Mạch</Option>
+                          <Option value="Khoa Nội Tổng Quát">Khoa Nội Tổng Quát</Option>
+                          <Option value="Khoa Ngoại Tiêu Hóa">Khoa Ngoại Tiêu Hóa</Option>
+                          <Option value="Khoa Nhi">Khoa Nhi</Option>
+                          <Option value="Khoa Chẩn Đoán Hình Ảnh">Khoa Chẩn Đoán Hình Ảnh</Option>
+                          <Option value="Khoa Mắt">Khoa Mắt</Option>
+                          <Option value="Khoa Răng Hàm Mặt">Khoa Răng Hàm Mặt</Option>
+                          <Option value="Khoa Tai Mũi Họng">Khoa Tai Mũi Họng</Option>
+                        </Select>
+                      </Form.Item>
+                    );
+                  }
+                  let placeholderText = 'vd: Chức danh chuyên môn';
+                  if (currentRole === 'Receptionist') placeholderText = 'vd: Nhân viên Quầy Tiếp nhận 01';
+                  else if (currentRole === 'Triage') placeholderText = 'vd: Nhân viên Phân luồng & Sàng lọc sảnh A';
+                  else if (currentRole === 'Pharmacy') placeholderText = 'vd: Dược sĩ Cấp phát Kho ngoại trú';
+                  else if (currentRole === 'Nurse') placeholderText = 'vd: Điều dưỡng Trưởng buồng khám';
+                  else if (currentRole === 'Cashier') placeholderText = 'vd: Thu ngân Quầy Viện phí & BHYT';
+                  else if (currentRole === 'Admin') placeholderText = 'vd: Quản trị viên Hệ thống Y tế';
+
+                  return (
                     <Form.Item name="title" label="Chức danh / Chức vụ">
-                      <Input placeholder="vd: Nhân viên Lễ tân quầy 1" />
+                      <Input placeholder={placeholderText} />
                     </Form.Item>
-                  )
-                }
+                  );
+                }}
               </Form.Item>
             </Col>
           </Row>

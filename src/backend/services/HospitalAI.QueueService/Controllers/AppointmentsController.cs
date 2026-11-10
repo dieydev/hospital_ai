@@ -270,7 +270,8 @@ namespace HospitalAI.QueueService.Controllers
 
         private bool IsStaff()
         {
-            return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Nurse") || User.IsInRole("Receptionist");
+            return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") ||
+                   User.IsInRole("Triage") || User.IsInRole("Pharmacy") || User.IsInRole("Nurse") || User.IsInRole("Cashier");
         }
 
         [HttpGet]
@@ -366,10 +367,10 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Admin cấu hình số lượng tối đa / ghi chú cho khung giờ (Chỉ dành cho Admin & Tiếp tân)
+        /// Admin cấu hình số lượng tối đa / ghi chú cho khung giờ (Chỉ dành cho Admin, Tiếp tân, Sàng lọc)
         /// </summary>
         [HttpPut("slots/{id}")]
-        [Authorize(Roles = "Admin,Receptionist")]
+        [Authorize(Roles = "Admin,Receptionist,Triage")]
         public async Task<IActionResult> UpdateSlot(string id, [FromBody] UpdateSlotDto dto)
         {
             EnsureSlotsLoaded();
@@ -410,10 +411,10 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Admin Khóa / Mở khóa nhanh khung giờ (Chỉ dành cho Admin & Tiếp tân)
+        /// Admin Khóa / Mở khóa nhanh khung giờ (Chỉ dành cho Admin, Tiếp tân, Sàng lọc)
         /// </summary>
         [HttpPut("slots/{id}/toggle-lock")]
-        [Authorize(Roles = "Admin,Receptionist")]
+        [Authorize(Roles = "Admin,Receptionist,Triage")]
         public async Task<IActionResult> ToggleSlotLock(string id)
         {
             EnsureSlotsLoaded();
@@ -588,10 +589,10 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Dành cho Lễ tân, Điều dưỡng, Bác sĩ, Admin)
+        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Dành cho Lễ tân, Sàng lọc, Điều dưỡng, Bác sĩ, Thu ngân, Admin)
         /// </summary>
         [HttpPost("checkin-qr")]
-        [Authorize(Roles = "Receptionist,Nurse,Doctor,Admin")]
+        [Authorize(Roles = "Receptionist,Triage,Nurse,Doctor,Cashier,Admin")]
         public async Task<IActionResult> CheckInWithQr([FromBody] CheckInQrDto dto)
         {
             EnsureDataLoaded();
@@ -680,7 +681,7 @@ namespace HospitalAI.QueueService.Controllers
         /// Cập nhật trạng thái lịch hẹn (Chỉ dành cho Cán bộ y tế & Quản trị)
         /// </summary>
         [HttpPut("{id}/status")]
-        [Authorize(Roles = "Receptionist,Nurse,Doctor,Admin")]
+        [Authorize(Roles = "Receptionist,Triage,Nurse,Doctor,Cashier,Admin")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusDto dto)
         {
             EnsureDataLoaded();

@@ -159,8 +159,12 @@ export const LoginPage: React.FC = () => {
    */
   const handleAuthSuccess = (user: any, token: string, customMessage?: string) => {
     const rawRoles: string[] = user.roles || user.vaiTro || [];
+    const STAFF_ROLES_LOWER = [
+      'admin', 'doctor', 'receptionist', 'triage', 'pharmacy', 'nurse', 'cashier',
+      'quản trị viên', 'bác sĩ', 'nhân viên tiếp nhận', 'nhân viên sàng lọc bệnh', 'nhà thuốc', 'y tế', 'thu ngân'
+    ];
     const isStaffOrAdmin = rawRoles.some((r: string) =>
-      ['Admin', 'Doctor', 'Nurse', 'Receptionist'].includes(r)
+      STAFF_ROLES_LOWER.includes(r.toLowerCase())
     );
 
     // Mặc định phân quyền Bệnh nhân nếu không phải nhân viên y tế / ban quản trị
@@ -190,14 +194,24 @@ export const LoginPage: React.FC = () => {
       (isCccdValid && (formattedDob || birthYear) && isAddressValid)
     );
 
+    const hasRole = (roleKey: string) => finalRoles.some((r: string) => r.toLowerCase() === roleKey.toLowerCase());
+
     let resolvedFullName = user.fullName || user.hoTen || '';
     if (!resolvedFullName || resolvedFullName === 'Bệnh nhân' || resolvedFullName.includes('nh\uFFFD') || resolvedFullName.includes('?')) {
-      if (finalRoles.includes('Admin')) {
+      if (hasRole('Admin') || hasRole('Quản trị viên')) {
         resolvedFullName = 'Quản trị viên Hệ thống';
-      } else if (finalRoles.includes('Receptionist')) {
-        resolvedFullName = 'Nhân viên Lễ tân';
-      } else if (finalRoles.includes('Doctor')) {
+      } else if (hasRole('Doctor') || hasRole('Bác sĩ')) {
         resolvedFullName = user.title || 'BS. CKII. Nguyễn Thanh Duy';
+      } else if (hasRole('Receptionist') || hasRole('Nhân viên tiếp nhận')) {
+        resolvedFullName = 'Nhân viên Tiếp nhận';
+      } else if (hasRole('Triage') || hasRole('Nhân viên sàng lọc bệnh')) {
+        resolvedFullName = 'Nhân viên Sàng lọc bệnh';
+      } else if (hasRole('Pharmacy') || hasRole('Nhà thuốc')) {
+        resolvedFullName = 'Dược sĩ Nhà thuốc BV';
+      } else if (hasRole('Nurse') || hasRole('Y tế')) {
+        resolvedFullName = 'Cán bộ Y tế / Điều dưỡng';
+      } else if (hasRole('Cashier') || hasRole('Thu ngân')) {
+        resolvedFullName = 'Thu ngân Viện phí';
       } else {
         resolvedFullName = isStaffOrAdmin ? 'Cán bộ Y tế' : 'Bệnh nhân';
       }
@@ -297,8 +311,18 @@ export const LoginPage: React.FC = () => {
         customMessage || `Đăng nhập thành công! Chào mừng cán bộ ${authUser.hoTen}`,
         'success'
       );
-      // Admin / Staff vào Dashboard
-      navigate(redirectUrl && redirectUrl !== '/booking' ? redirectUrl : '/dashboard');
+      // Điều hướng thông minh theo từng vai trò chuyên môn:
+      let targetPath = '/dashboard';
+      if (hasRole('Cashier') || hasRole('Thu ngân')) {
+        targetPath = '/billing';
+      } else if (hasRole('Triage') || hasRole('Nhân viên sàng lọc bệnh') || hasRole('Receptionist') || hasRole('Nhân viên tiếp nhận')) {
+        targetPath = '/reception';
+      } else if (hasRole('Doctor') || hasRole('Bác sĩ')) {
+        targetPath = '/examinations';
+      } else if (hasRole('Pharmacy') || hasRole('Nhà thuốc')) {
+        targetPath = '/pharmacy';
+      }
+      navigate(redirectUrl && redirectUrl !== '/booking' && redirectUrl !== '/' ? redirectUrl : targetPath);
     } else {
       // Bệnh nhân: CHỈ được phép vào các trang công khai dành cho bệnh nhân
       // Tuyệt đối KHÔNG được chuyển hướng vào bất kỳ trang quản trị nội bộ nào
@@ -409,16 +433,112 @@ export const LoginPage: React.FC = () => {
             fullName: 'Lễ tân Trần Thị Hương',
             roles: ['Receptionist'],
             phoneNumber: '0912345678',
-            title: 'Nhân viên Lễ tân',
+            title: 'Nhân viên Lễ tân Tiếp nhận',
             isProfileComplete: true,
           },
           'mock_receptionist_token',
-          'Đăng nhập thành công với quyền Lễ tân Tiếp nhận!'
+          'Đăng nhập thành công với quyền Nhân viên Tiếp nhận!'
         );
         setLoading(false);
         return;
       } else {
         setErrorMsg('Mật khẩu Lễ tân không chính xác! (Mật khẩu mặc định: 123456)');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (u === 'triage01') {
+      if (inputPass === '123456') {
+        handleAuthSuccess(
+          {
+            id: 'triage-001',
+            username: 'triage01',
+            fullName: 'Lê Hoàng Nam',
+            roles: ['Triage'],
+            phoneNumber: '0923456789',
+            title: 'Nhân viên Sàng lọc & Phân luồng',
+            isProfileComplete: true,
+          },
+          'mock_triage_token',
+          'Đăng nhập thành công với quyền Nhân viên Sàng lọc!'
+        );
+        setLoading(false);
+        return;
+      } else {
+        setErrorMsg('Mật khẩu Sàng lọc không chính xác! (Mật khẩu mặc định: 123456)');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (u === 'cashier01') {
+      if (inputPass === '123456') {
+        handleAuthSuccess(
+          {
+            id: 'cashier-001',
+            username: 'cashier01',
+            fullName: 'Đặng Thu Trang',
+            roles: ['Cashier'],
+            phoneNumber: '0956789012',
+            title: 'Thu ngân Viện phí',
+            isProfileComplete: true,
+          },
+          'mock_cashier_token',
+          'Đăng nhập thành công với quyền Thu ngân Viện phí!'
+        );
+        setLoading(false);
+        return;
+      } else {
+        setErrorMsg('Mật khẩu Thu ngân không chính xác! (Mật khẩu mặc định: 123456)');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (u === 'pharmacy01') {
+      if (inputPass === '123456') {
+        handleAuthSuccess(
+          {
+            id: 'pharm-001',
+            username: 'pharmacy01',
+            fullName: 'Dược sĩ Vũ Minh Thảo',
+            roles: ['Pharmacy'],
+            phoneNumber: '0934567890',
+            title: 'Dược sĩ Quản lý Kho Dược',
+            isProfileComplete: true,
+          },
+          'mock_pharmacy_token',
+          'Đăng nhập thành công với quyền Nhà thuốc BV!'
+        );
+        setLoading(false);
+        return;
+      } else {
+        setErrorMsg('Mật khẩu Nhà thuốc không chính xác! (Mật khẩu mặc định: 123456)');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (u === 'nurse01') {
+      if (inputPass === '123456') {
+        handleAuthSuccess(
+          {
+            id: 'nurse-001',
+            username: 'nurse01',
+            fullName: 'Hoàng Thị Yến',
+            roles: ['Nurse'],
+            phoneNumber: '0945678901',
+            title: 'Điều dưỡng viên Y tế',
+            isProfileComplete: true,
+          },
+          'mock_nurse_token',
+          'Đăng nhập thành công với quyền Y tế / Điều dưỡng!'
+        );
+        setLoading(false);
+        return;
+      } else {
+        setErrorMsg('Mật khẩu Y tế không chính xác! (Mật khẩu mặc định: 123456)');
         setLoading(false);
         return;
       }
