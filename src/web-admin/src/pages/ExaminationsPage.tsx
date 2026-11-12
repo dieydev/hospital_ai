@@ -37,9 +37,11 @@ import {
   SafetyCertificateOutlined,
   HeartOutlined,
   SoundOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { formatCurrency } from '../utils/formatters';
 import {
   examinationService,
   ExaminationItem,
@@ -53,7 +55,107 @@ import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert
 
 const { Text } = Typography;
 const { TextArea } = Input;
-const { Option } = Select;
+const { Option, OptGroup } = Select;
+
+// ==========================================
+// DANH MỤC THUỐC CHUẨN DƯỢC ĐIỂN BỘ Y TẾ
+// ==========================================
+interface DrugCatalogItem {
+  code: string;
+  name: string;
+  activeIngredient: string;
+  category: string;
+  unit: string;
+  unitPrice: number;
+  defaultDosage: string;
+}
+
+const STANDARD_DRUG_CATALOG: DrugCatalogItem[] = [
+  // Kháng sinh & Kháng khuẩn
+  { code: 'AUG-1G', name: 'Augmentin 1g (Amoxicillin/Clavulanate)', activeIngredient: 'Amoxicillin 875mg + Acid Clavulanic 125mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 18500, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn no (cách 12 giờ)' },
+  { code: 'CFX-200', name: 'Cefixim 200mg (Hasan)', activeIngredient: 'Cefixim trihydrat 200mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 12000, defaultDosage: 'Ngày 2 lần, mỗi lần 1 viên sau ăn' },
+  { code: 'AZI-500', name: 'Azithromycin 500mg (Zithromax)', activeIngredient: 'Azithromycin 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 22000, defaultDosage: 'Uống 1 lần/ngày, 1 viên trước ăn 1h hoặc sau ăn 2h' },
+  { code: 'CIPRO-500', name: 'Ciprofloxacin 500mg', activeIngredient: 'Ciprofloxacin HCl 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 8500, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn no' },
+
+  // Giảm đau - Hạ sốt - Kháng viêm NSAID
+  { code: 'PARA-500', name: 'Paracetamol 500mg (Panadol/Hasan)', activeIngredient: 'Paracetamol 500mg', category: 'Giảm đau & Hạ sốt', unit: 'Viên', unitPrice: 1500, defaultDosage: 'Sáng 1v, Tối 1v sau ăn (uống cách nhau 4-6h khi sốt > 38.5°C)' },
+  { code: 'EFFER-500', name: 'Efferalgan 500mg (Viên sủi)', activeIngredient: 'Paracetamol 500mg', category: 'Giảm đau & Hạ sốt', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Hòa tan 1 viên trong 150ml nước sôi để nguội, uống khi sốt' },
+  { code: 'IBU-400', name: 'Ibuprofen 400mg (Brufen)', activeIngredient: 'Ibuprofen 400mg', category: 'Kháng viêm NSAID', unit: 'Viên', unitPrice: 2800, defaultDosage: 'Ngày 2 lần, mỗi lần 1 viên sau ăn no' },
+  { code: 'MELOX-7.5', name: 'Meloxicam 7.5mg (Mobic)', activeIngredient: 'Meloxicam 7.5mg', category: 'Kháng viêm NSAID', unit: 'Viên', unitPrice: 6500, defaultDosage: 'Uống 1 viên vào buổi sáng sau ăn no' },
+  { code: 'ALPHA-CHY', name: 'Alpha Chymotrypsine 4.2mg (Choay)', activeIngredient: 'Chymotrypsine 4200 IU', category: 'Kháng viêm chống phù nề', unit: 'Viên', unitPrice: 3000, defaultDosage: 'Ngậm dưới lưỡi 2 viên/lần, ngày 2 lần' },
+
+  // Tim mạch & Huyết áp & Mỡ máu
+  { code: 'AMLO-5', name: 'Amlodipine 5mg (Amlor)', activeIngredient: 'Amlodipine besylate 5mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 4200, defaultDosage: 'Sáng 1 viên sau ăn' },
+  { code: 'LOSAR-50', name: 'Losartan Potassium 50mg (Cozaar)', activeIngredient: 'Losartan potassium 50mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 7000, defaultDosage: 'Sáng 1 viên sau ăn cố định giờ mỗi ngày' },
+  { code: 'CONCOR-2.5', name: 'Concor 2.5mg (Bisoprolol)', activeIngredient: 'Bisoprolol fumarate 2.5mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 5500, defaultDosage: 'Sáng 1 viên trước ăn sáng' },
+  { code: 'ATOR-20', name: 'Atorvastatin 20mg (Lipitor)', activeIngredient: 'Atorvastatin calcium 20mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 12500, defaultDosage: 'Tối 1 viên trước khi đi ngủ' },
+
+  // Dạ dày - Tiêu hóa
+  { code: 'ESOM-40', name: 'Esomeprazole 40mg (Nexium Mups)', activeIngredient: 'Esomeprazole magnesium 40mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 24000, defaultDosage: 'Sáng 1 viên trước ăn sáng 30 - 60 phút' },
+  { code: 'PHOS-GEL', name: 'Phosphalugel (Thuốc dạ dày chữ P)', activeIngredient: 'Aluminium phosphate 20%', category: 'Dạ dày & Tiêu hóa', unit: 'Gói', unitPrice: 5500, defaultDosage: 'Uống 1 gói khi đau hoặc sau ăn 1-2 giờ' },
+  { code: 'MOTIL-10', name: 'Motilium-M 10mg (Domperidone)', activeIngredient: 'Domperidone maleate 10mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 3800, defaultDosage: 'Uống 1 viên trước mỗi bữa ăn 15-30 phút' },
+  { code: 'BERBER-100', name: 'Berberin Clorhydrat 100mg', activeIngredient: 'Berberin clorhydrat 100mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 1200, defaultDosage: 'Ngày 2 lần, mỗi lần 2 viên sau ăn' },
+
+  // Đái tháo đường
+  { code: 'MET-850', name: 'Metformin 850mg (Glucophage)', activeIngredient: 'Metformin hydrochloride 850mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Uống 1 viên trong hoặc ngay sau bữa ăn' },
+  { code: 'GLIC-30', name: 'Diamicron MR 30mg (Gliclazide)', activeIngredient: 'Gliclazide phóng thích biến đổi 30mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 4800, defaultDosage: 'Sáng 1 viên trước bữa ăn sáng' },
+
+  // Hô hấp - Dị ứng
+  { code: 'FEXO-180', name: 'Telfast HD 180mg (Fexofenadine)', activeIngredient: 'Fexofenadine HCl 180mg', category: 'Kháng Histamin & Dị ứng', unit: 'Viên', unitPrice: 14500, defaultDosage: 'Tối 1 viên sau ăn' },
+  { code: 'DESLO-5', name: 'Aerius 5mg (Desloratadine)', activeIngredient: 'Desloratadine 5mg', category: 'Kháng Histamin & Dị ứng', unit: 'Viên', unitPrice: 9500, defaultDosage: 'Uống 1 viên vào buổi tối' },
+  { code: 'ACETYL-200', name: 'Acemuc 200mg (Acetylcysteine)', activeIngredient: 'Acetylcysteine 200mg', category: 'Hô hấp & Long đờm', unit: 'Gói', unitPrice: 3200, defaultDosage: 'Ngày 3 lần, mỗi lần 1 gói pha nước uống' },
+  { code: 'BROM-8', name: 'Bisolvon 8mg (Bromhexin)', activeIngredient: 'Bromhexin HCl 8mg', category: 'Hô hấp & Long đờm', unit: 'Viên', unitPrice: 1800, defaultDosage: 'Ngày 3 lần, mỗi lần 1 viên sau ăn' },
+
+  // Cơ xương khớp & Bổ thần kinh
+  { code: 'GLUCO-500', name: 'Glucosamine Sulfate 500mg', activeIngredient: 'Glucosamine sulfate 500mg', category: 'Cơ xương khớp & Vitamin', unit: 'Viên', unitPrice: 4500, defaultDosage: 'Sáng 1 viên, Chiều 1 viên sau ăn' },
+  { code: 'VIT-3B', name: 'Vitamin 3B (B1 + B6 + B12)', activeIngredient: 'Thiamin, Pyridoxin, Cyanocobalamin', category: 'Cơ xương khớp & Vitamin', unit: 'Viên', unitPrice: 2000, defaultDosage: 'Sáng 1 viên, Trưa 1 viên sau ăn' },
+];
+
+// ==========================================
+// DANH MỤC DỊCH VỤ CẬN LÂM SÀNG (CLS) CHUẨN BỘ Y TẾ
+// ==========================================
+interface ParaclinicalCatalogItem {
+  code: string;
+  name: string;
+  category: 'Xét nghiệm Huyết học & Miễn dịch' | 'Xét nghiệm Sinh hóa & Nước tiểu' | 'Chẩn đoán hình ảnh' | 'Thăm dò chức năng & Nội soi';
+  room: string;
+  price: number;
+  insurancePrice: number;
+  sampleType: string;
+}
+
+const STANDARD_PARACLINICAL_CATALOG: ParaclinicalCatalogItem[] = [
+  // Xét nghiệm Huyết học & Miễn dịch
+  { code: 'CBC-18', name: 'Tổng phân tích tế bào máu ngoại vi bằng laser (CBC 18 thông số)', category: 'Xét nghiệm Huyết học & Miễn dịch', room: 'P.105 - Khoa Xét Nghiệm', price: 110000, insurancePrice: 45000, sampleType: 'Máu tĩnh mạch (EDTA)' },
+  { code: 'CRP-01', name: 'Định lượng CRP (Protein phản ứng C định lượng)', category: 'Xét nghiệm Huyết học & Miễn dịch', room: 'P.105 - Khoa Xét Nghiệm', price: 120000, insurancePrice: 52000, sampleType: 'Huyết thanh' },
+  { code: 'BLOOD-GRP', name: 'Xác định nhóm máu hệ ABO và Rh(D)', category: 'Xét nghiệm Huyết học & Miễn dịch', room: 'P.105 - Khoa Xét Nghiệm', price: 75000, insurancePrice: 38000, sampleType: 'Máu toàn phần' },
+  { code: 'COAG-01', name: 'Đông máu cơ bản (PT, APTT, Fibrinogen)', category: 'Xét nghiệm Huyết học & Miễn dịch', room: 'P.105 - Khoa Xét Nghiệm', price: 150000, insurancePrice: 70000, sampleType: 'Huyết tương Citrat' },
+  { code: 'DENGUE-NS1', name: 'Test nhanh Kháng nguyên Dengue NS1 (Sốt xuất huyết)', category: 'Xét nghiệm Huyết học & Miễn dịch', room: 'P.105 - Khoa Xét Nghiệm', price: 180000, insurancePrice: 85000, sampleType: 'Huyết thanh' },
+  { code: 'FLU-AB', name: 'Test nhanh Cúm A/B (Influenza A/B Antigen)', category: 'Xét nghiệm Huyết học & Miễn dịch', room: 'P.105 - Khoa Xét Nghiệm', price: 160000, insurancePrice: 75000, sampleType: 'Dịch tỵ hầu' },
+
+  // Xét nghiệm Sinh hóa & Nước tiểu
+  { code: 'GLU-01', name: 'Định lượng Glucose máu (Đường huyết lúc đói)', category: 'Xét nghiệm Sinh hóa & Nước tiểu', room: 'P.105 - Khoa Xét Nghiệm', price: 45000, insurancePrice: 22000, sampleType: 'Huyết thanh' },
+  { code: 'HBA1C-01', name: 'Định lượng HbA1c bằng phương pháp sắc ký lỏng HPLC', category: 'Xét nghiệm Sinh hóa & Nước tiểu', room: 'P.105 - Khoa Xét Nghiệm', price: 160000, insurancePrice: 82000, sampleType: 'Máu toàn phần EDTA' },
+  { code: 'LIVER-01', name: 'Đo hoạt độ Men gan AST (GOT) & ALT (GPT)', category: 'Xét nghiệm Sinh hóa & Nước tiểu', room: 'P.105 - Khoa Xét Nghiệm', price: 90000, insurancePrice: 42000, sampleType: 'Huyết thanh' },
+  { code: 'KIDNEY-01', name: 'Định lượng Ure & Creatinine máu (Chức năng thận)', category: 'Xét nghiệm Sinh hóa & Nước tiểu', room: 'P.105 - Khoa Xét Nghiệm', price: 80000, insurancePrice: 38000, sampleType: 'Huyết thanh' },
+  { code: 'LIPID-01', name: 'Bộ mỡ máu toàn phần (Cholesterol, Triglycerid, HDL-C, LDL-C)', category: 'Xét nghiệm Sinh hóa & Nước tiểu', room: 'P.105 - Khoa Xét Nghiệm', price: 180000, insurancePrice: 88000, sampleType: 'Huyết thanh' },
+  { code: 'URIC-01', name: 'Định lượng Axit Uric máu (Tầm soát bệnh Gout)', category: 'Xét nghiệm Sinh hóa & Nước tiểu', room: 'P.105 - Khoa Xét Nghiệm', price: 50000, insurancePrice: 25000, sampleType: 'Huyết thanh' },
+  { code: 'URINE-10', name: 'Tổng phân tích nước tiểu 10 thông số (Máy tự động)', category: 'Xét nghiệm Sinh hóa & Nước tiểu', room: 'P.105 - Khoa Xét Nghiệm', price: 55000, insurancePrice: 28000, sampleType: 'Nước tiểu tươi' },
+
+  // Chẩn đoán hình ảnh
+  { code: 'XQ-CHEST', name: 'Chụp X-quang Ngực thẳng kỹ thuật số (Tim phổi)', category: 'Chẩn đoán hình ảnh', room: 'P.110 - Phòng X-Quang', price: 150000, insurancePrice: 68000, sampleType: 'Phim số hóa DR' },
+  { code: 'XQ-SPINE', name: 'Chụp X-quang Cột sống thắt lưng 2 tư thế (Thẳng/Nghiêng)', category: 'Chẩn đoán hình ảnh', room: 'P.110 - Phòng X-Quang', price: 180000, insurancePrice: 85000, sampleType: 'Phim số hóa DR' },
+  { code: 'XQ-KNEE', name: 'Chụp X-quang Khớp gối thẳng/nghiêng', category: 'Chẩn đoán hình ảnh', room: 'P.110 - Phòng X-Quang', price: 160000, insurancePrice: 72000, sampleType: 'Phim số hóa DR' },
+  { code: 'US-ABDOMEN', name: 'Siêu âm Ổ bụng tổng quát Doppler màu', category: 'Chẩn đoán hình ảnh', room: 'P.112 - Phòng Siêu Âm', price: 200000, insurancePrice: 95000, sampleType: 'Hình ảnh Doppler' },
+  { code: 'US-THYROID', name: 'Siêu âm Tuyến giáp Doppler màu độ phân giải cao', category: 'Chẩn đoán hình ảnh', room: 'P.112 - Phòng Siêu Âm', price: 180000, insurancePrice: 85000, sampleType: 'Hình ảnh Doppler' },
+  { code: 'US-HEART', name: 'Siêu âm Tim Doppler màu 4 buồng tim', category: 'Chẩn đoán hình ảnh', room: 'P.114 - Siêu Âm Tim Mạch', price: 350000, insurancePrice: 175000, sampleType: 'Hình ảnh Doppler màu' },
+  { code: 'CT-BRAIN', name: 'Chụp Cắt lớp vi tính (CT-Scanner) Sọ não không cản quang', category: 'Chẩn đoán hình ảnh', room: 'P.118 - Phòng CT-Scanner', price: 950000, insurancePrice: 520000, sampleType: 'Dữ liệu DICOM đa lát cắt' },
+
+  // Thăm dò chức năng & Nội soi
+  { code: 'ECG-12', name: 'Ghi Điện tâm đồ (ECG 12 chuyển đạo chuẩn)', category: 'Thăm dò chức năng & Nội soi', room: 'P.106 - Thăm Dò Chức Năng', price: 75000, insurancePrice: 35000, sampleType: 'Bản ghi điện tim' },
+  { code: 'ENDO-ENT', name: 'Nội soi Tai Mũi Họng bằng ống mềm độ phân giải cao', category: 'Thăm dò chức năng & Nội soi', room: 'P.204 - Khoa Tai Mũi Họng', price: 250000, insurancePrice: 120000, sampleType: 'Video nội soi' },
+  { code: 'ENDO-GI', name: 'Nội soi Thực quản - Dạ dày - Tá tràng không đau (Tiền mê)', category: 'Thăm dò chức năng & Nội soi', room: 'P.212 - Trung Tâm Nội Soi', price: 850000, insurancePrice: 420000, sampleType: 'Hình ảnh HD + Sinh thiết' },
+];
 
 const ICD10_CATALOG = [
   { code: 'J02.9', name: 'Viêm họng cấp tính, không đặc hiệu' },
@@ -99,12 +201,12 @@ export const ExaminationsPage: React.FC = () => {
 
   // Prescriptions & Services lists in Modal
   const [prescriptions, setPrescriptions] = useState<PrescriptionDetailItem[]>([
-    { medicineName: 'Paracetamol 500mg (Hasan)', unit: 'Viên', quantity: 15, dosageInstruction: 'Sáng 1v, Tối 1v sau ăn', unitPrice: 2000 },
-    { medicineName: 'Augmentin 1g (Amoxicillin/Clavulanate)', unit: 'Viên', quantity: 10, dosageInstruction: 'Sáng 1v, Tối 1v sau ăn no', unitPrice: 15000 },
+    { medicineName: 'Paracetamol 500mg (Panadol/Hasan)', activeIngredient: 'Paracetamol 500mg', unit: 'Viên', quantity: 15, dosageInstruction: 'Sáng 1v, Tối 1v sau ăn (uống khi sốt > 38.5°C)', unitPrice: 1500 },
+    { medicineName: 'Augmentin 1g (Amoxicillin/Clavulanate)', activeIngredient: 'Amoxicillin 875mg + Acid Clavulanic 125mg', unit: 'Viên', quantity: 10, dosageInstruction: 'Sáng 1 viên, Tối 1 viên sau ăn no (cách 12 giờ)', unitPrice: 18500 },
   ]);
 
-  const [services] = useState<ServiceOrderItem[]>([
-    { serviceName: 'Công thức máu toàn phần (CBC)', serviceCategory: 'Xét nghiệm', price: 120000, status: 'Đã có kết quả', result: 'WBC 11.2 (Tăng nhẹ)' },
+  const [services, setServices] = useState<ServiceOrderItem[]>([
+    { serviceName: 'CBC-18 - Tổng phân tích tế bào máu ngoại vi bằng laser (CBC 18 thông số)', serviceCategory: 'Xét nghiệm Huyết học & Miễn dịch', price: 110000, status: 'Đã chỉ định', result: 'Phòng thực hiện: P.105 - Khoa Xét Nghiệm' },
   ]);
 
   // Vitals calculation
@@ -260,17 +362,66 @@ export const ExaminationsPage: React.FC = () => {
     }
   };
 
-  // Add prescription item
+  // 💊 Thao tác Kê Đơn Thuốc (Medicine Handlers)
   const handleAddMedicine = () => {
     setPrescriptions([
       ...prescriptions,
-      { medicineName: 'Paracetamol 500mg', unit: 'Viên', quantity: 10, dosageInstruction: 'Ngày 2 lần, mỗi lần 1 viên', unitPrice: 2000 },
+      { medicineName: '', activeIngredient: '', unit: 'Viên', quantity: 10, dosageInstruction: '', unitPrice: 0 },
     ]);
   };
 
-  // Remove prescription item
+  const handleSelectMedicine = (index: number, drugCode: string) => {
+    const drug = STANDARD_DRUG_CATALOG.find((d) => d.code === drugCode);
+    if (!drug) return;
+    const updated = [...prescriptions];
+    updated[index] = {
+      ...updated[index],
+      medicineName: drug.name,
+      activeIngredient: drug.activeIngredient,
+      unit: drug.unit,
+      unitPrice: drug.unitPrice,
+      dosageInstruction: drug.defaultDosage,
+    };
+    setPrescriptions(updated);
+    showToast(`Đã chọn thuốc: ${drug.name} (${drug.unit})`, 'info');
+  };
+
   const handleRemoveMedicine = (index: number) => {
     setPrescriptions(prescriptions.filter((_, i) => i !== index));
+  };
+
+  // 🔬 Thao tác Chỉ Định Cận Lâm Sàng (Paraclinical CLS Handlers)
+  const handleAddService = () => {
+    setServices([
+      ...services,
+      {
+        serviceName: '',
+        serviceCategory: 'Xét nghiệm Huyết học & Miễn dịch',
+        price: 0,
+        status: 'Đã chỉ định',
+        result: '',
+      },
+    ]);
+  };
+
+  const handleSelectService = (index: number, serviceCode: string) => {
+    const svc = STANDARD_PARACLINICAL_CATALOG.find((s) => s.code === serviceCode);
+    if (!svc) return;
+    const updated = [...services];
+    updated[index] = {
+      ...updated[index],
+      serviceName: `${svc.code} - ${svc.name}`,
+      serviceCategory: svc.category,
+      price: svc.price,
+      status: 'Đã chỉ định',
+      result: `Phòng: ${svc.room} | Mẫu: ${svc.sampleType}`,
+    };
+    setServices(updated);
+    showToast(`Đã thêm chỉ định: ${svc.name}`, 'info');
+  };
+
+  const handleRemoveService = (index: number) => {
+    setServices(services.filter((_, i) => i !== index));
   };
 
   // Handle Submit Examination
@@ -957,10 +1108,153 @@ export const ExaminationsPage: React.FC = () => {
                 ),
               },
               {
+                key: 'paraclinical',
+                label: (
+                  <span>
+                    <ExperimentOutlined /> III. Chỉ Định Cận Lâm Sàng ({services.length})
+                  </span>
+                ),
+                children: (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <Space wrap>
+                        <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Dịch vụ Cận Lâm Sàng chỉ định</Text>
+                        <Tag color="blue">{services.length} Chỉ định</Tag>
+                        <Tag color="cyan">
+                          Tổng chi phí CLS tạm tính:{' '}
+                          <strong>{formatCurrency(services.reduce((acc, s) => acc + (s.price || 0), 0))}</strong>
+                        </Tag>
+                      </Space>
+                      <Button
+                        icon={<PlusOutlined />}
+                        onClick={handleAddService}
+                        type="primary"
+                        style={{ backgroundColor: '#0284c7' }}
+                      >
+                        Thêm Chỉ Định CLS
+                      </Button>
+                    </div>
+
+                    {services.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
+                        Chưa có chỉ định Cận lâm sàng. Bấm nút <strong>"Thêm Chỉ Định CLS"</strong> nếu cần chỉ định Xét nghiệm / X-quang / Siêu âm.
+                      </div>
+                    ) : (
+                      services.map((s, idx) => {
+                        const matched = STANDARD_PARACLINICAL_CATALOG.find(
+                          (c) => s.serviceName.includes(c.code) || s.serviceName === `${c.code} - ${c.name}`
+                        );
+                        return (
+                          <Card
+                            key={idx}
+                            size="small"
+                            style={{
+                              marginBottom: 10,
+                              borderRadius: 10,
+                              border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+                              background: isDarkMode ? '#1e293b' : '#f0f9ff',
+                            }}
+                          >
+                            <Row gutter={12} align="middle">
+                              <Col span={12}>
+                                <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                  Dịch vụ kỹ thuật CLS (Chọn từ danh mục sổ xuống):
+                                </Text>
+                                <Select
+                                  showSearch
+                                  style={{ width: '100%' }}
+                                  placeholder="🔍 Chọn hoặc tìm kiếm dịch vụ Cận lâm sàng..."
+                                  value={matched ? matched.code : (s.serviceName || undefined)}
+                                  onChange={(val) => handleSelectService(idx, val)}
+                                  filterOption={(input, option) =>
+                                    (option?.label as string || '').toLowerCase().includes(input.toLowerCase())
+                                  }
+                                >
+                                  <OptGroup label="🔬 Xét nghiệm Huyết học & Miễn dịch">
+                                    {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Xét nghiệm Huyết học & Miễn dịch').map((c) => (
+                                      <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <span><strong>{c.code}</strong> - {c.name}</span>
+                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
+                                        </div>
+                                      </Option>
+                                    ))}
+                                  </OptGroup>
+                                  <OptGroup label="🧪 Xét nghiệm Sinh hóa & Nước tiểu">
+                                    {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Xét nghiệm Sinh hóa & Nước tiểu').map((c) => (
+                                      <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <span><strong>{c.code}</strong> - {c.name}</span>
+                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
+                                        </div>
+                                      </Option>
+                                    ))}
+                                  </OptGroup>
+                                  <OptGroup label="🩻 Chẩn đoán hình ảnh (X-Quang, Siêu âm, CT)">
+                                    {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Chẩn đoán hình ảnh').map((c) => (
+                                      <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <span><strong>{c.code}</strong> - {c.name}</span>
+                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
+                                        </div>
+                                      </Option>
+                                    ))}
+                                  </OptGroup>
+                                  <OptGroup label="🩺 Thăm dò chức năng & Nội soi">
+                                    {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Thăm dò chức năng & Nội soi').map((c) => (
+                                      <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <span><strong>{c.code}</strong> - {c.name}</span>
+                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
+                                        </div>
+                                      </Option>
+                                    ))}
+                                  </OptGroup>
+                                </Select>
+                              </Col>
+                              <Col span={5}>
+                                <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                  Nhóm & Phòng thực hiện:
+                                </Text>
+                                <Tag color="geekblue" style={{ width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {matched?.room || s.serviceCategory || 'Phòng Xét Nghiệm'}
+                                </Tag>
+                              </Col>
+                              <Col span={4}>
+                                <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                  Giá Viện phí:
+                                </Text>
+                                <Text strong style={{ color: '#0284c7', fontSize: 14 }}>
+                                  {formatCurrency(s.price || 0)}
+                                </Text>
+                              </Col>
+                              <Col span={2}>
+                                <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                  Trạng thái:
+                                </Text>
+                                <Tag color="orange">{s.status || 'Đã chỉ định'}</Tag>
+                              </Col>
+                              <Col span={1} style={{ textAlign: 'right' }}>
+                                <Button
+                                  icon={<DeleteOutlined />}
+                                  danger
+                                  type="text"
+                                  onClick={() => handleRemoveService(idx)}
+                                />
+                              </Col>
+                            </Row>
+                          </Card>
+                        );
+                      })
+                    )}
+                  </div>
+                ),
+              },
+              {
                 key: 'prescription',
                 label: (
                   <span>
-                    <MedicineBoxOutlined /> III. Kê Đơn Thuốc Điện Tử & An Toàn AI
+                    <MedicineBoxOutlined /> IV. Kê Đơn Thuốc Điện Tử ({prescriptions.length})
                   </span>
                 ),
                 children: (
@@ -1014,7 +1308,18 @@ export const ExaminationsPage: React.FC = () => {
                     )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Thuốc kê trong đơn</Text>
+                      <Space wrap>
+                        <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Thuốc kê trong đơn</Text>
+                        <Tag color="green">{prescriptions.length} Loại thuốc</Tag>
+                        <Tag color="blue">
+                          Tiền thuốc:{' '}
+                          <strong>
+                            {formatCurrency(
+                              prescriptions.reduce((acc, p) => acc + (p.unitPrice * (p.quantity || 1) || 0), 0)
+                            )}
+                          </strong>
+                        </Tag>
+                      </Space>
                       <Space>
                         <Button
                           icon={<RobotOutlined style={{ color: '#0284c7' }} />}
@@ -1022,7 +1327,7 @@ export const ExaminationsPage: React.FC = () => {
                           loading={drugSafetyLoading}
                           style={{ borderColor: '#0284c7', color: '#0284c7' }}
                         >
-                          AI Rà Sát Dị Ứng & Tương Tác
+                          AI Rà Soát Dị Ứng & Tương Tác
                         </Button>
                         <Button icon={<PlusOutlined />} onClick={handleAddMedicine} type="primary" style={{ backgroundColor: '#0284c7' }}>
                           Thêm Thuốc
@@ -1030,58 +1335,160 @@ export const ExaminationsPage: React.FC = () => {
                       </Space>
                     </div>
 
-                    {prescriptions.map((p, idx) => (
-                      <Row gutter={12} key={idx} align="middle" style={{ marginBottom: 10 }}>
-                        <Col span={8}>
-                          <Input
-                            placeholder="Tên thuốc"
-                            value={p.medicineName}
-                            onChange={(e) => {
-                              const updated = [...prescriptions];
-                              updated[idx].medicineName = e.target.value;
-                              setPrescriptions(updated);
-                            }}
-                          />
-                        </Col>
-                        <Col span={4}>
-                          <Input
-                            placeholder="Đơn vị"
-                            value={p.unit}
-                            onChange={(e) => {
-                              const updated = [...prescriptions];
-                              updated[idx].unit = e.target.value;
-                              setPrescriptions(updated);
-                            }}
-                          />
-                        </Col>
-                        <Col span={4}>
-                          <InputNumber
-                            min={1}
-                            value={p.quantity}
-                            onChange={(val) => {
-                              const updated = [...prescriptions];
-                              updated[idx].quantity = Number(val) || 1;
-                              setPrescriptions(updated);
-                            }}
-                            style={{ width: '100%' }}
-                          />
-                        </Col>
-                        <Col span={7}>
-                          <Input
-                            placeholder="Liều dùng & Hướng dẫn"
-                            value={p.dosageInstruction}
-                            onChange={(e) => {
-                              const updated = [...prescriptions];
-                              updated[idx].dosageInstruction = e.target.value;
-                              setPrescriptions(updated);
-                            }}
-                          />
-                        </Col>
-                        <Col span={1}>
-                          <Button icon={<DeleteOutlined />} danger type="text" onClick={() => handleRemoveMedicine(idx)} />
-                        </Col>
-                      </Row>
-                    ))}
+                    {prescriptions.map((p, idx) => {
+                      const matchedDrug = STANDARD_DRUG_CATALOG.find(
+                        (d) => d.name === p.medicineName || p.medicineName.includes(d.name)
+                      );
+                      return (
+                        <Card
+                          key={idx}
+                          size="small"
+                          style={{
+                            marginBottom: 10,
+                            borderRadius: 10,
+                            border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+                            background: isDarkMode ? '#1e293b' : '#f8fafc',
+                          }}
+                        >
+                          <Row gutter={12} align="middle">
+                            <Col span={9}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                Tên thuốc & Hàm lượng (Chọn từ danh mục):
+                              </Text>
+                              <Select
+                                showSearch
+                                style={{ width: '100%' }}
+                                placeholder="💊 Chọn hoặc gõ tìm kiếm tên thuốc / hoạt chất..."
+                                value={matchedDrug ? matchedDrug.code : (p.medicineName || undefined)}
+                                onChange={(val) => handleSelectMedicine(idx, val)}
+                                filterOption={(input, option) =>
+                                  (option?.label as string || '').toLowerCase().includes(input.toLowerCase())
+                                }
+                              >
+                                <OptGroup label="💊 Kháng sinh & Kháng khuẩn">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Kháng sinh & Kháng khuẩn').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                                <OptGroup label="💊 Giảm đau & Hạ sốt & Kháng viêm">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Giảm đau & Hạ sốt' || d.category === 'Kháng viêm NSAID' || d.category === 'Kháng viêm chống phù nề').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                                <OptGroup label="💊 Tim mạch - Huyết áp - Mỡ máu">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Tim mạch & Huyết áp').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                                <OptGroup label="💊 Tiêu hóa - Dạ dày">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Dạ dày & Tiêu hóa').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                                <OptGroup label="💊 Đái tháo đường">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Đái tháo đường').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                                <OptGroup label="💊 Hô hấp - Dị ứng">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Kháng Histamin & Dị ứng' || d.category === 'Hô hấp & Long đờm').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                                <OptGroup label="💊 Cơ xương khớp & Vitamin">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Cơ xương khớp & Vitamin').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                              </Select>
+                            </Col>
+                            <Col span={3}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                ĐVT:
+                              </Text>
+                              <Input
+                                value={p.unit}
+                                readOnly
+                                style={{ backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9', fontWeight: 600, textAlign: 'center' }}
+                              />
+                            </Col>
+                            <Col span={3}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                Số lượng:
+                              </Text>
+                              <InputNumber
+                                min={1}
+                                max={100}
+                                value={p.quantity}
+                                onChange={(val) => {
+                                  const updated = [...prescriptions];
+                                  updated[idx].quantity = Number(val) || 1;
+                                  setPrescriptions(updated);
+                                }}
+                                style={{ width: '100%', fontWeight: 700, color: '#0284c7' }}
+                              />
+                            </Col>
+                            <Col span={8}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                Hướng dẫn liều dùng & Cách uống:
+                              </Text>
+                              <Input
+                                placeholder="Gợi ý: Sáng 1v, Tối 1v sau ăn"
+                                value={p.dosageInstruction}
+                                onChange={(e) => {
+                                  const updated = [...prescriptions];
+                                  updated[idx].dosageInstruction = e.target.value;
+                                  setPrescriptions(updated);
+                                }}
+                              />
+                            </Col>
+                            <Col span={1} style={{ textAlign: 'right' }}>
+                              <Button
+                                icon={<DeleteOutlined />}
+                                danger
+                                type="text"
+                                onClick={() => handleRemoveMedicine(idx)}
+                              />
+                            </Col>
+                          </Row>
+                        </Card>
+                      );
+                    })}
                   </div>
                 ),
               },
@@ -1316,6 +1723,21 @@ export const ExaminationsPage: React.FC = () => {
                 </div>
               ))}
             </Card>
+
+            {selectedExam.serviceOrderDetails && selectedExam.serviceOrderDetails.length > 0 && (
+              <Card size="small" title="5. Chỉ Định Cận Lâm Sàng (CLS / Xét Nghiệm / CĐHA)">
+                {selectedExam.serviceOrderDetails.map((s, idx) => (
+                  <div key={idx} style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <Text strong>{idx + 1}. {s.serviceName}</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>{s.serviceCategory} • {s.result || 'Chỉ định CLS'}</Text>
+                    </div>
+                    <Tag color="cyan" style={{ fontWeight: 600 }}>{formatCurrency(s.price)}</Tag>
+                  </div>
+                ))}
+              </Card>
+            )}
           </div>
         )}
       </Drawer>
