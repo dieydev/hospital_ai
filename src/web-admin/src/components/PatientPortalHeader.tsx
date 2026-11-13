@@ -121,6 +121,74 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     }
   };
 
+  const isStaffOrAdmin = Boolean(
+    user?.vaiTro?.some((r) =>
+      [
+        'admin', 'doctor', 'receptionist', 'triage', 'pharmacy', 'nurse', 'cashier',
+        'quản trị viên', 'bác sĩ', 'nhân viên tiếp nhận', 'nhân viên sàng lọc bệnh', 'nhà thuốc', 'y tế', 'thu ngân', 'lễ tân'
+      ].includes(r.toLowerCase())
+    )
+  );
+
+  const getStaffRoleLabel = () => {
+    const roles: string[] = user?.vaiTro || [];
+    const has = (key: string) => roles.some((r) => r.toLowerCase() === key.toLowerCase());
+    if (has('Admin') || has('Quản trị viên')) return 'Quản trị viên';
+    if (has('Doctor') || has('Bác sĩ')) return 'Bác sĩ';
+    if (has('Triage') || has('Nhân viên sàng lọc bệnh')) return 'Sàng lọc';
+    if (has('Cashier') || has('Thu ngân')) return 'Thu ngân';
+    if (has('Pharmacy') || has('Nhà thuốc')) return 'Dược sĩ';
+    if (has('Receptionist') || has('Lễ tân')) return 'Tiếp nhận';
+    if (has('Nurse') || has('Y tế') || has('Điều dưỡng')) return 'Điều dưỡng';
+    return 'Cán bộ Y tế';
+  };
+
+  const renderRoleTag = () => {
+    const roles: string[] = user?.vaiTro || [];
+    const has = (key: string) => roles.some((r) => r.toLowerCase() === key.toLowerCase());
+
+    if (has('Admin') || has('Quản trị viên')) {
+      return <Tag color="purple" style={{ margin: 0, fontWeight: 700 }}>Quản trị viên</Tag>;
+    }
+    if (has('Doctor') || has('Bác sĩ')) {
+      return <Tag color="blue" style={{ margin: 0, fontWeight: 700 }}>Bác sĩ</Tag>;
+    }
+    if (has('Triage') || has('Nhân viên sàng lọc bệnh')) {
+      return <Tag color="volcano" style={{ margin: 0, fontWeight: 700 }}>Nhân viên Sàng lọc</Tag>;
+    }
+    if (has('Cashier') || has('Thu ngân')) {
+      return <Tag color="gold" style={{ margin: 0, fontWeight: 700 }}>Thu ngân Viện phí</Tag>;
+    }
+    if (has('Pharmacy') || has('Nhà thuốc') || has('Dược')) {
+      return <Tag color="green" style={{ margin: 0, fontWeight: 700 }}>Dược sĩ / Nhà thuốc</Tag>;
+    }
+    if (has('Receptionist') || has('Nhân viên tiếp nhận') || has('Lễ tân')) {
+      return <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Nhân viên Tiếp nhận</Tag>;
+    }
+    if (has('Nurse') || has('Y tế') || has('Điều dưỡng')) {
+      return <Tag color="teal" style={{ margin: 0, fontWeight: 700 }}>Y tế / Điều dưỡng</Tag>;
+    }
+    return <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Bệnh nhân</Tag>;
+  };
+
+  const handleReturnToStaffWorkspace = () => {
+    const roles: string[] = user?.vaiTro || [];
+    const has = (key: string) => roles.some((r) => r.toLowerCase() === key.toLowerCase());
+    if (has('Triage') || has('Nhân viên sàng lọc bệnh')) {
+      navigate('/reception');
+    } else if (has('Cashier') || has('Thu ngân')) {
+      navigate('/billing');
+    } else if (has('Doctor') || has('Bác sĩ')) {
+      navigate('/examinations');
+    } else if (has('Pharmacy') || has('Nhà thuốc')) {
+      navigate('/pharmacy');
+    } else if (has('Receptionist') || has('Lễ tân')) {
+      navigate('/reception');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
   const patientDropdownItems = [
     {
       key: 'user-header',
@@ -141,9 +209,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
             </div>
           </div>
           <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>
-              Bệnh nhân
-            </Tag>
+            {renderRoleTag()}
             {user?.maBenhNhan && (
               <Tag color="geekblue" style={{ margin: 0, fontFamily: 'monospace' }}>
                 {user.maBenhNhan}
@@ -202,7 +268,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
         else navigate('/booking?lookup=open');
       },
     },
-    ...(user?.vaiTro?.some((r) => ['Admin', 'Doctor', 'Nurse', 'Receptionist'].includes(r))
+    ...(isStaffOrAdmin
       ? [
           { type: 'divider' as const },
           {
@@ -210,11 +276,15 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
             icon: <HomeOutlined style={{ fontSize: 16, color: '#0284c7' }} />,
             label: (
               <div style={{ padding: '2px 0' }}>
-                <div style={{ fontWeight: 700, color: '#0369a1', fontSize: 13.5 }}>Vào Web Quản Trị</div>
-                <div style={{ fontSize: 11.5, color: '#64748b' }}>Trang điều hành phòng khám & bác sĩ</div>
+                <div style={{ fontWeight: 700, color: '#0369a1', fontSize: 13.5 }}>
+                  Vào Bàn Làm Việc ({getStaffRoleLabel()})
+                </div>
+                <div style={{ fontSize: 11.5, color: '#64748b' }}>
+                  Quay lại hệ thống nghiệp vụ chuyên môn
+                </div>
               </div>
             ),
-            onClick: () => navigate('/dashboard'),
+            onClick: handleReturnToStaffWorkspace,
           },
         ]
       : []),
@@ -395,6 +465,23 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
           <div className="booking-navbar-actions">
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {isStaffOrAdmin && (
+                  <Button
+                    type="primary"
+                    icon={<HomeOutlined />}
+                    onClick={handleReturnToStaffWorkspace}
+                    style={{
+                      backgroundColor: '#0284c7',
+                      borderColor: '#0284c7',
+                      fontWeight: 700,
+                      height: 40,
+                      borderRadius: 10,
+                      fontSize: 13,
+                    }}
+                  >
+                    Bàn Làm Việc ({getStaffRoleLabel()})
+                  </Button>
+                )}
                 <Button
                   icon={<CalendarOutlined style={{ color: '#0284c7', fontSize: 15 }} />}
                   onClick={() => {
@@ -555,7 +642,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
             </div>
 
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-              <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Bệnh nhân</Tag>
+              {renderRoleTag()}
               {user.maBenhNhan && (
                 <Tag color="geekblue" style={{ margin: 0, fontFamily: 'monospace' }}>
                   {user.maBenhNhan}
@@ -565,6 +652,23 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                 <Tag color="warning" style={{ margin: 0, fontWeight: 700 }}>Thiếu hồ sơ</Tag>
               )}
             </div>
+
+            {isStaffOrAdmin && (
+              <div style={{ marginTop: 10 }}>
+                <Button
+                  type="primary"
+                  block
+                  icon={<HomeOutlined />}
+                  style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 8 }}
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    handleReturnToStaffWorkspace();
+                  }}
+                >
+                  Vào Bàn Làm Việc ({getStaffRoleLabel()})
+                </Button>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <Button
