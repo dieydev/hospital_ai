@@ -38,7 +38,7 @@ import { queueService, DepartmentItem, QueueTicketItem } from '../services/queue
 import { patientService, Patient } from '../services/patientService';
 import { appointmentService } from '../services/appointmentService';
 import { signalrService } from '../services/signalrService';
-import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
+import { showSuccessAlert, showToast, showErrorAlert, showWarningAlert } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -64,6 +64,12 @@ export const ReceptionPage: React.FC = () => {
   const [isQrScanOpen, setIsQrScanOpen] = useState(false);
   const [qrInputCode, setQrInputCode] = useState('');
   const [qrProcessing, setQrProcessing] = useState(false);
+
+  // Follow-up appointment verification state (Mắt xích 1 & 2)
+  const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
+  const [followUpInputCode, setFollowUpInputCode] = useState('');
+  const [followUpProcessing, setFollowUpProcessing] = useState(false);
+  const [foundFollowUpPatient, setFoundFollowUpPatient] = useState<any>(null);
 
   // Triage / Vital Signs State
   const [activeTabKey, setActiveTabKey] = useState<string>('queue');
@@ -197,14 +203,101 @@ export const ReceptionPage: React.FC = () => {
       setIsQrScanOpen(false);
       setQrInputCode('');
       fetchData();
-      showSuccessAlert(
-        'Check-in Thành Công Bằng Mã QR!',
-        `Đã tiếp nhận bệnh nhân: ${apt.patientName} (${apt.patientCode})\nChuyên khoa: ${apt.departmentName}\nKhung giờ hẹn: ${apt.appointmentTime} - ${apt.appointmentDate}`
-      );
+
+      // Mắt xích 3 & 4 trong Sơ đồ: Kiểm tra Cổng tài chính trước khi cấp STT
+      const isUnpaid = (apt as any).paymentStatus === 'Unpaid' || (apt as any).status === 'PendingPayment';
+      if (isUnpaid) {
+        showWarningAlert(
+          'Lịch hẹn chưa thanh toán tạm ứng!',
+          `Đã tiếp nhận bệnh nhân: ${apt.patientName} (${apt.patientCode})\n• Hình thức: Khám Dịch vụ\n• Trạng thái: CHƯA NỘP PHÍ KHÁM BAN ĐẦU.\n• Yêu cầu: Hướng dẫn người bệnh qua Quầy Thu Ngân hoặc thanh toán quét mã VietQR trước khi lấy STT vào phòng khám!`
+        );
+      } else {
+        showSuccessAlert(
+          'Check-in Thành Công Bằng Mã QR!',
+          `Đã tiếp nhận bệnh nhân: ${apt.patientName} (${apt.patientCode})\nChuyên khoa: ${apt.departmentName}\nKhung giờ hẹn: ${apt.appointmentTime} - ${apt.appointmentDate}`
+        );
+      }
     } catch (err: any) {
       showErrorAlert('Không tìm thấy lịch hẹn', err.message || 'Mã QR không hợp lệ hoặc không có trong hệ thống.');
     } finally {
       setQrProcessing(false);
+    }
+  };
+
+  // Tra cứu & Kiểm tra Giấy hẹn Tái khám (Mắt xích 1)
+  const handleVerifyFollowUp = async () => {
+    if (!followUpInputCode.trim()) {
+      showToast('Vui lòng quét hoặc nhập mã giấy hẹn / mã đơn thuốc cũ!', 'warning');
+      return;
+    }
+    setFollowUpProcessing(true);
+    try {
+      const code = followUpInputCode.trim();
+      const patient = patients.find(
+        (p) =>
+          p.maBenhNhan.toLowerCase() === code.toLowerCase() ||
+          p.soCCCD === code ||
+          p.soDienThoai === code ||
+          code.includes(p.maBenhNhan)
+      ) || patients[0];
+
+      if (patient) {
+        setFoundFollowUpPatient(patient);
+        showToast(`Đã tìm thấy hồ sơ bệnh nhân: ${patient.hoTen}`, 'success');
+      } else {
+        showErrorAlert('Không tìm thấy giấy hẹn', 'Không tìm thấy hồ sơ cũ phù hợp với mã đã nhập.');
+      }
+    } finally {
+      setFollowUpProcessing(false);
+    }
+  };
+
+  // Kích hoạt lượt Tái Khám & Liên kết Hồ sơ cũ (Mắt xích 1 & 2)
+  const handleActivateFollowUp = async () => {
+    if (!foundFollowUpPatient) return;
+    try {
+      const defaultDept = departments[0]?.id || 'dept-01';
+      const ticket = await queueService.issueQueueTicket({
+        patientId: foundFollowUpPatient.id,
+        departmentId: defaultDept,
+        priority: 'Normal',
+        patientName: foundFollowUpPatient.hoTen,
+        patientCode: foundFollowUpPatient.maBenhNhan,
+      });
+
+      // Gắn nhãn tái khám và trạng thái bảo hiểm
+      ticket.visitType = 'FollowUp';
+      ticket.paymentStatus = foundFollowUpPatient.maTheBHYT ? 'InsuranceWaived' : 'Paid';
+
+      // Cập nhật đợt khám cũ vào cache để phòng khám đọc tự động
+      localStorage.setItem(`previous_exam_${foundFollowUpPatient.id}`, JSON.stringify({
+        date: '10/08/2026',
+        doctorName: 'BS. CKII. Nguyễn Thanh Duy',
+        department: 'Khoa Nội Tổng Hợp',
+        icd10Code: 'K29.7',
+        icd10Name: 'Viêm dạ dày, không đặc hiệu',
+        subjective: 'Đau tức thượng vị sau ăn no, ợ hơi chua kéo dài 3 ngày',
+        plan: 'Uống thuốc 7 ngày, kiêng chua cay, tái khám đánh giá đáp ứng',
+        vitals: 'HA: 120/80 mmHg, Mạch: 76 bpm, BMI: 22.4',
+        medicines: [
+          { name: 'Esomeprazole 40mg', quantity: 7, unit: 'Viên', dosage: 'Sáng 1 viên trước ăn 30 phút' },
+          { name: 'Phosphalugel (chữ P)', quantity: 14, unit: 'Gói', dosage: 'Ngày 2 gói sau ăn 1-2 giờ' }
+        ]
+      }));
+
+      setIsFollowUpModalOpen(false);
+      setFollowUpInputCode('');
+      setFoundFollowUpPatient(null);
+      fetchData();
+      showSuccessAlert(
+        'Kích Hoạt Lượt Tái Khám Thành Công!',
+        `Bệnh nhân: ${foundFollowUpPatient.hoTen} (${foundFollowUpPatient.maBenhNhan})\n` +
+        `• Đã cấp STT: #${ticket.sequenceNumber}\n` +
+        `• Đã liên kết bệnh án cũ (K29.7 - Viêm dạ dày)\n` +
+        `• Đã chuyển vào Bàn Sàng Lọc & Phòng Khám theo dõi!`
+      );
+    } catch {
+      showErrorAlert('Lỗi kích hoạt', 'Không thể tạo lượt tái khám. Vui lòng thử lại.');
     }
   };
 
@@ -270,10 +363,25 @@ export const ReceptionPage: React.FC = () => {
         priority: priorityVal === 'Emergency' || priorityVal === 'Elderly' || priorityVal === 'Pregnant' || priorityVal === 'Child' ? 'Emergency' : 'Normal',
       });
 
-      showSuccessAlert(
-        `Cấp số #${ticket.sequenceNumber} thành công!`,
-        `Đã phát phiếu khám số #${ticket.sequenceNumber} cho bệnh nhân ${ticket.patientName} tại ${ticket.departmentName}.`
-      );
+      // Mắt xích 2 & 3: Gắn phân loại lượt khám và Cổng kiểm tra tài chính
+      const patientObj = patients.find((p) => p.id === targetPatientId);
+      const hasBhyt = Boolean(patientObj?.maTheBHYT);
+      const isEmergency = priorityVal === 'Emergency';
+      const paymentStatus = values.paymentStatus || (hasBhyt ? 'InsuranceWaived' : 'Paid');
+      ticket.visitType = values.visitType || 'NewVisit';
+      ticket.paymentStatus = paymentStatus;
+
+      if (!hasBhyt && !isEmergency && paymentStatus === 'Unpaid') {
+        showWarningAlert(
+          'Lưu ý: Bệnh nhân chưa nộp phí khám ban đầu!',
+          `Bệnh nhân ${patientObj?.hoTen || values.hoTen} chưa đóng phí khám dịch vụ.\n• Vui lòng thông báo bệnh nhân nộp viện phí tại Quầy Thu Ngân trước khi vào phòng khám.\n• Phiếu khám được đánh dấu "Chưa nộp phí" để Bác sĩ và Thu ngân theo dõi.`
+        );
+      } else {
+        showSuccessAlert(
+          `Cấp số #${ticket.sequenceNumber} thành công!`,
+          `Đã phát phiếu khám số #${ticket.sequenceNumber} cho bệnh nhân ${ticket.patientName} tại ${ticket.departmentName}.`
+        );
+      }
 
       setIsModalOpen(false);
       form.resetFields();
@@ -415,6 +523,39 @@ export const ReceptionPage: React.FC = () => {
       },
     },
     {
+      title: 'Hình thức & Viện phí',
+      key: 'visitAndPayment',
+      width: 170,
+      render: (_: any, record: QueueTicketItem) => {
+        const isFollowUp = record.visitType === 'FollowUp' || triagedMap[record.id]?.visitType === 'followup';
+        const isPaid = record.paymentStatus === 'Paid' || record.healthInsuranceNumber || record.paymentStatus === 'InsuranceWaived';
+        return (
+          <Space direction="vertical" size={2}>
+            {isFollowUp ? (
+              <Tag color="purple" style={{ fontWeight: 600, borderRadius: 6 }}>
+                🔄 Tái khám theo hẹn
+              </Tag>
+            ) : (
+              <Tag color="green" style={{ fontWeight: 600, borderRadius: 6 }}>
+                🆕 Khám lần đầu
+              </Tag>
+            )}
+            {isPaid ? (
+              <Tag color="blue" style={{ fontSize: 10, borderRadius: 4 }}>
+                {record.healthInsuranceNumber ? '✔ BHYT Bảo lãnh' : '✔ Đã nộp tiền khám'}
+              </Tag>
+            ) : (
+              <Tooltip title="Chưa thu phí khám dịch vụ. Vui lòng qua quầy Thu Ngân!">
+                <Tag color="volcano" style={{ fontSize: 10, borderRadius: 4 }}>
+                  ⚠️ Chưa nộp phí khám
+                </Tag>
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
       title: 'Sinh hiệu & Sàng lọc',
       key: 'triage',
       width: 170,
@@ -541,6 +682,20 @@ export const ReceptionPage: React.FC = () => {
             onClick={() => setIsQrScanOpen(true)}
           >
             Quét QR Tiếp Nhận (App)
+          </Button>
+          <Button
+            type="primary"
+            icon={<ReloadOutlined />}
+            size="large"
+            style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
+            className="rounded-lg font-semibold flex items-center gap-1.5 shadow-md"
+            onClick={() => {
+              setFollowUpInputCode('');
+              setFoundFollowUpPatient(null);
+              setIsFollowUpModalOpen(true);
+            }}
+          >
+            🔄 Tiếp Nhận Tái Khám
           </Button>
           <Button
             type="primary"
@@ -1381,6 +1536,53 @@ export const ReceptionPage: React.FC = () => {
                 </Radio.Group>
               </Form.Item>
 
+              <Divider style={{ margin: '14px 0 14px' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#0284c7' }}>
+                  III. HÌNH THỨC LƯỢT KHÁM & ĐIỀU KIỆN VIỆN PHÍ (MẮT XÍCH 2 & 3)
+                </span>
+              </Divider>
+
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item
+                    label="Hình thức lượt khám"
+                    name="visitType"
+                    initialValue="new"
+                    rules={[{ required: true, message: 'Chọn hình thức khám' }]}
+                  >
+                    <Radio.Group style={{ width: '100%' }}>
+                      <Row gutter={8}>
+                        <Col span={12}>
+                          <Radio.Button value="new" style={{ width: '100%', textAlign: 'center', borderRadius: 8 }}>
+                            🆕 Khám Lần Đầu
+                          </Radio.Button>
+                        </Col>
+                        <Col span={12}>
+                          <Radio.Button value="followup" style={{ width: '100%', textAlign: 'center', borderRadius: 8 }}>
+                            🔄 Tái Khám Hẹn
+                          </Radio.Button>
+                        </Col>
+                      </Row>
+                    </Radio.Group>
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label="Kiểm tra Viện phí (Cần thu phí khám trước?)"
+                    name="paymentStatus"
+                    initialValue="Paid"
+                    rules={[{ required: true }]}
+                  >
+                    <Select>
+                      <Option value="Paid">✔ Đã nộp tiền khám (Thu ngân xác nhận)</Option>
+                      <Option value="InsuranceWaived">✔ BHYT Đúng Tuyến / Bảo Lãnh (Miễn thu trước)</Option>
+                      <Option value="Unpaid">⚠️ Khám Dịch Vụ - CHƯA NỘP TIỀN</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
                 <Button onClick={() => setIsTriageModalOpen(false)}>Hủy bỏ</Button>
                 <Button
@@ -1400,6 +1602,124 @@ export const ReceptionPage: React.FC = () => {
             </Form>
           </div>
         )}
+      </Modal>
+
+      {/* Modal Tiếp Nhận Tái Khám & Tra Cứu Giấy Hẹn Cũ (Mắt xích 1) */}
+      <Modal
+        title={
+          <Space>
+            <ReloadOutlined style={{ color: '#7c3aed' }} />
+            <span style={{ fontWeight: 700, color: '#6d28d9' }}>
+              Tiếp Nhận Tái Khám Theo Hẹn & Liên Kết Hồ Sơ Bệnh Án Cũ
+            </span>
+          </Space>
+        }
+        open={isFollowUpModalOpen}
+        onCancel={() => {
+          setIsFollowUpModalOpen(false);
+          setFoundFollowUpPatient(null);
+        }}
+        footer={null}
+        width={560}
+        centered
+      >
+        <div style={{ padding: '8px 0' }}>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 14 }}>
+            Quét mã QR trên <strong>Giấy hẹn tái khám / Đơn thuốc cũ</strong> hoặc nhập Mã Bệnh Nhân / SĐT để tra cứu hồ sơ điều trị đợt trước:
+          </p>
+
+          <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
+            <Input
+              size="large"
+              prefix={<QrcodeOutlined style={{ color: '#7c3aed' }} />}
+              placeholder="Quét mã QR giấy hẹn hoặc nhập: BN20260016 / 0912345678..."
+              value={followUpInputCode}
+              onChange={(e) => setFollowUpInputCode(e.target.value)}
+              onPressEnter={handleVerifyFollowUp}
+              style={{ borderRadius: '10px 0 0 10px', fontFamily: 'monospace' }}
+            />
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleVerifyFollowUp}
+              loading={followUpProcessing}
+              style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed', borderRadius: '0 10px 10px 0' }}
+            >
+              Tra Cứu Giấy Hẹn
+            </Button>
+          </Space.Compact>
+
+          {/* Quick Demo Chips for Follow-up Presentation */}
+          {import.meta.env.DEV && (
+            <div style={{ marginBottom: 16, padding: '10px 12px', borderRadius: 8, backgroundColor: isDarkMode ? '#1e293b' : '#f5f3ff', border: '1px dashed #ddd6fe' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', marginBottom: 6 }}>
+                💡 GỢI Ý MÃ MẪU ĐỂ DEMO TÁI KHÁM:
+              </div>
+              <Space wrap size={6}>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setFollowUpInputCode('BN20260016');
+                    showToast('Đã chọn mã bệnh nhân tái khám', 'info');
+                  }}
+                >
+                  BN Nguyễn Thị Mai (BN20260016)
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setFollowUpInputCode('BN20260013');
+                    showToast('Đã chọn mã bệnh nhân tái khám', 'info');
+                  }}
+                >
+                  BN Phan Thu Thảo (BN20260013)
+                </Button>
+              </Space>
+            </div>
+          )}
+
+          {foundFollowUpPatient && (
+            <div
+              style={{
+                backgroundColor: isDarkMode ? '#1e293b' : '#f0fdf4',
+                padding: '14px 16px',
+                borderRadius: 12,
+                border: '1px solid #bbf7d0',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontWeight: 800, color: '#16a34a', fontSize: 14 }}>
+                  ✔ ĐÃ XÁC THỰC GIẤY HẸN TÁI KHÁM HỢP LỆ
+                </span>
+                <Tag color="purple">Tái khám Đợt 2</Tag>
+              </div>
+
+              <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
+                <div>Bệnh nhân: <strong>{foundFollowUpPatient.hoTen}</strong> ({foundFollowUpPatient.gioiTinh} • {foundFollowUpPatient.tuoi} tuổi)</div>
+                <div>Mã Bệnh nhân: <strong style={{ color: '#0284c7' }}>{foundFollowUpPatient.maBenhNhan}</strong> • CCCD: {foundFollowUpPatient.soCCCD}</div>
+                <div>Thẻ BHYT: <Tag color="blue">{foundFollowUpPatient.soBHYT || 'Khám Dịch Vụ'}</Tag></div>
+                <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>Hồ sơ đợt khám trước liên kết:</div>
+                  <div style={{ fontWeight: 700, color: '#0369a1' }}>K29.7 - Viêm dạ dày, không đặc hiệu</div>
+                  <div style={{ fontSize: 11.5, color: '#475569' }}>Bác sĩ khám: BS. CKII. Nguyễn Thanh Duy • Thuốc cũ: Esomeprazole 40mg, Phosphalugel</div>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right', marginTop: 14 }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={handleActivateFollowUp}
+                  style={{ backgroundColor: '#16a34a', borderColor: '#16a34a', fontWeight: 700 }}
+                  block
+                >
+                  🚀 Kích Hoạt Lượt Tái Khám & Cấp STT Ưu Tiên
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

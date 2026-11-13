@@ -37,6 +37,19 @@ export const showErrorAlert = (title: string, text?: string) => {
   });
 };
 
+export const showWarningAlert = (title: string, text?: string) => {
+  return Swal.fire({
+    icon: 'warning',
+    title: title || 'Cảnh báo nghiệp vụ!',
+    text: text || '',
+    confirmButtonColor: '#f59e0b',
+    confirmButtonText: 'Đã hiểu',
+    customClass: {
+      popup: 'rounded-xl',
+    },
+  });
+};
+
 export const showConfirmDelete = (title: string, text: string) => {
   return Swal.fire({
     icon: 'warning',

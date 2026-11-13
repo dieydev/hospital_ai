@@ -22,6 +22,10 @@ export interface QueueTicketItem {
   sequenceNumber: number;
   status: 'Waiting' | 'Calling' | 'Processing' | 'Skipped' | 'Finished';
   priority: 'Normal' | 'Priority' | 'Emergency';
+  visitType?: 'New' | 'FollowUp';
+  paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived';
+  queueType?: 'Exam' | 'ParaclinicalResult';
+  previousRecordCode?: string;
   createdAt: string;
 }
 

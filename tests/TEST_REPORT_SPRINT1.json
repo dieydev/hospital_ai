@@ -1,12 +1,12 @@
 {
   "testSuite": "Hospital AI Sprint 1 Business Workflow Automation",
-  "timestamp": "2026-11-13T05:55:58.097Z",
+  "timestamp": "2026-11-13T06:23:58.733Z",
   "summary": {
     "total": 19,
     "passes": 19,
     "fails": 0,
     "passRate": "100.00%",
-    "durationMs": 931
+    "durationMs": 1158
   },
   "results": [
     {
@@ -21,7 +21,7 @@
       "suite": "Gateway & Bootstrap",
       "testName": "Đăng nhập lấy JWT Bearer Token cho 7 vai trò hệ thống + Bệnh nhân",
       "status": "PASS",
-      "durationMs": 244,
+      "durationMs": 413,
       "details": "Đã cấp phát thành công 8 JWT Bearer Token hợp lệ",
       "error": null
     },
@@ -29,15 +29,15 @@
       "suite": "Nghiệp vụ 1",
       "testName": "Tạo lịch hẹn khám trực tuyến (Atomic Booking)",
       "status": "PASS",
-      "durationMs": 12,
-      "details": "Mã hẹn: apt-1794549357449, Trạng thái: Pending, CheckInStatus: PendingQR",
+      "durationMs": 16,
+      "details": "Mã hẹn: apt-1794551038026, Trạng thái: Pending, CheckInStatus: PendingQR",
       "error": null
     },
     {
       "suite": "Nghiệp vụ 1",
       "testName": "Kiểm tra định mức khung giờ khám (Quota Slots)",
       "status": "PASS",
-      "durationMs": 4,
+      "durationMs": 3,
       "details": "Tìm thấy 11 khung giờ khám cấu hình",
       "error": null
     },
@@ -45,24 +45,24 @@
       "suite": "Nghiệp vụ 2",
       "testName": "Tạo hồ sơ bệnh nhân tiếp nhận trực tiếp tại quầy",
       "status": "PASS",
-      "durationMs": 23,
-      "details": "Mã BN: BN2026000012, Họ tên: Trương Hoàng Phúc, ID: f58ef163-9d43-4d3b-b5a1-e235fafb1885",
+      "durationMs": 19,
+      "details": "Mã BN: BN2026000018, Họ tên: Trương Hoàng Phúc, ID: 7e453366-052d-4afd-a5bf-5eeaf274652c",
       "error": null
     },
     {
       "suite": "Nghiệp vụ 2",
       "testName": "Tra cứu hồ sơ bệnh nhân tự động theo Số CCCD",
       "status": "PASS",
-      "durationMs": 8,
-      "details": "Tìm thấy đúng hồ sơ: Trương Hoàng Phúc (BN2026000012)",
+      "durationMs": 6,
+      "details": "Tìm thấy đúng hồ sơ: Trương Hoàng Phúc (BN2026000018)",
       "error": null
     },
     {
       "suite": "Nghiệp vụ 2",
       "testName": "Tra cứu xác minh Thẻ BHYT tại phòng tiếp đón/sàng lọc",
       "status": "PASS",
-      "durationMs": 11,
-      "details": "BHYT: DN40138073447 tra cứu thành công (1 kết quả)",
+      "durationMs": 28,
+      "details": "BHYT: DN40183875907 tra cứu thành công (1 kết quả)",
       "error": null
     },
     {
@@ -70,7 +70,7 @@
       "testName": "Giải mã & xác thực cấu trúc mã QR điện tử (D_MEDICAL_EXAM_PASS v2.0)",
       "status": "PASS",
       "durationMs": 0,
-      "details": "Loại mã: D_MEDICAL_EXAM_PASS, Phiên bản: 2.0, ID: apt-1794549357449",
+      "details": "Loại mã: D_MEDICAL_EXAM_PASS, Phiên bản: 2.0, ID: apt-1794551038026",
       "error": null
     },
     {
@@ -85,7 +85,7 @@
       "suite": "Nghiệp vụ 3",
       "testName": "Bảo vệ an ninh: Từ chối mã QR giả mạo / không tồn tại trong hệ thống",
       "status": "PASS",
-      "durationMs": 4,
+      "durationMs": 6,
       "details": "Status HTTP: 404 (Không tìm thấy thông tin lịch hẹn với Mã QR này.)",
       "error": null
     },
@@ -93,16 +93,16 @@
       "suite": "Nghiệp vụ 4",
       "testName": "Quét QR Tiếp nhận điện tử tự động tại phòng khám (Check-in QR)",
       "status": "PASS",
-      "durationMs": 7,
-      "details": "Trạng thái: Completed, CheckInStatus: CheckedInQR, Tiếp nhận lúc: 2026-11-13T05:55:57.5132368Z",
+      "durationMs": 8,
+      "details": "Trạng thái: Completed, CheckInStatus: CheckedInQR, Tiếp nhận lúc: 2026-11-13T06:23:58.1031121Z",
       "error": null
     },
     {
       "suite": "Nghiệp vụ 4",
       "testName": "Cấp số thứ tự STT hàng chờ điện tử theo khoa phòng (Queue Ticket)",
       "status": "PASS",
-      "durationMs": 28,
-      "details": "Số STT: #102, Chuyên khoa: Khoa Cấp Cứu & Hồi Sức, Trạng thái: Waiting",
+      "durationMs": 30,
+      "details": "Số STT: #104, Chuyên khoa: Khoa Cấp Cứu & Hồi Sức, Trạng thái: Waiting",
       "error": null
     },
     {
@@ -110,22 +110,22 @@
       "testName": "Tính lũy thừa Idempotency: Quét lặp lại 3 lần cùng mã QR không sinh trùng số",
       "status": "PASS",
       "durationMs": 19,
-      "details": "Lần 1 ID: apt-1794549357449, Lần 2 ID: apt-1794549357449, Lần 3 ID: apt-1794549357449. Số bản ghi tồn tại: 1",
+      "details": "Lần 1 ID: apt-1794551038026, Lần 2 ID: apt-1794551038026, Lần 3 ID: apt-1794551038026. Số bản ghi tồn tại: 1",
       "error": null
     },
     {
       "suite": "Nghiệp vụ 6",
       "testName": "Giả lập 2 Kiosk đồng thời cấp STT cùng tích tắc (Queue Concurrency Safety)",
       "status": "PASS",
-      "durationMs": 81,
-      "details": "Kiosk 1 cấp STT: #103, Kiosk 2 cấp STT: #104. Không trùng lặp, liên tiếp 1 đơn vị (103 vs 104)",
+      "durationMs": 75,
+      "details": "Kiosk 1 cấp STT: #108, Kiosk 2 cấp STT: #107. Không trùng lặp, liên tiếp 1 đơn vị (108 vs 107)",
       "error": null
     },
     {
       "suite": "Nghiệp vụ 7",
       "testName": "Kết nối WebSocket SignalR & Nhận thông báo hàng đợi thời gian thực",
       "status": "PASS",
-      "durationMs": 292,
+      "durationMs": 321,
       "details": "Đã nhận thành công gói tin Realtime Broadcast: SignalR Test Patient",
       "error": null
     },
@@ -133,7 +133,7 @@
       "suite": "Nghiệp vụ 8",
       "testName": "Phân quyền Hồ sơ bệnh nhân (/api/patients): Cho phép 7 vai trò, chặn Patient (403)",
       "status": "PASS",
-      "durationMs": 78,
+      "durationMs": 91,
       "details": "Admin: 200 | Doctor: 200 | Receptionist: 200 | Triage: 200 | Pharmacy: 200 | Nurse: 200 | Cashier: 200 | Patient: 403",
       "error": null
     },
@@ -141,7 +141,7 @@
       "suite": "Nghiệp vụ 8",
       "testName": "Đặc quyền Bác sĩ gọi số (call-next): Doctor được phép, Receptionist & Cashier bị 403",
       "status": "PASS",
-      "durationMs": 42,
+      "durationMs": 44,
       "details": "Doctor: 200, Receptionist: 403, Cashier: 403",
       "error": null
     },
@@ -157,7 +157,7 @@
       "suite": "Nghiệp vụ 8",
       "testName": "Phân quyền Khung giờ khám (toggle-lock): Receptionist được phép, Pharmacy bị 403",
       "status": "PASS",
-      "durationMs": 21,
+      "durationMs": 23,
       "details": "Receptionist: 200, Pharmacy: 403",
       "error": null
     }

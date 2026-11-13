@@ -42,6 +42,7 @@ import {
   CopyOutlined,
   CheckCircleOutlined,
   SyncOutlined,
+  QrcodeOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -207,6 +208,11 @@ export const ExaminationsPage: React.FC = () => {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [previousExam, setPreviousExam] = useState<ExaminationItem | null>(null);
   const [loadingPreviousExam, setLoadingPreviousExam] = useState<boolean>(false);
+
+  // CLS Return / Re-enter queue state (Mắt xích 6: Quét QR quay lại đọc kết quả CLS)
+  const [isClsReturnModalOpen, setIsClsReturnModalOpen] = useState(false);
+  const [clsReturnInputCode, setClsReturnInputCode] = useState('');
+  const [clsFilterTab, setClsFilterTab] = useState<'all' | 'new' | 'cls'>('all');
 
   // Prescriptions & Services lists in Modal
   const [prescriptions, setPrescriptions] = useState<PrescriptionDetailItem[]>([
@@ -424,6 +430,77 @@ export const ExaminationsPage: React.FC = () => {
         icd10Code: previousExam.icd10Code,
       });
       showToast(`Đã áp dụng mã chẩn đoán đợt trước: ${previousExam.icd10Code} (${previousExam.icd10Name || ''})`, 'success');
+    }
+  };
+
+  // ⚡ Xử lý Quét QR Bệnh nhân Quay Lại Phòng Khám (Đọc Kết Quả CLS - Mắt xích 6)
+  const handleClsReturnScan = () => {
+    if (!clsReturnInputCode.trim()) {
+      showToast('Vui lòng quét hoặc nhập mã QR / Mã bệnh nhân!', 'warning');
+      return;
+    }
+    const code = clsReturnInputCode.trim().toLowerCase();
+    const targetQueueItem = queueList.find(
+      (q) => (q.patientCode && q.patientCode.toLowerCase() === code) ||
+             (q.patientName && q.patientName.toLowerCase().includes(code))
+    );
+
+    if (targetQueueItem) {
+      const updated = queueList.map((item) => {
+        if (item.id === targetQueueItem.id) {
+          return {
+            ...item,
+            queueType: 'ParaclinicalResult' as const,
+            priority: 'Priority' as const,
+            status: 'Calling' as const,
+          };
+        }
+        return item;
+      });
+      const prioritized = [
+        ...updated.filter((item) => item.id === targetQueueItem.id),
+        ...updated.filter((item) => item.id !== targetQueueItem.id),
+      ];
+      setQueueList(prioritized);
+      setIsClsReturnModalOpen(false);
+      setClsReturnInputCode('');
+      showSuccessAlert(
+        'Đã Xác Nhận Quay Lại Phòng Khám (Đọc Kết Quả CLS)!',
+        `Bệnh nhân: ${targetQueueItem.patientName} (${targetQueueItem.patientCode})\n• Đã có đầy đủ kết quả Xét nghiệm & CĐHA!\n• Hệ thống tự động xếp vào Hàng đợi Ưu tiên đọc kết quả của Bác sĩ.`
+      );
+    } else {
+      const matchedPatient = patients.find(
+        (p) => (p.maBenhNhan && p.maBenhNhan.toLowerCase() === code) ||
+               (p.hoTen && p.hoTen.toLowerCase().includes(code))
+      ) || patients[0];
+
+      if (matchedPatient) {
+        const newQueueItem = {
+          id: `queue-cls-${Date.now()}`,
+          patientId: matchedPatient.id,
+          patientCode: matchedPatient.maBenhNhan,
+          patientName: matchedPatient.hoTen,
+          patientGender: matchedPatient.gioiTinh || 'Nam',
+          patientAge: matchedPatient.tuoi || 40,
+          sequenceNumber: queueList.length + 1,
+          departmentName: 'Khoa Nội Tổng Hợp',
+          priority: 'Priority' as const,
+          queueType: 'ParaclinicalResult' as const,
+          visitType: 'NewVisit' as const,
+          paymentStatus: 'Paid' as const,
+          status: 'Waiting' as const,
+          createdAt: new Date().toISOString(),
+        };
+        setQueueList([newQueueItem, ...queueList]);
+        setIsClsReturnModalOpen(false);
+        setClsReturnInputCode('');
+        showSuccessAlert(
+          'Đã Tiếp Nhận Bệnh Nhân Quay Lại (Đọc Kết Quả CLS)!',
+          `Bệnh nhân: ${matchedPatient.hoTen} (${matchedPatient.maBenhNhan})\n• Kết quả CLS đã được đẩy tự động vào hồ sơ điện tử.\n• Tự động xếp vào Hàng đợi Ưu tiên đọc kết quả.`
+        );
+      } else {
+        showToast(`Không tìm thấy bệnh nhân với mã hoặc tên: "${clsReturnInputCode}"`, 'error');
+      }
     }
   };
 
@@ -736,11 +813,43 @@ export const ExaminationsPage: React.FC = () => {
             <Badge count={queueList.length} style={{ backgroundColor: '#10b981' }} />
           </Space>
         }
+        extra={
+          <Space wrap>
+            <Radio.Group
+              value={clsFilterTab}
+              onChange={(e) => setClsFilterTab(e.target.value)}
+              buttonStyle="solid"
+              size="middle"
+            >
+              <Radio.Button value="all">Tất cả ({queueList.length})</Radio.Button>
+              <Radio.Button value="new">Chờ khám ban đầu ({queueList.filter((q) => q.queueType !== 'ParaclinicalResult').length})</Radio.Button>
+              <Radio.Button value="cls" style={{ color: '#ea580c', fontWeight: 700 }}>
+                ⚡ Chờ đọc KQ CLS ({queueList.filter((q) => q.queueType === 'ParaclinicalResult').length})
+              </Radio.Button>
+            </Radio.Group>
+            <Button
+              type="primary"
+              icon={<QrcodeOutlined />}
+              onClick={() => setIsClsReturnModalOpen(true)}
+              style={{
+                backgroundColor: '#f97316',
+                borderColor: '#ea580c',
+                fontWeight: 600,
+              }}
+            >
+              Quét QR BN Quay Lại (Đọc KQ CLS)
+            </Button>
+          </Space>
+        }
         style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd', marginBottom: 24 }}
         bodyStyle={{ padding: 0 }}
       >
         <Table
-          dataSource={queueList}
+          dataSource={queueList.filter((item) => {
+            if (clsFilterTab === 'cls') return item.queueType === 'ParaclinicalResult';
+            if (clsFilterTab === 'new') return item.queueType !== 'ParaclinicalResult';
+            return true;
+          })}
           rowKey="id"
           pagination={false}
           columns={[
@@ -762,10 +871,21 @@ export const ExaminationsPage: React.FC = () => {
               ),
             },
             {
-              title: 'Phân loại',
-              dataIndex: 'priority',
-              render: (t) => (
-                <Tag color={t === 'Normal' ? 'blue' : 'volcano'}>{t === 'Normal' ? 'Thường' : 'Ưu tiên'}</Tag>
+              title: 'Phân loại & Hàng chờ',
+              key: 'queueCategory',
+              render: (_, record) => (
+                <Space direction="vertical" size={2}>
+                  {record.queueType === 'ParaclinicalResult' ? (
+                    <Tag color="volcano" style={{ fontWeight: 800 }}>⚡ ĐỌC KẾT QUẢ CLS (ƯU TIÊN)</Tag>
+                  ) : record.visitType === 'FollowUp' ? (
+                    <Tag color="purple" style={{ fontWeight: 700 }}>🔄 Tái Khám Theo Hẹn</Tag>
+                  ) : (
+                    <Tag color="blue">Khám ban đầu</Tag>
+                  )}
+                  {record.priority === 'Priority' && record.queueType !== 'ParaclinicalResult' && (
+                    <Tag color="red">Ưu tiên cấp cứu</Tag>
+                  )}
+                </Space>
               ),
             },
             {
@@ -2049,6 +2169,86 @@ export const ExaminationsPage: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+      {/* Modal Quét QR / Tiếp Nhận Bệnh Nhân Quay Lại (Đọc Kết Quả CLS - Mắt xích 6) */}
+      <Modal
+        title={
+          <Space>
+            <QrcodeOutlined style={{ color: '#ea580c', fontSize: 20 }} />
+            <span style={{ fontWeight: 700, color: '#0f172a' }}>
+              Quét QR / Tiếp Nhận Bệnh Nhân Quay Lại (Đọc Kết Quả CLS)
+            </span>
+          </Space>
+        }
+        open={isClsReturnModalOpen}
+        onCancel={() => {
+          setIsClsReturnModalOpen(false);
+          setClsReturnInputCode('');
+        }}
+        footer={null}
+        width={560}
+      >
+        <div style={{ textAlign: 'center', padding: '16px 0' }}>
+          <div
+            style={{
+              width: 140,
+              height: 140,
+              margin: '0 auto 16px',
+              border: '2px dashed #ea580c',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#fff7ed',
+            }}
+          >
+            <QRCodeSVG value={clsReturnInputCode || 'HOSPITAL-CLS-RETURN-SAMPLE'} size={110} />
+          </div>
+
+          <Text strong style={{ fontSize: 15, display: 'block', marginBottom: 6 }}>
+            Bệnh nhân đưa mã QR hoặc phiếu chỉ định CLS trước đầu đọc tại cửa phòng khám
+          </Text>
+          <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
+            Hệ thống tự động đồng bộ kết quả Xét nghiệm & CĐHA từ hệ thống LIS/PACS và kích hoạt hàng đợi đọc kết quả ưu tiên.
+          </Text>
+
+          <Input.Search
+            placeholder="Quét mã QR hoặc nhập Mã BN (Ví dụ: BN001)..."
+            value={clsReturnInputCode}
+            onChange={(e) => setClsReturnInputCode(e.target.value)}
+            onSearch={handleClsReturnScan}
+            enterButton={
+              <Button type="primary" style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>
+                Xác Nhận Quay Lại
+              </Button>
+            }
+            size="large"
+            autoFocus
+          />
+
+          {import.meta.env.DEV && (
+            <div style={{ marginTop: 16, textAlign: 'left', background: '#f8fafc', padding: 12, borderRadius: 8 }}>
+              <Text strong style={{ fontSize: 12, color: '#64748b' }}>
+                ⚡ Test nhanh QR (Chế độ DEV):
+              </Text>
+              <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {queueList.slice(0, 3).map((q) => (
+                  <Tag
+                    key={q.id}
+                    color="orange"
+                    style={{ cursor: 'pointer', padding: '4px 8px' }}
+                    onClick={() => {
+                      setClsReturnInputCode(q.patientCode);
+                    }}
+                  >
+                    #{q.sequenceNumber} - {q.patientName} ({q.patientCode})
+                  </Tag>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };
