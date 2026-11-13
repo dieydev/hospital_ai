@@ -1103,47 +1103,49 @@ export const ReceptionPage: React.FC = () => {
             style={{ borderRadius: 10, fontFamily: 'monospace' }}
           />
 
-          {/* Quick Demo Buttons for Presentation / Defense */}
-          <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 10, backgroundColor: isDarkMode ? '#1e293b' : '#f0f9ff', border: '1px dashed #bae6fd' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#0284c7', marginBottom: 8 }}>
-              🎯 NÚT BẤM NHANH DÀNH CHO BUỔI DEMO / BẢO VỆ ĐỒ ÁN:
+          {/* Quick Demo Buttons for Presentation / Defense (Chỉ kích hoạt trong môi trường Development) */}
+          {import.meta.env.DEV && (
+            <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 10, backgroundColor: isDarkMode ? '#1e293b' : '#f0f9ff', border: '1px dashed #bae6fd' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0284c7', marginBottom: 8 }}>
+                🎯 NÚT BẤM NHANH DÀNH CHO BUỔI DEMO / BẢO VỆ ĐỒ ÁN:
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Button
+                  size="small"
+                  style={{ textAlign: 'left', borderRadius: 6 }}
+                  onClick={() => {
+                    setQrInputCode('MEDQR|apt-001|BN20260015|2026-08-12|08:30');
+                    showToast('Đã nạp mã QR Lịch hẹn Online (Khám lần đầu)', 'info');
+                  }}
+                >
+                  📱 <strong>Ca 1 (Khám lần đầu):</strong> BN Trần Văn Nam (Mã: apt-001, Khoa Nội)
+                </Button>
+                <Button
+                  size="small"
+                  style={{ textAlign: 'left', borderRadius: 6 }}
+                  onClick={() => {
+                    setQrInputCode('MEDQR|apt-002|BN20260016|2026-08-12|09:15');
+                    showToast('Đã nạp mã QR Giấy hẹn Tái Khám', 'info');
+                  }}
+                >
+                  🔄 <strong>Ca 2 (Tái khám theo hẹn):</strong> BN Nguyễn Thị Mai (Mã: apt-002, Tiêu Hóa)
+                </Button>
+                <Button
+                  size="small"
+                  style={{ textAlign: 'left', borderRadius: 6 }}
+                  onClick={() => {
+                    setQrInputCode('BN20260015');
+                    showToast('Đã nạp Mã Bệnh Nhân / CCCD gắn chip', 'info');
+                  }}
+                >
+                  💳 <strong>Ca 3 (Quét CCCD / Mã BN):</strong> BN20260015
+                </Button>
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 8, fontStyle: 'italic' }}>
+                * Bấm chọn 1 trong các nút trên rồi bấm <strong>"Xác Nhận Tiếp Nhận"</strong> để mô phỏng quét QR tức thì.
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Button
-                size="small"
-                style={{ textAlign: 'left', borderRadius: 6 }}
-                onClick={() => {
-                  setQrInputCode('MEDQR|apt-001|BN20260015|2026-08-12|08:30');
-                  showToast('Đã nạp mã QR Lịch hẹn Online (Khám lần đầu)', 'info');
-                }}
-              >
-                📱 <strong>Ca 1 (Khám lần đầu):</strong> BN Trần Văn Nam (Mã: apt-001, Khoa Nội)
-              </Button>
-              <Button
-                size="small"
-                style={{ textAlign: 'left', borderRadius: 6 }}
-                onClick={() => {
-                  setQrInputCode('MEDQR|apt-002|BN20260016|2026-08-12|09:15');
-                  showToast('Đã nạp mã QR Giấy hẹn Tái Khám', 'info');
-                }}
-              >
-                🔄 <strong>Ca 2 (Tái khám theo hẹn):</strong> BN Nguyễn Thị Mai (Mã: apt-002, Tiêu Hóa)
-              </Button>
-              <Button
-                size="small"
-                style={{ textAlign: 'left', borderRadius: 6 }}
-                onClick={() => {
-                  setQrInputCode('BN20260015');
-                  showToast('Đã nạp Mã Bệnh Nhân / CCCD gắn chip', 'info');
-                }}
-              >
-                💳 <strong>Ca 3 (Quét CCCD / Mã BN):</strong> BN20260015
-              </Button>
-            </div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 8, fontStyle: 'italic' }}>
-              * Bấm chọn 1 trong các nút trên rồi bấm <strong>"Xác Nhận Tiếp Nhận"</strong> để mô phỏng quét QR tức thì.
-            </div>
-          </div>
+          )}
         </div>
       </Modal>
 

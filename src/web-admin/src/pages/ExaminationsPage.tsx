@@ -38,6 +38,10 @@ import {
   HeartOutlined,
   SoundOutlined,
   ExperimentOutlined,
+  HistoryOutlined,
+  CopyOutlined,
+  CheckCircleOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -198,6 +202,11 @@ export const ExaminationsPage: React.FC = () => {
   // Drug Safety & Allergy Check State
   const [drugSafetyLoading, setDrugSafetyLoading] = useState(false);
   const [drugSafetyWarnings, setDrugSafetyWarnings] = useState<string[]>([]);
+
+  // Tái khám & Lịch sử Đợt Khám Trước
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [previousExam, setPreviousExam] = useState<ExaminationItem | null>(null);
+  const [loadingPreviousExam, setLoadingPreviousExam] = useState<boolean>(false);
 
   // Prescriptions & Services lists in Modal
   const [prescriptions, setPrescriptions] = useState<PrescriptionDetailItem[]>([
@@ -362,6 +371,62 @@ export const ExaminationsPage: React.FC = () => {
     }
   };
 
+  // 📋 Tra cứu & Xử lý Lịch sử Đợt Khám Trước (Phục vụ Tái Khám)
+  const loadPreviousExam = useCallback(async (patientId: string) => {
+    if (!patientId) {
+      setPreviousExam(null);
+      return;
+    }
+    setLoadingPreviousExam(true);
+    try {
+      // 1. Kiểm tra trong danh sách examinations đã tải về
+      let patientExams = examinations.filter((e) => e.patientId === patientId);
+      // 2. Nếu chưa có trong state hiện tại, query API backend
+      if (patientExams.length === 0) {
+        const fetched = await examinationService.getExaminations('', patientId);
+        if (fetched && fetched.length > 0) {
+          patientExams = fetched;
+        }
+      }
+
+      if (patientExams.length > 0) {
+        // Sắp xếp ngày khám mới nhất lên đầu
+        const sorted = [...patientExams].sort((a, b) => {
+          const timeA = new Date(a.examinationDate || a.createdAt || 0).getTime();
+          const timeB = new Date(b.examinationDate || b.createdAt || 0).getTime();
+          return timeB - timeA;
+        });
+        setPreviousExam(sorted[0]);
+      } else {
+        setPreviousExam(null);
+      }
+    } catch (err) {
+      console.warn('Lỗi tải lịch sử đợt khám trước:', err);
+      setPreviousExam(null);
+    } finally {
+      setLoadingPreviousExam(false);
+    }
+  }, [examinations]);
+
+  const handleCopyPreviousPrescription = () => {
+    if (!previousExam || !previousExam.prescriptionDetails || previousExam.prescriptionDetails.length === 0) {
+      showToast('Đợt khám trước không có đơn thuốc để sao chép!', 'warning');
+      return;
+    }
+    setPrescriptions([...previousExam.prescriptionDetails]);
+    showToast(`Đã sao chép ${previousExam.prescriptionDetails.length} loại thuốc từ đơn đợt trước sang đơn khám hiện tại!`, 'success');
+  };
+
+  const handleApplyPreviousDiagnosis = () => {
+    if (!previousExam) return;
+    if (previousExam.icd10Code) {
+      form.setFieldsValue({
+        icd10Code: previousExam.icd10Code,
+      });
+      showToast(`Đã áp dụng mã chẩn đoán đợt trước: ${previousExam.icd10Code} (${previousExam.icd10Name || ''})`, 'success');
+    }
+  };
+
   // 💊 Thao tác Kê Đơn Thuốc (Medicine Handlers)
   const handleAddMedicine = () => {
     setPrescriptions([
@@ -487,6 +552,8 @@ export const ExaminationsPage: React.FC = () => {
 
       setIsModalOpen(false);
       form.resetFields();
+      setSelectedPatientId(null);
+      setPreviousExam(null);
       fetchExaminations();
     } catch {
       showErrorAlert('Không thể lưu ca khám', 'Vui lòng kiểm tra lại kết nối API Backend.');
@@ -650,6 +717,8 @@ export const ExaminationsPage: React.FC = () => {
             onClick={() => {
               form.resetFields();
               setDrugSafetyWarnings([]);
+              setSelectedPatientId(null);
+              setPreviousExam(null);
               setIsModalOpen(true);
             }}
           >
@@ -717,6 +786,30 @@ export const ExaminationsPage: React.FC = () => {
                     onClick={() => {
                       form.resetFields();
                       setDrugSafetyWarnings([]);
+                      setSelectedPatientId(record.patientId);
+                      loadPreviousExam(record.patientId);
+                      const patient = patients.find((p) => p.id === record.patientId);
+                      if (patient) {
+                        try {
+                          const cachedVitals = localStorage.getItem(`vitals_${patient.maBenhNhan}`);
+                          if (cachedVitals) {
+                            const parsed = JSON.parse(cachedVitals);
+                            form.setFieldsValue({
+                              pulseRate: parsed.pulse || 78,
+                              temperature: parsed.temperature || 36.8,
+                              bloodPressure: parsed.bloodPressure || '120/80',
+                              respiratoryRate: parsed.respiratoryRate || 18,
+                              weight: parsed.weight || 65,
+                              height: parsed.height || 168,
+                              chiefComplaint: parsed.initialSymptoms || '',
+                            });
+                            if (parsed.weight) setWeight(parsed.weight);
+                            if (parsed.height) setHeight(parsed.height);
+                          }
+                        } catch (e) {
+                          console.warn('Error loading cached vitals', e);
+                        }
+                      }
                       form.setFieldsValue({
                         patientId: record.patientId, 
                         subjective: '', // Yêu cầu bác sĩ tự điền hoặc lấy từ lúc tiếp đón
@@ -756,7 +849,11 @@ export const ExaminationsPage: React.FC = () => {
           </Space>
         }
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setSelectedPatientId(null);
+          setPreviousExam(null);
+        }}
         footer={null}
         destroyOnClose
         width={950}
@@ -787,6 +884,8 @@ export const ExaminationsPage: React.FC = () => {
                         placeholder="Gõ tên hoặc mã bệnh nhân..."
                         size="large"
                         onChange={(val) => {
+                          setSelectedPatientId(val);
+                          loadPreviousExam(val);
                           const patient = patients.find((p) => p.id === val);
                           if (patient) {
                             try {
@@ -819,6 +918,36 @@ export const ExaminationsPage: React.FC = () => {
                         ))}
                       </Select>
                     </Form.Item>
+
+                    {/* Banner tóm tắt trạng thái Tái khám / Khám lần đầu */}
+                    {previousExam ? (
+                      <Alert
+                        type="info"
+                        showIcon
+                        icon={<HistoryOutlined />}
+                        message={
+                          <span>
+                            <strong>Phát hiện Hồ sơ Đợt Khám Trước ({previousExam.examinationCode})</strong>: Ngày{' '}
+                            {previousExam.examinationDate
+                              ? new Date(previousExam.examinationDate).toLocaleDateString('vi-VN')
+                              : previousExam.createdAt
+                              ? new Date(previousExam.createdAt).toLocaleDateString('vi-VN')
+                              : 'gần nhất'}
+                            {' '}- Chẩn đoán cũ: <strong>{previousExam.icd10Code} ({previousExam.icd10Name || previousExam.assessment})</strong>.
+                            Xem chi tiết tiến triển điều trị tại Tab SOAP.
+                          </span>
+                        }
+                        style={{ marginBottom: 12, borderRadius: 8 }}
+                      />
+                    ) : selectedPatientId && !loadingPreviousExam ? (
+                      <Alert
+                        type="success"
+                        showIcon
+                        icon={<CheckCircleOutlined />}
+                        message="Bệnh nhân khám lần đầu (Chưa có lịch sử khám trước đó trên hệ thống EMR)."
+                        style={{ marginBottom: 12, borderRadius: 8 }}
+                      />
+                    ) : null}
 
                     <Divider style={{ margin: '12px 0', borderColor: isDarkMode ? '#334155' : undefined }}>
                       <Text style={{ fontSize: 13, color: '#0284c7', fontWeight: 600 }}>CHỈ SỐ SINH HIỆU (VITAL SIGNS)</Text>
@@ -889,6 +1018,185 @@ export const ExaminationsPage: React.FC = () => {
                 ),
                 children: (
                   <div style={{ marginTop: 12 }}>
+                    {/* Bổ sung panel / card "Hồ sơ Đợt Khám Trước & Tiến Triển Điều Trị" phục vụ quy trình Tái khám */}
+                    <div style={{ marginBottom: 16 }}>
+                      {loadingPreviousExam ? (
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            borderRadius: 12,
+                            background: isDarkMode ? '#1e293b' : '#f0f9ff',
+                            border: '1px solid #bae6fd',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                          }}
+                        >
+                          <SyncOutlined spin style={{ color: '#0284c7', fontSize: 16 }} />
+                          <Text style={{ color: isDarkMode ? '#cbd5e1' : '#0369a1', fontSize: 13 }}>
+                            Đang tra cứu hồ sơ đợt khám trước và diễn tiến điều trị của bệnh nhân...
+                          </Text>
+                        </div>
+                      ) : previousExam ? (
+                        <Card
+                          size="small"
+                          style={{
+                            borderRadius: 12,
+                            background: isDarkMode ? '#1e293b' : '#f8fafc',
+                            border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+                            boxShadow: '0 4px 16px rgba(2, 132, 199, 0.08)',
+                          }}
+                          title={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                              <Space>
+                                <HistoryOutlined style={{ color: '#0284c7', fontSize: 16 }} />
+                                <strong style={{ color: isDarkMode ? '#38bdf8' : '#0369a1', fontSize: 14 }}>
+                                  Hồ Sơ Đợt Khám Trước & Tiến Triển Điều Trị
+                                </strong>
+                                <Tag color="blue" style={{ borderRadius: 6, fontWeight: 700 }}>
+                                  🔄 BỆNH NHÂN TÁI KHÁM
+                                </Tag>
+                              </Space>
+                              <Space>
+                                <Tag color="cyan" style={{ borderRadius: 6 }}>
+                                  Mã ĐK: {previousExam.examinationCode}
+                                </Tag>
+                              </Space>
+                            </div>
+                          }
+                        >
+                          <Row gutter={[16, 12]}>
+                            {/* 1. Ngày khám trước & Bác sĩ phụ trách */}
+                            <Col xs={24} sm={12}>
+                              <div style={{ padding: '8px 12px', background: isDarkMode ? '#0f172a' : '#ffffff', borderRadius: 8, border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0', height: '100%' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 4 }}>
+                                  📅 Ngày khám trước & Bác sĩ phụ trách
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                                  {previousExam.examinationDate
+                                    ? new Date(previousExam.examinationDate).toLocaleString('vi-VN')
+                                    : previousExam.createdAt
+                                    ? new Date(previousExam.createdAt).toLocaleString('vi-VN')
+                                    : 'Không rõ ngày'}
+                                </div>
+                                <div style={{ fontSize: 12, color: '#0284c7', marginTop: 2 }}>
+                                  BS: <strong>{previousExam.doctorName || 'Bác sĩ điều trị'}</strong> ({previousExam.departmentName || 'Khoa Khám Bệnh'})
+                                </div>
+                                <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                                  Sinh hiệu cũ: HA {previousExam.bloodPressure || '120/80'} | Mạch {previousExam.pulseRate || 75} bpm | Thân nhiệt {previousExam.temperature || 37}°C | Cân nặng {previousExam.weight || 65}kg
+                                </div>
+                              </div>
+                            </Col>
+
+                            {/* 2. Mã ICD-10 & Chẩn đoán trước */}
+                            <Col xs={24} sm={12}>
+                              <div style={{ padding: '8px 12px', background: isDarkMode ? '#0f172a' : '#ffffff', borderRadius: 8, border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0', height: '100%' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                                    🏷️ Mã ICD-10 & Chẩn đoán trước
+                                  </div>
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    style={{ padding: 0, height: 'auto', fontSize: 11, color: '#0284c7' }}
+                                    onClick={handleApplyPreviousDiagnosis}
+                                  >
+                                    Áp dụng mã cũ
+                                  </Button>
+                                </div>
+                                <div>
+                                  <Tag color="geekblue" style={{ fontWeight: 700, fontSize: 12, borderRadius: 4 }}>
+                                    {previousExam.icd10Code}
+                                  </Tag>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                                    {previousExam.icd10Name || previousExam.assessment}
+                                  </span>
+                                </div>
+                                {previousExam.initialDiagnosis && (
+                                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                                    Chẩn đoán sơ bộ đợt trước: {previousExam.initialDiagnosis}
+                                  </div>
+                                )}
+                              </div>
+                            </Col>
+
+                            {/* 3. Diễn tiến điều trị & Triệu chứng đợt trước */}
+                            <Col xs={24} sm={12}>
+                              <div style={{ padding: '8px 12px', background: isDarkMode ? '#0f172a' : '#ffffff', borderRadius: 8, border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0', height: '100%' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 4 }}>
+                                  🩺 Triệu chứng & Diễn tiến điều trị đợt trước
+                                </div>
+                                <div style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+                                  <strong>Triệu chứng đợt trước:</strong> {previousExam.subjective || 'Không có ghi nhận'}
+                                </div>
+                                <div style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#334155', marginTop: 4 }}>
+                                  <strong>Phác đồ / Hướng điều trị:</strong> {previousExam.treatmentMethod || previousExam.plan || 'Điều trị ngoại trú theo đơn thuốc'}
+                                </div>
+                              </div>
+                            </Col>
+
+                            {/* 4. Đơn thuốc đợt trước & Tiện ích sao chép */}
+                            <Col xs={24} sm={12}>
+                              <div style={{ padding: '8px 12px', background: isDarkMode ? '#0f172a' : '#ffffff', borderRadius: 8, border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0', height: '100%' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                                    💊 Đơn thuốc đã kê đợt trước ({previousExam.prescriptionDetails?.length || 0} thuốc)
+                                  </div>
+                                  {previousExam.prescriptionDetails && previousExam.prescriptionDetails.length > 0 && (
+                                    <Button
+                                      size="small"
+                                      type="primary"
+                                      ghost
+                                      icon={<CopyOutlined />}
+                                      style={{ height: 22, fontSize: 11, borderRadius: 4 }}
+                                      onClick={handleCopyPreviousPrescription}
+                                    >
+                                      Kê lại đơn cũ
+                                    </Button>
+                                  )}
+                                </div>
+                                {previousExam.prescriptionDetails && previousExam.prescriptionDetails.length > 0 ? (
+                                  <div style={{ maxHeight: 72, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    {previousExam.prescriptionDetails.map((med, idx) => (
+                                      <div key={idx} style={{ fontSize: 11, color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+                                        • <strong>{med.medicineName}</strong> - {med.quantity} {med.unit} ({med.dosageInstruction || med.usageTime || 'Theo chỉ định'})
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>
+                                    Không có đơn thuốc đợt trước
+                                  </div>
+                                )}
+                              </div>
+                            </Col>
+                          </Row>
+                        </Card>
+                      ) : (
+                        <div
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            background: isDarkMode ? '#1e293b' : '#f0fdf4',
+                            border: isDarkMode ? '1px solid #166534' : '1px solid #bbf7d0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <Space>
+                            <CheckCircleOutlined style={{ color: '#16a34a', fontSize: 16 }} />
+                            <span style={{ fontSize: 13, color: isDarkMode ? '#86efac' : '#15803d', fontWeight: 600 }}>
+                              Bệnh nhân Khám Lần Đầu (Chưa có lịch sử đợt khám trước trên hệ thống EMR)
+                            </span>
+                          </Space>
+                          <Tag color="green" style={{ borderRadius: 6, fontWeight: 700 }}>
+                            KHÁM LẦN ĐẦU
+                          </Tag>
+                        </div>
+                      )}
+                    </div>
+
                     <Form.Item
                       label="S (Subjective) - Triệu chứng chủ quan"
                       name="subjective"
