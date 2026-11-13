@@ -1076,7 +1076,7 @@ export const ReceptionPage: React.FC = () => {
         title={
           <Space>
             <ScanOutlined style={{ color: '#0284c7' }} />
-            <span>Tiếp Nhận Điện Tử Bằng Mã QR (Bệnh Nhân App)</span>
+            <span style={{ fontWeight: 700, color: '#0369a1' }}>Tiếp Nhận Điện Tử Bằng Mã QR (Bệnh Nhân App & Giấy Hẹn)</span>
           </Space>
         }
         open={isQrScanOpen}
@@ -1085,23 +1085,65 @@ export const ReceptionPage: React.FC = () => {
         confirmLoading={qrProcessing}
         okText="Xác Nhận Tiếp Nhận"
         cancelText="Đóng"
-        width={450}
+        width={520}
         centered
       >
         <div style={{ padding: '8px 0' }}>
-          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-            Bệnh nhân đã đặt lịch trên Mobile App chỉ cần đưa mã QR để quét (không cần bốc số thứ tự STT giấy):
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 14 }}>
+            Bệnh nhân đặt lịch trên Mobile App hoặc có <strong>Giấy hẹn tái khám</strong> chỉ cần đưa mã QR để quét nhận diện tức thì:
           </p>
           <Input
             size="large"
             prefix={<QrcodeOutlined style={{ color: '#0284c7' }} />}
-            placeholder="Quét mã QR hoặc nhập: MEDQR|apt-... hoặc Mã BN"
+            placeholder="Chĩa súng quét QR vào đây (hoặc nhập: apt-001 / BN20260015)..."
             value={qrInputCode}
             onChange={(e) => setQrInputCode(e.target.value)}
             onPressEnter={handleQrScanSubmit}
             autoFocus
             style={{ borderRadius: 10, fontFamily: 'monospace' }}
           />
+
+          {/* Quick Demo Buttons for Presentation / Defense */}
+          <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 10, backgroundColor: isDarkMode ? '#1e293b' : '#f0f9ff', border: '1px dashed #bae6fd' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#0284c7', marginBottom: 8 }}>
+              🎯 NÚT BẤM NHANH DÀNH CHO BUỔI DEMO / BẢO VỆ ĐỒ ÁN:
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Button
+                size="small"
+                style={{ textAlign: 'left', borderRadius: 6 }}
+                onClick={() => {
+                  setQrInputCode('MEDQR|apt-001|BN20260015|2026-08-12|08:30');
+                  showToast('Đã nạp mã QR Lịch hẹn Online (Khám lần đầu)', 'info');
+                }}
+              >
+                📱 <strong>Ca 1 (Khám lần đầu):</strong> BN Trần Văn Nam (Mã: apt-001, Khoa Nội)
+              </Button>
+              <Button
+                size="small"
+                style={{ textAlign: 'left', borderRadius: 6 }}
+                onClick={() => {
+                  setQrInputCode('MEDQR|apt-002|BN20260016|2026-08-12|09:15');
+                  showToast('Đã nạp mã QR Giấy hẹn Tái Khám', 'info');
+                }}
+              >
+                🔄 <strong>Ca 2 (Tái khám theo hẹn):</strong> BN Nguyễn Thị Mai (Mã: apt-002, Tiêu Hóa)
+              </Button>
+              <Button
+                size="small"
+                style={{ textAlign: 'left', borderRadius: 6 }}
+                onClick={() => {
+                  setQrInputCode('BN20260015');
+                  showToast('Đã nạp Mã Bệnh Nhân / CCCD gắn chip', 'info');
+                }}
+              >
+                💳 <strong>Ca 3 (Quét CCCD / Mã BN):</strong> BN20260015
+              </Button>
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 8, fontStyle: 'italic' }}>
+              * Bấm chọn 1 trong các nút trên rồi bấm <strong>"Xác Nhận Tiếp Nhận"</strong> để mô phỏng quét QR tức thì.
+            </div>
+          </div>
         </div>
       </Modal>
 
