@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Avatar, Button, Dropdown, Tag, Drawer, Divider, Switch, Badge } from 'antd';
+import { Avatar, Button, Dropdown, Tag, Drawer, Divider, Switch, Badge, Tooltip } from 'antd';
 import {
   PhoneOutlined,
   ClockCircleOutlined,
@@ -464,26 +464,29 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
           {/* User Account / Auth Actions */}
           <div className="booking-navbar-actions">
             {user ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {isStaffOrAdmin && (
-                  <Button
-                    type="primary"
-                    icon={<HomeOutlined />}
-                    onClick={handleReturnToStaffWorkspace}
-                    style={{
-                      backgroundColor: '#0284c7',
-                      borderColor: '#0284c7',
-                      fontWeight: 700,
-                      height: 40,
-                      borderRadius: 10,
-                      fontSize: 13,
-                    }}
-                  >
-                    Bàn Làm Việc ({getStaffRoleLabel()})
-                  </Button>
+                  <Tooltip title={`Quay lại Bàn Làm Việc (${getStaffRoleLabel()})`}>
+                    <Button
+                      type="primary"
+                      icon={<HomeOutlined />}
+                      onClick={handleReturnToStaffWorkspace}
+                      style={{
+                        backgroundColor: '#0284c7',
+                        borderColor: '#0284c7',
+                        fontWeight: 700,
+                        height: 38,
+                        borderRadius: 10,
+                        fontSize: 13,
+                        padding: '0 12px',
+                      }}
+                    >
+                      Bàn Làm Việc
+                    </Button>
+                  </Tooltip>
                 )}
                 <Button
-                  icon={<CalendarOutlined style={{ color: '#0284c7', fontSize: 15 }} />}
+                  icon={<CalendarOutlined style={{ color: '#0284c7', fontSize: 14 }} />}
                   onClick={() => {
                     if (onOpenLookup) onOpenLookup();
                     else navigate('/booking?lookup=open');
@@ -493,14 +496,14 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
                     color: '#0369a1',
                     fontWeight: 600,
                     backgroundColor: '#ffffff',
-                    height: 40,
+                    height: 38,
                     borderRadius: 10,
-                    fontSize: 14,
-                    padding: '0 16px',
+                    fontSize: 13,
+                    padding: '0 12px',
                   }}
                   className="compact-btn-on-mobile hide-on-xs-mobile"
                 >
-                  Lịch khám của tôi
+                  Lịch khám
                 </Button>
                 <Dropdown
                   menu={{ items: patientDropdownItems }}

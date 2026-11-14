@@ -595,22 +595,22 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {/* Top Header */}
         <Header
           style={{
-            padding: '0 20px',
+            padding: '0 14px',
             background: isDarkMode ? '#1e293b' : '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             boxShadow: isDarkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 2px 10px rgba(2, 132, 199, 0.04)',
             zIndex: 9,
-            height: 64,
+            height: 60,
             borderBottom: isDarkMode ? '1px solid #334155' : '1px solid #e0f2fe',
-            gap: 16,
+            gap: 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 1 260px', minWidth: 40 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <Button
               type="text"
-              icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 18 }} /> : <MenuFoldOutlined style={{ fontSize: 18 }} />}
+              icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 17 }} /> : <MenuFoldOutlined style={{ fontSize: 17 }} />}
               onClick={() => setCollapsed(!collapsed)}
               style={{ color: isDarkMode ? '#cbd5e1' : '#475569', flexShrink: 0 }}
             />
@@ -618,19 +618,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               placeholder="Tìm BN, CCCD, EMR..."
               prefix={<SearchOutlined style={{ color: '#0284c7' }} />}
               style={{
-                width: '100%',
-                maxWidth: 220,
+                width: 170,
                 borderRadius: 20,
                 background: isDarkMode ? '#0f172a' : '#f8fafc',
                 border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
                 color: isDarkMode ? '#f8fafc' : '#0f172a',
-                padding: '5px 12px',
+                padding: '4px 10px',
                 fontSize: 12,
               }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {/* Docker Gateway Live Health Tag */}
             <Tooltip
               title={
@@ -646,14 +645,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 icon={isGatewayOnline ? <ApiOutlined /> : <DisconnectOutlined />}
                 onClick={handleToggleStrictMode}
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: 10,
+                  padding: '3px 8px',
+                  borderRadius: 8,
                   cursor: 'pointer',
                   fontWeight: 600,
-                  fontSize: 12,
+                  fontSize: 11.5,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 3,
                   margin: 0,
                   boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
                 }}
@@ -663,8 +662,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   : isGatewayOnline === false
                   ? 'Gateway Off'
                   : 'Gateway...'}
-                <Tag color={strictMode ? 'orange' : 'default'} style={{ margin: '0 0 0 4px', fontSize: 10, padding: '0 4px', borderRadius: 4 }}>
-                  {strictMode ? 'Strict' : 'Fallback'}
+                <Tag color={strictMode ? 'orange' : 'default'} style={{ margin: '0 0 0 3px', fontSize: 9.5, padding: '0 3px', borderRadius: 4 }}>
+                  {strictMode ? 'Strict' : 'Mock'}
                 </Tag>
               </Tag>
             </Tooltip>
@@ -672,23 +671,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             {/* Quick Link to Smart Kiosk */}
             <Tooltip title="Mở Màn hình Kiosk Tự Phục Vụ (Quét QR cấp STT)">
               <Button
-                icon={<ScanOutlined style={{ color: '#0369a1' }} />}
+                icon={<ScanOutlined style={{ color: '#0369a1', fontSize: 13 }} />}
                 style={{
                   backgroundColor: '#f0f9ff',
                   borderColor: '#bae6fd',
                   color: '#0369a1',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   fontWeight: 600,
-                  fontSize: 12,
-                  height: 34,
-                  padding: '0 12px',
+                  fontSize: 11.5,
+                  height: 32,
+                  padding: '0 10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: 4,
                 }}
                 onClick={() => window.open('/kiosk', '_blank')}
               >
-                Kiosk Cấp STT
+                Kiosk STT
               </Button>
             </Tooltip>
 
@@ -696,22 +695,22 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <Tooltip title="Mở Cổng Đặt Khám Bệnh Trực Tuyến 24/7 (Bệnh nhân đặt khám & nhận Mã QR)">
               <Button
                 type="primary"
-                icon={<GlobalOutlined />}
+                icon={<GlobalOutlined style={{ fontSize: 13 }} />}
                 style={{
                   backgroundColor: '#0284c7',
                   borderColor: '#0284c7',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   fontWeight: 600,
-                  fontSize: 12,
-                  height: 34,
-                  padding: '0 12px',
+                  fontSize: 11.5,
+                  height: 32,
+                  padding: '0 10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: 4,
                 }}
                 onClick={() => window.open('/booking', '_blank')}
               >
-                Cổng Đặt Khám
+                Đặt Khám
               </Button>
             </Tooltip>
 
@@ -719,13 +718,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <Button
               type="text"
               shape="circle"
-              icon={isDarkMode ? <SunOutlined style={{ fontSize: 17, color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: 17, color: '#0284c7' }} />}
+              icon={isDarkMode ? <SunOutlined style={{ fontSize: 16, color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: 16, color: '#0284c7' }} />}
               onClick={toggleTheme}
               style={{
                 background: isDarkMode ? '#0f172a' : '#f8fafc',
                 border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                width: 34,
-                height: 34,
+                width: 32,
+                height: 32,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -738,12 +737,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Button
                   type="text"
                   shape="circle"
-                  icon={<BellOutlined style={{ fontSize: 17, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
+                  icon={<BellOutlined style={{ fontSize: 16, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
                   style={{
                     background: isDarkMode ? '#0f172a' : '#f8fafc',
                     border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -757,20 +756,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <div
                 style={{
                   cursor: 'pointer',
-                  padding: '4px 8px',
-                  borderRadius: 10,
+                  padding: '3px 6px',
+                  borderRadius: 8,
                   background: 'transparent',
                   border: 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
-                  maxWidth: 210,
+                  gap: 8,
+                  maxWidth: 155,
                   transition: 'all 0.2s ease',
                 }}
                 className="hover:bg-slate-100 dark:hover:bg-slate-800/70"
               >
                 <Avatar
-                  size={38}
+                  size={34}
                   src={user?.avatarUrl}
                   icon={<UserOutlined />}
                   style={{
@@ -779,47 +778,46 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     flexShrink: 0,
                   }}
                 />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', minWidth: 0, overflow: 'hidden' }}>
-                  <Text strong style={{ fontSize: 13, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.25, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1, textAlign: 'left', minWidth: 0, overflow: 'hidden' }}>
+                  <Text strong style={{ fontSize: 12.5, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.2, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                     {(!user?.hoTen || user.hoTen === 'Bệnh nhân' || user.hoTen.includes('nh\uFFFD') || user.hoTen.includes('?'))
                       ? (isAdmin
-                          ? 'Quản trị viên Hệ thống'
+                          ? 'Quản trị viên'
                           : isDoctor
-                            ? 'BS. CKII. Nguyễn Thanh Duy'
+                            ? 'BS. Nguyễn Thanh Duy'
                             : isReceptionist
                               ? 'Nhân viên Tiếp nhận'
                               : isTriage
-                                ? 'Nhân viên Sàng lọc bệnh'
+                                ? 'Nhân viên Sàng lọc'
                                 : isPharmacy
                                   ? 'Dược sĩ Nhà thuốc'
                                   : isNurse
-                                    ? 'Cán bộ Y tế / Điều dưỡng'
+                                    ? 'Cán bộ Y tế'
                                     : isCashier
                                       ? 'Thu ngân Viện phí'
                                       : 'Cán bộ Y tế')
                       : user.hoTen
                     }
                   </Text>
-                  <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                  <Text style={{ fontSize: 10.5, color: isDarkMode ? '#94a3b8' : '#64748b', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                     {user?.chucDanh
                       ? user.chucDanh
                       : isAdmin
-                        ? 'Quản trị viên Hệ thống'
+                        ? 'Quản trị viên'
                         : isDoctor
                           ? 'Bác sĩ Điều trị'
                           : isReceptionist
                             ? 'Nhân viên Tiếp nhận'
                             : isTriage
-                              ? 'Nhân viên Sàng lọc bệnh'
+                              ? 'Nhân viên Sàng lọc'
                               : isPharmacy
-                                ? 'Dược sĩ Nhà thuốc BV'
+                                ? 'Dược sĩ Nhà thuốc'
                                 : isNurse
-                                  ? 'Cán bộ Y tế / Điều dưỡng'
+                                  ? 'Điều dưỡng'
                                   : isCashier
-                                    ? 'Thu ngân Viện phí'
+                                    ? 'Thu ngân'
                                     : 'Cán bộ Y tế'
                     }
-                    {user?.chuyenKhoa ? ` • ${user.chuyenKhoa}` : ''}
                   </Text>
                 </div>
               </div>
