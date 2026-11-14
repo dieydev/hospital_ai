@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   Table,
@@ -44,6 +45,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 export const ReceptionPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isDarkMode } = useThemeStore();
 
   const [loading, setLoading] = useState(false);
@@ -1674,6 +1676,70 @@ export const ReceptionPage: React.FC = () => {
                 >
                   BN Phan Thu Thảo (BN20260013)
                 </Button>
+                <Button
+                  size="small"
+                  danger
+                  onClick={() => {
+                    setFollowUpInputCode('HEN_KHONG_HOP_LE');
+                    setFoundFollowUpPatient(null);
+                    showToast('Đang mô phỏng: Giấy hẹn không hợp lệ / Hết hạn', 'warning');
+                  }}
+                >
+                  Mô phỏng: Giấy hẹn không hợp lệ (Nhánh rẽ Sơ đồ 2)
+                </Button>
+              </Space>
+            </div>
+          )}
+
+          {/* Nhánh Rẽ: Giấy hẹn KHÔNG hợp lệ -> Nhân viên tiếp nhận hỗ trợ xác minh */}
+          {followUpInputCode === 'HEN_KHONG_HOP_LE' && !foundFollowUpPatient && (
+            <div
+              style={{
+                backgroundColor: isDarkMode ? '#1e293b' : '#fff7ed',
+                padding: '14px 16px',
+                borderRadius: 12,
+                border: '1px solid #fed7aa',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ fontWeight: 800, color: '#c2410c', fontSize: 13.5, marginBottom: 6 }}>
+                ⚠️ GIẤY HẸN KHÔNG HỢP LỆ HOẶC QUÁ HẠN TÁI KHÁM
+              </div>
+              <p style={{ fontSize: 12.5, color: '#9a3412', marginBottom: 12 }}>
+                Nhân viên tiếp nhận hỗ trợ xác minh: Giấy hẹn không có trong hệ thống hoặc đã quá hạn trên 30 ngày. Vui lòng chọn hướng xử lý theo Lưu đồ Tái khám:
+              </p>
+              <Space wrap style={{ width: '100%' }}>
+                <Button
+                  type="primary"
+                  danger
+                  onClick={() => {
+                    setIsFollowUpModalOpen(false);
+                    setFollowUpInputCode('');
+                    setIsModalOpen(true);
+                    showToast('Đã chuyển sang Quy trình Đăng ký Khám thông thường!', 'info');
+                  }}
+                  style={{ fontWeight: 700 }}
+                >
+                  👉 Chuyển Đăng Ký Khám Mới Thông Thường
+                </Button>
+                <Button
+                  onClick={() => {
+                    const fallbackPatient = patients[0] || {
+                      id: 'p-01',
+                      hoTen: 'Trần Văn Mạnh',
+                      maBenhNhan: 'BN20260016',
+                      tuoi: 45,
+                      gioiTinh: 'Nam',
+                      soCCCD: '079080000010',
+                      maTheBHYT: 'DN40101234567',
+                    };
+                    setFoundFollowUpPatient(fallbackPatient);
+                    showToast('Bác sĩ Trưởng khoa đã phê duyệt đủ điều kiện tái khám!', 'success');
+                  }}
+                  style={{ borderColor: '#7c3aed', color: '#7c3aed', fontWeight: 600 }}
+                >
+                  Bác Sĩ Duyệt Đủ Điều Kiện Tái Khám
+                </Button>
               </Space>
             </div>
           )}
@@ -1690,29 +1756,46 @@ export const ReceptionPage: React.FC = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontWeight: 800, color: '#16a34a', fontSize: 14 }}>
-                  ✔ ĐÃ XÁC THỰC GIẤY HẸN TÁI KHÁM HỢP LỆ
+                  ✔ ĐÃ XÁC THỰC GIẤY HẸN & ĐỦ ĐIỀU KIỆN TÁI KHÁM
                 </span>
-                <Tag color="purple">Tái khám Đợt 2</Tag>
+                <Tag color="purple">Giữ Mã Cũ: {foundFollowUpPatient.maBenhNhan}</Tag>
               </div>
 
               <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
-                <div>Bệnh nhân: <strong>{foundFollowUpPatient.hoTen}</strong> ({foundFollowUpPatient.gioiTinh} • {foundFollowUpPatient.tuoi} tuổi)</div>
-                <div>Mã Bệnh nhân: <strong style={{ color: '#0284c7' }}>{foundFollowUpPatient.maBenhNhan}</strong> • CCCD: {foundFollowUpPatient.soCCCD}</div>
-                <div>Thẻ BHYT: <Tag color="blue">{foundFollowUpPatient.soBHYT || 'Khám Dịch Vụ'}</Tag></div>
+                <div>• Người bệnh: <strong>{foundFollowUpPatient.hoTen}</strong> ({foundFollowUpPatient.gioiTinh} • {foundFollowUpPatient.tuoi} tuổi)</div>
+                <div>• Mã Bệnh nhân: <strong style={{ color: '#0284c7' }}>{foundFollowUpPatient.maBenhNhan}</strong> (Không đổi) • CCCD: {foundFollowUpPatient.soCCCD}</div>
+                <div>• Chế độ chi trả: <Tag color={foundFollowUpPatient.maTheBHYT ? 'blue' : 'orange'}>{foundFollowUpPatient.maTheBHYT ? `BHYT: ${foundFollowUpPatient.maTheBHYT}` : 'Khám Dịch Vụ'}</Tag></div>
                 <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: 11, color: '#64748b' }}>Hồ sơ đợt khám trước liên kết:</div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>Hồ sơ đợt khám trước tự động liên kết:</div>
                   <div style={{ fontWeight: 700, color: '#0369a1' }}>K29.7 - Viêm dạ dày, không đặc hiệu</div>
-                  <div style={{ fontSize: 11.5, color: '#475569' }}>Bác sĩ khám: BS. CKII. Nguyễn Thanh Duy • Thuốc cũ: Esomeprazole 40mg, Phosphalugel</div>
+                  <div style={{ fontSize: 11.5, color: '#475569' }}>Bác sĩ khám trước: BS. CKII. Nguyễn Thanh Duy • Đơn thuốc cũ: Esomeprazole 40mg, Phosphalugel</div>
                 </div>
               </div>
 
-              <div style={{ textAlign: 'right', marginTop: 14 }}>
+              {/* Mã QR Lượt Tái Khám Mới (Hộp số 6 trong Sơ đồ 2) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '14px 0', padding: 12, borderRadius: 8, backgroundColor: '#ffffff', border: '1px dashed #7c3aed' }}>
+                <QRCodeSVG value={`MEDQR|TAIKHAM|${foundFollowUpPatient.maBenhNhan}|${Date.now()}`} size={70} />
+                <div style={{ fontSize: 12, color: '#475569' }}>
+                  <div style={{ fontWeight: 700, color: '#7c3aed' }}>MÃ QR LƯỢT TÁI KHÁM ĐÃ SẴN SÀNG</div>
+                  <div>Người bệnh có thể cầm mã QR này quét tại <strong>Kiosk Sảnh A</strong> để tự in phiếu STT hoặc cấp STT ngay bên dưới.</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                <Button
+                  icon={<QrcodeOutlined />}
+                  onClick={() => {
+                    navigate('/kiosk');
+                  }}
+                  style={{ borderColor: '#0284c7', color: '#0284c7', fontWeight: 600 }}
+                >
+                  Mở Kiosk Quét QR
+                </Button>
                 <Button
                   type="primary"
                   size="large"
                   onClick={handleActivateFollowUp}
-                  style={{ backgroundColor: '#16a34a', borderColor: '#16a34a', fontWeight: 700 }}
-                  block
+                  style={{ backgroundColor: '#16a34a', borderColor: '#16a34a', fontWeight: 700, flex: 1 }}
                 >
                   🚀 Kích Hoạt Lượt Tái Khám & Cấp STT Ưu Tiên
                 </Button>

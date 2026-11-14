@@ -23,6 +23,7 @@ import { GuidePage } from '../pages/GuidePage';
 import { DepartmentsPage } from '../pages/DepartmentsPage';
 import { DoctorsPage } from '../pages/DoctorsPage';
 import { PackagesPage } from '../pages/PackagesPage';
+import { KioskPage } from '../pages/KioskPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useAuthStore } from '../store/useAuthStore';
@@ -81,6 +82,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="/news" element={<NewsPage />} />
         <Route path="/huong-dan" element={<GuidePage />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/kiosk" element={<KioskPage />} />
+        <Route path="/kiosk-cap-stt" element={<KioskPage />} />
 
         {/* 404 Trang không tìm thấy */}
         <Route path="/404" element={<NotFoundPage />} />

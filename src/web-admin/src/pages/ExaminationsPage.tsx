@@ -43,6 +43,7 @@ import {
   CheckCircleOutlined,
   SyncOutlined,
   QrcodeOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -199,6 +200,10 @@ export const ExaminationsPage: React.FC = () => {
   // Print Prescription Modal State
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [examToPrint, setExamToPrint] = useState<ExaminationItem | null>(null);
+
+  // Giấy Hẹn Tái Khám Modal State (Theo Lưu Đồ Sơ đồ 1 & 2: Lập giấy hẹn tái khám nếu cần)
+  const [isAppointmentSlipModalOpen, setIsAppointmentSlipModalOpen] = useState(false);
+  const [appointmentSlipData, setAppointmentSlipData] = useState<any | null>(null);
 
   // Drug Safety & Allergy Check State
   const [drugSafetyLoading, setDrugSafetyLoading] = useState(false);
@@ -732,6 +737,33 @@ export const ExaminationsPage: React.FC = () => {
             }}
           >
             In Đơn PDF
+          </Button>
+          <Button
+            icon={<CalendarOutlined style={{ color: '#7c3aed' }} />}
+            size="small"
+            type="default"
+            onClick={() => {
+              const followDate = new Date();
+              followDate.setDate(followDate.getDate() + 7);
+              const formattedDate = followDate.toLocaleDateString('vi-VN');
+              setAppointmentSlipData({
+                appointmentCode: `HEN-${record.patientCode?.slice(-4) || '2026'}-${Date.now().toString().slice(-4)}`,
+                patientName: record.patientName,
+                patientCode: record.patientCode,
+                patientGender: record.patientGender || 'Nam',
+                patientAge: record.patientAge || 40,
+                diagnosis: `${record.icd10Code} - ${record.icd10Name || 'Viêm dạ dày, không đặc hiệu'}`,
+                icd10Code: record.icd10Code,
+                appointmentDate: formattedDate,
+                doctorName: record.doctorName || 'BS. CKII. Nguyễn Thanh Duy',
+                departmentName: record.departmentName || 'Khoa Nội Tổng Hợp',
+                notes: 'Nhịn ăn sáng nếu cần làm lại xét nghiệm máu. Mang theo giấy hẹn và đơn thuốc cũ khi đến tái khám.',
+                qrValue: `MEDQR|HEN-${record.patientCode?.slice(-4) || '2026'}|${record.patientCode}|${formattedDate}|${record.icd10Code}`,
+              });
+              setIsAppointmentSlipModalOpen(true);
+            }}
+          >
+            Giấy Hẹn Tái Khám
           </Button>
         </Space>
       ),
@@ -1511,6 +1543,35 @@ export const ExaminationsPage: React.FC = () => {
                             </div>
                           );
                         }
+                        if (disp === 'outpatient') {
+                          return (
+                            <div style={{ backgroundColor: isDarkMode ? '#1e293b' : '#f0fdf4', padding: 14, borderRadius: 10, border: '1px solid #bbf7d0', marginBottom: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontWeight: 700, color: '#16a34a', fontSize: 13 }}>
+                                  📅 LẬP GIẤY HẸN TÁI KHÁM & CẤP MÃ QR (THEO LƯU ĐỒ 1 & 2)
+                                </span>
+                                <Tag color="green">Mẫu Bộ Y Tế</Tag>
+                              </div>
+                              <Row gutter={12}>
+                                <Col span={8}>
+                                  <Form.Item label="Thời gian Hẹn Tái khám" name="followUpDays" initialValue={7}>
+                                    <Select>
+                                      <Option value={3}>Sau 3 ngày (Đánh giá đáp ứng cấp tính)</Option>
+                                      <Option value={7}>Sau 7 ngày (Uống hết đơn thuốc)</Option>
+                                      <Option value={14}>Sau 14 ngày (Đợt kháng sinh 2 tuần)</Option>
+                                      <Option value={30}>Sau 30 ngày (Bệnh mãn tính / Định kỳ)</Option>
+                                    </Select>
+                                  </Form.Item>
+                                </Col>
+                                <Col span={16}>
+                                  <Form.Item label="Lời dặn Bác sĩ khi Tái khám" name="followUpNote" initialValue="Nhịn ăn sáng nếu cần làm lại xét nghiệm máu. Mang theo giấy hẹn và đơn thuốc cũ khi đến khám.">
+                                    <Input placeholder="Dặn dò bệnh nhân khi quay lại tái khám..." />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </div>
+                          );
+                        }
                         if (disp === 'transfer') {
                           return (
                             <div style={{ backgroundColor: isDarkMode ? '#1e293b' : '#fef2f2', padding: 12, borderRadius: 8, border: '1px solid #fecaca', marginBottom: 12 }}>
@@ -2248,6 +2309,88 @@ export const ExaminationsPage: React.FC = () => {
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* Modal In Giấy Hẹn Tái Khám Chuẩn Bộ Y Tế Kèm Mã QR (Lưu Đồ 1 & 2) */}
+      <Modal
+        title={
+          <Space>
+            <CalendarOutlined style={{ color: '#7c3aed', fontSize: 18 }} />
+            <span style={{ fontWeight: 700 }}>Giấy Hẹn Tái Khám - Bệnh Viện Đa Khoa D-Medical</span>
+          </Space>
+        }
+        open={isAppointmentSlipModalOpen}
+        onCancel={() => setIsAppointmentSlipModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsAppointmentSlipModalOpen(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="print"
+            type="primary"
+            icon={<PrinterOutlined />}
+            style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
+            onClick={() => window.print()}
+          >
+            In Giấy Hẹn Tái Khám
+          </Button>,
+        ]}
+        width={580}
+      >
+        {appointmentSlipData && (
+          <div
+            style={{
+              padding: 24,
+              backgroundColor: '#fff',
+              border: '2px solid #ddd6fe',
+              borderRadius: 12,
+              color: '#0f172a',
+            }}
+          >
+            <div style={{ textAlign: 'center', borderBottom: '2px solid #7c3aed', paddingBottom: 12, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: '#0369a1' }}>
+                SỞ Y TẾ TP. HỒ CHÍ MINH • BỆNH VIỆN ĐA KHOA D-MEDICAL
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#7c3aed', margin: '6px 0 2px' }}>
+                GIẤY HẸN TÁI KHÁM
+              </div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>
+                Mã giấy hẹn: <strong>{appointmentSlipData.appointmentCode}</strong> • Ngày lập: {new Date().toLocaleDateString('vi-VN')}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 14, lineHeight: 1.8 }}>
+              <div>• Họ và tên người bệnh: <strong style={{ fontSize: 15, textTransform: 'uppercase' }}>{appointmentSlipData.patientName}</strong></div>
+              <div>• Tuổi/Giới tính: <strong>{appointmentSlipData.patientAge} tuổi ({appointmentSlipData.patientGender})</strong> • Mã BN: <strong style={{ color: '#0284c7' }}>{appointmentSlipData.patientCode}</strong></div>
+              <div>• Chẩn đoán đợt khám này: <strong>{appointmentSlipData.diagnosis}</strong></div>
+              <div style={{ backgroundColor: '#f5f3ff', padding: '8px 12px', borderRadius: 8, margin: '8px 0', border: '1px solid #ddd6fe' }}>
+                <div>• Hẹn tái khám vào ngày: <strong style={{ color: '#7c3aed', fontSize: 16 }}>{appointmentSlipData.appointmentDate}</strong></div>
+                <div>• Khoa phòng tái khám: <strong>{appointmentSlipData.departmentName}</strong></div>
+                <div>• Bác sĩ hẹn khám: <strong>{appointmentSlipData.doctorName}</strong></div>
+              </div>
+              <div>• Lời dặn Bác sĩ: <em>{appointmentSlipData.notes}</em></div>
+            </div>
+
+            <Divider style={{ margin: '14px 0' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <QRCodeSVG value={appointmentSlipData.qrValue} size={110} />
+                <div style={{ fontSize: 10, color: '#64748b', marginTop: 4, fontFamily: 'monospace' }}>
+                  Quét QR tại Bàn Sàng lọc / Kiosk
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', minWidth: 200 }}>
+                <div style={{ fontSize: 12, fontStyle: 'italic', color: '#64748b' }}>
+                  TP.HCM, ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, margin: '4px 0 45px' }}>BÁC SĨ ĐIỀU TRỊ</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0369a1' }}>{appointmentSlipData.doctorName}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

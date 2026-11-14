@@ -28,6 +28,7 @@ import {
   SafetyCertificateOutlined,
   GlobalOutlined,
   CrownOutlined,
+  ScanOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -206,6 +207,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             </div>
           ),
           allowed: isAdmin || isReceptionist || isTriage || isNurse,
+        },
+        {
+          key: '/kiosk',
+          icon: <ScanOutlined style={{ fontSize: 17, color: '#f59e0b' }} />,
+          label: (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, color: '#d97706' }}>Kiosk Quét QR (Sảnh A)</span>
+              <span className="sidebar-badge" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>Kiosk</span>
+            </div>
+          ),
+          allowed: true,
         },
         {
           key: '/appointments',
@@ -651,6 +663,27 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   {strictMode ? 'Strict API' : 'Fallback'}
                 </Tag>
               </Tag>
+            </Tooltip>
+
+            {/* Quick Link to Smart Kiosk */}
+            <Tooltip title="Mở Màn hình Kiosk Tự Phục Vụ (Quét QR cấp STT theo Sơ đồ 1 & 2)">
+              <Button
+                icon={<ScanOutlined style={{ color: '#0369a1' }} />}
+                style={{
+                  backgroundColor: '#f0f9ff',
+                  borderColor: '#bae6fd',
+                  color: '#0369a1',
+                  borderRadius: 12,
+                  fontWeight: 600,
+                  fontSize: 12.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+                onClick={() => window.open('/kiosk', '_blank')}
+              >
+                Kiosk Cấp STT
+              </Button>
             </Tooltip>
 
             {/* Quick Link to Web Booking Portal */}
