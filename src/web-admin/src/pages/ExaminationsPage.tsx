@@ -243,7 +243,7 @@ export const ExaminationsPage: React.FC = () => {
 
   const handleSpeakCallQueue = (record: ExaminationItem) => {
     const textToSpeak = `Mời bệnh nhân ${record.patientName}, mã bệnh nhân ${record.patientCode}, vào phòng khám ${record.departmentName || 'Khoa Nội'}.`;
-    
+
     showToast(`🔊 Đang phát thông báo loa: "${textToSpeak}"`, 'success');
 
     if ('speechSynthesis' in window) {
@@ -484,7 +484,7 @@ export const ExaminationsPage: React.FC = () => {
     const code = clsReturnInputCode.trim().toLowerCase();
     const targetQueueItem = queueList.find(
       (q) => (q.patientCode && q.patientCode.toLowerCase() === code) ||
-             (q.patientName && q.patientName.toLowerCase().includes(code))
+        (q.patientName && q.patientName.toLowerCase().includes(code))
     );
 
     if (targetQueueItem) {
@@ -513,7 +513,7 @@ export const ExaminationsPage: React.FC = () => {
     } else {
       const matchedPatient = patients.find(
         (p) => (p.maBenhNhan && p.maBenhNhan.toLowerCase() === code) ||
-               (p.hoTen && p.hoTen.toLowerCase().includes(code))
+          (p.hoTen && p.hoTen.toLowerCase().includes(code))
       ) || patients[0];
 
       if (matchedPatient) {
@@ -1057,7 +1057,7 @@ export const ExaminationsPage: React.FC = () => {
                         }
                       }
                       form.setFieldsValue({
-                        patientId: record.patientId, 
+                        patientId: record.patientId,
                         subjective: '', // Yêu cầu bác sĩ tự điền hoặc lấy từ lúc tiếp đón
                         ticketId: record.id, // Lưu lại ID của vé chờ
                       });
@@ -1179,8 +1179,8 @@ export const ExaminationsPage: React.FC = () => {
                             {previousExam.examinationDate
                               ? new Date(previousExam.examinationDate).toLocaleDateString('vi-VN')
                               : previousExam.createdAt
-                              ? new Date(previousExam.createdAt).toLocaleDateString('vi-VN')
-                              : 'gần nhất'}
+                                ? new Date(previousExam.createdAt).toLocaleDateString('vi-VN')
+                                : 'gần nhất'}
                             {' '}- Chẩn đoán cũ: <strong>{previousExam.icd10Code} ({previousExam.icd10Name || previousExam.assessment})</strong>.
                             Xem chi tiết tiến triển điều trị tại Tab SOAP.
                           </span>
@@ -1324,8 +1324,8 @@ export const ExaminationsPage: React.FC = () => {
                                   {previousExam.examinationDate
                                     ? new Date(previousExam.examinationDate).toLocaleString('vi-VN')
                                     : previousExam.createdAt
-                                    ? new Date(previousExam.createdAt).toLocaleString('vi-VN')
-                                    : 'Không rõ ngày'}
+                                      ? new Date(previousExam.createdAt).toLocaleString('vi-VN')
+                                      : 'Không rõ ngày'}
                                 </div>
                                 <div style={{ fontSize: 12, color: '#0284c7', marginTop: 2 }}>
                                   BS: <strong>{previousExam.doctorName || 'Bác sĩ điều trị'}</strong> ({previousExam.departmentName || 'Khoa Khám Bệnh'})
