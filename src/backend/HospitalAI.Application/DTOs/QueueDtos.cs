@@ -20,6 +20,8 @@ public class QueueTicketDto
     public int SequenceNumber { get; set; }
     public string Status { get; set; } = "Waiting"; // Waiting, Calling, Processing, Skipped, Finished
     public string Priority { get; set; } = "Normal"; // Normal, Priority, Emergency
+    public Guid? AppointmentId { get; set; }
+    public string? VisitType { get; set; } // "New" / "FollowUp"
     public DateTime CreatedAt { get; set; }
 }
 
@@ -33,6 +35,14 @@ public class IssueQueueTicketDto
 
     [StringLength(50)]
     public string Priority { get; set; } = "Normal";
+
+    public Guid? AppointmentId { get; set; }
+
+    [StringLength(100)]
+    public string? IdempotencyKey { get; set; }
+
+    [StringLength(50)]
+    public string? VisitType { get; set; } = "New";
 }
 
 public class UpdateQueueStatusDto

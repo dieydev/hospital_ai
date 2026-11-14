@@ -507,6 +507,18 @@ namespace HospitalAI.QueueService.Controllers
             var slotStartTime = model.AppointmentTime.Split('-')[0].Trim();
             lock (_lock)
             {
+                // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó (tránh duplicate khi bấm gửi lặp)
+                var existingDuplicate = _cachedAppointments!.FirstOrDefault(a =>
+                    (a.PatientPhone == model.PatientPhone || (!string.IsNullOrEmpty(model.PatientCode) && a.PatientCode == model.PatientCode)) &&
+                    a.AppointmentDate == model.AppointmentDate &&
+                    a.AppointmentTime == model.AppointmentTime &&
+                    a.Status != "Cancelled");
+
+                if (existingDuplicate != null)
+                {
+                    return Ok(existingDuplicate);
+                }
+
                 var matchedSlot = _cachedSlots!.FirstOrDefault(s =>
                     s.TimeSlot == model.AppointmentTime ||
                     s.TimeSlot.StartsWith(slotStartTime) ||
@@ -643,8 +655,14 @@ namespace HospitalAI.QueueService.Controllers
                     var parts = input.Split('|');
                     if (parts.Length >= 2)
                     {
-                        var aptId = parts[1];
-                        appointment = _cachedAppointments!.FirstOrDefault(a => a.Id == aptId);
+                        var key1 = parts[1];
+                        var key2 = parts.Length > 2 ? parts[2] : null;
+
+                        appointment = _cachedAppointments!.FirstOrDefault(a =>
+                            a.Id.Equals(key1, StringComparison.OrdinalIgnoreCase) ||
+                            (!string.IsNullOrEmpty(a.PreviousRecordCode) && a.PreviousRecordCode.Equals(key1, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrEmpty(key2) && a.PatientCode.Equals(key2, StringComparison.OrdinalIgnoreCase)) ||
+                            a.PatientCode.Equals(key1, StringComparison.OrdinalIgnoreCase));
                     }
                 }
 
@@ -656,6 +674,12 @@ namespace HospitalAI.QueueService.Controllers
                 if (appointment.Status == "Cancelled")
                 {
                     return BadRequest(new { message = "Lịch hẹn này đã bị hủy trước đó." });
+                }
+
+                // Idempotency: Nếu lịch hẹn đã check-in QR trước đó, trả về ngay thông tin hiện tại không duplicate xử lý
+                if (appointment.CheckInStatus == "CheckedInQR")
+                {
+                    return Ok(appointment);
                 }
 
                 appointment.Status = "Completed"; // Đã tiếp nhận điện tử

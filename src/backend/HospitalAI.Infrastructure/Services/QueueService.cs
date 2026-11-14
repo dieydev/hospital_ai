@@ -79,6 +79,41 @@ public class QueueService : IQueueService
         try
         {
             var today = DateTime.UtcNow.Date;
+
+            // Idempotency: Kiểm tra nếu phiếu đã được cấp cho lịch hẹn này trong ngày (chống duplicate khi quét lại mã)
+            if (dto.AppointmentId.HasValue && dto.AppointmentId.Value != Guid.Empty)
+            {
+                var existingAptTicket = await _context.QueueTickets
+                    .Include(q => q.Patient)
+                    .Include(q => q.Department)
+                    .FirstOrDefaultAsync(q => q.AppointmentId == dto.AppointmentId.Value 
+                        && q.CreatedAt.Date == today 
+                        && (q.Status == "Waiting" || q.Status == "Calling"));
+
+                if (existingAptTicket != null)
+                {
+                    var dtoItem = MapToDto(existingAptTicket);
+                    if (!string.IsNullOrEmpty(dto.VisitType)) dtoItem.VisitType = dto.VisitType;
+                    return dtoItem;
+                }
+            }
+
+            // Idempotency: Bệnh nhân đã có STT đang chờ hoặc đang gọi tại cùng khoa phòng trong ngày (chống double-click/quét lặp tại Kiosk)
+            var existingActiveTicket = await _context.QueueTickets
+                .Include(q => q.Patient)
+                .Include(q => q.Department)
+                .FirstOrDefaultAsync(q => q.PatientId == dto.PatientId 
+                    && q.DepartmentId == dto.DepartmentId 
+                    && q.CreatedAt.Date == today 
+                    && (q.Status == "Waiting" || q.Status == "Calling"));
+
+            if (existingActiveTicket != null)
+            {
+                var dtoItem = MapToDto(existingActiveTicket);
+                if (!string.IsNullOrEmpty(dto.VisitType)) dtoItem.VisitType = dto.VisitType;
+                return dtoItem;
+            }
+
             var lastSequence = await _context.QueueTickets
                 .Where(q => q.DepartmentId == dto.DepartmentId && q.CreatedAt.Date == today)
                 .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
@@ -88,6 +123,7 @@ public class QueueService : IQueueService
                 Id = Guid.NewGuid(),
                 PatientId = dto.PatientId,
                 DepartmentId = dto.DepartmentId,
+                AppointmentId = dto.AppointmentId,
                 SequenceNumber = lastSequence + 1,
                 Status = "Waiting",
                 Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
@@ -100,7 +136,9 @@ public class QueueService : IQueueService
             ticket.Patient = patient;
             ticket.Department = department;
 
-            return MapToDto(ticket);
+            var result = MapToDto(ticket);
+            if (!string.IsNullOrEmpty(dto.VisitType)) result.VisitType = dto.VisitType;
+            return result;
         }
         finally
         {
@@ -222,6 +260,8 @@ public class QueueService : IQueueService
             SequenceNumber = q.SequenceNumber,
             Status = q.Status,
             Priority = q.Priority,
+            AppointmentId = q.AppointmentId,
+            VisitType = q.AppointmentId.HasValue ? "FollowUp" : "New",
             CreatedAt = q.CreatedAt
         };
     }

@@ -52,6 +52,10 @@ public class ExaminationDto
     public string? NextTreatmentPlan { get; set; }
     public string? DietaryAdvice { get; set; }
     public string? FollowUpAppointment { get; set; }
+    public string? FollowUpAppointmentCode { get; set; }
+    public string? PreviousRecordCode { get; set; }
+    public string? TreatmentResponse { get; set; }
+    public string? SymptomProgress { get; set; }
     public string? DigitalSignature { get; set; }
     public bool IsDigitallySigned { get; set; }
     public DateTime? SignedAt { get; set; }
@@ -115,6 +119,10 @@ public class CreateExaminationDto
     public string? NextTreatmentPlan { get; set; }
     public string? DietaryAdvice { get; set; }
     public string? FollowUpAppointment { get; set; }
+    public string? FollowUpAppointmentCode { get; set; }
+    public string? PreviousRecordCode { get; set; }
+    public string? TreatmentResponse { get; set; }
+    public string? SymptomProgress { get; set; }
     public string? DigitalSignature { get; set; }
     public bool IsDigitallySigned { get; set; }
     public DateTime? SignedAt { get; set; }

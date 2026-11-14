@@ -189,4 +189,94 @@ public class QueueConcurrencyAndIdempotencyTests
         Assert.Equal("Emergency", calledTicket.Priority);
         Assert.Equal(pEmergency.Id, calledTicket.PatientId);
     }
+
+    [Fact]
+    public async Task IssueTicket_DuplicateRequestForSamePatient_ShouldReturnExistingTicketWithoutDuplicatingSequenceNumber()
+    {
+        // Arrange
+        var dbName = "QueueDb_Idempotency_" + Guid.NewGuid();
+        using var context = CreateInMemoryDbContext(dbName);
+
+        var dept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Tai Mũi Họng" };
+        var patient = new Patient { Id = Guid.NewGuid(), FullName = "Bệnh nhân Quét Lặp", PatientCode = "BN_REPEAT" };
+
+        context.Departments.Add(dept);
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
+
+        var service = new QueueService(context);
+
+        // Act: Quét QR hoặc ấn cấp số lần 1 tại Kiosk
+        var ticket1 = await service.IssueQueueTicketAsync(new IssueQueueTicketDto
+        {
+            PatientId = patient.Id,
+            DepartmentId = dept.Id,
+            Priority = "Normal"
+        });
+
+        // Quét QR hoặc ấn cấp số lần 2 trong cùng ngày (Double-click hoặc retry mạng)
+        var ticket2 = await service.IssueQueueTicketAsync(new IssueQueueTicketDto
+        {
+            PatientId = patient.Id,
+            DepartmentId = dept.Id,
+            Priority = "Normal"
+        });
+
+        // Assert: Trả về cùng một phiếu chờ, STT không bị nhảy lên 102
+        Assert.NotNull(ticket1);
+        Assert.NotNull(ticket2);
+        Assert.Equal(ticket1.Id, ticket2.Id);
+        Assert.Equal(ticket1.SequenceNumber, ticket2.SequenceNumber);
+        Assert.Equal(101, ticket2.SequenceNumber);
+
+        // Kiểm tra trong DB chỉ có duy nhất 1 bản ghi
+        var totalTicketsInDb = await context.QueueTickets.CountAsync();
+        Assert.Equal(1, totalTicketsInDb);
+    }
+
+    [Fact]
+    public async Task IssueTicket_WithAppointmentId_ShouldBeIdempotent()
+    {
+        // Arrange
+        var dbName = "QueueDb_AppointmentIdempotency_" + Guid.NewGuid();
+        using var context = CreateInMemoryDbContext(dbName);
+
+        var dept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Tim Mạch" };
+        var patient = new Patient { Id = Guid.NewGuid(), FullName = "Bệnh nhân Tái Khám Hẹn", PatientCode = "BN_APPT" };
+        var appointmentId = Guid.NewGuid();
+
+        context.Departments.Add(dept);
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
+
+        var service = new QueueService(context);
+
+        // Act: Cấp STT dựa trên lịch hẹn tái khám lần 1
+        var ticket1 = await service.IssueQueueTicketAsync(new IssueQueueTicketDto
+        {
+            PatientId = patient.Id,
+            DepartmentId = dept.Id,
+            AppointmentId = appointmentId,
+            Priority = "Priority",
+            VisitType = "FollowUp"
+        });
+
+        // Cấp STT dựa trên lịch hẹn tái khám lần 2 (Quét lại mã QR giấy hẹn tại Kiosk)
+        var ticket2 = await service.IssueQueueTicketAsync(new IssueQueueTicketDto
+        {
+            PatientId = patient.Id,
+            DepartmentId = dept.Id,
+            AppointmentId = appointmentId,
+            Priority = "Priority",
+            VisitType = "FollowUp"
+        });
+
+        // Assert
+        Assert.NotNull(ticket1);
+        Assert.NotNull(ticket2);
+        Assert.Equal(ticket1.Id, ticket2.Id);
+        Assert.Equal(ticket1.SequenceNumber, ticket2.SequenceNumber);
+        Assert.Equal("FollowUp", ticket2.VisitType);
+        Assert.Equal(1, await context.QueueTickets.CountAsync());
+    }
 }

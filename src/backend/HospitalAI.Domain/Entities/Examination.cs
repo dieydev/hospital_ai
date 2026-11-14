@@ -48,6 +48,10 @@ public class Examination
     public string? NextTreatmentPlan { get; set; } // HuongDieuTri
     public string? DietaryAdvice { get; set; } // CheDoDinhDuong
     public string? FollowUpAppointment { get; set; } // LichTaiKham
+    public string? FollowUpAppointmentCode { get; set; } // MaGiayHenTaiKham (e.g. HEN-xxxx-xxxx)
+    public string? PreviousRecordCode { get; set; } // MaBenhAnCu / MaGiayHenLienKet
+    public string? TreatmentResponse { get; set; } // MucDoDapUngDieuTri (good, partial, poor, adverse)
+    public string? SymptomProgress { get; set; } // DienTienLamSang & DanhGiaCuaBacSi
     public string? DigitalSignature { get; set; } // ChuKySo
     public bool IsDigitallySigned { get; set; } = false;
     public DateTime? SignedAt { get; set; }

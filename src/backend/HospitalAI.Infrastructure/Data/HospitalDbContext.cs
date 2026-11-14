@@ -175,6 +175,10 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.NextTreatmentPlan).HasColumnName("HuongDieuTri").HasMaxLength(500);
             entity.Property(e => e.DietaryAdvice).HasColumnName("CheDoDinhDuong").HasMaxLength(500);
             entity.Property(e => e.FollowUpAppointment).HasColumnName("LichTaiKham").HasMaxLength(255);
+            entity.Property(e => e.FollowUpAppointmentCode).HasColumnName("MaGiayHenTaiKham").HasMaxLength(100);
+            entity.Property(e => e.PreviousRecordCode).HasColumnName("MaBenhAnCu").HasMaxLength(100);
+            entity.Property(e => e.TreatmentResponse).HasColumnName("MucDoDapUng").HasMaxLength(100);
+            entity.Property(e => e.SymptomProgress).HasColumnName("DienTienLamSang").HasMaxLength(1000);
             entity.Property(e => e.DigitalSignature).HasColumnName("ChuKySo").HasMaxLength(255);
 
             entity.HasOne(e => e.Patient)

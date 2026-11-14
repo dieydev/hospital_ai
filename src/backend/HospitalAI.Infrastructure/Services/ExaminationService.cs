@@ -46,6 +46,8 @@ public class ExaminationService : IExaminationService
             var keyword = search.Trim().ToLower();
             query = query.Where(e =>
                 e.ExaminationCode.ToLower().Contains(keyword) ||
+                (e.PreviousRecordCode != null && e.PreviousRecordCode.ToLower().Contains(keyword)) ||
+                (e.FollowUpAppointmentCode != null && e.FollowUpAppointmentCode.ToLower().Contains(keyword)) ||
                 e.ICD10Code.ToLower().Contains(keyword) ||
                 e.ICD10Name.ToLower().Contains(keyword) ||
                 (e.Patient != null && (
@@ -134,6 +136,10 @@ public class ExaminationService : IExaminationService
             NextTreatmentPlan = dto.NextTreatmentPlan,
             DietaryAdvice = dto.DietaryAdvice,
             FollowUpAppointment = dto.FollowUpAppointment,
+            FollowUpAppointmentCode = dto.FollowUpAppointmentCode,
+            PreviousRecordCode = dto.PreviousRecordCode,
+            TreatmentResponse = dto.TreatmentResponse,
+            SymptomProgress = dto.SymptomProgress,
             DigitalSignature = dto.DigitalSignature
         };
 
@@ -213,6 +219,10 @@ public class ExaminationService : IExaminationService
         exam.NextTreatmentPlan = dto.NextTreatmentPlan;
         exam.DietaryAdvice = dto.DietaryAdvice;
         exam.FollowUpAppointment = dto.FollowUpAppointment;
+        exam.FollowUpAppointmentCode = dto.FollowUpAppointmentCode ?? exam.FollowUpAppointmentCode;
+        exam.PreviousRecordCode = dto.PreviousRecordCode ?? exam.PreviousRecordCode;
+        exam.TreatmentResponse = dto.TreatmentResponse ?? exam.TreatmentResponse;
+        exam.SymptomProgress = dto.SymptomProgress ?? exam.SymptomProgress;
         exam.DigitalSignature = dto.DigitalSignature;
 
         // Update Prescriptions
@@ -301,6 +311,10 @@ public class ExaminationService : IExaminationService
             NextTreatmentPlan = e.NextTreatmentPlan,
             DietaryAdvice = e.DietaryAdvice,
             FollowUpAppointment = e.FollowUpAppointment,
+            FollowUpAppointmentCode = e.FollowUpAppointmentCode,
+            PreviousRecordCode = e.PreviousRecordCode,
+            TreatmentResponse = e.TreatmentResponse,
+            SymptomProgress = e.SymptomProgress,
             DigitalSignature = e.DigitalSignature,
             IsDigitallySigned = e.IsDigitallySigned,
             SignedAt = e.SignedAt,
