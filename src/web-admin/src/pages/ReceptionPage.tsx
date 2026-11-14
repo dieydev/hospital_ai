@@ -402,7 +402,7 @@ export const ReceptionPage: React.FC = () => {
   // Speaker Call Audio Simulation
   const handleCallSpeaker = async (ticket: QueueTicketItem) => {
     const speechMsg = `Xin mời bệnh nhân ${ticket.patientName}, số thứ tự ${ticket.sequenceNumber}, vào ${ticket.departmentName}, ${ticket.location}.`;
-    
+
     // Web Speech API browser simulation
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();

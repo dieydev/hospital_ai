@@ -409,6 +409,43 @@ export const ExaminationsPage: React.FC = () => {
         });
         setPreviousExam(sorted[0]);
       } else {
+        // Fallback đọc từ cache tiếp nhận tái khám nếu chưa lưu vào DB
+        const localCached = localStorage.getItem(`previous_exam_${patientId}`);
+        if (localCached) {
+          try {
+            const parsed = JSON.parse(localCached);
+            const cachedExam: any = {
+              id: `prev-${Date.now()}`,
+              examinationCode: 'EMR-PREV-2026',
+              patientId: patientId,
+              doctorName: parsed.doctorName || 'BS. CKII. Nguyễn Thanh Duy',
+              departmentName: parsed.department || 'Khoa Nội Tổng Hợp',
+              icd10Code: parsed.icd10Code || 'K29.7',
+              icd10Name: parsed.icd10Name || 'Viêm dạ dày, không đặc hiệu',
+              subjective: parsed.subjective || 'Đau tức thượng vị',
+              assessment: parsed.icd10Name || 'Viêm dạ dày',
+              plan: parsed.plan || 'Điều trị ngoại trú theo đơn thuốc',
+              examinationDate: parsed.date || '2026-11-01',
+              bloodPressure: '120/80',
+              pulseRate: 76,
+              temperature: 36.8,
+              weight: 65,
+              height: 168,
+              prescriptionDetails: (parsed.medicines || []).map((m: any) => ({
+                medicineName: m.name,
+                activeIngredient: m.name,
+                unit: m.unit || 'Viên',
+                quantity: m.quantity || 10,
+                dosageInstruction: m.dosage || 'Ngày uống 2 lần',
+                unitPrice: 2500,
+              })),
+            };
+            setPreviousExam(cachedExam);
+            return;
+          } catch (e) {
+            console.warn('Lỗi parse localCached previous exam', e);
+          }
+        }
         setPreviousExam(null);
       }
     } catch (err) {
@@ -626,10 +663,57 @@ export const ExaminationsPage: React.FC = () => {
           `Đã chốt đối soát chi phí ngoại trú và xuất hồ sơ chuyển viện cho bệnh nhân!`
         );
       } else {
+        const followDays = Number(values.followUpDays || 7);
+        const fDate = new Date();
+        fDate.setDate(fDate.getDate() + followDays);
+        const fDateStr = fDate.toLocaleDateString('vi-VN');
+        const appCode = `HEN-${patient?.maBenhNhan?.slice(-4) || '2026'}-${Date.now().toString().slice(-4)}`;
+
+        // Lưu thông tin giấy hẹn tái khám vào cache liên thông
+        if (patient) {
+          localStorage.setItem(`followup_appointment_${patient.maBenhNhan}`, JSON.stringify({
+            code: appCode,
+            patientId: patient.id,
+            patientName: patient.hoTen,
+            patientCode: patient.maBenhNhan,
+            date: fDateStr,
+            department: user?.chuyenKhoa || 'Khoa Nội Tổng Hợp',
+            doctor: user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy',
+            diagnosis: `${selectedICD.code} - ${selectedICD.name}`,
+            notes: values.followUpNote || 'Nhịn ăn sáng nếu cần xét nghiệm lại.',
+          }));
+        }
+
+        setAppointmentSlipData({
+          appointmentCode: appCode,
+          patientName: pName,
+          patientCode: patient?.maBenhNhan || 'BN20260016',
+          patientGender: patient?.gioiTinh || 'Nam',
+          patientAge: patient?.tuoi || 40,
+          diagnosis: `${selectedICD.code} - ${selectedICD.name}`,
+          icd10Code: selectedICD.code,
+          appointmentDate: fDateStr,
+          doctorName: user?.hoTen || 'BS. CKII. Nguyễn Thanh Duy',
+          departmentName: user?.chuyenKhoa || 'Khoa Nội Tổng Hợp',
+          notes: values.followUpNote || 'Nhịn ăn sáng nếu cần làm lại xét nghiệm máu. Mang theo giấy hẹn và đơn thuốc cũ khi đến khám.',
+          qrValue: `MEDQR|${appCode}|${patient?.maBenhNhan || 'BN2026'}|${fDateStr}|${selectedICD.code}`,
+        });
+
+        setIsModalOpen(false);
+        setIsAppointmentSlipModalOpen(true);
+
         showSuccessAlert(
-          'Hoàn tất Ca Khám & Kê Đơn Thuốc!',
-          `Đã lưu bệnh án EMR và truyền đơn thuốc điện tử sang Quầy Dược và Thu ngân.`
+          'Hoàn tất Ca Khám & Đã Lập Giấy Hẹn Tái Khám!',
+          `Bệnh nhân: ${pName} (${patient?.maBenhNhan || ''})\n` +
+          `• Ngày hẹn tái khám: ${fDateStr} (Sau ${followDays} ngày)\n` +
+          `• Đã sinh Giấy Hẹn Tái Khám điện tử kèm mã QR chuẩn Bộ Y tế.\n` +
+          `• Đơn thuốc điện tử đã chuyển sang Nhà Thuốc & Thu Ngân quyết toán!`
         );
+        form.resetFields();
+        setSelectedPatientId(null);
+        setPreviousExam(null);
+        fetchExaminations();
+        return;
       }
 
       setIsModalOpen(false);
@@ -1348,6 +1432,55 @@ export const ExaminationsPage: React.FC = () => {
                         </div>
                       )}
                     </div>
+
+                    {previousExam && (
+                      <div
+                        style={{
+                          marginBottom: 16,
+                          padding: '12px 16px',
+                          borderRadius: 10,
+                          backgroundColor: isDarkMode ? '#1e293b' : '#faf5ff',
+                          border: isDarkMode ? '1.5px solid #6b21a8' : '1.5px solid #d8b4fe',
+                          boxShadow: '0 2px 8px rgba(147, 51, 234, 0.08)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <span style={{ fontWeight: 800, color: '#7c3aed', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <CheckCircleOutlined /> ĐÁNH GIÁ ĐÁP ỨNG ĐIỀU TRỊ (QUY TRÌNH TÁI KHÁM)
+                          </span>
+                          <Tag color="purple" style={{ fontWeight: 700, borderRadius: 6 }}>
+                            TÁI KHÁM ĐỊNH KỲ
+                          </Tag>
+                        </div>
+                        <Row gutter={12}>
+                          <Col xs={24} md={10}>
+                            <Form.Item
+                              label={<span style={{ fontWeight: 600 }}>Mức độ đáp ứng phác đồ trước</span>}
+                              name="treatmentResponse"
+                              initialValue="good"
+                              style={{ marginBottom: 8 }}
+                            >
+                              <Select>
+                                <Option value="good">🟢 Đáp ứng tốt (Triệu chứng thuyên giảm rõ)</Option>
+                                <Option value="partial">🟡 Đáp ứng một phần (Cần chỉnh liều / duy trì)</Option>
+                                <Option value="poor">🔴 Kém / Không đáp ứng (Cần đổi phác đồ)</Option>
+                                <Option value="adverse">⚠️ Xuất hiện tác dụng phụ / dị ứng</Option>
+                              </Select>
+                            </Form.Item>
+                          </Col>
+                          <Col xs={24} md={14}>
+                            <Form.Item
+                              label={<span style={{ fontWeight: 600 }}>Diễn tiến lâm sàng & Đánh giá của Bác sĩ</span>}
+                              name="symptomProgress"
+                              initialValue="Triệu chứng đợt trước thuyên giảm rõ sau phác đồ cũ, sinh hiệu ổn định, dung nạp thuốc tốt."
+                              style={{ marginBottom: 8 }}
+                            >
+                              <Input placeholder="Ghi nhận diễn tiến triệu chứng so với lần khám trước..." />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      </div>
+                    )}
 
                     <Form.Item
                       label="S (Subjective) - Triệu chứng chủ quan"
