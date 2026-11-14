@@ -595,39 +595,42 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {/* Top Header */}
         <Header
           style={{
-            padding: '0 28px',
+            padding: '0 20px',
             background: isDarkMode ? '#1e293b' : '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             boxShadow: isDarkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 2px 10px rgba(2, 132, 199, 0.04)',
             zIndex: 9,
-            height: 70,
+            height: 64,
             borderBottom: isDarkMode ? '1px solid #334155' : '1px solid #e0f2fe',
+            gap: 16,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 auto', minWidth: 0, maxWidth: 380 }}>
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 18 }} /> : <MenuFoldOutlined style={{ fontSize: 18 }} />}
               onClick={() => setCollapsed(!collapsed)}
-              style={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}
+              style={{ color: isDarkMode ? '#cbd5e1' : '#475569', flexShrink: 0 }}
             />
             <Input
-              placeholder="Tìm nhanh Bệnh nhân, Mã BN, CCCD, Mã EMR hoặc ICD-10..."
+              placeholder="Tìm bệnh nhân, CCCD, EMR, ICD-10..."
               prefix={<SearchOutlined style={{ color: '#0284c7' }} />}
               style={{
-                width: 380,
+                width: '100%',
+                maxWidth: 320,
                 borderRadius: 20,
                 background: isDarkMode ? '#0f172a' : '#f8fafc',
                 border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
                 color: isDarkMode ? '#f8fafc' : '#0f172a',
-                padding: '6px 16px',
+                padding: '5px 14px',
+                fontSize: 12.5,
               }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             {/* Docker Gateway Live Health Tag */}
             <Tooltip
               title={
@@ -643,42 +646,45 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 icon={isGatewayOnline ? <ApiOutlined /> : <DisconnectOutlined />}
                 onClick={handleToggleStrictMode}
                 style={{
-                  padding: '5px 12px',
-                  borderRadius: 12,
+                  padding: '4px 10px',
+                  borderRadius: 10,
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: 12,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
+                  margin: 0,
                   boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
                 }}
               >
                 {isGatewayOnline === true
-                  ? 'Gateway: Online (5000)'
+                  ? 'Gateway'
                   : isGatewayOnline === false
-                  ? 'Gateway: Offline'
-                  : 'Gateway: Checking...'}
-                <Tag color={strictMode ? 'orange' : 'default'} style={{ margin: '0 0 0 6px', fontSize: 10, padding: '0 4px' }}>
-                  {strictMode ? 'Strict API' : 'Fallback'}
+                  ? 'Gateway Off'
+                  : 'Gateway...'}
+                <Tag color={strictMode ? 'orange' : 'default'} style={{ margin: '0 0 0 4px', fontSize: 10, padding: '0 4px', borderRadius: 4 }}>
+                  {strictMode ? 'Strict' : 'Fallback'}
                 </Tag>
               </Tag>
             </Tooltip>
 
             {/* Quick Link to Smart Kiosk */}
-            <Tooltip title="Mở Màn hình Kiosk Tự Phục Vụ (Quét QR cấp STT theo Sơ đồ 1 & 2)">
+            <Tooltip title="Mở Màn hình Kiosk Tự Phục Vụ (Quét QR cấp STT)">
               <Button
                 icon={<ScanOutlined style={{ color: '#0369a1' }} />}
                 style={{
                   backgroundColor: '#f0f9ff',
                   borderColor: '#bae6fd',
                   color: '#0369a1',
-                  borderRadius: 12,
+                  borderRadius: 10,
                   fontWeight: 600,
-                  fontSize: 12.5,
+                  fontSize: 12,
+                  height: 34,
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 5,
                 }}
                 onClick={() => window.open('/kiosk', '_blank')}
               >
@@ -694,16 +700,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 style={{
                   backgroundColor: '#0284c7',
                   borderColor: '#0284c7',
-                  borderRadius: 12,
+                  borderRadius: 10,
                   fontWeight: 600,
-                  fontSize: 12.5,
+                  fontSize: 12,
+                  height: 34,
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 5,
                 }}
                 onClick={() => window.open('/booking', '_blank')}
               >
-                Cổng Đặt Khám (Web)
+                Cổng Đặt Khám
               </Button>
             </Tooltip>
 
@@ -711,11 +719,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <Button
               type="text"
               shape="circle"
-              icon={isDarkMode ? <SunOutlined style={{ fontSize: 18, color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: 18, color: '#0284c7' }} />}
+              icon={isDarkMode ? <SunOutlined style={{ fontSize: 17, color: '#f59e0b' }} /> : <MoonOutlined style={{ fontSize: 17, color: '#0284c7' }} />}
               onClick={toggleTheme}
               style={{
                 background: isDarkMode ? '#0f172a' : '#f8fafc',
                 border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                width: 34,
+                height: 34,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
               title={isDarkMode ? 'Chuyển sang Chế độ Sáng' : 'Chuyển sang Chế độ Tối'}
             />
@@ -725,10 +738,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Button
                   type="text"
                   shape="circle"
-                  icon={<BellOutlined style={{ fontSize: 18, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
+                  icon={<BellOutlined style={{ fontSize: 17, color: isDarkMode ? '#cbd5e1' : '#475569' }} />}
                   style={{
                     background: isDarkMode ? '#0f172a' : '#f8fafc',
                     border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                    width: 34,
+                    height: 34,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 />
               </Badge>
@@ -739,19 +757,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <div
                 style={{
                   cursor: 'pointer',
-                  padding: '6px 10px',
-                  borderRadius: 12,
+                  padding: '4px 8px',
+                  borderRadius: 10,
                   background: 'transparent',
                   border: 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 10,
+                  maxWidth: 210,
                   transition: 'all 0.2s ease',
                 }}
                 className="hover:bg-slate-100 dark:hover:bg-slate-800/70"
               >
                 <Avatar
-                  size={42}
+                  size={38}
                   src={user?.avatarUrl}
                   icon={<UserOutlined />}
                   style={{
@@ -760,8 +779,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     flexShrink: 0,
                   }}
                 />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}>
-                  <Text strong style={{ fontSize: 13.5, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.25, fontWeight: 700 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', minWidth: 0, overflow: 'hidden' }}>
+                  <Text strong style={{ fontSize: 13, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.25, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                     {(!user?.hoTen || user.hoTen === 'Bệnh nhân' || user.hoTen.includes('nh\uFFFD') || user.hoTen.includes('?'))
                       ? (isAdmin
                           ? 'Quản trị viên Hệ thống'
@@ -781,7 +800,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                       : user.hoTen
                     }
                   </Text>
-                  <Text style={{ fontSize: 11.5, color: isDarkMode ? '#94a3b8' : '#64748b', lineHeight: 1.2 }}>
+                  <Text style={{ fontSize: 11, color: isDarkMode ? '#94a3b8' : '#64748b', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                     {user?.chucDanh
                       ? user.chucDanh
                       : isAdmin
