@@ -607,7 +607,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             gap: 16,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 auto', minWidth: 0, maxWidth: 380 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 1 260px', minWidth: 40 }}>
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined style={{ fontSize: 18 }} /> : <MenuFoldOutlined style={{ fontSize: 18 }} />}
@@ -615,17 +615,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               style={{ color: isDarkMode ? '#cbd5e1' : '#475569', flexShrink: 0 }}
             />
             <Input
-              placeholder="Tìm bệnh nhân, CCCD, EMR, ICD-10..."
+              placeholder="Tìm BN, CCCD, EMR..."
               prefix={<SearchOutlined style={{ color: '#0284c7' }} />}
               style={{
                 width: '100%',
-                maxWidth: 320,
+                maxWidth: 220,
                 borderRadius: 20,
                 background: isDarkMode ? '#0f172a' : '#f8fafc',
                 border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
                 color: isDarkMode ? '#f8fafc' : '#0f172a',
-                padding: '5px 14px',
-                fontSize: 12.5,
+                padding: '5px 12px',
+                fontSize: 12,
               }}
             />
           </div>

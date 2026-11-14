@@ -728,17 +728,19 @@ export const ExaminationsPage: React.FC = () => {
     }
   };
 
-  const columns = [
+  const columns: any[] = [
     {
       title: 'Mã Lượt khám',
       dataIndex: 'examinationCode',
       key: 'examinationCode',
+      width: 150,
       render: (t: string) => <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 700 }}>{t}</Tag>,
     },
     {
       title: 'Bệnh nhân',
       dataIndex: 'patientName',
       key: 'patientName',
+      width: 200,
       render: (t: string, record: ExaminationItem) => (
         <div>
           <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a', fontSize: 14 }}>{t}</Text>
@@ -752,6 +754,7 @@ export const ExaminationsPage: React.FC = () => {
       title: 'Chẩn đoán ICD-10',
       dataIndex: 'icd10Code',
       key: 'icd10Code',
+      width: 220,
       render: (code: string, record: ExaminationItem) => (
         <div>
           <Tag color="cyan" style={{ fontWeight: 700 }}>{code}</Tag>
@@ -762,6 +765,7 @@ export const ExaminationsPage: React.FC = () => {
     {
       title: 'Sinh hiệu (Mạch/HA)',
       key: 'vitals',
+      width: 220,
       render: (_: any, record: ExaminationItem) => (
         <Text style={{ fontSize: 12, color: isDarkMode ? '#cbd5e1' : '#334155' }}>
           💓 {record.pulseRate} bpm • 🩸 {record.bloodPressure} mmHg • 🌡️ {record.temperature}°C
@@ -771,6 +775,8 @@ export const ExaminationsPage: React.FC = () => {
     {
       title: 'Đơn thuốc',
       key: 'prescriptions',
+      width: 100,
+      align: 'center',
       render: (_: any, record: ExaminationItem) => (
         <Badge count={record.prescriptionDetails?.length || 0} color="#0284c7" showZero />
       ),
@@ -779,6 +785,7 @@ export const ExaminationsPage: React.FC = () => {
       title: 'Bác sĩ Khám',
       dataIndex: 'doctorName',
       key: 'doctorName',
+      width: 160,
       render: (t: string) => (
         <Tag icon={<SafetyCertificateOutlined color="#10b981" />} color="green">
           {t}
@@ -788,8 +795,9 @@ export const ExaminationsPage: React.FC = () => {
     {
       title: 'Thao tác EMR',
       key: 'action',
+      width: 320,
       render: (_: any, record: ExaminationItem) => (
-        <Space wrap>
+        <Space wrap size={[6, 6]}>
           <Button
             type="primary"
             size="small"
@@ -797,7 +805,7 @@ export const ExaminationsPage: React.FC = () => {
             style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
             onClick={() => handleSpeakCallQueue(record)}
           >
-            Gọi Loa STT
+            Gọi Loa
           </Button>
           <Button
             type="primary"
@@ -820,7 +828,7 @@ export const ExaminationsPage: React.FC = () => {
               setIsPrintModalOpen(true);
             }}
           >
-            In Đơn PDF
+            In Đơn
           </Button>
           <Button
             icon={<CalendarOutlined style={{ color: '#7c3aed' }} />}
@@ -847,7 +855,7 @@ export const ExaminationsPage: React.FC = () => {
               setIsAppointmentSlipModalOpen(true);
             }}
           >
-            Giấy Hẹn Tái Khám
+            Giấy Hẹn
           </Button>
         </Space>
       ),
@@ -958,6 +966,7 @@ export const ExaminationsPage: React.FC = () => {
           </Space>
         }
         style={{ borderRadius: 16, border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd', marginBottom: 24 }}
+        headStyle={{ flexWrap: 'wrap', gap: 10, height: 'auto', padding: '12px 20px' }}
         bodyStyle={{ padding: 0 }}
       >
         <Table
@@ -968,6 +977,7 @@ export const ExaminationsPage: React.FC = () => {
           })}
           rowKey="id"
           pagination={false}
+          scroll={{ x: 800 }}
           columns={[
             {
               title: 'STT',
@@ -1071,6 +1081,7 @@ export const ExaminationsPage: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
+          scroll={{ x: 1200 }}
         />
       </Card>
 
@@ -1092,7 +1103,8 @@ export const ExaminationsPage: React.FC = () => {
         }}
         footer={null}
         destroyOnClose
-        width={950}
+        width="min(980px, 95vw)"
+        style={{ maxWidth: '95vw', top: 20 }}
       >
         <Form form={form} layout="vertical" onFinish={handleCreateExamination}>
           <Tabs
@@ -1189,31 +1201,31 @@ export const ExaminationsPage: React.FC = () => {
                       <Text style={{ fontSize: 13, color: '#0284c7', fontWeight: 600 }}>CHỈ SỐ SINH HIỆU (VITAL SIGNS)</Text>
                     </Divider>
 
-                    <Row gutter={16}>
-                      <Col span={6}>
+                    <Row gutter={[12, 12]}>
+                      <Col xs={12} sm={6}>
                         <Form.Item label="Mạch (Pulse)" name="pulseRate" initialValue={78}>
-                          <InputNumber style={{ width: '100%' }} addonAfter="lần/phút" min={40} max={200} size="large" />
+                          <InputNumber style={{ width: '100%' }} addonAfter="l/p" min={40} max={200} size="large" />
                         </Form.Item>
                       </Col>
-                      <Col span={6}>
+                      <Col xs={12} sm={6}>
                         <Form.Item label="Nhiệt độ (Temp)" name="temperature" initialValue={37.0}>
                           <InputNumber style={{ width: '100%' }} addonAfter="°C" step={0.1} min={35} max={42} size="large" />
                         </Form.Item>
                       </Col>
-                      <Col span={6}>
+                      <Col xs={12} sm={6}>
                         <Form.Item label="Huyết áp (BP)" name="bloodPressure" initialValue="120/80">
                           <Input style={{ width: '100%' }} placeholder="120/80" size="large" />
                         </Form.Item>
                       </Col>
-                      <Col span={6}>
+                      <Col xs={12} sm={6}>
                         <Form.Item label="Nhịp thở (RR)" name="respiratoryRate" initialValue={18}>
-                          <InputNumber style={{ width: '100%' }} addonAfter="lần/phút" size="large" />
+                          <InputNumber style={{ width: '100%' }} addonAfter="l/p" size="large" />
                         </Form.Item>
                       </Col>
                     </Row>
 
-                    <Row gutter={16}>
-                      <Col span={8}>
+                    <Row gutter={[12, 12]}>
+                      <Col xs={12} sm={8}>
                         <Form.Item label="Cân nặng (Weight)" name="weight" initialValue={65}>
                           <InputNumber
                             style={{ width: '100%' }}
@@ -1223,7 +1235,7 @@ export const ExaminationsPage: React.FC = () => {
                           />
                         </Form.Item>
                       </Col>
-                      <Col span={8}>
+                      <Col xs={12} sm={8}>
                         <Form.Item label="Chiều cao (Height)" name="height" initialValue={168}>
                           <InputNumber
                             style={{ width: '100%' }}
@@ -1233,10 +1245,10 @@ export const ExaminationsPage: React.FC = () => {
                           />
                         </Form.Item>
                       </Col>
-                      <Col span={8}>
+                      <Col xs={24} sm={8}>
                         <div style={{ paddingTop: 30 }}>
-                          <Tag color={bmiValue >= 25 ? 'orange' : bmiValue >= 18.5 ? 'green' : 'blue'} style={{ fontSize: 14, padding: '6px 12px' }}>
-                            BMI Tự tính: <strong>{bmiValue} kg/m²</strong> (
+                          <Tag color={bmiValue >= 25 ? 'orange' : bmiValue >= 18.5 ? 'green' : 'blue'} style={{ fontSize: 13, padding: '6px 10px', width: '100%', textAlign: 'center' }}>
+                            BMI: <strong>{bmiValue} kg/m²</strong> (
                             {bmiValue >= 25 ? 'Thừa cân' : bmiValue >= 18.5 ? 'Bình thường' : 'Gầy'})
                           </Tag>
                         </div>
@@ -1614,8 +1626,8 @@ export const ExaminationsPage: React.FC = () => {
                       initialValue="outpatient"
                     >
                       <Radio.Group style={{ width: '100%' }}>
-                        <Row gutter={[12, 12]}>
-                          <Col span={8}>
+                        <Row gutter={[10, 10]}>
+                          <Col xs={24} sm={8}>
                             <Radio.Button
                               value="outpatient"
                               style={{ width: '100%', textAlign: 'center', height: 'auto', padding: '8px 4px', borderRadius: 8 }}
@@ -1624,7 +1636,7 @@ export const ExaminationsPage: React.FC = () => {
                               <div style={{ fontSize: 11, color: '#64748b' }}>Kê đơn thuốc & hẹn tái khám</div>
                             </Radio.Button>
                           </Col>
-                          <Col span={8}>
+                          <Col xs={24} sm={8}>
                             <Radio.Button
                               value="inpatient"
                               style={{ width: '100%', textAlign: 'center', height: 'auto', padding: '8px 4px', borderRadius: 8 }}
@@ -1633,7 +1645,7 @@ export const ExaminationsPage: React.FC = () => {
                               <div style={{ fontSize: 11, color: '#64748b' }}>Điều trị nội trú tại viện</div>
                             </Radio.Button>
                           </Col>
-                          <Col span={8}>
+                          <Col xs={24} sm={8}>
                             <Radio.Button
                               value="transfer"
                               style={{ width: '100%', textAlign: 'center', height: 'auto', padding: '8px 4px', borderRadius: 8 }}
@@ -1685,8 +1697,8 @@ export const ExaminationsPage: React.FC = () => {
                                 </span>
                                 <Tag color="green">Mẫu Bộ Y Tế</Tag>
                               </div>
-                              <Row gutter={12}>
-                                <Col span={8}>
+                              <Row gutter={[12, 12]}>
+                                <Col xs={24} sm={8}>
                                   <Form.Item label="Thời gian Hẹn Tái khám" name="followUpDays" initialValue={7}>
                                     <Select>
                                       <Option value={3}>Sau 3 ngày (Đánh giá đáp ứng cấp tính)</Option>
@@ -1696,7 +1708,7 @@ export const ExaminationsPage: React.FC = () => {
                                     </Select>
                                   </Form.Item>
                                 </Col>
-                                <Col span={16}>
+                                <Col xs={24} sm={16}>
                                   <Form.Item label="Lời dặn Bác sĩ khi Tái khám" name="followUpNote" initialValue="Nhịn ăn sáng nếu cần làm lại xét nghiệm máu. Mang theo giấy hẹn và đơn thuốc cũ khi đến khám.">
                                     <Input placeholder="Dặn dò bệnh nhân khi quay lại tái khám..." />
                                   </Form.Item>
@@ -1777,8 +1789,8 @@ export const ExaminationsPage: React.FC = () => {
                               background: isDarkMode ? '#1e293b' : '#f0f9ff',
                             }}
                           >
-                            <Row gutter={12} align="middle">
-                              <Col span={12}>
+                            <Row gutter={[10, 10]} align="middle">
+                              <Col xs={24} md={10}>
                                 <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                   Dịch vụ kỹ thuật CLS (Chọn từ danh mục sổ xuống):
                                 </Text>
@@ -1834,7 +1846,7 @@ export const ExaminationsPage: React.FC = () => {
                                   </OptGroup>
                                 </Select>
                               </Col>
-                              <Col span={5}>
+                              <Col xs={12} md={5}>
                                 <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                   Nhóm & Phòng thực hiện:
                                 </Text>
@@ -1842,7 +1854,7 @@ export const ExaminationsPage: React.FC = () => {
                                   {matched?.room || s.serviceCategory || 'Phòng Xét Nghiệm'}
                                 </Tag>
                               </Col>
-                              <Col span={4}>
+                              <Col xs={12} md={4}>
                                 <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                   Giá Viện phí:
                                 </Text>
@@ -1850,13 +1862,13 @@ export const ExaminationsPage: React.FC = () => {
                                   {formatCurrency(s.price || 0)}
                                 </Text>
                               </Col>
-                              <Col span={2}>
+                              <Col xs={18} md={4}>
                                 <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                   Trạng thái:
                                 </Text>
                                 <Tag color="orange">{s.status || 'Đã chỉ định'}</Tag>
                               </Col>
-                              <Col span={1} style={{ textAlign: 'right' }}>
+                              <Col xs={6} md={1} style={{ textAlign: 'right' }}>
                                 <Button
                                   icon={<DeleteOutlined />}
                                   danger
@@ -1972,8 +1984,8 @@ export const ExaminationsPage: React.FC = () => {
                             background: isDarkMode ? '#1e293b' : '#f8fafc',
                           }}
                         >
-                          <Row gutter={12} align="middle">
-                            <Col span={9}>
+                          <Row gutter={[10, 10]} align="middle">
+                            <Col xs={24} md={8}>
                               <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                 Tên thuốc & Hàm lượng (Chọn từ danh mục):
                               </Text>
@@ -2059,7 +2071,7 @@ export const ExaminationsPage: React.FC = () => {
                                 </OptGroup>
                               </Select>
                             </Col>
-                            <Col span={3}>
+                            <Col xs={12} sm={6} md={3}>
                               <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                 ĐVT:
                               </Text>
@@ -2069,7 +2081,7 @@ export const ExaminationsPage: React.FC = () => {
                                 style={{ backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9', fontWeight: 600, textAlign: 'center' }}
                               />
                             </Col>
-                            <Col span={3}>
+                            <Col xs={12} sm={6} md={3}>
                               <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                 Số lượng:
                               </Text>
@@ -2085,7 +2097,7 @@ export const ExaminationsPage: React.FC = () => {
                                 style={{ width: '100%', fontWeight: 700, color: '#0284c7' }}
                               />
                             </Col>
-                            <Col span={8}>
+                            <Col xs={20} sm={20} md={9}>
                               <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                 Hướng dẫn liều dùng & Cách uống:
                               </Text>
@@ -2099,7 +2111,7 @@ export const ExaminationsPage: React.FC = () => {
                                 }}
                               />
                             </Col>
-                            <Col span={1} style={{ textAlign: 'right' }}>
+                            <Col xs={4} sm={4} md={1} style={{ textAlign: 'right' }}>
                               <Button
                                 icon={<DeleteOutlined />}
                                 danger
