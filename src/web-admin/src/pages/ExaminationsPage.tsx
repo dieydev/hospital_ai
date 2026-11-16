@@ -77,44 +77,101 @@ interface DrugCatalogItem {
 }
 
 const STANDARD_DRUG_CATALOG: DrugCatalogItem[] = [
-  // Kháng sinh & Kháng khuẩn
+  // 1. Kháng sinh & Kháng khuẩn
   { code: 'AUG-1G', name: 'Augmentin 1g (Amoxicillin/Clavulanate)', activeIngredient: 'Amoxicillin 875mg + Acid Clavulanic 125mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 18500, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn no (cách 12 giờ)' },
+  { code: 'AMOX-500', name: 'Amoxicillin 500mg (Mekophar)', activeIngredient: 'Amoxicillin trihydrat 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 2500, defaultDosage: 'Ngày 3 lần, mỗi lần 1 viên sau ăn' },
   { code: 'CFX-200', name: 'Cefixim 200mg (Hasan)', activeIngredient: 'Cefixim trihydrat 200mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 12000, defaultDosage: 'Ngày 2 lần, mỗi lần 1 viên sau ăn' },
+  { code: 'ZINNAT-500', name: 'Zinnat 500mg (Cefuroxime Axetil)', activeIngredient: 'Cefuroxime axetil 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 26000, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn' },
   { code: 'AZI-500', name: 'Azithromycin 500mg (Zithromax)', activeIngredient: 'Azithromycin 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 22000, defaultDosage: 'Uống 1 lần/ngày, 1 viên trước ăn 1h hoặc sau ăn 2h' },
-  { code: 'CIPRO-500', name: 'Ciprofloxacin 500mg', activeIngredient: 'Ciprofloxacin HCl 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 8500, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn no' },
+  { code: 'CLARI-500', name: 'Klacid 500mg (Clarithromycin)', activeIngredient: 'Clarithromycin 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 28500, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn no' },
+  { code: 'CIPRO-500', name: 'Ciprofloxacin 500mg (Ciprobay)', activeIngredient: 'Ciprofloxacin HCl 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 8500, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn no' },
+  { code: 'LEVO-500', name: 'Tavanic 500mg (Levofloxacin)', activeIngredient: 'Levofloxacin hemihydrat 500mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 38000, defaultDosage: 'Uống 1 viên/ngày sau bữa ăn' },
+  { code: 'METRO-250', name: 'Flagyl 250mg (Metronidazole)', activeIngredient: 'Metronidazole 250mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 1800, defaultDosage: 'Ngày 3 lần, mỗi lần 1 viên sau ăn' },
+  { code: 'DOXY-100', name: 'Doxycycline 100mg', activeIngredient: 'Doxycycline hyclate 100mg', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 2200, defaultDosage: 'Ngày 2 lần, mỗi lần 1 viên sau ăn' },
+  { code: 'SPIR-1.5', name: 'Rovamycine 1.5M IU (Spiramycin)', activeIngredient: 'Spiramycin 1.500.000 IU', category: 'Kháng sinh & Kháng khuẩn', unit: 'Viên', unitPrice: 9500, defaultDosage: 'Sáng 1 viên, Tối 1 viên sau ăn' },
 
-  // Giảm đau - Hạ sốt - Kháng viêm NSAID
+  // 2. Giảm đau - Hạ sốt - Kháng viêm NSAID
   { code: 'PARA-500', name: 'Paracetamol 500mg (Panadol/Hasan)', activeIngredient: 'Paracetamol 500mg', category: 'Giảm đau & Hạ sốt', unit: 'Viên', unitPrice: 1500, defaultDosage: 'Sáng 1v, Tối 1v sau ăn (uống cách nhau 4-6h khi sốt > 38.5°C)' },
+  { code: 'HAPA-650', name: 'Hapacol 650mg (Paracetamol)', activeIngredient: 'Paracetamol 650mg', category: 'Giảm đau & Hạ sốt', unit: 'Viên', unitPrice: 2200, defaultDosage: 'Uống 1 viên khi sốt hoặc đau đầu, cách nhau 4-6 giờ' },
   { code: 'EFFER-500', name: 'Efferalgan 500mg (Viên sủi)', activeIngredient: 'Paracetamol 500mg', category: 'Giảm đau & Hạ sốt', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Hòa tan 1 viên trong 150ml nước sôi để nguội, uống khi sốt' },
+  { code: 'EFFER-COD', name: 'Efferalgan Codeine (Paracetamol/Codein)', activeIngredient: 'Paracetamol 500mg + Codein phosphat 30mg', category: 'Giảm đau & Hạ sốt', unit: 'Viên', unitPrice: 7500, defaultDosage: 'Hòa tan 1 viên uống khi đau nhiều, tối đa 3 viên/ngày' },
   { code: 'IBU-400', name: 'Ibuprofen 400mg (Brufen)', activeIngredient: 'Ibuprofen 400mg', category: 'Kháng viêm NSAID', unit: 'Viên', unitPrice: 2800, defaultDosage: 'Ngày 2 lần, mỗi lần 1 viên sau ăn no' },
   { code: 'MELOX-7.5', name: 'Meloxicam 7.5mg (Mobic)', activeIngredient: 'Meloxicam 7.5mg', category: 'Kháng viêm NSAID', unit: 'Viên', unitPrice: 6500, defaultDosage: 'Uống 1 viên vào buổi sáng sau ăn no' },
+  { code: 'MELOX-15', name: 'Meloxicam 15mg (Kháng viêm khớp)', activeIngredient: 'Meloxicam 15mg', category: 'Kháng viêm NSAID', unit: 'Viên', unitPrice: 9500, defaultDosage: 'Uống 1 viên sau ăn sáng mỗi ngày' },
+  { code: 'CELE-200', name: 'Celebrex 200mg (Celecoxib)', activeIngredient: 'Celecoxib 200mg', category: 'Kháng viêm NSAID', unit: 'Viên', unitPrice: 22500, defaultDosage: 'Sáng 1 viên sau ăn no' },
+  { code: 'DICLO-50', name: 'Voltaren 50mg (Diclofenac)', activeIngredient: 'Diclofenac sodium 50mg', category: 'Kháng viêm NSAID', unit: 'Viên', unitPrice: 4500, defaultDosage: 'Ngày 2 lần, mỗi lần 1 viên sau ăn no' },
   { code: 'ALPHA-CHY', name: 'Alpha Chymotrypsine 4.2mg (Choay)', activeIngredient: 'Chymotrypsine 4200 IU', category: 'Kháng viêm chống phù nề', unit: 'Viên', unitPrice: 3000, defaultDosage: 'Ngậm dưới lưỡi 2 viên/lần, ngày 2 lần' },
+  { code: 'ULTRA-37.5', name: 'Ultracet (Tramadol 37.5mg + Paracetamol 325mg)', activeIngredient: 'Tramadol HCl 37.5mg + Paracetamol 325mg', category: 'Giảm đau & Hạ sốt', unit: 'Viên', unitPrice: 8500, defaultDosage: 'Sáng 1 viên, Chiều 1 viên khi đau nhiều' },
 
-  // Tim mạch & Huyết áp & Mỡ máu
+  // 3. Tim mạch & Huyết áp & Chống đông
   { code: 'AMLO-5', name: 'Amlodipine 5mg (Amlor)', activeIngredient: 'Amlodipine besylate 5mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 4200, defaultDosage: 'Sáng 1 viên sau ăn' },
+  { code: 'AMLO-10', name: 'Amlodipine 10mg (Amlor)', activeIngredient: 'Amlodipine besylate 10mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 7200, defaultDosage: 'Sáng 1 viên sau ăn sáng' },
   { code: 'LOSAR-50', name: 'Losartan Potassium 50mg (Cozaar)', activeIngredient: 'Losartan potassium 50mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 7000, defaultDosage: 'Sáng 1 viên sau ăn cố định giờ mỗi ngày' },
+  { code: 'TELMI-40', name: 'Micardis 40mg (Telmisartan)', activeIngredient: 'Telmisartan 40mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 11500, defaultDosage: 'Sáng 1 viên sau ăn sáng' },
   { code: 'CONCOR-2.5', name: 'Concor 2.5mg (Bisoprolol)', activeIngredient: 'Bisoprolol fumarate 2.5mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 5500, defaultDosage: 'Sáng 1 viên trước ăn sáng' },
+  { code: 'CONCOR-5', name: 'Concor 5mg (Bisoprolol)', activeIngredient: 'Bisoprolol fumarate 5mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 8500, defaultDosage: 'Sáng 1 viên trước ăn sáng' },
+  { code: 'CAPTO-25', name: 'Captopril 25mg (Hạ áp khẩn)', activeIngredient: 'Captopril 25mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 1500, defaultDosage: 'Ngậm dưới lưỡi 1/2 viên khi huyết áp >= 160 mmHg' },
+  { code: 'ATOR-10', name: 'Atorvastatin 10mg (Lipitor)', activeIngredient: 'Atorvastatin calcium 10mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 8500, defaultDosage: 'Tối 1 viên trước khi đi ngủ' },
   { code: 'ATOR-20', name: 'Atorvastatin 20mg (Lipitor)', activeIngredient: 'Atorvastatin calcium 20mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 12500, defaultDosage: 'Tối 1 viên trước khi đi ngủ' },
+  { code: 'ROSU-10', name: 'Crestor 10mg (Rosuvastatin)', activeIngredient: 'Rosuvastatin calcium 10mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 18000, defaultDosage: 'Tối 1 viên trước khi đi ngủ' },
+  { code: 'PLAVIX-75', name: 'Plavix 75mg (Clopidogrel)', activeIngredient: 'Clopidogrel bisulfate 75mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 22000, defaultDosage: 'Uống 1 viên vào buổi sáng sau ăn' },
+  { code: 'ASPIRIN-81', name: 'Aspirin 81mg (Cardio)', activeIngredient: 'Acid acetylsalicylic 81mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 1200, defaultDosage: 'Trưa 1 viên sau ăn no' },
+  { code: 'NITRO-0.5', name: 'Nitromint 0.5mg (Nitroglycerin)', activeIngredient: 'Nitroglycerin 0.5mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Ngậm dưới lưỡi 1 viên khi có cơn đau thắt ngực' },
+  { code: 'FURO-40', name: 'Lasix 40mg (Furosemid lợi tiểu)', activeIngredient: 'Furosemid 40mg', category: 'Tim mạch & Huyết áp', unit: 'Viên', unitPrice: 2000, defaultDosage: 'Sáng 1 viên sau ăn sáng' },
 
-  // Dạ dày - Tiêu hóa
+  // 4. Dạ dày & Tiêu hóa
   { code: 'ESOM-40', name: 'Esomeprazole 40mg (Nexium Mups)', activeIngredient: 'Esomeprazole magnesium 40mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 24000, defaultDosage: 'Sáng 1 viên trước ăn sáng 30 - 60 phút' },
+  { code: 'ESOM-20', name: 'Esomeprazole 20mg (Nexium)', activeIngredient: 'Esomeprazole magnesium 20mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 15500, defaultDosage: 'Sáng 1 viên trước ăn sáng 30 phút' },
+  { code: 'OME-20', name: 'Omeprazole 20mg', activeIngredient: 'Omeprazole 20mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Sáng 1 viên trước ăn 30 phút' },
+  { code: 'PANTO-40', name: 'Pantoprazole 40mg (Pantoloc)', activeIngredient: 'Pantoprazole sodium 40mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 19500, defaultDosage: 'Sáng 1 viên trước ăn sáng 30 - 60 phút' },
   { code: 'PHOS-GEL', name: 'Phosphalugel (Thuốc dạ dày chữ P)', activeIngredient: 'Aluminium phosphate 20%', category: 'Dạ dày & Tiêu hóa', unit: 'Gói', unitPrice: 5500, defaultDosage: 'Uống 1 gói khi đau hoặc sau ăn 1-2 giờ' },
+  { code: 'GAVIS-GEL', name: 'Gaviscon Dual Action (Gói 10ml)', activeIngredient: 'Sodium alginate + Sodium bicarbonate', category: 'Dạ dày & Tiêu hóa', unit: 'Gói', unitPrice: 8500, defaultDosage: 'Uống 1 gói sau mỗi bữa ăn và trước khi đi ngủ' },
   { code: 'MOTIL-10', name: 'Motilium-M 10mg (Domperidone)', activeIngredient: 'Domperidone maleate 10mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 3800, defaultDosage: 'Uống 1 viên trước mỗi bữa ăn 15-30 phút' },
   { code: 'BERBER-100', name: 'Berberin Clorhydrat 100mg', activeIngredient: 'Berberin clorhydrat 100mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 1200, defaultDosage: 'Ngày 2 lần, mỗi lần 2 viên sau ăn' },
+  { code: 'SMECTA-3G', name: 'Smecta 3g (Diosmectite trị tiêu chảy)', activeIngredient: 'Diosmectite 3g', category: 'Dạ dày & Tiêu hóa', unit: 'Gói', unitPrice: 4200, defaultDosage: 'Ngày 3 lần, mỗi lần 1 gói pha với 50ml nước ấm' },
+  { code: 'ENTERO-5ML', name: 'Enterogermina (Men vi sinh ống)', activeIngredient: 'Bacillus clausii 2 tỷ bào tử/5ml', category: 'Dạ dày & Tiêu hóa', unit: 'Ống', unitPrice: 9000, defaultDosage: 'Uống 1 ống x 2 lần/ngày sau bữa ăn' },
+  { code: 'SPASFON-80', name: 'Spasfon 80mg (Chống co thắt dạ dày, ruột)', activeIngredient: 'Phloroglucinol 80mg', category: 'Dạ dày & Tiêu hóa', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Ngày uống 2-3 lần, mỗi lần 1 viên khi có cơn đau co thắt' },
 
-  // Đái tháo đường
+  // 5. Đái tháo đường & Nội tiết
+  { code: 'MET-500', name: 'Glucophage 500mg (Metformin)', activeIngredient: 'Metformin hydrochloride 500mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 2500, defaultDosage: 'Ngày 2 lần, mỗi lần 1 viên ngay sau bữa ăn sáng và tối' },
   { code: 'MET-850', name: 'Metformin 850mg (Glucophage)', activeIngredient: 'Metformin hydrochloride 850mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Uống 1 viên trong hoặc ngay sau bữa ăn' },
   { code: 'GLIC-30', name: 'Diamicron MR 30mg (Gliclazide)', activeIngredient: 'Gliclazide phóng thích biến đổi 30mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 4800, defaultDosage: 'Sáng 1 viên trước bữa ăn sáng' },
+  { code: 'GLIC-60', name: 'Diamicron MR 60mg (Gliclazide)', activeIngredient: 'Gliclazide phóng thích biến đổi 60mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 8200, defaultDosage: 'Sáng 1 viên trước bữa ăn sáng' },
+  { code: 'GLIME-2', name: 'Amaryl 2mg (Glimepiride)', activeIngredient: 'Glimepiride 2mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 6500, defaultDosage: 'Uống 1 viên vào bữa ăn sáng đầu tiên trong ngày' },
+  { code: 'JANU-50', name: 'Januvia 50mg (Sitagliptin)', activeIngredient: 'Sitagliptin phosphate 50mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 19500, defaultDosage: 'Uống 1 viên/ngày bất kỳ thời điểm nào' },
+  { code: 'FORXI-10', name: 'Forxiga 10mg (Dapagliflozin)', activeIngredient: 'Dapagliflozin propanediol 10mg', category: 'Đái tháo đường', unit: 'Viên', unitPrice: 28500, defaultDosage: 'Uống 1 viên/ngày vào buổi sáng' },
+  { code: 'LANTUS-SOLO', name: 'Bút tiêm Lantus SoloStar 100 IU/ml', activeIngredient: 'Insulin glargine 100 IU/ml (3ml)', category: 'Đái tháo đường', unit: 'Bút', unitPrice: 280000, defaultDosage: 'Tiêm dưới da 1 lần/ngày cố định giờ mỗi tối' },
 
-  // Hô hấp - Dị ứng
+  // 6. Hô hấp, Ho & Dị ứng
   { code: 'FEXO-180', name: 'Telfast HD 180mg (Fexofenadine)', activeIngredient: 'Fexofenadine HCl 180mg', category: 'Kháng Histamin & Dị ứng', unit: 'Viên', unitPrice: 14500, defaultDosage: 'Tối 1 viên sau ăn' },
+  { code: 'FEXO-60', name: 'Telfast 60mg (Fexofenadine)', activeIngredient: 'Fexofenadine HCl 60mg', category: 'Kháng Histamin & Dị ứng', unit: 'Viên', unitPrice: 8500, defaultDosage: 'Sáng 1 viên, Chiều 1 viên sau ăn' },
+  { code: 'CETI-10', name: 'Zyrtec 10mg (Cetirizine)', activeIngredient: 'Cetirizine dihydrochloride 10mg', category: 'Kháng Histamin & Dị ứng', unit: 'Viên', unitPrice: 6200, defaultDosage: 'Tối 1 viên trước khi đi ngủ' },
   { code: 'DESLO-5', name: 'Aerius 5mg (Desloratadine)', activeIngredient: 'Desloratadine 5mg', category: 'Kháng Histamin & Dị ứng', unit: 'Viên', unitPrice: 9500, defaultDosage: 'Uống 1 viên vào buổi tối' },
-  { code: 'ACETYL-200', name: 'Acemuc 200mg (Acetylcysteine)', activeIngredient: 'Acetylcysteine 200mg', category: 'Hô hấp & Long đờm', unit: 'Gói', unitPrice: 3200, defaultDosage: 'Ngày 3 lần, mỗi lần 1 gói pha nước uống' },
+  { code: 'LORA-10', name: 'Claritin 10mg (Loratadine)', activeIngredient: 'Loratadine 10mg', category: 'Kháng Histamin & Dị ứng', unit: 'Viên', unitPrice: 7500, defaultDosage: 'Uống 1 viên mỗi ngày sau ăn' },
+  { code: 'ACETYL-200', name: 'Acemuc 200mg (Acetylcysteine long đờm)', activeIngredient: 'Acetylcysteine 200mg', category: 'Hô hấp & Long đờm', unit: 'Gói', unitPrice: 3200, defaultDosage: 'Ngày 3 lần, mỗi lần 1 gói pha nước uống' },
   { code: 'BROM-8', name: 'Bisolvon 8mg (Bromhexin)', activeIngredient: 'Bromhexin HCl 8mg', category: 'Hô hấp & Long đờm', unit: 'Viên', unitPrice: 1800, defaultDosage: 'Ngày 3 lần, mỗi lần 1 viên sau ăn' },
+  { code: 'TERPIN-COD', name: 'Terpin Codein (Giảm ho khan)', activeIngredient: 'Terpin hydrat 100mg + Codein 10mg', category: 'Hô hấp & Long đờm', unit: 'Viên', unitPrice: 2500, defaultDosage: 'Ngày uống 2-3 lần, mỗi lần 1 viên sau ăn' },
+  { code: 'VENTOLIN-100', name: 'Ventolin Inhaler 100mcg (Salbutamol xịt)', activeIngredient: 'Salbutamol 100mcg/nhát xịt (200 liều)', category: 'Hô hấp & Long đờm', unit: 'Chai', unitPrice: 95000, defaultDosage: 'Xịt hít 1-2 nhát khi khó thở hoặc lên cơn hen' },
+  { code: 'SYMBICORT', name: 'Symbicort Turbuhaler 160/4.5mcg', activeIngredient: 'Budesonide 160mcg + Formoterol 4.5mcg', category: 'Hô hấp & Long đờm', unit: 'Ống', unitPrice: 420000, defaultDosage: 'Hít 1 nhát x 2 lần/ngày vào buổi sáng và tối, súc miệng sau hít' },
 
-  // Cơ xương khớp & Bổ thần kinh
-  { code: 'GLUCO-500', name: 'Glucosamine Sulfate 500mg', activeIngredient: 'Glucosamine sulfate 500mg', category: 'Cơ xương khớp & Vitamin', unit: 'Viên', unitPrice: 4500, defaultDosage: 'Sáng 1 viên, Chiều 1 viên sau ăn' },
-  { code: 'VIT-3B', name: 'Vitamin 3B (B1 + B6 + B12)', activeIngredient: 'Thiamin, Pyridoxin, Cyanocobalamin', category: 'Cơ xương khớp & Vitamin', unit: 'Viên', unitPrice: 2000, defaultDosage: 'Sáng 1 viên, Trưa 1 viên sau ăn' },
+  // 7. Cơ xương khớp & Bổ thần kinh
+  { code: 'GLUCO-500', name: 'Glucosamine Sulfate 500mg', activeIngredient: 'Glucosamine sulfate 500mg', category: 'Cơ xương khớp & Thần kinh', unit: 'Viên', unitPrice: 4500, defaultDosage: 'Sáng 1 viên, Chiều 1 viên sau ăn' },
+  { code: 'GINKGO-80', name: 'Tanakan 80mg (Ginkgo Biloba)', activeIngredient: 'Cao lá bạch quả Ginkgo Biloba 80mg', category: 'Cơ xương khớp & Thần kinh', unit: 'Viên', unitPrice: 6500, defaultDosage: 'Sáng 1 viên, Chiều 1 viên sau ăn' },
+  { code: 'PIRA-800', name: 'Nootropil 800mg (Piracetam tuần hoàn não)', activeIngredient: 'Piracetam 800mg', category: 'Cơ xương khớp & Thần kinh', unit: 'Viên', unitPrice: 5000, defaultDosage: 'Sáng 1 viên, Trưa 1 viên sau ăn' },
+  { code: 'GABA-300', name: 'Neurontin 300mg (Gabapentin đau dây thần kinh)', activeIngredient: 'Gabapentin 300mg', category: 'Cơ xương khớp & Thần kinh', unit: 'Viên', unitPrice: 12500, defaultDosage: 'Tối 1 viên trước khi đi ngủ' },
+  { code: 'MYONAL-50', name: 'Myonal 50mg (Eperisone giãn cơ)', activeIngredient: 'Eperisone HCl 50mg', category: 'Cơ xương khớp & Thần kinh', unit: 'Viên', unitPrice: 4200, defaultDosage: 'Ngày 3 lần, mỗi lần 1 viên sau ăn' },
+  { code: 'DIAZ-5', name: 'Seduxen 5mg (Diazepam an thần)', activeIngredient: 'Diazepam 5mg', category: 'Cơ xương khớp & Thần kinh', unit: 'Viên', unitPrice: 2000, defaultDosage: 'Uống 1/2 đến 1 viên vào buổi tối trước khi ngủ' },
+  { code: 'COLCHI-1', name: 'Colchicine 1mg (Điều trị Gout cấp)', activeIngredient: 'Colchicine 1mg', category: 'Cơ xương khớp & Thần kinh', unit: 'Viên', unitPrice: 3500, defaultDosage: 'Ngày 1: uống 1 viên buổi tối; Ngày 2-3: uống 1/2 viên' },
+
+  // 8. Vitamin, Khoáng chất & Dịch truyền
+  { code: 'VIT-3B', name: 'Vitamin 3B (B1 + B6 + B12)', activeIngredient: 'Thiamin, Pyridoxin, Cyanocobalamin', category: 'Vitamin & Khoáng chất', unit: 'Viên', unitPrice: 2000, defaultDosage: 'Sáng 1 viên, Trưa 1 viên sau ăn' },
+  { code: 'VIT-C-500', name: 'Vitamin C 500mg', activeIngredient: 'Acid ascorbic 500mg', category: 'Vitamin & Khoáng chất', unit: 'Viên', unitPrice: 1200, defaultDosage: 'Sáng 1 viên sau ăn sáng (uống nhiều nước)' },
+  { code: 'FUMA-B9', name: 'Fumafer B9 (Sắt + Acid Folic bổ máu)', activeIngredient: 'Sắt fumarat 200mg + Acid folic 1mg', category: 'Vitamin & Khoáng chất', unit: 'Viên', unitPrice: 3200, defaultDosage: 'Sáng 1 viên sau ăn 1 giờ' },
+  { code: 'CALCI-CORB', name: 'Canxi Corbiere 10ml (Ống uống)', activeIngredient: 'Calcium glucoheptonate 1.1g + Vitamin C + PP', category: 'Vitamin & Khoáng chất', unit: 'Ống', unitPrice: 8500, defaultDosage: 'Sáng 1 ống uống sau ăn sáng' },
+  { code: 'ZINC-10', name: 'Farzincol 10mg (Kẽm Zinc)', activeIngredient: 'Kẽm gluconat 70mg (tương đương Kẽm 10mg)', category: 'Vitamin & Khoáng chất', unit: 'Viên', unitPrice: 2200, defaultDosage: 'Uống 1 viên sau ăn trưa' },
+  { code: 'ORESOL-245', name: 'Oresol 245 (Bù nước & Điện giải)', activeIngredient: 'Glucose, Natri clorid, Kali clorid, Natri citrat', category: 'Vitamin & Khoáng chất', unit: 'Gói', unitPrice: 4000, defaultDosage: 'Pha 1 gói vào đúng 200ml nước nguội, uống rải rác trong ngày' },
+  { code: 'TOBRA-DEX', name: 'Tobradex 5ml (Nhỏ mắt kháng viêm)', activeIngredient: 'Tobramycin 0.3% + Dexamethasone 0.1%', category: 'Vitamin & Khoáng chất', unit: 'Lọ', unitPrice: 58000, defaultDosage: 'Nhỏ 1-2 giọt vào mắt đau, 4-6 lần/ngày' },
+  { code: 'NACL-0.9', name: 'Natri Clorid 0.9% 500ml (Dung dịch tiêm truyền)', activeIngredient: 'Natri clorid 0.9%', category: 'Vitamin & Khoáng chất', unit: 'Chai', unitPrice: 15000, defaultDosage: 'Truyền tĩnh mạch theo y lệnh của Bác sĩ' },
 ];
 
 // ==========================================
@@ -2059,8 +2116,18 @@ export const ExaminationsPage: React.FC = () => {
                                     </Option>
                                   ))}
                                 </OptGroup>
-                                <OptGroup label="💊 Cơ xương khớp & Vitamin">
-                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Cơ xương khớp & Vitamin').map((d) => (
+                                <OptGroup label="💊 Cơ xương khớp & Bổ thần kinh">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Cơ xương khớp & Thần kinh').map((d) => (
+                                    <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span><strong>{d.name}</strong></span>
+                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
+                                      </div>
+                                    </Option>
+                                  ))}
+                                </OptGroup>
+                                <OptGroup label="💊 Vitamin, Khoáng chất & Bổ trợ">
+                                  {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Vitamin & Khoáng chất').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
                                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span><strong>{d.name}</strong></span>
