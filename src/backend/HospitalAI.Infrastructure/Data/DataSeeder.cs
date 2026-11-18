@@ -407,5 +407,108 @@ public static class DataSeeder
         {
             await context.SaveChangesAsync();
         }
+
+        // 8. Seed Default Invoices (Dữ liệu Hóa đơn Viện phí & BHYT)
+        if (!await context.Billings.AnyAsync())
+        {
+            var p1 = await context.Patients.FirstOrDefaultAsync(p => p.FullName.Contains("Nguyễn Văn An")) ?? await context.Patients.FirstOrDefaultAsync();
+            var p2 = await context.Patients.Skip(1).FirstOrDefaultAsync() ?? p1;
+            var p3 = await context.Patients.Skip(2).FirstOrDefaultAsync() ?? p1;
+
+            if (p1 != null)
+            {
+                var seedBillings = new List<Billing>
+                {
+                    new Billing
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = p1.Id,
+                        BillingType = "Registration",
+                        TotalAmount = 150000,
+                        Status = "Unpaid",
+                        CreatedAt = DateTime.UtcNow.AddHours(-3),
+                        Items = new List<BillingItem>
+                        {
+                            new BillingItem { ItemName = "Khám chuyên khoa Nội Tổng Hợp", UnitPrice = 150000, Quantity = 1, TotalPrice = 150000 }
+                        }
+                    },
+                    new Billing
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = p2?.Id ?? p1.Id,
+                        BillingType = "ServiceOrder",
+                        TotalAmount = 235000,
+                        Status = "Unpaid",
+                        CreatedAt = DateTime.UtcNow.AddHours(-2),
+                        Items = new List<BillingItem>
+                        {
+                            new BillingItem { ItemName = "Chụp X-quang Ngực thẳng (Kỹ thuật số)", UnitPrice = 150000, Quantity = 1, TotalPrice = 150000 },
+                            new BillingItem { ItemName = "Tổng phân tích tế bào máu ngoại vi (CBC)", UnitPrice = 85000, Quantity = 1, TotalPrice = 85000 }
+                        }
+                    },
+                    new Billing
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = p3?.Id ?? p1.Id,
+                        BillingType = "Prescription",
+                        TotalAmount = 283000,
+                        Status = "Paid",
+                        PaymentMethod = "Tiền mặt",
+                        PaidAt = DateTime.UtcNow.AddHours(-1),
+                        CreatedAt = DateTime.UtcNow.AddHours(-2),
+                        Items = new List<BillingItem>
+                        {
+                            new BillingItem { ItemName = "Augmentin 1g (Hộp 14 viên)", UnitPrice = 259000, Quantity = 1, TotalPrice = 259000 },
+                            new BillingItem { ItemName = "Paracetamol 500mg (Vỉ 10 viên)", UnitPrice = 12000, Quantity = 2, TotalPrice = 24000 }
+                        }
+                    },
+                    new Billing
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = p1.Id,
+                        BillingType = "ServiceOrder",
+                        TotalAmount = 450000,
+                        Status = "Paid",
+                        PaymentMethod = "Chuyển khoản VietQR",
+                        PaidAt = DateTime.UtcNow.AddMinutes(-40),
+                        CreatedAt = DateTime.UtcNow.AddHours(-1),
+                        Items = new List<BillingItem>
+                        {
+                            new BillingItem { ItemName = "Siêu âm Doppler Tim màu đa chiều", UnitPrice = 350000, Quantity = 1, TotalPrice = 350000 },
+                            new BillingItem { ItemName = "Đo điện tim gắng sức (ECG 12 cần)", UnitPrice = 100000, Quantity = 1, TotalPrice = 100000 }
+                        }
+                    },
+                    new Billing
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = p2?.Id ?? p1.Id,
+                        BillingType = "Registration",
+                        TotalAmount = 120000,
+                        Status = "Unpaid",
+                        CreatedAt = DateTime.UtcNow.AddMinutes(-30),
+                        Items = new List<BillingItem>
+                        {
+                            new BillingItem { ItemName = "Khám chuyên khoa Nhi Tổng Quát", UnitPrice = 120000, Quantity = 1, TotalPrice = 120000 }
+                        }
+                    },
+                    new Billing
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = p3?.Id ?? p1.Id,
+                        BillingType = "Prescription",
+                        TotalAmount = 320000,
+                        Status = "Unpaid",
+                        CreatedAt = DateTime.UtcNow.AddMinutes(-15),
+                        Items = new List<BillingItem>
+                        {
+                            new BillingItem { ItemName = "Nexium 40mg (Hộp 28 viên)", UnitPrice = 320000, Quantity = 1, TotalPrice = 320000 }
+                        }
+                    }
+                };
+
+                await context.Billings.AddRangeAsync(seedBillings);
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }

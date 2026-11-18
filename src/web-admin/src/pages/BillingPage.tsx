@@ -23,6 +23,7 @@ export const BillingPage: React.FC = () => {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const { isDarkMode } = useThemeStore();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -30,12 +31,12 @@ export const BillingPage: React.FC = () => {
 
   useEffect(() => {
     fetchBillings();
-  }, [statusFilter]);
+  }, [statusFilter, typeFilter]);
 
   const fetchBillings = async () => {
     setLoading(true);
     try {
-      const data = await billingService.getBillings(statusFilter === 'ALL' ? undefined : statusFilter, 'Registration');
+      const data = await billingService.getBillings(statusFilter, typeFilter);
       setInvoices(data);
     } catch (error) {
       console.error("Failed to fetch billings:", error);
@@ -53,7 +54,8 @@ export const BillingPage: React.FC = () => {
       inv.maBenhNhan.toLowerCase().includes(searchKeyword.toLowerCase());
 
     const matchStatus = statusFilter === 'ALL' || inv.trangThai === statusFilter;
-    return matchKw && matchStatus;
+    const matchType = typeFilter === 'ALL' || inv.loaiHoaDon === typeFilter;
+    return matchKw && matchStatus && matchType;
   });
 
   const handleOpenQrModal = (inv: Invoice) => {
@@ -66,14 +68,19 @@ export const BillingPage: React.FC = () => {
     setIsPrintModalOpen(true);
   };
 
-  const handleConfirmPayment = async (id: string) => {
+  const handleConfirmPayment = async (id: string, isTransfer: boolean = false) => {
     try {
-      await billingService.payCash(id);
+      if (isTransfer) {
+        await billingService.payTransfer(id);
+      } else {
+        await billingService.payCash(id);
+      }
       const inv = invoices.find((i) => i.id === id);
-      setInvoices(invoices.map((i) => (i.id === id ? { ...i, trangThai: 'Đã thanh toán', phuongThucThanhToan: 'Tiền mặt' } : i)));
+      const newMethod = isTransfer ? 'Chuyển khoản VietQR' : 'Tiền mặt';
+      setInvoices(invoices.map((i) => (i.id === id ? { ...i, trangThai: 'Đã thanh toán', phuongThucThanhToan: newMethod } : i)));
       showSuccessAlert(
         'Thanh toán Thành công!',
-        `Đã thu thành công số tiền viện phí cho hóa đơn ${inv?.maHoaDon || ''}`
+        `Đã thu thành công số tiền viện phí cho hóa đơn ${inv?.maHoaDon || ''} qua ${newMethod}.`
       );
       setIsQrModalOpen(false);
     } catch (error) {
@@ -81,6 +88,26 @@ export const BillingPage: React.FC = () => {
       message.error("Có lỗi xảy ra khi xác nhận thanh toán.");
     }
   };
+
+  const renderLoaiHoaDonTag = (loai: string) => {
+    switch (loai) {
+      case 'Registration':
+        return <Tag color="cyan">Khám ban đầu</Tag>;
+      case 'ServiceOrder':
+        return <Tag color="purple">Cận lâm sàng CLS</Tag>;
+      case 'Prescription':
+        return <Tag color="green">Toa thuốc</Tag>;
+      default:
+        return <Tag color="blue">{loai}</Tag>;
+    }
+  };
+
+  const totalRevenue = invoices
+    .filter((i) => i.trangThai === 'Đã thanh toán')
+    .reduce((sum, i) => sum + (i.tongTien || 0), 0);
+
+  const pendingCount = invoices.filter((i) => i.trangThai === 'Chưa thanh toán').length;
+  const bhytEstimated = Math.round(totalRevenue * 0.7);
 
   const columns = [
     {
@@ -96,9 +123,9 @@ export const BillingPage: React.FC = () => {
       render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text>
     },
     { title: 'Mã BN', dataIndex: 'maBenhNhan', key: 'maBenhNhan', render: (c: string) => <Tag color="blue">{c}</Tag> },
-    { title: 'Tiền Khám (VND)', dataIndex: 'tongTien', key: 'tongTien', render: (val: number) => <Text strong style={{ color: '#f43f5e', fontSize: 16 }}>{formatCurrency(val)}</Text> },
-    { title: 'Loại HĐ', dataIndex: 'loaiHoaDon', key: 'loaiHoaDon', render: (val: string) => <Tag color="purple">{val}</Tag> },
-    { title: 'Phương thức', dataIndex: 'phuongThucThanhToan', key: 'phuongThucThanhToan' },
+    { title: 'Tiền Viện Phí', dataIndex: 'tongTien', key: 'tongTien', render: (val: number) => <Text strong style={{ color: '#f43f5e', fontSize: 16 }}>{formatCurrency(val)}</Text> },
+    { title: 'Loại HĐ', dataIndex: 'loaiHoaDon', key: 'loaiHoaDon', render: (val: string) => renderLoaiHoaDonTag(val) },
+    { title: 'Phương thức', dataIndex: 'phuongThucThanhToan', key: 'phuongThucThanhToan', render: (val: string) => val || '---' },
     {
       title: 'Trạng thái',
       dataIndex: 'trangThai',
@@ -112,7 +139,7 @@ export const BillingPage: React.FC = () => {
         <Space>
           {record.trangThai === 'Chưa thanh toán' ? (
             <>
-              <Button icon={<CheckCircleOutlined />} type="primary" size="small" style={{ background: '#10b981', borderColor: '#10b981' }} onClick={() => handleConfirmPayment(record.id)}>
+              <Button icon={<CheckCircleOutlined />} type="primary" size="small" style={{ background: '#10b981', borderColor: '#10b981' }} onClick={() => handleConfirmPayment(record.id, false)}>
                 Thu tiền mặt
               </Button>
               <Button icon={<QrcodeOutlined />} size="small" onClick={() => handleOpenQrModal(record)}>
@@ -145,6 +172,12 @@ export const BillingPage: React.FC = () => {
           </p>
         </div>
         <Space wrap>
+          <Select value={typeFilter} onChange={setTypeFilter} style={{ width: 170 }}>
+            <Option value="ALL">Tất cả loại HĐ</Option>
+            <Option value="Registration">Khám ban đầu</Option>
+            <Option value="ServiceOrder">Cận lâm sàng CLS</Option>
+            <Option value="Prescription">Toa thuốc</Option>
+          </Select>
           <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 160 }}>
             <Option value="ALL">Tất cả trạng thái</Option>
             <Option value="Chưa thanh toán">Chưa thanh toán</Option>
@@ -155,7 +188,7 @@ export const BillingPage: React.FC = () => {
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            style={{ width: 260 }}
+            style={{ width: 220 }}
           />
         </Space>
       </div>
@@ -164,8 +197,8 @@ export const BillingPage: React.FC = () => {
         <Col xs={24} md={8}>
           <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
             <Statistic
-              title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">TỔNG THU VIỆN PHÍ HÔM NAY</span>}
-              value={158800000}
+              title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">TỔNG THU VIỆN PHÍ (ĐÃ THU)</span>}
+              value={totalRevenue}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: isDarkMode ? '#38bdf8' : '#0284c7', fontWeight: 800 }}
               prefix={<DollarOutlined />}
@@ -176,8 +209,8 @@ export const BillingPage: React.FC = () => {
         <Col xs={24} md={8}>
           <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
             <Statistic
-              title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">QUỸ BHYT CHI TRẢ TẠM TÍNH</span>}
-              value={98400000}
+              title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">QUỸ BHYT CHI TRẢ TẠM TÍNH (~70%)</span>}
+              value={bhytEstimated}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#10b981', fontWeight: 800 }}
               prefix={<SafetyCertificateOutlined />}
@@ -189,7 +222,7 @@ export const BillingPage: React.FC = () => {
           <Card bordered={false} className="rounded-xl bg-white dark:bg-slate-800 hover-lift">
             <Statistic
               title={<span className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">HÓA ĐƠN CHỜ THU PHÍ</span>}
-              value={invoices.filter((i) => i.trangThai === 'Chưa thanh toán').length}
+              value={pendingCount}
               valueStyle={{ color: '#f59e0b', fontWeight: 800 }}
               suffix="hóa đơn"
             />
@@ -253,7 +286,7 @@ export const BillingPage: React.FC = () => {
                 icon={<CheckCircleOutlined />}
                 size="large"
                 style={{ background: '#10b981', borderColor: '#10b981' }}
-                onClick={() => handleConfirmPayment(selectedInvoice.id)}
+                onClick={() => handleConfirmPayment(selectedInvoice.id, true)}
               >
                 Xác nhận Đã Nhận Đủ Tiền
               </Button>
