@@ -296,7 +296,7 @@ public class AuthService : IAuthService
             Username = request.Username,
             PasswordHash = _passwordHasher.HashPassword(request.Password),
             FullName = request.FullName,
-            Email = request.Email,
+            Email = request.Email ?? string.Empty,
             PhoneNumber = request.PhoneNumber,
             Specialty = request.Specialty,
             Title = request.Title,

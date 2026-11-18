@@ -15,6 +15,7 @@ import { formatCurrency } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
 import { showSuccessAlert } from '../utils/sweetAlert';
 import api from '../services/api';
+import { HOSPITAL_DRUG_CATALOG } from '../data/drugCatalogData';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -65,11 +66,19 @@ export const CatalogsPage: React.FC = () => {
     { id: '17', maNV: 'NV017', hoTen: 'BS. CKI. Trịnh Văn Thành', chuyenKhoa: 'Khoa Cấp Cứu & Hồi Sức', chucVu: 'Trưởng Kíp', soDienThoai: '0911223344', trangThai: 'Hoạt động' },
   ]);
 
-  const [medicinesData, setMedicinesData] = useState([
-    { id: '1', maThuoc: 'TH001', tenThuoc: 'Paracetamol 500mg', hoatChat: 'Paracetamol', donViTinh: 'Viên', donGia: 1200, nhaSanXuat: 'Hasan - Dermapharm', trangThai: 'Đang kinh doanh' },
-    { id: '2', maThuoc: 'TH002', tenThuoc: 'Augmentin 1g', hoatChat: 'Amoxicillin + Clavulanic Acid', donViTinh: 'Viên', donGia: 18500, nhaSanXuat: 'GSK', trangThai: 'Đang kinh doanh' },
-    { id: '3', maThuoc: 'TH003', tenThuoc: 'Esomeprazole 40mg', hoatChat: 'Esomeprazole', donViTinh: 'Viên', donGia: 8500, nhaSanXuat: 'AstraZeneca', trangThai: 'Đang kinh doanh' },
-  ]);
+  const [medicinesData, setMedicinesData] = useState(() =>
+    HOSPITAL_DRUG_CATALOG.map((d, index) => ({
+      id: d.id || String(index + 1),
+      maThuoc: d.code,
+      tenThuoc: d.name,
+      hoatChat: d.activeIngredient,
+      category: d.category,
+      donViTinh: d.unit,
+      donGia: d.unitPrice,
+      nhaSanXuat: `${d.manufacturer} (${d.country})`,
+      trangThai: d.status === 'OutOfStock' ? 'Hết hàng' : 'Đang kinh doanh',
+    }))
+  );
 
   const [servicesData, setServicesData] = useState([
     { id: '1', maDV: 'DV001', tenDichVu: 'Khám Nội tổng hợp', loai: 'Khám bệnh', donGia: 150000, donGiaBHYT: 42100, khoa: 'Khoa Nội' },
@@ -201,6 +210,7 @@ export const CatalogsPage: React.FC = () => {
         hoatChat: values.hoatChat,
         donViTinh: values.donViTinh || 'Viên',
         donGia: values.donGia || 10000,
+        category: values.category || 'Dược phẩm',
         nhaSanXuat: values.nhaSanXuat || 'Dược Việt Nam',
         trangThai: 'Đang kinh doanh',
       };
@@ -421,12 +431,14 @@ export const CatalogsPage: React.FC = () => {
               children: (
                 <Table
                   dataSource={medicinesData}
+                  pagination={{ pageSize: 10, showTotal: (t) => `Tổng cộng ${t} loại thuốc` }}
                   columns={[
-                    { title: 'Mã Thuốc', dataIndex: 'maThuoc', key: 'maThuoc', render: (c: string) => <Tag color="cyan">{c}</Tag> },
+                    { title: 'Mã Thuốc', dataIndex: 'maThuoc', key: 'maThuoc', width: 110, render: (c: string) => <Tag color="cyan">{c}</Tag> },
                     { title: 'Tên Thuốc', dataIndex: 'tenThuoc', key: 'tenThuoc', render: (t: string) => <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t}</Text> },
                     { title: 'Hoạt chất', dataIndex: 'hoatChat', key: 'hoatChat' },
-                    { title: 'ĐVT', dataIndex: 'donViTinh', key: 'donViTinh' },
-                    { title: 'Đơn giá', dataIndex: 'donGia', key: 'donGia', render: (v: number) => formatCurrency(v) },
+                    { title: 'Nhóm Lâm Sàng', dataIndex: 'category', key: 'category', render: (cat: string) => <Tag color="blue">{cat || 'Dược phẩm'}</Tag> },
+                    { title: 'ĐVT', dataIndex: 'donViTinh', key: 'donViTinh', width: 70, align: 'center' },
+                    { title: 'Đơn giá', dataIndex: 'donGia', key: 'donGia', width: 130, render: (v: number) => formatCurrency(v) },
                     { title: 'Nhà sản xuất', dataIndex: 'nhaSanXuat', key: 'nhaSanXuat' },
                   ]}
                   rowKey="id"

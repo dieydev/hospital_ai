@@ -30,7 +30,7 @@ public class RegisterRequestDto
     public string FullName { get; set; } = string.Empty;
 
     [EmailAddress(ErrorMessage = "Định dạng email không hợp lệ")]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; } // Optional - bệnh nhân đăng ký bằng SĐT, không cần email
 
     [RegularExpression(@"^0\d{9,10}$", ErrorMessage = "Số điện thoại không hợp lệ (10-11 số bắt đầu bằng số 0)")]
     public string PhoneNumber { get; set; } = string.Empty;

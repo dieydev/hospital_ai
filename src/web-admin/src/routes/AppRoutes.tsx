@@ -10,6 +10,7 @@ import { MedicalRecordsPage } from '../pages/MedicalRecordsPage';
 import { BillingPage } from '../pages/BillingPage';
 import { AIAssistantPage } from '../pages/AIAssistantPage';
 import { CatalogsPage } from '../pages/CatalogsPage';
+import { PharmacyPage } from '../pages/PharmacyPage';
 import { AccountsPage } from '../pages/AccountsPage';
 import { AuditLogPage } from '../pages/AuditLogPage';
 import { ReportsPage } from '../pages/ReportsPage';
@@ -141,7 +142,7 @@ export const AppRoutes: React.FC = () => {
                   {/* Dược & Nhà thuốc BV: Admin, Nhà thuốc, Bác sĩ, Y tế */}
                   <Route
                     path="/pharmacy"
-                    element={isAdmin || isPharmacy || isDoctor || isNurse ? <CatalogsPage /> : <Navigate to="/dashboard" replace />}
+                    element={isAdmin || isPharmacy || isDoctor || isNurse ? <PharmacyPage /> : <Navigate to="/dashboard" replace />}
                   />
 
                   {/* Tài chính & Viện phí: Admin, Thu ngân, Nhân viên tiếp nhận */}
