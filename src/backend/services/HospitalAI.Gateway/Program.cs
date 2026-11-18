@@ -82,6 +82,7 @@ app.UseCors("HospitalCorsPolicy");
 app.UseRateLimiter();
 
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Gateway = "HospitalAI.Gateway", Timestamp = DateTime.UtcNow }));
+app.MapGet("/api/health", () => Results.Ok(new { Status = "Healthy", Gateway = "HospitalAI.Gateway", Timestamp = DateTime.UtcNow }));
 
 app.MapReverseProxy();
 

@@ -59,10 +59,29 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   useEffect(() => {
     const checkGatewayHealth = async () => {
       try {
-        await api.get('/patients', { params: { pageSize: 1 }, timeout: 2500 });
+        const res = await api.get('/health', { timeout: 2500 });
+        if (res.status === 200) {
+          setIsGatewayOnline(true);
+          return;
+        }
+      } catch (err: any) {
+        // Nếu Gateway phản hồi bất kỳ mã HTTP nào (200, 401, 403, 404), nghĩa là Docker Gateway đang ONLINE
+        if (err?.response && [200, 401, 403, 404].includes(err.response.status)) {
+          setIsGatewayOnline(true);
+          return;
+        }
+      }
+
+      // Endpoint kiểm tra số điện thoại công khai (không cần token JWT)
+      try {
+        await api.get('/auth/check-phone?phoneNumber=0900000001', { timeout: 2500 });
         setIsGatewayOnline(true);
-      } catch {
-        setIsGatewayOnline(false);
+      } catch (err: any) {
+        if (err?.response) {
+          setIsGatewayOnline(true);
+        } else {
+          setIsGatewayOnline(false);
+        }
       }
     };
 
