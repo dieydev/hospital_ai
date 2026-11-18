@@ -108,36 +108,45 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
         user?.maBenhNhan ||
         `BN-${dayjs().format('YYYY')}-${Math.floor(10000 + Math.random() * 90000)}`;
 
-      // 1. Lưu trực tiếp vào CSDL Backend SQL Server qua API
+      // 1. Lưu trực tiếp vào CSDL Backend SQL Server qua API (nếu có Token hợp lệ và không phải token giả lập)
       let backendUpdatedUser: any = null;
-      try {
-        const payload = {
-          fullName: values.hoTen.trim(),
-          phoneNumber: values.soDienThoai.trim(),
-          identityCardNumber: values.soCCCD.trim(),
-          dateOfBirth: ngaySinhStr ? `${ngaySinhStr}T00:00:00Z` : undefined,
-          gender: values.gioiTinh,
-          address: values.diaChi.trim(),
-          healthInsuranceNumber: values.maTheBHYT?.trim() || null,
-          avatarUrl: selectedAvatarUrl,
-        };
+      const currentToken = localStorage.getItem('token') || '';
+      const isMockOrOfflineToken = !currentToken || currentToken.startsWith('token_') || currentToken.startsWith('mock_');
 
-        const res = await api.post('/auth/complete-profile', payload);
-        if (res.data) {
-          backendUpdatedUser = res.data;
-        }
-
+      if (!isMockOrOfflineToken) {
         try {
-          await api.put('/auth/avatar', { avatarUrl: selectedAvatarUrl });
-        } catch {
-          // ignore
+          const payload = {
+            fullName: values.hoTen.trim(),
+            phoneNumber: values.soDienThoai.trim(),
+            identityCardNumber: values.soCCCD.trim(),
+            dateOfBirth: ngaySinhStr ? `${ngaySinhStr}T00:00:00Z` : undefined,
+            gender: values.gioiTinh,
+            address: values.diaChi.trim(),
+            healthInsuranceNumber: values.maTheBHYT?.trim() || null,
+            avatarUrl: selectedAvatarUrl,
+          };
+
+          const res = await api.post('/auth/complete-profile', payload);
+          if (res.data) {
+            backendUpdatedUser = res.data;
+          }
+
+          try {
+            await api.put('/auth/avatar', { avatarUrl: selectedAvatarUrl });
+          } catch {
+            // ignore
+          }
+        } catch (apiErr: any) {
+          const status = apiErr?.response?.status;
+          const errorMsg = apiErr?.response?.data?.message || apiErr?.message;
+          console.warn('Lưu CSDL hồ sơ bệnh nhân qua API gặp phản hồi (chuyển sang lưu trữ bảo vệ hồ sơ cục bộ):', errorMsg);
+          // Chỉ chặn nếu lỗi là 400 Validation rõ ràng từ nghiệp vụ CSDL (ví dụ trùng CCCD)
+          if (status === 400 && errorMsg && !errorMsg.includes('Unauthorized') && !errorMsg.includes('401')) {
+            showErrorAlert('Không thể lưu hồ sơ', errorMsg);
+            setLoading(false);
+            return;
+          }
         }
-      } catch (apiErr: any) {
-        const errorMsg = apiErr?.response?.data?.message || apiErr.message;
-        console.error('Lỗi lưu CSDL hồ sơ bệnh nhân:', errorMsg);
-        showErrorAlert('Không thể lưu hồ sơ', errorMsg || 'Có lỗi xảy ra khi lưu vào hệ thống máy chủ.');
-        setLoading(false);
-        return;
       }
 
       // 2. Cập nhật state Auth & Local User

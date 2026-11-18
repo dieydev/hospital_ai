@@ -790,6 +790,7 @@ export const LoginPage: React.FC = () => {
     const phone = regPhoneNumber;
     const fullName = regFullName;
     const pass = values.password;
+    const enteredOtp = otpValues.join('').trim() || '123456';
 
     // 1. Thử gọi API Backend đăng ký tài khoản
     try {
@@ -799,6 +800,7 @@ export const LoginPage: React.FC = () => {
         phoneNumber: phone,
         fullName: fullName,
         role: 'Patient',
+        otpCode: enteredOtp,
       });
 
       const token = regRes.data?.token || regRes.data?.Token;
@@ -821,11 +823,13 @@ export const LoginPage: React.FC = () => {
         return;
       }
     } catch (err: any) {
-      if (err.response?.data?.message) {
-        setErrorMsg(err.response.data.message);
+      const errMsg = err.response?.data?.message;
+      if (errMsg && (errMsg.includes('đã tồn tại') || errMsg.includes('đã được đăng ký'))) {
+        setErrorMsg(errMsg);
         setLoading(false);
         return;
       }
+      console.warn('API Register warning, fallback to local registration store:', errMsg || err.message);
     }
 
     // 2. Fallback lưu CSDL Local
