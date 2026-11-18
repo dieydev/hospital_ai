@@ -277,12 +277,12 @@ export const DepartmentsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Pricing row */}
+                {/* Clinical Specialty Reception Info */}
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'baseline',
+                    alignItems: 'center',
                     padding: '10px 14px',
                     borderRadius: 12,
                     backgroundColor: '#f0f9ff',
@@ -291,15 +291,15 @@ export const DepartmentsPage: React.FC = () => {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 11, color: '#64748b' }}>Giá khám dịch vụ</div>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: '#0284c7' }}>
-                      {dept.price.toLocaleString('vi-VN')} đ
+                    <div style={{ fontSize: 11, color: '#64748b' }}>Phạm vi tiếp nhận</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0284c7' }}>
+                      Khám mới & Tái khám
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: '#64748b' }}>BHYT cùng chi trả</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#059669' }}>
-                      {dept.bhytPrice.toLocaleString('vi-VN')} đ
+                    <div style={{ fontSize: 11, color: '#64748b' }}>Thu viện phí tại</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>
+                      Quầy Thu Ngân / Kiosk
                     </div>
                   </div>
                 </div>

@@ -47,7 +47,6 @@ import {
 } from '@ant-design/icons';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { formatCurrency } from '../utils/formatters';
 import {
   examinationService,
   ExaminationItem,
@@ -1811,10 +1810,7 @@ export const ExaminationsPage: React.FC = () => {
                       <Space wrap>
                         <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Dịch vụ Cận Lâm Sàng chỉ định</Text>
                         <Tag color="blue">{services.length} Chỉ định</Tag>
-                        <Tag color="cyan">
-                          Tổng chi phí CLS tạm tính:{' '}
-                          <strong>{formatCurrency(services.reduce((acc, s) => acc + (s.price || 0), 0))}</strong>
-                        </Tag>
+                        <Tag color="cyan">Thu phí & Quyết toán: Quầy Thu Ngân</Tag>
                       </Space>
                       <Button
                         icon={<PlusOutlined />}
@@ -1864,46 +1860,34 @@ export const ExaminationsPage: React.FC = () => {
                                   <OptGroup label="🔬 Xét nghiệm Huyết học & Miễn dịch">
                                     {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Xét nghiệm Huyết học & Miễn dịch').map((c) => (
                                       <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                          <span><strong>{c.code}</strong> - {c.name}</span>
-                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
-                                        </div>
+                                        <span><strong>{c.code}</strong> - {c.name}</span>
                                       </Option>
                                     ))}
                                   </OptGroup>
                                   <OptGroup label="🧪 Xét nghiệm Sinh hóa & Nước tiểu">
                                     {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Xét nghiệm Sinh hóa & Nước tiểu').map((c) => (
                                       <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                          <span><strong>{c.code}</strong> - {c.name}</span>
-                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
-                                        </div>
+                                        <span><strong>{c.code}</strong> - {c.name}</span>
                                       </Option>
                                     ))}
                                   </OptGroup>
                                   <OptGroup label="🩻 Chẩn đoán hình ảnh (X-Quang, Siêu âm, CT)">
                                     {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Chẩn đoán hình ảnh').map((c) => (
                                       <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                          <span><strong>{c.code}</strong> - {c.name}</span>
-                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
-                                        </div>
+                                        <span><strong>{c.code}</strong> - {c.name}</span>
                                       </Option>
                                     ))}
                                   </OptGroup>
                                   <OptGroup label="🩺 Thăm dò chức năng & Nội soi">
                                     {STANDARD_PARACLINICAL_CATALOG.filter((c) => c.category === 'Thăm dò chức năng & Nội soi').map((c) => (
                                       <Option key={c.code} value={c.code} label={`${c.code} ${c.name}`}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                          <span><strong>{c.code}</strong> - {c.name}</span>
-                                          <span style={{ color: '#0284c7', fontWeight: 600 }}>{formatCurrency(c.price)}</span>
-                                        </div>
+                                        <span><strong>{c.code}</strong> - {c.name}</span>
                                       </Option>
                                     ))}
                                   </OptGroup>
                                 </Select>
                               </Col>
-                              <Col xs={12} md={5}>
+                              <Col xs={14} md={7}>
                                 <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                   Nhóm & Phòng thực hiện:
                                 </Text>
@@ -1911,21 +1895,13 @@ export const ExaminationsPage: React.FC = () => {
                                   {matched?.room || s.serviceCategory || 'Phòng Xét Nghiệm'}
                                 </Tag>
                               </Col>
-                              <Col xs={12} md={4}>
-                                <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
-                                  Giá Viện phí:
-                                </Text>
-                                <Text strong style={{ color: '#0284c7', fontSize: 14 }}>
-                                  {formatCurrency(s.price || 0)}
-                                </Text>
-                              </Col>
-                              <Col xs={18} md={4}>
+                              <Col xs={8} md={5}>
                                 <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
                                   Trạng thái:
                                 </Text>
                                 <Tag color="orange">{s.status || 'Đã chỉ định'}</Tag>
                               </Col>
-                              <Col xs={6} md={1} style={{ textAlign: 'right' }}>
+                              <Col xs={2} md={1} style={{ textAlign: 'right' }}>
                                 <Button
                                   icon={<DeleteOutlined />}
                                   danger
@@ -2002,14 +1978,7 @@ export const ExaminationsPage: React.FC = () => {
                       <Space wrap>
                         <Text strong style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Danh mục Thuốc kê trong đơn</Text>
                         <Tag color="green">{prescriptions.length} Loại thuốc</Tag>
-                        <Tag color="blue">
-                          Tiền thuốc:{' '}
-                          <strong>
-                            {formatCurrency(
-                              prescriptions.reduce((acc, p) => acc + (p.unitPrice * (p.quantity || 1) || 0), 0)
-                            )}
-                          </strong>
-                        </Tag>
+                        <Tag color="cyan">Xuất đơn & Quyết toán: Quầy Thu Ngân</Tag>
                       </Space>
                       <Space>
                         <Button
@@ -2059,80 +2028,56 @@ export const ExaminationsPage: React.FC = () => {
                                 <OptGroup label="💊 Kháng sinh & Kháng khuẩn">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Kháng sinh & Kháng khuẩn').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
                                 <OptGroup label="💊 Giảm đau & Hạ sốt & Kháng viêm">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Giảm đau & Hạ sốt' || d.category === 'Kháng viêm NSAID' || d.category === 'Kháng viêm chống phù nề').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
                                 <OptGroup label="💊 Tim mạch - Huyết áp - Mỡ máu">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Tim mạch & Huyết áp').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
                                 <OptGroup label="💊 Tiêu hóa - Dạ dày">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Dạ dày & Tiêu hóa').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
                                 <OptGroup label="💊 Đái tháo đường">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Đái tháo đường').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
                                 <OptGroup label="💊 Hô hấp - Dị ứng">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Kháng Histamin & Dị ứng' || d.category === 'Hô hấp & Long đờm').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
                                 <OptGroup label="💊 Cơ xương khớp & Bổ thần kinh">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Cơ xương khớp & Thần kinh').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
                                 <OptGroup label="💊 Vitamin, Khoáng chất & Bổ trợ">
                                   {STANDARD_DRUG_CATALOG.filter((d) => d.category === 'Vitamin & Khoáng chất').map((d) => (
                                     <Option key={d.code} value={d.code} label={`${d.name} ${d.activeIngredient}`}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span><strong>{d.name}</strong></span>
-                                        <span style={{ color: '#0284c7' }}>{formatCurrency(d.unitPrice)}</span>
-                                      </div>
+                                      <span><strong>{d.name}</strong> <span style={{ color: '#64748b', fontSize: 11 }}>({d.activeIngredient})</span></span>
                                     </Option>
                                   ))}
                                 </OptGroup>
@@ -2434,7 +2379,7 @@ export const ExaminationsPage: React.FC = () => {
                       <br />
                       <Text type="secondary" style={{ fontSize: 12 }}>{s.serviceCategory} • {s.result || 'Chỉ định CLS'}</Text>
                     </div>
-                    <Tag color="cyan" style={{ fontWeight: 600 }}>{formatCurrency(s.price)}</Tag>
+                    <Tag color="blue">{s.serviceCategory || 'CLS'}</Tag>
                   </div>
                 ))}
               </Card>
