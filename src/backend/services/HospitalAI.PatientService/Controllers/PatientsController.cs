@@ -106,7 +106,7 @@ public class PatientsController : ControllerBase
     }
 
     /// <summary>
-    /// Tiếp nhận & Thêm hồ sơ Bệnh nhân mới (Lễ tân, Sàng lọc, Điều dưỡng, Bác sĩ, Admin)
+    /// Tiếp nhận & Thêm hồ sơ Bệnh nhân mới (Lễ tân, Sàng lọc, Y tế, Bác sĩ, Admin)
     /// </summary>
     [HttpPost]
     [Authorize(Roles = "Admin,Receptionist,Triage,Nurse,Doctor")]

@@ -139,7 +139,7 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     if (has('Cashier') || has('Thu ngân')) return 'Thu ngân';
     if (has('Pharmacy') || has('Nhà thuốc')) return 'Dược sĩ';
     if (has('Receptionist') || has('Lễ tân')) return 'Tiếp nhận';
-    if (has('Nurse') || has('Y tế') || has('Điều dưỡng')) return 'Điều dưỡng';
+    if (has('Nurse') || has('Y tế')) return 'Y tế';
     return 'Cán bộ Y tế';
   };
 
@@ -165,8 +165,8 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     if (has('Receptionist') || has('Nhân viên tiếp nhận') || has('Lễ tân')) {
       return <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Nhân viên Tiếp nhận</Tag>;
     }
-    if (has('Nurse') || has('Y tế') || has('Điều dưỡng')) {
-      return <Tag color="teal" style={{ margin: 0, fontWeight: 700 }}>Y tế / Điều dưỡng</Tag>;
+    if (has('Nurse') || has('Y tế')) {
+      return <Tag color="teal" style={{ margin: 0, fontWeight: 700 }}>Nhân viên Y tế</Tag>;
     }
     return <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Bệnh nhân</Tag>;
   };

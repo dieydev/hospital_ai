@@ -131,7 +131,7 @@ public static class DataSeeder
                 FullName = "Hoàng Thị Yến",
                 Email = "yen.nurse@hospital-ai.vn",
                 PhoneNumber = "0945678901",
-                Title = "Điều dưỡng viên Y tế",
+                Title = "Cán bộ Y tế",
                 IsActive = true,
                 AvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=NurseYen"
             };

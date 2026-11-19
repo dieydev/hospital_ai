@@ -43,8 +43,8 @@ export const usePermissions = (): HospitalPermissions => {
   const isPharmacy = checkRole(['Pharmacy', 'Nhà thuốc', 'Dược sĩ', 'Dược']);
   const isCashier = checkRole(['Cashier', 'Thu ngân', 'Kế toán viện phí']);
   const isReceptionist = checkRole(['Receptionist', 'Nhân viên tiếp nhận', 'Lễ tân']);
-  const isTriage = checkRole(['Triage', 'Nhân viên sàng lọc bệnh', 'Điều dưỡng sàng lọc']);
-  const isNurse = checkRole(['Nurse', 'Y tá', 'Điều dưỡng']);
+  const isTriage = checkRole(['Triage', 'Nhân viên sàng lọc bệnh', 'Sàng lọc y tế']);
+  const isNurse = checkRole(['Nurse', 'Y tế', 'Nhân viên y tế']);
   const isPatient = checkRole(['Patient', 'Bệnh nhân']) || (!isAdmin && !isDoctor && !isPharmacy && !isCashier && !isReceptionist && !isTriage && !isNurse);
 
   let userRole = 'Patient';
@@ -67,10 +67,10 @@ export const usePermissions = (): HospitalPermissions => {
     roleNameVN = 'Lễ tân Tiếp nhận';
   } else if (isTriage) {
     userRole = 'Triage';
-    roleNameVN = 'Điều dưỡng Sàng lọc';
+    roleNameVN = 'Sàng lọc Y tế';
   } else if (isNurse) {
     userRole = 'Nurse';
-    roleNameVN = 'Điều dưỡng Chăm sóc';
+    roleNameVN = 'Nhân viên Y tế';
   }
 
   // 1. Phân quyền nghiệp vụ Nhà thuốc & Dược: Chỉ Dược sĩ & Admin
@@ -85,7 +85,7 @@ export const usePermissions = (): HospitalPermissions => {
   // 3. Phân quyền Viện phí & Tài chính: Thu ngân, Lễ tân & Admin
   const canProcessBilling = isAdmin || isCashier || isReceptionist;
 
-  // 4. Phân quyền Tiếp nhận & Sàng lọc: Lễ tân, Sàng lọc, Điều dưỡng & Admin
+  // 4. Phân quyền Tiếp nhận & Sàng lọc: Lễ tân, Sàng lọc, Y tế & Admin
   const canRegisterPatient = isAdmin || isReceptionist || isTriage || isNurse;
   const canPerformTriage = isAdmin || isTriage || isNurse || isDoctor;
 
@@ -113,7 +113,7 @@ export const usePermissions = (): HospitalPermissions => {
       case 'canRegisterPatient':
         return 'Chức năng dành cho Bộ phận Tiếp nhận & Đăng ký bệnh nhân.';
       case 'canPerformTriage':
-        return 'Chức năng dành cho Điều dưỡng Sàng lọc & Phân luồng người bệnh.';
+        return 'Chức năng dành cho Bộ phận Sàng lọc & Phân luồng y tế người bệnh.';
       case 'canManageCatalogs':
       case 'canManageAccounts':
         return 'Chức năng Quản trị Bệnh viện: Chỉ Quản trị viên (Admin) mới có quyền truy cập.';

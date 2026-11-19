@@ -194,7 +194,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const isReceptionist = checkRole(['Receptionist', 'Nhân viên tiếp nhận', 'Lễ tân']);
   const isTriage = checkRole(['Triage', 'Nhân viên sàng lọc bệnh']);
   const isPharmacy = checkRole(['Pharmacy', 'Nhà thuốc', 'Dược sĩ']);
-  const isNurse = checkRole(['Nurse', 'Y tế', 'Điều dưỡng']);
+  const isNurse = checkRole(['Nurse', 'Y tế', 'Nhân viên y tế']);
   const isCashier = checkRole(['Cashier', 'Thu ngân']);
 
   // Phân quyền danh mục Menu theo đúng 7 Vai trò (RBAC):
@@ -203,7 +203,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // 3. Nhân viên tiếp nhận: Tiếp đón & Cấp số, Lịch hẹn, Portal Đặt khám, Bệnh nhân, Thu viện phí, Giám định BHYT
   // 4. Nhân viên sàng lọc bệnh: Tiếp đón, Phân luồng STT, Lịch hẹn, Bệnh nhân
   // 5. Nhà thuốc: Dược & Kho thuốc BV, Bệnh nhân
-  // 6. Y tế (Điều dưỡng): Tiếp đón, Lịch hẹn, Hỗ trợ khám SOAP, EMR, Thực hiện CLS, Bệnh nhân
+  // 6. Y tế: Tiếp đón, Lịch hẹn, Hỗ trợ khám SOAP, EMR, Thực hiện CLS, Bệnh nhân
   // 7. Thu ngân: Quản lý Viện phí (Tiền mặt / VietQR), Giám định BHYT 79a, Báo cáo tài chính, Bệnh nhân
   const rawMenuGroups = [
     {
@@ -834,7 +834,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                               : isPharmacy
                                 ? 'Dược sĩ Nhà thuốc'
                                 : isNurse
-                                  ? 'Điều dưỡng'
+                                  ? 'Nhân viên Y tế'
                                   : isCashier
                                     ? 'Thu ngân'
                                     : 'Cán bộ Y tế'

@@ -42,7 +42,7 @@ export const AppRoutes: React.FC = () => {
   const isReceptionist = checkRole(['Receptionist', 'Nhân viên tiếp nhận', 'Lễ tân']);
   const isTriage = checkRole(['Triage', 'Nhân viên sàng lọc bệnh']);
   const isPharmacy = checkRole(['Pharmacy', 'Nhà thuốc', 'Dược sĩ']);
-  const isNurse = checkRole(['Nurse', 'Y tế', 'Điều dưỡng']);
+  const isNurse = checkRole(['Nurse', 'Y tế', 'Nhân viên y tế']);
   const isCashier = checkRole(['Cashier', 'Thu ngân']);
 
   // Kiểm tra vai trò: Cán bộ y tế & Quản trị viên trong 7 vai trò nội bộ mới được vào hệ thống quản lý

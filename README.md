@@ -58,7 +58,7 @@
    - **`hospitalai-sqlserver` (Port 14333):** Lưu trữ dữ liệu quan hệ (bệnh nhân, bác sĩ, lịch hẹn, bệnh án, đơn thuốc, hóa đơn).
    - **`hospitalai-mongodb` (Port 27017):** Lưu trữ Audit Log thao tác người dùng và nhật ký phản hồi của Clinical AI.
    - **`hospitalai-api-gateway` (Port 5000):** API Gateway tập trung (.NET 9 YARP) định tuyến request động, cân bằng tải và kiểm soát JWT.
-   - **`hospitalai-identity-service` (Port 5001):** Xác thực, phân quyền đa vai trò (Quản trị viên, Bác sĩ, Lễ tân/Điều dưỡng, Bệnh nhân).
+   - **`hospitalai-identity-service` (Port 5001):** Xác thực, phân quyền đa vai trò (Quản trị viên, Bác sĩ, Lễ tân/Y tế, Bệnh nhân).
    - **`hospitalai-patient-service` (Port 5002):** Quản lý hồ sơ bệnh nhân, định danh CCCD, BHYT, tiền sử bệnh và dị ứng.
    - **`hospitalai-queue-service` (Port 5003):** Tiếp nhận bệnh nhân, cấp số tự động theo phòng khám và điều phối hàng chờ.
    - **`hospitalai-examination-service` (Port 5004):** Thăm khám lâm sàng chuẩn SOAP, gợi ý mã bệnh ICD-10, kê đơn thuốc điện tử, tính viện phí.
@@ -406,7 +406,7 @@ Tất cả các tài khoản nhân viên y tế đã được khởi tạo sẵn
 
 | Tên Đăng Nhập | Mật Khẩu | Họ Và Tên | Chức Danh / Vai Trò | Khoa / Phòng Ban |
 | :--- | :---: | :--- | :--- | :--- |
-| **`receptionist`** | `123456` | Trần Thị Hương | Điều dưỡng / Lễ tân (Nurse) | Quầy Tiếp nhận & Cấp số |
+| **`receptionist`** | `123456` | Trần Thị Hương | Nhân viên Y tế / Lễ tân (Nurse) | Quầy Tiếp nhận & Cấp số |
 | **`dr.duy`** | `123456` | BS. CKII. Nguyễn Thanh Duy | Trưởng Khoa Nội (Doctor) | Khoa Nội Tổng Hợp (P.102) |
 | **`dr.ha`** | `123456` | ThS. BS. Trần Thị Thu Hà | Bác sĩ Nội khoa (Doctor) | Khoa Nội Tổng Hợp (P.102) |
 | **`dr.duc`** | `123456` | BS. CKI. Phạm Minh Đức | Trưởng Khoa Nhi (Doctor) | Khoa Nhi (P.105) |

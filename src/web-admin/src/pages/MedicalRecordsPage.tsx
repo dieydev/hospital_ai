@@ -977,11 +977,11 @@ export const MedicalRecordsPage: React.FC = () => {
                           />
                         </div>
 
-                        {/* 4.3 Phiếu theo dõi chức năng sống & điều dưỡng */}
+                        {/* 4.3 Phiếu theo dõi chức năng sống & y tế */}
                         <div>
                           <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            3. PHIẾU CHĂM SÓC & THEO DÕI CHỨC NĂNG SỐNG CỦA ĐIỀU DƯỠNG
+                            3. PHIẾU CHĂM SÓC & THEO DÕI CHỨC NĂNG SỐNG (Y TẾ)
                           </h3>
                           <Timeline
                             mode="left"

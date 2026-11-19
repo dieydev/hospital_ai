@@ -209,7 +209,7 @@ export const LoginPage: React.FC = () => {
       } else if (hasRole('Pharmacy') || hasRole('Nhà thuốc')) {
         resolvedFullName = 'Dược sĩ Nhà thuốc BV';
       } else if (hasRole('Nurse') || hasRole('Y tế')) {
-        resolvedFullName = 'Cán bộ Y tế / Điều dưỡng';
+        resolvedFullName = 'Cán bộ Y tế';
       } else if (hasRole('Cashier') || hasRole('Thu ngân')) {
         resolvedFullName = 'Thu ngân Viện phí';
       } else {
@@ -529,11 +529,11 @@ export const LoginPage: React.FC = () => {
             fullName: 'Hoàng Thị Yến',
             roles: ['Nurse'],
             phoneNumber: '0945678901',
-            title: 'Điều dưỡng viên Y tế',
+            title: 'Cán bộ Y tế',
             isProfileComplete: true,
           },
           'mock_nurse_token',
-          'Đăng nhập thành công với quyền Y tế / Điều dưỡng!'
+          'Đăng nhập thành công với quyền Nhân viên Y tế!'
         );
         setLoading(false);
         return;

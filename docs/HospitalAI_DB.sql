@@ -352,7 +352,7 @@ DECLARE @RoleIdNurse UNIQUEIDENTIFIER = NEWID();
 INSERT INTO dbo.VaiTro (Id, TenVaiTro, MoTa) VALUES 
 (@RoleIdAdmin, 'Admin', N'Quản trị viên Hệ thống'),
 (@RoleIdDoctor, 'Doctor', N'Bác sĩ Khám chữa bệnh'),
-(@RoleIdNurse, 'Nurse', N'Điều dưỡng, Lễ tân tiếp nhận');
+(@RoleIdNurse, 'Nurse', N'Nhân viên Y tế, Lễ tân tiếp nhận');
 
 -- 2. THÊM ĐẦY ĐỦ 12 KHOA PHÒNG CHUYÊN KHOA
 DECLARE @DeptNoiTongHopId UNIQUEIDENTIFIER = NEWID();
@@ -391,7 +391,7 @@ INSERT INTO dbo.TaiKhoan (Id, TenDangNhap, MatKhauMaHoa, Email, SoDienThoai)
 VALUES (@AccLt_Id, 'receptionist', @DefaultPwd, 'letan@hospital.vn', '0912345678');
 INSERT INTO dbo.QuyenTaiKhoan (TaiKhoanId, VaiTroId) VALUES (@AccLt_Id, @RoleIdNurse);
 INSERT INTO dbo.HoSoNhanVien (Id, TaiKhoanId, KhoaPhongId, HoTen, ChucDanh) 
-VALUES (NEWID(), @AccLt_Id, @DeptNoiTongHopId, N'Trần Thị Hương', N'Điều dưỡng / Lễ tân');
+VALUES (NEWID(), @AccLt_Id, @DeptNoiTongHopId, N'Trần Thị Hương', N'Nhân viên Y tế / Lễ tân');
 
 -- Bác sĩ Nguyễn Thanh Duy (Khoa Nội)
 DECLARE @AccBsDuy_Id UNIQUEIDENTIFIER = NEWID();

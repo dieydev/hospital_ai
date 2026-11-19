@@ -468,7 +468,7 @@ export const DashboardPage: React.FC = () => {
           </span>
           <span className="text-slate-300 dark:text-slate-600">|</span>
           <span className="text-slate-700 dark:text-slate-200 flex items-center gap-1.5 font-medium">
-            <TeamOutlined className="text-emerald-600" /> Kíp trực: <strong>38 Bác sĩ • 62 Điều dưỡng</strong>
+            <TeamOutlined className="text-emerald-600" /> Kíp trực: <strong>38 Bác sĩ • 62 Cán bộ Y tế</strong>
           </span>
           <span className="text-slate-300 dark:text-slate-600">|</span>
           <span className="text-slate-700 dark:text-slate-200 flex items-center gap-1.5 font-medium">

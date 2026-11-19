@@ -124,7 +124,7 @@ export interface ExaminationItem {
   plan: string;
   prescriptionDetails: PrescriptionDetailItem[];
   serviceOrderDetails: ServiceOrderItem[];
-  dailyCareNotes?: DailyCareNoteItem[]; // Phiếu theo dõi chức năng sống & điều dưỡng
+  dailyCareNotes?: DailyCareNoteItem[]; // Phiếu theo dõi chức năng sống & y tế
   consultationMinutes?: string; // Biên bản hội chẩn
   surgicalConsentNote?: string; // Giấy cam kết phẫu thuật / thủ thuật
 

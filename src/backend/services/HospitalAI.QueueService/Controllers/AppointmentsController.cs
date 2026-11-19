@@ -601,7 +601,7 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Dành cho Lễ tân, Sàng lọc, Điều dưỡng, Bác sĩ, Thu ngân, Admin)
+        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Dành cho Lễ tân, Sàng lọc, Y tế, Bác sĩ, Thu ngân, Admin)
         /// </summary>
         [HttpPost("checkin-qr")]
         [Authorize(Roles = "Receptionist,Triage,Nurse,Doctor,Cashier,Admin")]

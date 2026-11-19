@@ -278,10 +278,10 @@ export const AccountsPage: React.FC = () => {
         </Tag>
       );
     }
-    if (has('Nurse') || has('Y tế') || has('Điều dưỡng')) {
+    if (has('Nurse') || has('Y tế')) {
       return (
         <Tag color="teal" icon={<SafetyCertificateOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
-          Y tế / Điều dưỡng
+          Nhân viên Y tế
         </Tag>
       );
     }
@@ -762,7 +762,7 @@ export const AccountsPage: React.FC = () => {
                   <Option value="Receptionist">Nhân viên tiếp nhận (Receptionist)</Option>
                   <Option value="Triage">Nhân viên sàng lọc bệnh (Triage)</Option>
                   <Option value="Pharmacy">Nhà thuốc (Pharmacy)</Option>
-                  <Option value="Nurse">Y tế / Điều dưỡng (Nurse)</Option>
+                  <Option value="Nurse">Nhân viên Y tế (Nurse)</Option>
                   <Option value="Cashier">Thu ngân (Cashier)</Option>
                   <Option value="Patient">Bệnh nhân (Patient)</Option>
                 </Select>
@@ -795,7 +795,7 @@ export const AccountsPage: React.FC = () => {
                   if (currentRole === 'Receptionist') placeholderText = 'vd: Nhân viên Quầy Tiếp nhận 01';
                   else if (currentRole === 'Triage') placeholderText = 'vd: Nhân viên Phân luồng & Sàng lọc sảnh A';
                   else if (currentRole === 'Pharmacy') placeholderText = 'vd: Dược sĩ Cấp phát Kho ngoại trú';
-                  else if (currentRole === 'Nurse') placeholderText = 'vd: Điều dưỡng Trưởng buồng khám';
+                  else if (currentRole === 'Nurse') placeholderText = 'vd: Cán bộ Y tế phòng khám';
                   else if (currentRole === 'Cashier') placeholderText = 'vd: Thu ngân Quầy Viện phí & BHYT';
                   else if (currentRole === 'Admin') placeholderText = 'vd: Quản trị viên Hệ thống Y tế';
 

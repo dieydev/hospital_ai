@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           } else if (hasRole('Pharmacy') || hasRole('Nhà thuốc')) {
             resolvedFullName = 'Dược sĩ Nhà thuốc BV';
           } else if (hasRole('Nurse') || hasRole('Y tế')) {
-            resolvedFullName = 'Cán bộ Y tế / Điều dưỡng';
+            resolvedFullName = 'Cán bộ Y tế';
           } else if (hasRole('Cashier') || hasRole('Thu ngân')) {
             resolvedFullName = 'Thu ngân Viện phí';
           } else {
