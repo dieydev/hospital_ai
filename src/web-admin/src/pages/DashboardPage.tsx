@@ -876,15 +876,14 @@ export const DashboardPage: React.FC = () => {
             return (
               <div
                 key={room.id}
-                className={`p-4 rounded-xl bg-white dark:bg-slate-800 border transition-all duration-200 shadow-sm hover:shadow-md ${
-                  isEmergency
+                className={`p-4 rounded-xl bg-white dark:bg-slate-800 border transition-all duration-200 shadow-sm hover:shadow-md ${isEmergency
                     ? 'border-rose-400 bg-rose-50/40 dark:bg-rose-950/20'
                     : isBusy
-                    ? 'border-amber-300 bg-amber-50/30 dark:bg-amber-950/20'
-                    : isPreparing
-                    ? 'border-slate-200 dark:border-slate-700'
-                    : 'border-slate-200 hover:border-teal-400 dark:border-slate-700'
-                }`}
+                      ? 'border-amber-300 bg-amber-50/30 dark:bg-amber-950/20'
+                      : isPreparing
+                        ? 'border-slate-200 dark:border-slate-700'
+                        : 'border-slate-200 hover:border-teal-400 dark:border-slate-700'
+                  }`}
               >
                 <div className="flex justify-between items-start mb-3">
                   <div>
