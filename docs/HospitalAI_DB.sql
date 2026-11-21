@@ -1,5 +1,68 @@
 -- ============================================================================
--- KHỞI TẠO DATABASE
+-- SCRIPT MIGRATION BỔ SUNG CHO DATABASE ĐÃ TỒN TẠI (CHẠY TRỰC TIẾP TRÊN SSMS NẾU CÓ DỮ LIỆU CŨ)
+-- Giúp giải quyết triệt để lỗi 'Invalid column name' trên database hiện tại:
+-- ============================================================================
+/*
+USE HospitalAI_DB;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoSoNhanVien') AND name = 'PracticeLicenseNumber')
+BEGIN
+    ALTER TABLE dbo.HoSoNhanVien ADD
+        PracticeLicenseNumber NVARCHAR(50) NULL,
+        PracticeLicenseDate NVARCHAR(20) NULL,
+        PracticeLicenseIssuer NVARCHAR(150) NULL,
+        ScopeOfPractice NVARCHAR(255) NULL,
+        NationalPractitionerId NVARCHAR(50) NULL,
+        DegreeLevel NVARCHAR(50) NULL,
+        PracticeStatus NVARCHAR(30) NULL DEFAULT 'Active';
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.LuotKhamBenh') AND name = 'ICD10ChapterCode')
+BEGIN
+    ALTER TABLE dbo.LuotKhamBenh ADD
+        ICD10ChapterCode NVARCHAR(50) NULL,
+        ICD10ChapterName NVARCHAR(255) NULL,
+        SecondaryDiagnosesJson NVARCHAR(MAX) NULL,
+        DiseaseStage NVARCHAR(50) NULL,
+        DiagnosisType NVARCHAR(50) NULL,
+        IsEpidemicAlert BIT NOT NULL DEFAULT 0,
+        NationalPrescriptionCode NVARCHAR(50) NULL,
+        FacilityCode NVARCHAR(50) NULL,
+        FacilityName NVARCHAR(255) NULL,
+        NationalSyncStatus NVARCHAR(50) NULL,
+        NationalTransactionId NVARCHAR(100) NULL,
+        NationalSyncTimestamp DATETIME2 NULL,
+        NationalSyncMessage NVARCHAR(500) NULL,
+        NationalLookupQR NVARCHAR(500) NULL,
+        DoctorScopeOfPractice NVARCHAR(500) NULL,
+        DoctorDegreeLevel NVARCHAR(50) NULL,
+        DoctorIssuer NVARCHAR(255) NULL,
+        IsPracticeScopeCompliant BIT NOT NULL DEFAULT 1;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ChiTietDonThuoc') AND name = 'NationalDrugCode')
+BEGIN
+    ALTER TABLE dbo.ChiTietDonThuoc ADD
+        NationalDrugCode NVARCHAR(50) NULL,
+        BrandName NVARCHAR(150) NULL,
+        ActiveIngredient NVARCHAR(150) NULL,
+        Concentration NVARCHAR(100) NULL,
+        DosageForm NVARCHAR(100) NULL,
+        AdministrationRoute NVARCHAR(100) NULL,
+        DurationDays INT NOT NULL DEFAULT 5,
+        MorningDose NVARCHAR(50) NULL,
+        NoonDose NVARCHAR(50) NULL,
+        AfternoonDose NVARCHAR(50) NULL,
+        EveningDose NVARCHAR(50) NULL;
+END;
+GO
+*/
+
+-- ============================================================================
+-- KHỞI TẠO TOÀN DIỆN DATABASE MỚI (NẾU MUỐN TẠO LẠI TỪ ĐẦU)
 -- ============================================================================
 IF DB_ID('HospitalAI_DB') IS NOT NULL
 BEGIN
@@ -61,8 +124,16 @@ CREATE TABLE dbo.HoSoNhanVien (
     HoTen NVARCHAR(100) NOT NULL,
     ChucDanh NVARCHAR(50) NOT NULL,      
     TrangThaiSanSang BIT NOT NULL DEFAULT 1,
-    -- Chứng chỉ & Giấy phép hành nghề theo Thông tư 32/2023/TT-BYT & Luật KCB 2023
-    SoChungChiHanhNghe VARCHAR(50) NULL,
+    -- Chứng chỉ & Giấy phép hành nghề theo Thông tư 32/2023/TT-BYT & Luật KCB 2023 (Tương thích C# EF Core Domain)
+    PracticeLicenseNumber NVARCHAR(50) NULL,
+    PracticeLicenseDate NVARCHAR(20) NULL,
+    PracticeLicenseIssuer NVARCHAR(150) NULL,
+    ScopeOfPractice NVARCHAR(255) NULL,
+    NationalPractitionerId NVARCHAR(50) NULL,
+    DegreeLevel NVARCHAR(50) NULL,
+    PracticeStatus NVARCHAR(30) NOT NULL DEFAULT 'Active',
+    -- Cột tiếng Việt tương thích truy vấn SQL nội bộ
+    SoChungChiHanhNghe NVARCHAR(50) NULL,
     NgayCapChungChi DATE NULL,
     NoiCapChungChi NVARCHAR(150) NULL,
     PhamViHanhNghe NVARCHAR(255) NULL,
@@ -178,6 +249,26 @@ CREATE TABLE dbo.LuotKhamBenh (
     LichTaiKham NVARCHAR(255) NULL,
     ChuKySo NVARCHAR(255) NULL,
 
+    -- Chuẩn hóa ICD-10 theo Thông tư 06/2026/TT-BYT & Cổng Đơn thuốc ERX TT 26/2025 (Tương thích C# EF Core Domain)
+    ICD10ChapterCode NVARCHAR(50) NULL,
+    ICD10ChapterName NVARCHAR(255) NULL,
+    SecondaryDiagnosesJson NVARCHAR(MAX) NULL,
+    DiseaseStage NVARCHAR(50) NULL,
+    DiagnosisType NVARCHAR(50) NULL,
+    IsEpidemicAlert BIT NOT NULL DEFAULT 0,
+    NationalPrescriptionCode NVARCHAR(50) NULL,
+    FacilityCode NVARCHAR(50) NULL,
+    FacilityName NVARCHAR(255) NULL,
+    NationalSyncStatus NVARCHAR(50) NULL,
+    NationalTransactionId NVARCHAR(100) NULL,
+    NationalSyncTimestamp DATETIME2 NULL,
+    NationalSyncMessage NVARCHAR(500) NULL,
+    NationalLookupQR NVARCHAR(500) NULL,
+    DoctorScopeOfPractice NVARCHAR(500) NULL,
+    DoctorDegreeLevel NVARCHAR(50) NULL,
+    DoctorIssuer NVARCHAR(255) NULL,
+    IsPracticeScopeCompliant BIT NOT NULL DEFAULT 1,
+
     CONSTRAINT PK_LuotKhamBenh PRIMARY KEY (Id),
     CONSTRAINT FK_LuotKhamBenh_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id),
     CONSTRAINT FK_LuotKhamBenh_BacSi FOREIGN KEY (BacSiId) REFERENCES dbo.HoSoNhanVien(Id),
@@ -257,8 +348,20 @@ CREATE TABLE dbo.ChiTietDonThuoc (
     SoLuong INT NOT NULL,
     LieuLuongDung NVARCHAR(100) NOT NULL,  
     HuongDanCachUong NVARCHAR(255) NOT NULL, 
-    -- Trường dữ liệu Dược chuẩn liên thông quốc gia TT 26/2025
-    MaThuocQuocGia VARCHAR(50) NULL, -- Mã thuốc dùng chung Cổng Dược QĐ 7603/TT 26/2025
+    -- Trường dữ liệu Dược chuẩn liên thông quốc gia TT 26/2025 (Tương thích C# EF Core Domain)
+    NationalDrugCode NVARCHAR(50) NULL,
+    BrandName NVARCHAR(150) NULL,
+    ActiveIngredient NVARCHAR(150) NULL,
+    Concentration NVARCHAR(100) NULL,
+    DosageForm NVARCHAR(100) NULL,
+    AdministrationRoute NVARCHAR(100) NULL,
+    DurationDays INT NOT NULL DEFAULT 5,
+    MorningDose NVARCHAR(50) NULL,
+    NoonDose NVARCHAR(50) NULL,
+    AfternoonDose NVARCHAR(50) NULL,
+    EveningDose NVARCHAR(50) NULL,
+    -- Cột tiếng Việt dùng chung Cổng Dược QĐ 7603/TT 26/2025
+    MaThuocQuocGia VARCHAR(50) NULL,
     TenBietDuoc NVARCHAR(150) NULL,
     TenHoatChat NVARCHAR(150) NULL,
     HamLuong NVARCHAR(50) NULL,

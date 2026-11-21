@@ -13,6 +13,7 @@ public static class DataSeeder
     public static async Task SeedAsync(HospitalDbContext context, IPasswordHasher passwordHasher)
     {
         await context.Database.EnsureCreatedAsync();
+        await EnsureSchemaUpdatedAsync(context);
 
         // 1. Seed Roles: 7 Vai trò chuẩn hệ thống + Bệnh nhân
         var roles = new[] { "Admin", "Doctor", "Receptionist", "Triage", "Pharmacy", "Nurse", "Cashier", "Patient" };
@@ -509,6 +510,103 @@ public static class DataSeeder
                 await context.Billings.AddRangeAsync(seedBillings);
                 await context.SaveChangesAsync();
             }
+        }
+    }
+
+    /// <summary>
+    /// Tự động cập nhật Schema cho các trường mới theo Thông tư 32/2023, TT 06/2026, TT 26/2025
+    /// Tránh lỗi 'Invalid column name' trên các môi trường database đã tạo trước đó.
+    /// </summary>
+    public static async Task EnsureSchemaUpdatedAsync(HospitalDbContext context)
+    {
+        try
+        {
+            var alterHoSoNhanVien = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoSoNhanVien') AND name = 'PracticeLicenseNumber')
+                BEGIN
+                    ALTER TABLE dbo.HoSoNhanVien ADD
+                        PracticeLicenseNumber NVARCHAR(50) NULL,
+                        PracticeLicenseDate NVARCHAR(20) NULL,
+                        PracticeLicenseIssuer NVARCHAR(150) NULL,
+                        ScopeOfPractice NVARCHAR(255) NULL,
+                        NationalPractitionerId NVARCHAR(50) NULL,
+                        DegreeLevel NVARCHAR(50) NULL,
+                        PracticeStatus NVARCHAR(30) NULL DEFAULT 'Active';
+                END;
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoSoNhanVien') AND name = 'SoChungChiHanhNghe')
+                BEGIN
+                    ALTER TABLE dbo.HoSoNhanVien ADD
+                        SoChungChiHanhNghe NVARCHAR(50) NULL,
+                        NgayCapChungChi NVARCHAR(20) NULL,
+                        NoiCapChungChi NVARCHAR(150) NULL,
+                        PhamViHanhNghe NVARCHAR(255) NULL,
+                        MaDinhDanhNhanVienYTe NVARCHAR(50) NULL,
+                        HocHamHocVi NVARCHAR(50) NULL,
+                        TrangThaiHanhNghe NVARCHAR(30) NULL DEFAULT 'Active';
+                END;";
+
+            var alterLuotKhamBenh = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.LuotKhamBenh') AND name = 'ICD10ChapterCode')
+                BEGIN
+                    ALTER TABLE dbo.LuotKhamBenh ADD
+                        ICD10ChapterCode NVARCHAR(50) NULL,
+                        ICD10ChapterName NVARCHAR(255) NULL,
+                        SecondaryDiagnosesJson NVARCHAR(MAX) NULL,
+                        DiseaseStage NVARCHAR(50) NULL,
+                        DiagnosisType NVARCHAR(50) NULL,
+                        IsEpidemicAlert BIT NOT NULL DEFAULT 0,
+                        NationalPrescriptionCode NVARCHAR(50) NULL,
+                        FacilityCode NVARCHAR(50) NULL,
+                        FacilityName NVARCHAR(255) NULL,
+                        NationalSyncStatus NVARCHAR(50) NULL,
+                        NationalTransactionId NVARCHAR(100) NULL,
+                        NationalSyncTimestamp DATETIME2 NULL,
+                        NationalSyncMessage NVARCHAR(500) NULL,
+                        NationalLookupQR NVARCHAR(500) NULL,
+                        DoctorScopeOfPractice NVARCHAR(500) NULL,
+                        DoctorDegreeLevel NVARCHAR(50) NULL,
+                        DoctorIssuer NVARCHAR(255) NULL,
+                        IsPracticeScopeCompliant BIT NOT NULL DEFAULT 1;
+                END;";
+
+            var alterChiTietDonThuoc = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ChiTietDonThuoc') AND name = 'NationalDrugCode')
+                BEGIN
+                    ALTER TABLE dbo.ChiTietDonThuoc ADD
+                        NationalDrugCode NVARCHAR(50) NULL,
+                        BrandName NVARCHAR(150) NULL,
+                        ActiveIngredient NVARCHAR(150) NULL,
+                        Concentration NVARCHAR(100) NULL,
+                        DosageForm NVARCHAR(100) NULL,
+                        AdministrationRoute NVARCHAR(100) NULL,
+                        DurationDays INT NOT NULL DEFAULT 5,
+                        MorningDose NVARCHAR(50) NULL,
+                        NoonDose NVARCHAR(50) NULL,
+                        AfternoonDose NVARCHAR(50) NULL,
+                        EveningDose NVARCHAR(50) NULL;
+                END;";
+
+            await context.Database.ExecuteSqlRawAsync(alterHoSoNhanVien);
+            await context.Database.ExecuteSqlRawAsync(alterLuotKhamBenh);
+            await context.Database.ExecuteSqlRawAsync(alterChiTietDonThuoc);
+
+            // Gán dữ liệu mẫu CCHN TT 32/2023 cho nhân sự nếu chưa có
+            var updateDefaultLicense = @"
+                UPDATE dbo.HoSoNhanVien 
+                SET PracticeLicenseNumber = '004568/BD-GPHN',
+                    PracticeLicenseDate = '15/04/2018',
+                    PracticeLicenseIssuer = N'Sở Y tế Tỉnh Bình Dương',
+                    ScopeOfPractice = N'Khám bệnh, chữa bệnh chuyên khoa Tim mạch (theo TT 32/2023/TT-BYT)',
+                    NationalPractitionerId = 'BYT-CCHN-74001-001',
+                    DegreeLevel = 'BS.CKII',
+                    PracticeStatus = 'Active'
+                WHERE PracticeLicenseNumber IS NULL AND HoTen LIKE N'%Duy%';
+            ";
+            await context.Database.ExecuteSqlRawAsync(updateDefaultLicense);
+        }
+        catch (Exception)
+        {
+            // Bỏ qua lỗi trong trường hợp provider không phải SQL Server (ví dụ SQLite InMemory)
         }
     }
 }

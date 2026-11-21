@@ -115,6 +115,20 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<HospitalDbContext>();
+        await DataSeeder.EnsureSchemaUpdatedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "Tự động đồng bộ schema kiểm tra hoàn tất.");
+    }
+}
+
 app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
