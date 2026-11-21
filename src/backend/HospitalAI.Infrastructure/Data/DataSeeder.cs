@@ -546,6 +546,15 @@ public static class DataSeeder
                 END;";
 
             var alterLuotKhamBenh = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.LuotKhamBenh') AND name = 'IsDigitallySigned')
+                BEGIN
+                    ALTER TABLE dbo.LuotKhamBenh ADD
+                        IsDigitallySigned BIT NULL DEFAULT 0,
+                        SignedAt DATETIME2 NULL,
+                        DoctorLicenseNumber NVARCHAR(50) NULL,
+                        SignatureCertificateSerial NVARCHAR(100) NULL,
+                        SignatureHash NVARCHAR(256) NULL;
+                END;
                 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.LuotKhamBenh') AND name = 'ICD10ChapterCode')
                 BEGIN
                     ALTER TABLE dbo.LuotKhamBenh ADD
@@ -592,6 +601,15 @@ public static class DataSeeder
 
             // Gán dữ liệu mẫu CCHN TT 32/2023 cho nhân sự nếu chưa có
             var updateDefaultLicense = @"
+                UPDATE dbo.HoSoNhanVien SET PracticeStatus = 'Active' WHERE PracticeStatus IS NULL;
+                UPDATE dbo.LuotKhamBenh SET IsDigitallySigned = 0 WHERE IsDigitallySigned IS NULL;
+                UPDATE dbo.LuotKhamBenh SET IsEpidemicAlert = 0 WHERE IsEpidemicAlert IS NULL;
+                UPDATE dbo.LuotKhamBenh SET IsPracticeScopeCompliant = 1 WHERE IsPracticeScopeCompliant IS NULL;
+                UPDATE dbo.LuotKhamBenh SET FacilityCode = '74001' WHERE FacilityCode IS NULL;
+                UPDATE dbo.LuotKhamBenh SET FacilityName = N'Bệnh viện Đa khoa Thủ Dầu Một - Hospital AI' WHERE FacilityName IS NULL;
+                UPDATE dbo.LuotKhamBenh SET NationalSyncStatus = 'NotSynced' WHERE NationalSyncStatus IS NULL;
+                UPDATE dbo.ChiTietDonThuoc SET DurationDays = 7 WHERE DurationDays IS NULL;
+
                 UPDATE dbo.HoSoNhanVien 
                 SET PracticeLicenseNumber = '004568/BD-GPHN',
                     PracticeLicenseDate = '15/04/2018',

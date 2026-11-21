@@ -316,7 +316,7 @@ public class ExaminationService : IExaminationService
             TreatmentResponse = e.TreatmentResponse,
             SymptomProgress = e.SymptomProgress,
             DigitalSignature = e.DigitalSignature,
-            IsDigitallySigned = e.IsDigitallySigned,
+            IsDigitallySigned = e.IsDigitallySigned ?? false,
             SignedAt = e.SignedAt,
             DoctorLicenseNumber = e.DoctorLicenseNumber,
             SignatureCertificateSerial = e.SignatureCertificateSerial,
@@ -424,7 +424,7 @@ public class ExaminationService : IExaminationService
         if (exam == null)
             throw new KeyNotFoundException($"Không tìm thấy phiếu khám bệnh với ID {id}");
 
-        if (!exam.IsDigitallySigned || string.IsNullOrEmpty(exam.DigitalSignature))
+        if (exam.IsDigitallySigned != true || string.IsNullOrEmpty(exam.DigitalSignature))
         {
             return new VerifySignatureResponseDto
             {

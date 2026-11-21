@@ -53,7 +53,7 @@ public class Examination
     public string? TreatmentResponse { get; set; } // MucDoDapUngDieuTri (good, partial, poor, adverse)
     public string? SymptomProgress { get; set; } // DienTienLamSang & DanhGiaCuaBacSi
     public string? DigitalSignature { get; set; } // ChuKySo
-    public bool IsDigitallySigned { get; set; } = false;
+    public bool? IsDigitallySigned { get; set; } = false;
     public DateTime? SignedAt { get; set; }
     public string? DoctorLicenseNumber { get; set; } // So CCHN Bac si
     public string? SignatureCertificateSerial { get; set; } // Serial Chung thu so
@@ -65,13 +65,13 @@ public class Examination
     public string? SecondaryDiagnosesJson { get; set; } // Danh sách mã ICD-10 bệnh kèm theo / biến chứng (JSON)
     public string? DiseaseStage { get; set; } // Giai đoạn bệnh: Cấp tính, Mạn tính, Đợt cấp...
     public string? DiagnosisType { get; set; } // Loại chẩn đoán: Ban đầu, Xác định, Phân biệt, Ra viện
-    public bool IsEpidemicAlert { get; set; } = false; // Cảnh báo dịch tễ
+    public bool? IsEpidemicAlert { get; set; } = false; // Cảnh báo dịch tễ
 
     // Chuẩn liên thông Đơn thuốc điện tử quốc gia (Thông tư 26/2025/TT-BYT & Donthuocquocgia.vn)
     public string? NationalPrescriptionCode { get; set; } // Mã đơn thuốc điện tử quốc gia: 74001_YYYYMMDD_STT
-    public string FacilityCode { get; set; } = "74001"; // Mã CSKCB Bộ Y Tế
-    public string FacilityName { get; set; } = "Bệnh viện Đa khoa Thủ Dầu Một - Hospital AI";
-    public string NationalSyncStatus { get; set; } = "NotSynced"; // NotSynced, Pending, Synced, Failed
+    public string? FacilityCode { get; set; } = "74001"; // Mã CSKCB Bộ Y Tế
+    public string? FacilityName { get; set; } = "Bệnh viện Đa khoa Thủ Dầu Một - Hospital AI";
+    public string? NationalSyncStatus { get; set; } = "NotSynced"; // NotSynced, Pending, Synced, Failed
     public string? NationalTransactionId { get; set; } // Mã giao dịch ERX
     public DateTime? NationalSyncTimestamp { get; set; }
     public string? NationalSyncMessage { get; set; }
@@ -81,7 +81,7 @@ public class Examination
     public string? DoctorScopeOfPractice { get; set; } // Phạm vi hành nghề bác sĩ theo TT 32/2023
     public string? DoctorDegreeLevel { get; set; } // Học hàm học vị
     public string? DoctorIssuer { get; set; } // Nơi cấp CCHN
-    public bool IsPracticeScopeCompliant { get; set; } = true;
+    public bool? IsPracticeScopeCompliant { get; set; } = true;
 
     public ICollection<PrescriptionDetail> PrescriptionDetails { get; set; } = new List<PrescriptionDetail>();
     public ICollection<ServiceOrderDetail> ServiceOrderDetails { get; set; } = new List<ServiceOrderDetail>();
@@ -104,7 +104,7 @@ public class PrescriptionDetail
     public string? Concentration { get; set; } // Hàm lượng
     public string? DosageForm { get; set; } // Dạng bào chế
     public string? AdministrationRoute { get; set; } // Đường dùng
-    public int DurationDays { get; set; } = 7; // Số ngày dùng thuốc
+    public int? DurationDays { get; set; } = 7; // Số ngày dùng thuốc
     public string? MorningDose { get; set; } // Liều sáng
     public string? NoonDose { get; set; } // Liều trưa
     public string? AfternoonDose { get; set; } // Liều chiều
