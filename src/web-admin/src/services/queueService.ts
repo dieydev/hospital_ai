@@ -37,11 +37,15 @@ export interface IssueTicketParams {
   patientCode?: string;
   patientAge?: number;
   patientGender?: string;
+  identityCardNumber?: string;
+  healthInsuranceNumber?: string;
+  visitType?: 'New' | 'FollowUp';
+  paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived';
 }
 
+const QUEUE_STORAGE_KEY = 'hospital_local_queue_tickets';
 
-
-export const localQueueTickets: QueueTicketItem[] = [
+const initialQueueTickets: QueueTicketItem[] = [
   {
     id: 'ticket-101',
     patientId: '276-15f20b4ed6be',
@@ -57,6 +61,8 @@ export const localQueueTickets: QueueTicketItem[] = [
     sequenceNumber: 101,
     status: 'Calling',
     priority: 'Normal',
+    visitType: 'New',
+    paymentStatus: 'InsuranceWaived',
     createdAt: new Date().toISOString(),
   },
   {
@@ -74,6 +80,8 @@ export const localQueueTickets: QueueTicketItem[] = [
     sequenceNumber: 102,
     status: 'Waiting',
     priority: 'Normal',
+    visitType: 'New',
+    paymentStatus: 'Paid',
     createdAt: new Date().toISOString(),
   },
   {
@@ -91,6 +99,8 @@ export const localQueueTickets: QueueTicketItem[] = [
     sequenceNumber: 103,
     status: 'Waiting',
     priority: 'Priority',
+    visitType: 'FollowUp',
+    paymentStatus: 'InsuranceWaived',
     createdAt: new Date().toISOString(),
   },
   {
@@ -108,9 +118,34 @@ export const localQueueTickets: QueueTicketItem[] = [
     sequenceNumber: 104,
     status: 'Waiting',
     priority: 'Emergency',
+    visitType: 'New',
+    paymentStatus: 'Paid',
     createdAt: new Date().toISOString(),
   },
 ];
+
+const loadStoredTickets = (): QueueTicketItem[] => {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(QUEUE_STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return [...initialQueueTickets];
+};
+
+export const localQueueTickets: QueueTicketItem[] = loadStoredTickets();
+
+const persistLocalTickets = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(localQueueTickets));
+    }
+  } catch {}
+};
 
 export const localDepartments: DepartmentItem[] = [
   { id: '2bcb7d9a-516f-4fee-9193-ae23d6b5f18b', departmentName: 'Khoa Nội Tổng Hợp', location: 'Phòng 102 - Tầng 1', roomType: 'Clinical' },
@@ -159,6 +194,19 @@ export const queueService = {
   async issueQueueTicket(params: IssueTicketParams): Promise<QueueTicketItem> {
     try {
       const response = await api.post('/queue/issue', params);
+      if (response.data) {
+        // Đồng bộ vào cache local nếu có
+        const apiTicket: QueueTicketItem = {
+          ...response.data,
+          patientName: params.patientName || response.data.patientName,
+          patientCode: params.patientCode || response.data.patientCode,
+          visitType: params.visitType || response.data.visitType || 'New',
+          paymentStatus: params.paymentStatus || response.data.paymentStatus || 'Paid',
+        };
+        localQueueTickets.unshift(apiTicket);
+        persistLocalTickets();
+        return apiTicket;
+      }
       return response.data;
     } catch (err) {
       console.warn('⚡ [queueService] issueQueueTicket API failed, generating local fallback ticket:', err);
@@ -171,29 +219,49 @@ export const queueService = {
         patientName: params.patientName || 'Bệnh nhân mới',
         patientGender: params.patientGender || 'Nam',
         patientAge: params.patientAge || 30,
-        identityCardNumber: '079092000000',
+        identityCardNumber: params.identityCardNumber || '079092000000',
+        healthInsuranceNumber: params.healthInsuranceNumber,
         departmentId: dept.id,
         departmentName: dept.departmentName,
         location: dept.location,
         sequenceNumber: newSeq,
         status: 'Waiting',
         priority: params.priority || 'Normal',
+        visitType: params.visitType || 'New',
+        paymentStatus: params.paymentStatus || 'Paid',
         createdAt: new Date().toISOString(),
       };
       localQueueTickets.unshift(fallbackTicket);
+      persistLocalTickets();
       return fallbackTicket;
     }
+  },
+
+  saveTicket(ticket: QueueTicketItem) {
+    const idx = localQueueTickets.findIndex((t) => t.id === ticket.id);
+    if (idx >= 0) {
+      localQueueTickets[idx] = { ...localQueueTickets[idx], ...ticket };
+    } else {
+      localQueueTickets.unshift(ticket);
+    }
+    persistLocalTickets();
   },
 
   async updateQueueTicketStatus(ticketId: string, status: string): Promise<QueueTicketItem> {
     try {
       const response = await api.put(`/queue/${ticketId}/status`, { status });
+      const idx = localQueueTickets.findIndex((t) => t.id === ticketId);
+      if (idx >= 0) {
+        localQueueTickets[idx].status = status as any;
+        persistLocalTickets();
+      }
       return response.data;
     } catch (err) {
       console.warn('⚡ [queueService] updateQueueTicketStatus fallback:', err);
       const ticket = localQueueTickets.find((t) => t.id === ticketId);
       if (ticket) {
         ticket.status = status as any;
+        persistLocalTickets();
         return ticket;
       }
       throw err;

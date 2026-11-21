@@ -265,11 +265,20 @@ export const ReceptionPage: React.FC = () => {
         priority: 'Normal',
         patientName: foundFollowUpPatient.hoTen,
         patientCode: foundFollowUpPatient.maBenhNhan,
+        patientAge: foundFollowUpPatient.tuoi,
+        patientGender: foundFollowUpPatient.gioiTinh,
+        identityCardNumber: foundFollowUpPatient.soCCCD,
+        healthInsuranceNumber: foundFollowUpPatient.maTheBHYT,
+        visitType: 'FollowUp',
+        paymentStatus: foundFollowUpPatient.maTheBHYT ? 'InsuranceWaived' : 'Paid',
       });
 
       // Gắn nhãn tái khám và trạng thái bảo hiểm
       ticket.visitType = 'FollowUp';
       ticket.paymentStatus = foundFollowUpPatient.maTheBHYT ? 'InsuranceWaived' : 'Paid';
+      ticket.patientName = foundFollowUpPatient.hoTen;
+      ticket.patientCode = foundFollowUpPatient.maBenhNhan;
+      queueService.saveTicket(ticket);
 
       // Cập nhật đợt khám cũ vào cache để phòng khám đọc tự động
       localStorage.setItem(`previous_exam_${foundFollowUpPatient.id}`, JSON.stringify({
@@ -358,20 +367,31 @@ export const ReceptionPage: React.FC = () => {
       const priorityVal = values.triageLevel || 'Normal';
       const depts = await queueService.getDepartments();
       const targetDeptId = values.departmentId || (depts.length > 0 ? depts[0].id : '');
+      const patientObj = patients.find((p) => p.id === targetPatientId);
+      const hasBhyt = Boolean(patientObj?.maTheBHYT);
+      const isEmergency = priorityVal === 'Emergency';
+      const paymentStatus = values.paymentStatus || (hasBhyt ? 'InsuranceWaived' : 'Paid');
 
       const ticket = await queueService.issueQueueTicket({
         patientId: targetPatientId,
         departmentId: targetDeptId,
         priority: priorityVal === 'Emergency' || priorityVal === 'Elderly' || priorityVal === 'Pregnant' || priorityVal === 'Child' ? 'Emergency' : 'Normal',
+        patientName: patientObj?.hoTen || values.hoTen,
+        patientCode: patientObj?.maBenhNhan,
+        patientAge: patientObj?.tuoi,
+        patientGender: patientObj?.gioiTinh,
+        identityCardNumber: patientObj?.soCCCD || values.soCCCD,
+        healthInsuranceNumber: patientObj?.maTheBHYT,
+        visitType: values.visitType || 'New',
+        paymentStatus: paymentStatus,
       });
 
       // Mắt xích 2 & 3: Gắn phân loại lượt khám và Cổng kiểm tra tài chính
-      const patientObj = patients.find((p) => p.id === targetPatientId);
-      const hasBhyt = Boolean(patientObj?.maTheBHYT);
-      const isEmergency = priorityVal === 'Emergency';
-      const paymentStatus = values.paymentStatus || (hasBhyt ? 'InsuranceWaived' : 'Paid');
-      ticket.visitType = values.visitType || 'NewVisit';
+      ticket.visitType = values.visitType || 'New';
       ticket.paymentStatus = paymentStatus;
+      ticket.patientName = patientObj?.hoTen || values.hoTen;
+      ticket.patientCode = patientObj?.maBenhNhan || ticket.patientCode;
+      queueService.saveTicket(ticket);
 
       if (!hasBhyt && !isEmergency && paymentStatus === 'Unpaid') {
         showWarningAlert(
