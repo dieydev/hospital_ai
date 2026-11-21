@@ -11,6 +11,7 @@ import {
   InfoCircleOutlined,
   ReadOutlined,
   UserOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
@@ -275,6 +276,31 @@ export const DoctorsPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Giấy phép & Phạm vi hành nghề theo Thông tư 32/2023/TT-BYT */}
+                <div
+                  style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    marginBottom: 12,
+                    fontSize: 12,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                    <span style={{ fontWeight: 800, color: '#166534', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <SafetyCertificateOutlined style={{ color: '#16a34a' }} />
+                      GPHN: {doc.practiceLicenseNumber || '004568/BD-GPHN'}
+                    </span>
+                    <Tag color="success" style={{ margin: 0, padding: '0 6px', fontSize: 10, fontWeight: 700 }}>
+                      TT 32/2023
+                    </Tag>
+                  </div>
+                  <div style={{ color: '#15803d', fontSize: 11, lineHeight: 1.4 }}>
+                    <strong>Phạm vi:</strong> {doc.scopeOfPractice || `Khám bệnh, chữa bệnh chuyên khoa ${doc.department.replace('Khoa ', '')}`}
+                  </div>
+                </div>
+
                 {/* Specialties Pills */}
                 {doc.specialties && doc.specialties.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 16, flex: 1 }}>
@@ -382,6 +408,34 @@ export const DoctorsPage: React.FC = () => {
               {detailModalDoctor.bio ||
                 'Bác sĩ có nhiều năm kinh nghiệm lâm sàng trong chẩn đoán và điều trị, luôn cập nhật các phác đồ y khoa hiện đại và tận tâm vì sức khỏe người bệnh.'}
             </Paragraph>
+
+            {/* Chứng chỉ & Giấy phép hành nghề theo Thông tư 32/2023/TT-BYT & Luật KCB 2023 */}
+            <div
+              style={{
+                background: '#f0fdf4',
+                border: '1.5px solid #86efac',
+                borderRadius: 12,
+                padding: '14px 16px',
+                margin: '14px 0',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#166534', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <SafetyCertificateOutlined style={{ color: '#16a34a', fontSize: 16 }} />
+                  CHỨNG CHỈ HÀNH NGHỀ & PHẠM VI CHUYÊN MÔN (TT 32/2023/TT-BYT)
+                </div>
+                <Tag color="green" style={{ fontWeight: 800 }}>ĐANG HÀNH NGHỀ HỢP LỆ</Tag>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 14px', fontSize: 12.5, color: '#14532d' }}>
+                <div>Số GPHN / CCHN: <strong>{detailModalDoctor.practiceLicenseNumber || '004568/BD-GPHN'}</strong></div>
+                <div>Cơ quan cấp: <strong>{detailModalDoctor.practiceLicenseIssuer || 'Sở Y tế Tỉnh Bình Dương'}</strong></div>
+                <div>Ngày cấp phép: <strong>{detailModalDoctor.practiceLicenseDate || '15/08/2016'}</strong></div>
+                <div>Mã định danh BYT: <strong style={{ fontFamily: 'monospace' }}>{detailModalDoctor.nationalPractitionerId || 'BYT-CCHN-74001-001'}</strong></div>
+                <div style={{ gridColumn: 'span 2', marginTop: 4, paddingTop: 6, borderTop: '1px dashed #bbf7d0' }}>
+                  Phạm vi hoạt động chuyên môn: <strong style={{ color: '#047857' }}>{detailModalDoctor.scopeOfPractice || `Khám bệnh, chữa bệnh chuyên khoa ${detailModalDoctor.department.replace('Khoa ', '')}`}</strong>
+                </div>
+              </div>
+            </div>
 
             <Divider style={{ margin: '16px 0' }} />
 

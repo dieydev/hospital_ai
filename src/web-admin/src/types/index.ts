@@ -29,6 +29,15 @@ export interface UserAccount {
   chucDanh?: string;
   trangThaiKichHoat: boolean;
   avatarUrl?: string;
+
+  // Doctor practice credentials (Thông tư 32/2023/TT-BYT & Luật KCB 2023)
+  soChungChiHanhNghe?: string; // Số CCHN / Giấy phép hành nghề (vd: 004568/BD-GPHN)
+  ngayCapChungChi?: string;
+  noiCapChungChi?: string;
+  phamViHanhNghe?: string; // Phạm vi hoạt động chuyên môn theo TT 32/2023
+  maDinhDanhNhanVienYTe?: string; // Mã định danh nhân viên y tế toàn quốc
+  hocHamHocVi?: string; // BS.CKII, BS.CKI, ThS.BS, TS.BS, BS
+
   // Patient specific profile fields
   maBenhNhan?: string;
   soCCCD?: string;

@@ -37,6 +37,15 @@ export interface DoctorOption {
   reviewCount?: number;
   languages?: string[];
   achievements?: string[];
+
+  // Chứng chỉ & Giấy phép hành nghề theo Thông tư 32/2023/TT-BYT & Luật KCB số 15/2023/QH15
+  practiceLicenseNumber?: string; // Số CCHN / Giấy phép hành nghề
+  practiceLicenseDate?: string; // Ngày cấp
+  practiceLicenseIssuer?: string; // Cơ quan cấp (Sở Y tế / Cục QLKCB - Bộ Y Tế)
+  scopeOfPractice?: string; // Phạm vi hoạt động chuyên môn theo TT 32/2023
+  nationalPractitionerId?: string; // Mã định danh người hành nghề toàn quốc
+  degreeLevel?: string; // BS.CKII, BS.CKI, ThS.BS, TS.BS, BS
+  practiceStatus?: 'Active' | 'Suspended' | 'Revoked'; // Trạng thái hành nghề
 }
 
 export interface HealthPackageOption {
@@ -289,6 +298,13 @@ export const DOCTORS_CATALOG: DoctorOption[] = [
     specialties: ['Nội tổng quát', 'Tăng huyết áp', 'Đái tháo đường', 'Bệnh lý chuyển hóa'],
     languages: ['Tiếng Việt', 'Tiếng Anh'],
     achievements: ['Bằng khen Thầy thuốc Ưu tú 2023', 'Chủ nhiệm 5 đề tài nghiên cứu Nội tiết cấp Thành phố'],
+    practiceLicenseNumber: '004568/BD-GPHN',
+    practiceLicenseDate: '15/08/2016',
+    practiceLicenseIssuer: 'Sở Y tế Tỉnh Bình Dương',
+    scopeOfPractice: 'Khám bệnh, chữa bệnh chuyên khoa Nội khoa (theo TT 32/2023/TT-BYT)',
+    nationalPractitionerId: 'BYT-CCHN-74001-001',
+    degreeLevel: 'BS.CKII',
+    practiceStatus: 'Active',
   },
   {
     id: 'doc-02',
@@ -307,6 +323,13 @@ export const DOCTORS_CATALOG: DoctorOption[] = [
     specialties: ['Nội tiết', 'Hô hấp mạn tính', 'Tư vấn dinh dưỡng y khoa'],
     languages: ['Tiếng Việt', 'Tiếng Anh'],
     achievements: ['Học bổng Nghiên cứu sinh Y học Lâm sàng 2024'],
+    practiceLicenseNumber: '008912/BD-GPHN',
+    practiceLicenseDate: '20/11/2019',
+    practiceLicenseIssuer: 'Sở Y tế Tỉnh Bình Dương',
+    scopeOfPractice: 'Khám bệnh, chữa bệnh chuyên khoa Nội khoa (theo TT 32/2023/TT-BYT)',
+    nationalPractitionerId: 'BYT-CCHN-74001-002',
+    degreeLevel: 'ThS.BS',
+    practiceStatus: 'Active',
   },
   {
     id: 'doc-03',
@@ -325,6 +348,13 @@ export const DOCTORS_CATALOG: DoctorOption[] = [
     room: 'Phòng 104 - Tầng 1 Khu A',
     specialties: ['Rối loạn tiền đình', 'Đau đầu Migraine', 'Mất ngủ mạn tính', 'Đột quỵ dự phòng'],
     languages: ['Tiếng Việt', 'Tiếng Anh'],
+    practiceLicenseNumber: '006234/BD-GPHN',
+    practiceLicenseDate: '10/04/2018',
+    practiceLicenseIssuer: 'Sở Y tế Tỉnh Bình Dương',
+    scopeOfPractice: 'Khám bệnh, chữa bệnh chuyên khoa Nội khoa (theo TT 32/2023/TT-BYT)',
+    nationalPractitionerId: 'BYT-CCHN-74001-003',
+    degreeLevel: 'BS.CKI',
+    practiceStatus: 'Active',
   },
   {
     id: 'doc-04',
@@ -342,6 +372,13 @@ export const DOCTORS_CATALOG: DoctorOption[] = [
     room: 'Phòng 105 - Tầng 1 Khu A',
     specialties: ['Hen phế quản', 'COPD', 'Đo chức năng hô hấp', 'Viêm phổi'],
     languages: ['Tiếng Việt', 'Tiếng Pháp'],
+    practiceLicenseNumber: '007415/BD-GPHN',
+    practiceLicenseDate: '05/09/2019',
+    practiceLicenseIssuer: 'Sở Y tế Tỉnh Bình Dương',
+    scopeOfPractice: 'Khám bệnh, chữa bệnh chuyên khoa Nội khoa (theo TT 32/2023/TT-BYT)',
+    nationalPractitionerId: 'BYT-CCHN-74001-004',
+    degreeLevel: 'ThS.BS',
+    practiceStatus: 'Active',
   },
   {
     id: 'doc-05',
@@ -360,6 +397,13 @@ export const DOCTORS_CATALOG: DoctorOption[] = [
     room: 'Phòng 106 - Tầng 1 Khu A',
     specialties: ['Thoái hóa khớp', 'Bệnh Gout', 'Viêm khớp dạng thấp', 'Tiêm khớp huyết tương giàu tiểu cầu (PRP)'],
     languages: ['Tiếng Việt', 'Tiếng Anh'],
+    practiceLicenseNumber: '005890/BD-GPHN',
+    practiceLicenseDate: '12/03/2017',
+    practiceLicenseIssuer: 'Sở Y tế Tỉnh Bình Dương',
+    scopeOfPractice: 'Khám bệnh, chữa bệnh chuyên khoa Nội khoa (theo TT 32/2023/TT-BYT)',
+    nationalPractitionerId: 'BYT-CCHN-74001-005',
+    degreeLevel: 'BS.CKI',
+    practiceStatus: 'Active',
   },
 
   // --- KHOA TIÊU HÓA & GAN MẬT (5 Bác sĩ) ---
@@ -378,6 +422,13 @@ export const DOCTORS_CATALOG: DoctorOption[] = [
     education: 'Bác sĩ CKII Tiêu hóa - Gan mật. Chứng chỉ Nội soi nâng cao Bệnh viện Chợ Rẫy.',
     workingDays: 'Thứ 2 - Thứ 6 (08:00 - 16:30)',
     room: 'Phòng 201 - Tầng 2 Khu B',
+    practiceLicenseNumber: '003219/BD-GPHN',
+    practiceLicenseDate: '08/06/2015',
+    practiceLicenseIssuer: 'Sở Y tế Tỉnh Bình Dương',
+    scopeOfPractice: 'Khám bệnh, chữa bệnh chuyên khoa Tiêu hóa (theo TT 32/2023/TT-BYT)',
+    nationalPractitionerId: 'BYT-CCHN-74001-006',
+    degreeLevel: 'BS.CKII',
+    practiceStatus: 'Active',
     specialties: ['Nội soi dạ dày tiền mê', 'Gan mật tụy', 'Viêm loét dạ dày', 'GERD'],
     languages: ['Tiếng Việt', 'Tiếng Pháp'],
     achievements: ['Báo cáo viên Hội nghị Tiêu hóa - Gan Mật Toàn Quốc'],

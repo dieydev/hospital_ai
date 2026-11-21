@@ -61,6 +61,14 @@ CREATE TABLE dbo.HoSoNhanVien (
     HoTen NVARCHAR(100) NOT NULL,
     ChucDanh NVARCHAR(50) NOT NULL,      
     TrangThaiSanSang BIT NOT NULL DEFAULT 1,
+    -- Chứng chỉ & Giấy phép hành nghề theo Thông tư 32/2023/TT-BYT & Luật KCB 2023
+    SoChungChiHanhNghe VARCHAR(50) NULL,
+    NgayCapChungChi DATE NULL,
+    NoiCapChungChi NVARCHAR(150) NULL,
+    PhamViHanhNghe NVARCHAR(255) NULL,
+    HocHamHocVi NVARCHAR(50) NULL,
+    MaDinhDanhNhanVienYTe VARCHAR(30) NULL,
+    TrangThaiHanhNghe VARCHAR(20) NOT NULL DEFAULT 'Active',
     CONSTRAINT PK_HoSoNhanVien PRIMARY KEY (Id),
     CONSTRAINT FK_HoSoNhanVien_TaiKhoan FOREIGN KEY (TaiKhoanId) REFERENCES dbo.TaiKhoan(Id),
     CONSTRAINT FK_HoSoNhanVien_KhoaPhong FOREIGN KEY (KhoaPhongId) REFERENCES dbo.KhoaPhong(Id)
@@ -208,6 +216,13 @@ CREATE TABLE dbo.ChanDoanBenh (
     TenBenhICD10 NVARCHAR(255) NOT NULL, 
     LaBenhChinh BIT NOT NULL DEFAULT 1,  
     GhiChuChiTiet NVARCHAR(500) NULL,
+    -- Chuẩn hóa ICD-10 theo Thông tư 06/2026/TT-BYT
+    MaChuongICD10 VARCHAR(20) NULL,
+    TenChuongICD10 NVARCHAR(150) NULL,
+    GiaiDoanBenh NVARCHAR(50) NULL,
+    DanhSachBenhKemTheo NVARCHAR(MAX) NULL, -- JSON mảng các mã ICD-10 bệnh kèm theo
+    LoaiChanDoan VARCHAR(30) NOT NULL DEFAULT 'XacDinh',
+    CanhBaoDichTe BIT NOT NULL DEFAULT 0,
     CONSTRAINT PK_ChanDoanBenh PRIMARY KEY (Id),
     CONSTRAINT FK_ChanDoanBenh_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE
 );
@@ -219,6 +234,17 @@ CREATE TABLE dbo.DonThuoc (
     ThoiGianKy DATETIME NOT NULL DEFAULT GETDATE(),
     ChuKySoBacSi VARCHAR(MAX) NULL,      
     LoiDanBacSi NVARCHAR(500) NULL,
+    -- Chuẩn liên thông Đơn thuốc điện tử quốc gia theo Thông tư 26/2025/TT-BYT & QĐ 808/QĐ-BYT
+    MaDonThuocQuocGia VARCHAR(50) NULL, -- Định dạng: {MaCSKCB}_{YYYYMMDD}_{STT} (ví dụ: 74001_20261121_000189)
+    MaCoSoKhamChuaBenh VARCHAR(20) NOT NULL DEFAULT '74001',
+    TenCoSoKhamChuaBenh NVARCHAR(150) NOT NULL DEFAULT N'Bệnh viện Đa khoa Thủ Dầu Một - Hospital AI',
+    TrangThaiLienThong VARCHAR(30) NOT NULL DEFAULT 'ChuaGui', -- ChuaGui, ChoTiepNhan, DaLienThong, LoiLienThong
+    ThoiGianLienThong DATETIME NULL,
+    MaLienThongQuocGia VARCHAR(100) NULL, -- ERX Transaction ID
+    ThongDiepPhanHoi NVARCHAR(500) NULL,
+    QRCodeLienThong VARCHAR(500) NULL,
+    HinhThucDieuTri VARCHAR(30) NOT NULL DEFAULT 'NgoaiTru',
+    NgayTaiKham DATE NULL,
     CONSTRAINT PK_DonThuoc PRIMARY KEY (Id),
     CONSTRAINT FK_DonThuoc_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id) ON DELETE CASCADE,
     CONSTRAINT FK_DonThuoc_BacSi FOREIGN KEY (BacSiId) REFERENCES dbo.HoSoNhanVien(Id)
@@ -231,6 +257,19 @@ CREATE TABLE dbo.ChiTietDonThuoc (
     SoLuong INT NOT NULL,
     LieuLuongDung NVARCHAR(100) NOT NULL,  
     HuongDanCachUong NVARCHAR(255) NOT NULL, 
+    -- Trường dữ liệu Dược chuẩn liên thông quốc gia TT 26/2025
+    MaThuocQuocGia VARCHAR(50) NULL, -- Mã thuốc dùng chung Cổng Dược QĐ 7603/TT 26/2025
+    TenBietDuoc NVARCHAR(150) NULL,
+    TenHoatChat NVARCHAR(150) NULL,
+    HamLuong NVARCHAR(50) NULL,
+    DangBaoChe NVARCHAR(50) NULL,
+    DuongDung NVARCHAR(50) NULL,
+    DonViTinh NVARCHAR(30) NOT NULL DEFAULT N'Viên',
+    SoNgayDung INT NOT NULL DEFAULT 7,
+    LieuSang NVARCHAR(20) NULL,
+    LieuTrua NVARCHAR(20) NULL,
+    LieuChieu NVARCHAR(20) NULL,
+    LieuToi NVARCHAR(20) NULL,
     CONSTRAINT PK_ChiTietDonThuoc PRIMARY KEY (Id),
     CONSTRAINT FK_ChiTietDonThuoc_DonThuoc FOREIGN KEY (DonThuocId) REFERENCES dbo.DonThuoc(Id) ON DELETE CASCADE
 );
