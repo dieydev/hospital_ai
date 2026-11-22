@@ -588,15 +588,35 @@ namespace HospitalAI.QueueService.Controllers
 
             // 1. Lưu trữ và kiểm tra nguồn dữ liệu chính thống SQL Server
             Patient? patient = null;
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? slotTx = null;
             try
             {
-                patient = await _dbContext.Patients
-                    .Include(p => p.User)
-                    .FirstOrDefaultAsync(p =>
-                        (!string.IsNullOrEmpty(model.PatientCode) && p.PatientCode == model.PatientCode) ||
-                        (p.User != null && p.User.PhoneNumber == model.PatientPhone) ||
-                        p.EmergencyContactPhone == model.PatientPhone ||
-                        (!string.IsNullOrEmpty(model.IdentityCardNumber) && p.IdentityCardNumber == model.IdentityCardNumber));
+                // Ưu tiên 1: Tra cứu theo Số CCCD/Căn cước - Định danh công dân duy nhất theo Luật Căn cước
+                if (!string.IsNullOrWhiteSpace(model.IdentityCardNumber))
+                {
+                    var cleanCccd = model.IdentityCardNumber.Trim();
+                    patient = await _dbContext.Patients
+                        .Include(p => p.User)
+                        .FirstOrDefaultAsync(p => p.IdentityCardNumber == cleanCccd);
+                }
+
+                // Ưu tiên 2: Tra cứu theo Mã bệnh nhân (PatientCode)
+                if (patient == null && !string.IsNullOrWhiteSpace(model.PatientCode))
+                {
+                    var cleanCode = model.PatientCode.Trim();
+                    patient = await _dbContext.Patients
+                        .Include(p => p.User)
+                        .FirstOrDefaultAsync(p => p.PatientCode == cleanCode);
+                }
+
+                // Ưu tiên 3: Tra cứu theo tài khoản đã đăng nhập có số điện thoại chính chủ
+                if (patient == null && !string.IsNullOrWhiteSpace(model.PatientPhone))
+                {
+                    var cleanPhone = model.PatientPhone.Trim();
+                    patient = await _dbContext.Patients
+                        .Include(p => p.User)
+                        .FirstOrDefaultAsync(p => p.User != null && p.User.PhoneNumber == cleanPhone);
+                }
 
                 // Bệnh nhân chưa có hồ sơ: Tự động khởi tạo hồ sơ chuẩn Bộ Y tế trong SQL Server
                 if (patient == null)
@@ -667,6 +687,12 @@ namespace HospitalAI.QueueService.Controllers
                     appointmentDate = DateTime.UtcNow;
                 }
 
+                // Bắt đầu giao dịch Serializable chống Overbooking khi nhiều request tranh suất cuối
+                if (_dbContext.Database.IsRelational())
+                {
+                    slotTx = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                }
+
                 // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó
                 var existingDbDuplicate = await _dbContext.Appointments.FirstOrDefaultAsync(a =>
                     a.PatientId == patient.Id &&
@@ -675,11 +701,12 @@ namespace HospitalAI.QueueService.Controllers
 
                 if (existingDbDuplicate != null)
                 {
+                    if (slotTx != null) await slotTx.CommitAsync();
                     model.Id = existingDbDuplicate.Id.ToString();
                     return Ok(model);
                 }
 
-                // Kiểm tra định mức Quota trong SQL Server
+                // Kiểm tra định mức Quota trong SQL Server với khóa cô lập giao dịch
                 var currentBookedCount = await _dbContext.Appointments.CountAsync(a =>
                     a.ScheduleId == schedule.Id &&
                     a.AppointmentDate.Date == appointmentDate.Date &&
@@ -687,6 +714,7 @@ namespace HospitalAI.QueueService.Controllers
 
                 if (currentBookedCount >= schedule.MaxPatients)
                 {
+                    if (slotTx != null) await slotTx.RollbackAsync();
                     return BadRequest(new { message = $"Khung giờ {model.AppointmentTime} vào ngày {model.AppointmentDate} đã đủ số lượng khám ({currentBookedCount}/{schedule.MaxPatients}). Quý khách vui lòng chọn khung giờ khác!" });
                 }
 
@@ -701,10 +729,20 @@ namespace HospitalAI.QueueService.Controllers
                 };
                 _dbContext.Appointments.Add(appointmentEntity);
                 await _dbContext.SaveChangesAsync();
+
+                if (slotTx != null)
+                {
+                    await slotTx.CommitAsync();
+                }
             }
             catch (Exception dbEx)
             {
+                if (slotTx != null)
+                {
+                    try { await slotTx.RollbackAsync(); } catch { }
+                }
                 Console.WriteLine($"[Appointments Warning] DB persistence error: {dbEx.Message}");
+                // Nếu lỗi là do overbooking hoặc logic, không nuốt lỗi nếu đã có phản hồi
             }
 
             // 2. Tạo QR Code Check-in
@@ -859,7 +897,7 @@ namespace HospitalAI.QueueService.Controllers
                             Status = dbApt.Status,
                             CreatedAt = dbApt.AppointmentDate.ToString("o"),
                             QrCode = $"MEDQR|{dbApt.Id}|{dbApt.Patient?.PatientCode}|{dbApt.AppointmentDate:yyyy-MM-dd}|{dbApt.AppointmentDate:HH:mm}",
-                            CheckInStatus = dbApt.Status == "Completed" ? "CheckedInQR" : "PendingQR"
+                            CheckInStatus = (dbApt.Status == "CheckedIn" || dbApt.Status == "Completed") ? "CheckedInQR" : "PendingQR"
                         };
 
                         lock (_lock)
@@ -892,13 +930,13 @@ namespace HospitalAI.QueueService.Controllers
 
             lock (_lock)
             {
-                appointment.Status = "Completed"; // Đã tiếp nhận điện tử
+                appointment.Status = "CheckedIn"; // Đã tiếp nhận điện tử thành công, chờ Bác sĩ gọi khám
                 appointment.CheckInStatus = "CheckedInQR";
                 appointment.CheckedInAt = DateTime.UtcNow.ToString("o");
                 SaveToFile();
             }
 
-            // Đồng bộ trạng thái Check-in xuống CSDL SQL Server
+            // Đồng bộ trạng thái Check-in xuống CSDL SQL Server (Không nhầm lẫn Check-in với Khám hoàn tất)
             try
             {
                 if (Guid.TryParse(appointment.Id, out var aptGuid))
@@ -906,7 +944,7 @@ namespace HospitalAI.QueueService.Controllers
                     var dbApt = await _dbContext.Appointments.FirstOrDefaultAsync(a => a.Id == aptGuid);
                     if (dbApt != null)
                     {
-                        dbApt.Status = "Completed";
+                        dbApt.Status = "CheckedIn";
                         await _dbContext.SaveChangesAsync();
                     }
                 }

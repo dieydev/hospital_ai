@@ -574,11 +574,11 @@ public class ClinicalAndBusinessLogicTests
         // Act: Quét QR Check-in tiếp nhận
         var result = await controller.CheckInWithQr(new CheckInQrDto { QrCodeOrId = aptGuid.ToString() });
 
-        // Assert: Trạng thái trong SQL Server phải chuyển thành Completed
+        // Assert: Trạng thái trong SQL Server phải chuyển thành CheckedIn (Không nhầm lẫn với khám Completed)
         var okResult = Assert.IsType<OkObjectResult>(result);
         var dbApt = await context.Appointments.FindAsync(aptGuid);
         Assert.NotNull(dbApt);
-        Assert.Equal("Completed", dbApt.Status);
+        Assert.Equal("CheckedIn", dbApt.Status);
     }
 
     [Fact]
@@ -623,6 +623,423 @@ public class ClinicalAndBusinessLogicTests
         var dbApt = await context.Appointments.FindAsync(aptGuid);
         Assert.NotNull(dbApt);
         Assert.Equal("Cancelled", dbApt.Status);
+    }
+
+    [Fact]
+    public async Task Pharmacy_DispensePrescription_ConcurrentRequests_OnlyOneSucceeds()
+    {
+        // Arrange: Tạo đơn thuốc hợp lệ trong CSDL
+        using var context = CreateInMemoryDbContext();
+        var examId = Guid.NewGuid();
+        var patientId = Guid.NewGuid();
+        context.Patients.Add(new Patient
+        {
+            Id = patientId,
+            PatientCode = "BN-PHARM-01",
+            FullName = "Bệnh Nhân Cấp Phát Đồng Thời",
+            Gender = "Nam",
+            IdentityCardNumber = "079090888999",
+            Address = "TP. Hồ Chí Minh"
+        });
+
+        context.Examinations.Add(new Examination
+        {
+            Id = examId,
+            PatientId = patientId,
+            ExaminationCode = "LK-PHARM-01",
+            ExaminationDate = DateTime.UtcNow,
+            PrescriptionDispenseStatus = "Chờ cấp phát",
+            PrescriptionDetails = new List<PrescriptionDetail>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ExaminationId = examId,
+                    MedicineName = "Paracetamol 500mg",
+                    NationalDrugCode = "PARA-500",
+                    Quantity = 10,
+                    Unit = "Viên",
+                    UnitPrice = 1500m
+                }
+            }
+        });
+        await context.SaveChangesAsync();
+
+        var controller1 = new PharmacyController(context) { ControllerContext = CreateControllerContext("Pharmacy", "DuocSi1") };
+        var controller2 = new PharmacyController(context) { ControllerContext = CreateControllerContext("Pharmacy", "DuocSi2") };
+
+        // Act: Hai tiến trình/dược sĩ cùng bấm cấp phát đồng thời vào cùng một thời điểm
+        var task1 = controller1.DispensePrescription(examId);
+        var task2 = controller2.DispensePrescription(examId);
+
+        var results = await Task.WhenAll(task1, task2);
+
+        // Assert: Một request thành công 200 OK, request thứ hai trả về HTTP 409 Conflict (Chống cấp phát trùng)
+        var successCount = results.Count(r => r is OkObjectResult);
+        var conflictCount = results.Count(r => r is ConflictObjectResult);
+
+        Assert.Equal(1, successCount);
+        Assert.Equal(1, conflictCount);
+
+        var updatedExam = await context.Examinations.FindAsync(examId);
+        Assert.NotNull(updatedExam);
+        Assert.Equal("Đã cấp phát", updatedExam.PrescriptionDispenseStatus);
+    }
+
+    [Fact]
+    public void Pharmacy_DispensePrescription_AdminRole_ProhibitedByAttribute()
+    {
+        // Verify: Quản trị viên (Admin) không có chứng chỉ hành nghề Dược, bị chặn không cho cấp phát
+        var method = typeof(PharmacyController).GetMethod("DispensePrescription");
+        Assert.NotNull(method);
+
+        var authAttr = method.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
+
+        Assert.NotNull(authAttr);
+        Assert.Equal("Pharmacy", authAttr.Roles);
+        Assert.DoesNotContain("Admin", authAttr.Roles ?? "");
+    }
+
+    [Fact]
+    public void Pharmacy_CancelPrescription_DoctorRole_ProhibitedAdmin()
+    {
+        // Verify: Hủy đơn thuốc là thẩm quyền chuyên môn của Bác sĩ lâm sàng, Admin không được can thiệp y lệnh
+        var method = typeof(PharmacyController).GetMethod("CancelPrescription");
+        Assert.NotNull(method);
+
+        var authAttr = method.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+            .FirstOrDefault();
+
+        Assert.NotNull(authAttr);
+        Assert.Equal("Doctor", authAttr.Roles);
+        Assert.DoesNotContain("Admin", authAttr.Roles ?? "");
+    }
+
+    [Fact]
+    public async Task Appointments_CreateAppointment_DifferentPatientsWithSameEmergencyPhone_ShouldNotCollide()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var patientA = new Patient
+        {
+            Id = Guid.NewGuid(),
+            PatientCode = "BN-FATHER-01",
+            FullName = "Nguyễn Văn Cha",
+            Gender = "Nam",
+            IdentityCardNumber = "079090111111",
+            Address = "Bình Dương",
+            EmergencyContactPhone = "0988777666" // SĐT người thân dùng chung
+        };
+        context.Patients.Add(patientA);
+        await context.SaveChangesAsync();
+
+        var mockHub = CreateMockHubContext();
+        var controller = new AppointmentsController(mockHub, context)
+        {
+            ControllerContext = CreateControllerContext("Patient", "0988777666")
+        };
+
+        // Act: Đặt lịch cho người con (Bệnh nhân B) có CCCD riêng biệt nhưng dùng chung SĐT người thân
+        var modelB = new OnlineAppointmentItem
+        {
+            PatientName = "Nguyễn Văn Con",
+            PatientPhone = "0988777666",
+            IdentityCardNumber = "079090222222", // CCCD độc lập
+            AppointmentDate = DateTime.UtcNow.AddDays(2).ToString("yyyy-MM-dd"),
+            AppointmentTime = "08:00 - 08:30",
+            DepartmentName = "Khoa Nhi"
+        };
+
+        var result = await controller.CreateAppointment(modelB);
+
+        // Assert: Không được nhận nhầm sang hồ sơ người cha (Không ghép hồ sơ qua SĐT người thân)
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var createdApt = Assert.IsType<OnlineAppointmentItem>(okResult.Value);
+
+        var allPatients = await context.Patients.ToListAsync();
+        Assert.Equal(2, allPatients.Count);
+
+        var patientBInDb = allPatients.FirstOrDefault(p => p.IdentityCardNumber == "079090222222");
+        Assert.NotNull(patientBInDb);
+        Assert.Equal("Nguyễn Văn Con", patientBInDb.FullName);
+        Assert.NotEqual(patientA.Id, patientBInDb.Id);
+    }
+
+    [Fact]
+    public async Task Billing_PayTransfer_DuplicateTransactionRef_ShouldReturnConflict()
+    {
+        // Arrange: Tạo 2 hóa đơn viện phí
+        using var context = CreateInMemoryDbContext();
+        var bill1 = new Billing
+        {
+            Id = Guid.NewGuid(),
+            BillingType = "Registration",
+            TotalAmount = 150000m,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow
+        };
+        var bill2 = new Billing
+        {
+            Id = Guid.NewGuid(),
+            BillingType = "Registration",
+            TotalAmount = 200000m,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Billings.AddRange(bill1, bill2);
+        await context.SaveChangesAsync();
+
+        var controller = new BillingController(context)
+        {
+            ControllerContext = CreateControllerContext("Cashier", "ThuNgan1")
+        };
+
+        var txnRef = "MB-BANK-2026-999888";
+
+        // Act 1: Thu ngân thanh toán hóa đơn 1 với mã giao dịch hợp lệ
+        var result1 = await controller.PayTransfer(bill1.Id, txnRef);
+        Assert.IsType<OkObjectResult>(result1);
+
+        // Act 2: Cố tình dùng lại mã giao dịch txnRef cho hóa đơn 2 (Replay Attack)
+        var result2 = await controller.PayTransfer(bill2.Id, txnRef);
+
+        // Assert: Bị chặn với HTTP 409 Conflict
+        var conflictResult = Assert.IsType<ConflictObjectResult>(result2);
+        Assert.NotNull(conflictResult.Value);
+
+        var updatedBill2 = await context.Billings.FindAsync(bill2.Id);
+        Assert.NotNull(updatedBill2);
+        Assert.Equal("Pending", updatedBill2.Status); // Chưa thanh toán
+    }
+
+    [Fact]
+    public async Task Billing_PayTransfer_InvalidPlaceholderRef_ShouldReturnBadRequest()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var bill = new Billing
+        {
+            Id = Guid.NewGuid(),
+            BillingType = "Registration",
+            TotalAmount = 100000m,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Billings.Add(bill);
+        await context.SaveChangesAsync();
+
+        var controller = new BillingController(context)
+        {
+            ControllerContext = CreateControllerContext("Cashier", "ThuNgan1")
+        };
+
+        // Act: Nhập mã placeholder giữ chỗ
+        var result = await controller.PayTransfer(bill.Id, "123456");
+
+        // Assert: Bị từ chối HTTP 400
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
+    public async Task Examination_UpdateExamination_WithCancelledCls_CanCompleteSuccessfully()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var examId = Guid.NewGuid();
+        var patientId = Guid.NewGuid();
+        var doctorId = Guid.NewGuid();
+
+        context.Patients.Add(new Patient
+        {
+            Id = patientId,
+            PatientCode = "BN-CLS-CANCEL",
+            FullName = "Bệnh Nhân Có CLS Hủy",
+            Gender = "Nam",
+            IdentityCardNumber = "079090333444",
+            Address = "Bình Dương"
+        });
+
+        context.Users.Add(new User
+        {
+            Id = doctorId,
+            Username = "bs_cancelled_test",
+            PasswordHash = "hash",
+            PhoneNumber = "0901234567",
+            FullName = "BS. CKII. Test"
+        });
+
+        context.Examinations.Add(new Examination
+        {
+            Id = examId,
+            PatientId = patientId,
+            DoctorId = doctorId,
+            ExaminationCode = "LK-CLS-CANCELLED",
+            ExaminationDate = DateTime.UtcNow,
+            Status = "Đang khám",
+            IsDigitallySigned = false
+        });
+
+        // Chỉ định CLS đã bị hủy (Cancelled)
+        context.ServiceOrderDetails.Add(new ServiceOrderDetail
+        {
+            Id = Guid.NewGuid(),
+            ExaminationId = examId,
+            ServiceName = "Chụp X-Quang Phổi Thẳng",
+            Price = 120000m,
+            Status = "Đã hủy" // Đã hủy hợp lệ
+        });
+        await context.SaveChangesAsync();
+
+        var examService = new ExamService(context);
+
+        // Act: Bác sĩ hoàn tất khám
+        var updateDto = new CreateExaminationDto
+        {
+            PatientId = patientId,
+            DoctorId = doctorId,
+            Status = "Hoàn thành",
+            Assessment = "Viêm họng cấp",
+            ICD10Code = "J02.9"
+        };
+
+        var result = await examService.UpdateExaminationAsync(examId, updateDto);
+
+        // Assert: Thành công, không bị chặn bởi chỉ định đã hủy
+        Assert.NotNull(result);
+        Assert.Equal("Hoàn thành", result.Status);
+    }
+
+    [Fact]
+    public async Task Appointments_CreateAppointment_ConcurrentLastSlotContention_OnlyOneSucceeds()
+    {
+        // Arrange: Thiết lập lịch khám chỉ còn đúng 1 suất duy nhất (MaxPatients = 1)
+        using var context = CreateInMemoryDbContext();
+        var deptId = Guid.NewGuid();
+        context.Departments.Add(new Department
+        {
+            Id = deptId,
+            DepartmentName = "Khoa Nội Tiết",
+            Location = "Tầng 2 Khu B",
+            RoomType = "KhamLamSang"
+        });
+
+        var scheduleId = Guid.NewGuid();
+        var workDate = DateTime.UtcNow.AddDays(5).Date;
+        context.DoctorSchedules.Add(new DoctorSchedule
+        {
+            Id = scheduleId,
+            DepartmentId = deptId,
+            StaffId = Guid.NewGuid(),
+            WorkDate = workDate,
+            TimeSlot = "10:00 - 10:30",
+            MaxPatients = 1 // Chỉ cho phép tối đa 1 người
+        });
+        await context.SaveChangesAsync();
+
+        var mockHub = CreateMockHubContext();
+        var controller1 = new AppointmentsController(mockHub, context)
+        {
+            ControllerContext = CreateControllerContext("Patient", "0911222333")
+        };
+        var controller2 = new AppointmentsController(mockHub, context)
+        {
+            ControllerContext = CreateControllerContext("Patient", "0944555666")
+        };
+
+        var model1 = new OnlineAppointmentItem
+        {
+            PatientName = "Bệnh Nhân A Tranh Suất",
+            PatientPhone = "0911222333",
+            IdentityCardNumber = "079090111222",
+            AppointmentDate = workDate.ToString("yyyy-MM-dd"),
+            AppointmentTime = "10:00 - 10:30",
+            DepartmentName = "Khoa Nội Tiết"
+        };
+
+        var model2 = new OnlineAppointmentItem
+        {
+            PatientName = "Bệnh Nhân B Tranh Suất",
+            PatientPhone = "0944555666",
+            IdentityCardNumber = "079090333555",
+            AppointmentDate = workDate.ToString("yyyy-MM-dd"),
+            AppointmentTime = "10:00 - 10:30",
+            DepartmentName = "Khoa Nội Tiết"
+        };
+
+        // Act: Hai bệnh nhân đồng thời bấm nút xác nhận đặt suất khám cuối cùng
+        var task1 = controller1.CreateAppointment(model1);
+        var task2 = controller2.CreateAppointment(model2);
+
+        var results = await Task.WhenAll(task1, task2);
+
+        // Assert: Đúng 1 người thành công và 1 người nhận thông báo hết chỗ (Chống overbooking)
+        var successCount = results.Count(r => r is OkObjectResult);
+        var badRequestCount = results.Count(r => r is BadRequestObjectResult);
+
+        Assert.Equal(1, successCount);
+        Assert.Equal(1, badRequestCount);
+
+        var totalBookedInDb = await context.Appointments.CountAsync(a => a.ScheduleId == scheduleId && a.Status != "Cancelled");
+        Assert.Equal(1, totalBookedInDb); // Không thể vượt quá định mức 1
+    }
+
+    [Fact]
+    public async Task Pharmacy_DispensePrescription_ExpiredDrug_ShouldReturnBadRequest()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var examId = Guid.NewGuid();
+        var patientId = Guid.NewGuid();
+        context.Patients.Add(new Patient
+        {
+            Id = patientId,
+            PatientCode = "BN-EXP-01",
+            FullName = "Bệnh Nhân Thuốc Hết Hạn",
+            Gender = "Nữ",
+            IdentityCardNumber = "079090777888",
+            Address = "TP. Thủ Dầu Một"
+        });
+
+        // Tạo đơn thuốc chứa loại thuốc giả lập hết hạn
+        // Lấy từ kho item có hạn sử dụng quá khứ
+        context.Examinations.Add(new Examination
+        {
+            Id = examId,
+            PatientId = patientId,
+            ExaminationCode = "LK-EXP-01",
+            ExaminationDate = DateTime.UtcNow,
+            PrescriptionDispenseStatus = "Chờ cấp phát",
+            PrescriptionDetails = new List<PrescriptionDetail>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ExaminationId = examId,
+                    MedicineName = "Paracetamol 500mg",
+                    NationalDrugCode = "PARA-500",
+                    Quantity = 5000, // Vượt quá tồn kho
+                    Unit = "Viên",
+                    UnitPrice = 1500m
+                }
+            }
+        });
+        await context.SaveChangesAsync();
+
+        var controller = new PharmacyController(context)
+        {
+            ControllerContext = CreateControllerContext("Pharmacy", "DuocSi1")
+        };
+
+        // Act: Dược sĩ cố cấp phát thuốc vượt quá tồn kho khả dụng
+        var result = await controller.DispensePrescription(examId);
+
+        // Assert: Bị từ chối HTTP 400
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequest.Value);
     }
 }
 

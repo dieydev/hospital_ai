@@ -394,6 +394,10 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.TransactionRef).HasColumnName("MaGiaoDich").HasMaxLength(100);
             entity.Property(e => e.CashierId).HasColumnName("NguoiThuTienId");
 
+            entity.HasIndex(e => e.TransactionRef)
+                  .IsUnique()
+                  .HasFilter("[MaGiaoDich] IS NOT NULL");
+
             entity.HasMany(e => e.Items)
                   .WithOne(e => e.Billing)
                   .HasForeignKey(e => e.BillingId)

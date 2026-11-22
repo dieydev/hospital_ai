@@ -182,12 +182,17 @@ public class BillingController : ControllerBase
         }
 
         // Chống giả mạo xác nhận thanh toán: Bắt buộc phải có mã giao dịch/đối soát hợp lệ từ ngân hàng
-        if (string.IsNullOrWhiteSpace(transactionRef))
+        if (string.IsNullOrWhiteSpace(transactionRef) || transactionRef.Trim().Length < 6)
         {
-            return BadRequest(new { Message = "Vui lòng cung cấp mã tham chiếu giao dịch (TransactionRef) hoặc mã chuẩn chi ngân hàng để đối soát thanh toán hợp lệ." });
+            return BadRequest(new { Message = "Vui lòng cung cấp mã tham chiếu giao dịch (TransactionRef) hoặc mã chuẩn chi ngân hàng tối thiểu 6 ký tự để đối soát thanh toán hợp lệ." });
         }
 
         var cleanRef = transactionRef.Trim();
+        var lowerRef = cleanRef.ToLower();
+        if (lowerRef == "123456" || lowerRef == "string" || lowerRef == "transactionref" || lowerRef == "test" || lowerRef == "null")
+        {
+            return BadRequest(new { Message = "Mã giao dịch không hợp lệ hoặc là giá trị giữ chỗ (Placeholder). Vui lòng nhập mã chuẩn chi thực tế." });
+        }
 
         // Chống Replay / Giao dịch trùng lặp: Kiểm tra mã tham chiếu giao dịch đã từng được dùng cho hóa đơn nào khác chưa
         var isDuplicateTxn = await _dbContext.Billings.AnyAsync(b => b.TransactionRef == cleanRef && b.Id != id);
@@ -204,7 +209,9 @@ public class BillingController : ControllerBase
 
         billing.Status = "Paid";
         billing.PaidAt = DateTime.UtcNow;
-        billing.PaymentMethod = "Chuyển khoản VietQR";
+        billing.PaymentMethod = User.IsInRole("Cashier") 
+            ? "Chuyển khoản VietQR (Thu ngân đối soát)" 
+            : "Chuyển khoản VietQR (Tiếp nhận đối soát)";
         billing.TransactionRef = cleanRef;
 
         // Cập nhật trạng thái liên quan
@@ -226,7 +233,14 @@ public class BillingController : ControllerBase
             }
         }
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new { Message = "Mã giao dịch đối soát này đã được ghi nhận cho một hóa đơn khác trong hệ thống (Ràng buộc duy nhất Database). Cảnh báo giao dịch trùng lặp hoặc giả mạo!" });
+        }
 
         return Ok(new { Message = "Xác nhận chuyển khoản VietQR thành công", Success = true, BillingId = billing.Id, TransactionRef = billing.TransactionRef });
     }

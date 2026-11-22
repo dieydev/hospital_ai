@@ -164,9 +164,11 @@ namespace HospitalAI.ExaminationService.Controllers
 
         /// <summary>
         /// Cấp phát đơn thuốc tại quầy Nhà thuốc (Atomic Concurrency Control & Double Dispense Prevention)
+        /// Phân quyền nghiêm ngặt: Chỉ Dược sĩ / Nhà thuốc có chứng chỉ hành nghề mới được cấp phát.
+        /// Quản trị viên (Admin) không có thẩm quyền chuyên môn dược lâm sàng nên không được cấp phát.
         /// </summary>
         [HttpPost("prescriptions/{id:guid}/dispense")]
-        [Authorize(Roles = "Pharmacy,Admin")]
+        [Authorize(Roles = "Pharmacy")]
         public async Task<IActionResult> DispensePrescription(Guid id)
         {
             if (id == Guid.Empty)
@@ -174,8 +176,18 @@ namespace HospitalAI.ExaminationService.Controllers
                 return BadRequest(new { message = "Mã đơn thuốc không hợp lệ." });
             }
 
-            // Đồng bộ khóa nguyên tử chống race condition khi 2 request gửi đồng thời (Chống cấp phát trùng & trừ kho 2 lần)
+            // Đồng bộ khóa hai lớp (Two-Layer Locking):
+            // 1. SemaphoreSlim cho in-memory lock tại tiến trình hiện hành.
+            // 2. Database Serializable Transaction cho multi-container / multi-instance deployment.
             await _dispenseLock.WaitAsync();
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? dbTx = null;
+            if (_dbContext.Database.IsRelational())
+            {
+                dbTx = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            }
+
+            var deductedItems = new List<(MedicineInventoryItem StockItem, int Quantity)>();
+
             try
             {
                 var exam = await _dbContext.Examinations
@@ -185,18 +197,21 @@ namespace HospitalAI.ExaminationService.Controllers
 
                 if (exam == null)
                 {
+                    if (dbTx != null) await dbTx.RollbackAsync();
                     return NotFound(new { message = $"Không tìm thấy đơn thuốc tương ứng với mã {id}." });
                 }
 
                 // 1. Kiểm tra đơn thuốc đã bị hủy hoặc thay thế bởi Bác sĩ
                 if (exam.PrescriptionDispenseStatus == "Đã hủy")
                 {
+                    if (dbTx != null) await dbTx.RollbackAsync();
                     return BadRequest(new { message = "Đơn thuốc này đã bị hủy hoặc thay thế bởi Bác sĩ lâm sàng. Không được phép cấp phát!" });
                 }
 
                 // 2. Chống cấp phát trùng lặp (Idempotency / Double Dispense Prevention) -> Trả về HTTP 409 Conflict
                 if (exam.PrescriptionDispenseStatus == "Đã cấp phát")
                 {
+                    if (dbTx != null) await dbTx.RollbackAsync();
                     return Conflict(new
                     {
                         message = "Đơn thuốc này đã được cấp phát trước đó! Không thể cấp phát trùng lặp.",
@@ -218,6 +233,7 @@ namespace HospitalAI.ExaminationService.Controllers
                         // Kiểm tra hạn sử dụng
                         if (matchedStock.ExpiryDate <= DateTime.UtcNow)
                         {
+                            if (dbTx != null) await dbTx.RollbackAsync();
                             return BadRequest(new
                             {
                                 message = $"Thuốc '{matchedStock.DrugName}' thuộc lô {matchedStock.BatchNumber} đã hết hạn sử dụng ({matchedStock.ExpiryDate:dd/MM/yyyy}). Không thể xuất kho!",
@@ -229,6 +245,7 @@ namespace HospitalAI.ExaminationService.Controllers
                         // Kiểm tra tồn kho
                         if (matchedStock.StockQuantity < detail.Quantity)
                         {
+                            if (dbTx != null) await dbTx.RollbackAsync();
                             return BadRequest(new
                             {
                                 message = $"Thuốc '{matchedStock.DrugName}' không đủ tồn kho để cấp phát (Tồn kho: {matchedStock.StockQuantity}, Cần: {detail.Quantity}).",
@@ -240,7 +257,7 @@ namespace HospitalAI.ExaminationService.Controllers
                     }
                 }
 
-                // 4. Trừ tồn kho dược an toàn
+                // 4. Trừ tồn kho dược an toàn (có cơ chế rollback nếu xảy ra lỗi ghi DB)
                 foreach (var detail in exam.PrescriptionDetails)
                 {
                     var matchedStock = _inventory.Values.FirstOrDefault(i =>
@@ -251,18 +268,23 @@ namespace HospitalAI.ExaminationService.Controllers
                     if (matchedStock != null)
                     {
                         matchedStock.StockQuantity -= detail.Quantity;
+                        deductedItems.Add((matchedStock, detail.Quantity));
                     }
                 }
 
                 // 5. Cập nhật trạng thái cấp phát
-                var currentUserName = User.FindFirstValue(ClaimTypes.Name) ??
-                                      (User.IsInRole("Admin") ? "Quản trị viên (Admin)" : "Nhà thuốc (D-Medical)");
+                var currentUserName = User.FindFirstValue(ClaimTypes.Name) ?? "Nhà thuốc (D-Medical)";
 
                 exam.PrescriptionDispenseStatus = "Đã cấp phát";
                 exam.PrescriptionDispensedAt = DateTime.UtcNow;
                 exam.PrescriptionDispensedBy = currentUserName;
 
                 await _dbContext.SaveChangesAsync();
+
+                if (dbTx != null)
+                {
+                    await dbTx.CommitAsync();
+                }
 
                 return Ok(new
                 {
@@ -275,6 +297,22 @@ namespace HospitalAI.ExaminationService.Controllers
                     dispensedBy = exam.PrescriptionDispensedBy
                 });
             }
+            catch (Exception ex)
+            {
+                // Hoàn lại tồn kho nếu quá trình lưu DB thất bại
+                foreach (var (stockItem, qty) in deductedItems)
+                {
+                    stockItem.StockQuantity += qty;
+                }
+
+                if (dbTx != null)
+                {
+                    await dbTx.RollbackAsync();
+                }
+
+                Console.WriteLine($"[Pharmacy Dispense Error]: {ex.Message}");
+                throw;
+            }
             finally
             {
                 _dispenseLock.Release();
@@ -282,10 +320,11 @@ namespace HospitalAI.ExaminationService.Controllers
         }
 
         /// <summary>
-        /// Bác sĩ lâm sàng hoặc Admin hủy đơn thuốc (Ngăn chặn nhà thuốc cấp phát đơn lỗi)
+        /// Bác sĩ lâm sàng hủy đơn thuốc (Ngăn chặn nhà thuốc cấp phát đơn lỗi).
+        /// Thẩm quyền chuyên môn thuộc về Bác sĩ kê đơn.
         /// </summary>
         [HttpPost("prescriptions/{id:guid}/cancel")]
-        [Authorize(Roles = "Doctor,Admin")]
+        [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> CancelPrescription(Guid id, [FromQuery] string? reason = null)
         {
             if (id == Guid.Empty)

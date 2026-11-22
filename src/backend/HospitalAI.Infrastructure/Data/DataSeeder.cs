@@ -515,12 +515,29 @@ public static class DataSeeder
 
     /// <summary>
     /// Tự động cập nhật Schema cho các trường mới theo Thông tư 32/2023, TT 06/2026, TT 26/2025
-    /// Tránh lỗi 'Invalid column name' trên các môi trường database đã tạo trước đó.
+    /// Sử dụng sp_getapplock để ngăn ngừa race condition và lock deadlock khi nhiều container khởi động đồng thời.
     /// </summary>
     public static async Task EnsureSchemaUpdatedAsync(HospitalDbContext context)
     {
+        if (!context.Database.IsRelational())
+        {
+            return;
+        }
+
+        bool lockAcquired = false;
         try
         {
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "EXEC sp_getapplock @Resource = 'HospitalAI_DbMigrationLock', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 30000;");
+                lockAcquired = true;
+            }
+            catch
+            {
+                // Nếu DB không hỗ trợ sp_getapplock (ví dụ Sqlite), tiếp tục thực hiện DDL thông thường
+            }
+
             var alterHoSoNhanVien = @"
                 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoSoNhanVien') AND name = 'PracticeLicenseNumber')
                 BEGIN
@@ -627,6 +644,10 @@ public static class DataSeeder
                 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'MaGiaoDich')
                 BEGIN
                     ALTER TABLE dbo.HoaDon ADD MaGiaoDich NVARCHAR(100) NULL;
+                END;
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_HoaDon_MaGiaoDich' AND object_id = OBJECT_ID('dbo.HoaDon'))
+                BEGIN
+                    CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_MaGiaoDich ON dbo.HoaDon(MaGiaoDich) WHERE MaGiaoDich IS NOT NULL;
                 END;";
 
             await context.Database.ExecuteSqlRawAsync(alterHoSoNhanVien);
@@ -657,9 +678,21 @@ public static class DataSeeder
             ";
             await context.Database.ExecuteSqlRawAsync(updateDefaultLicense);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Bỏ qua lỗi trong trường hợp provider không phải SQL Server (ví dụ SQLite InMemory)
+            Console.WriteLine($"[Database Migration Warning] Schema check/update warning: {ex.Message}");
+        }
+        finally
+        {
+            if (lockAcquired)
+            {
+                try
+                {
+                    await context.Database.ExecuteSqlRawAsync(
+                        "EXEC sp_releaseapplock @Resource = 'HospitalAI_DbMigrationLock', @LockOwner = 'Session';");
+                }
+                catch { }
+            }
         }
     }
 }

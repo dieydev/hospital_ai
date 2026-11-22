@@ -225,10 +225,27 @@ public class ExaminationService : IExaminationService
             throw new InvalidOperationException("Hồ sơ bệnh án EMR đã được ký số điện tử và đóng hồ sơ theo quy định Bộ Y Tế. Không thể chỉnh sửa trực tiếp nội dung chuyên môn.");
         }
 
-        // Chống hoàn tất lượt khám khi còn kết quả CLS chưa có kết quả
-        if (dto.Status == "Hoàn thành" && exam.ServiceOrderDetails != null && exam.ServiceOrderDetails.Any(s => s.Status != "Đã có kết quả" && s.Status != "Completed"))
+        // Chống hoàn tất lượt khám khi còn kết quả CLS chưa có kết quả hoặc chưa được hủy hợp lệ
+        if (dto.Status == "Hoàn thành")
         {
-            throw new InvalidOperationException("Không thể hoàn tất lượt khám khi vẫn còn chỉ định cận lâm sàng (CLS) chưa có kết quả!");
+            var hasPendingDetails = await _context.ServiceOrderDetails
+                .AnyAsync(s => s.ExaminationId == id &&
+                               s.Status != "Đã có kết quả" &&
+                               s.Status != "Completed" &&
+                               s.Status != "Đã hủy" &&
+                               s.Status != "Cancelled");
+
+            var hasPendingOrders = await _context.ServiceOrders
+                .AnyAsync(s => s.ExaminationId == id &&
+                               s.Status != "Đã có kết quả" &&
+                               s.Status != "Completed" &&
+                               s.Status != "Đã hủy" &&
+                               s.Status != "Cancelled");
+
+            if (hasPendingDetails || hasPendingOrders)
+            {
+                throw new InvalidOperationException("Không thể hoàn tất lượt khám khi vẫn còn chỉ định cận lâm sàng (CLS) chưa có kết quả hoặc chưa được hủy hợp lệ!");
+            }
         }
 
         exam.Subjective = dto.Subjective;
