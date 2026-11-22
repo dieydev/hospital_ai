@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
@@ -96,12 +98,38 @@ namespace HospitalAI.QueueService.Controllers
         private readonly IHubContext<QueueHub> _hubContext;
         private readonly HospitalDbContext _dbContext;
         private static readonly object _lock = new();
+        private static readonly SemaphoreSlim _bookingLock = new(1, 1);
+        private static readonly TimeZoneInfo _vietnamTimeZone = GetVietnamTimeZone();
         private static readonly string _dataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? AppContext.BaseDirectory;
         private static readonly string _filePath = Path.Combine(_dataDir, "appointments_data.json");
         private static readonly string _slotFilePath = Path.Combine(_dataDir, "time_slots_quota.json");
         
         private static List<OnlineAppointmentItem>? _cachedAppointments;
         private static List<TimeSlotQuotaItem>? _cachedSlots;
+
+        private static TimeZoneInfo GetVietnamTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            }
+            catch
+            {
+                try
+                {
+                    return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+                }
+                catch
+                {
+                    return TimeZoneInfo.CreateCustomTimeZone("Asia/Ho_Chi_Minh", TimeSpan.FromHours(7), "Giờ Việt Nam (UTC+7)", "Giờ Việt Nam (UTC+7)");
+                }
+            }
+        }
+
+        public static DateTime GetVietnamNow()
+        {
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _vietnamTimeZone);
+        }
 
         public AppointmentsController(IHubContext<QueueHub> hubContext, HospitalDbContext dbContext)
         {
@@ -270,6 +298,7 @@ namespace HospitalAI.QueueService.Controllers
 
         private bool IsStaff()
         {
+            if (User == null) return false;
             return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") ||
                    User.IsInRole("Triage") || User.IsInRole("Pharmacy") || User.IsInRole("Nurse") || User.IsInRole("Cashier");
         }
@@ -557,7 +586,7 @@ namespace HospitalAI.QueueService.Controllers
             // IDOR Protection: Bệnh nhân chỉ được đặt lịch cho chính mình
             if (!IsStaff())
             {
-                var currentPhone = User.FindFirstValue(ClaimTypes.Name);
+                var currentPhone = User?.FindFirstValue(ClaimTypes.Name);
                 if (!string.IsNullOrWhiteSpace(currentPhone))
                 {
                     model.PatientPhone = currentPhone;
@@ -650,7 +679,9 @@ namespace HospitalAI.QueueService.Controllers
 
                 model.PatientCode = patient.PatientCode;
 
-                var schedule = await _dbContext.DoctorSchedules.FirstOrDefaultAsync();
+                var schedule = await _dbContext.DoctorSchedules
+                    .FirstOrDefaultAsync(s => s.TimeSlot == model.AppointmentTime)
+                    ?? await _dbContext.DoctorSchedules.FirstOrDefaultAsync();
                 if (schedule == null)
                 {
                     var dept = await _dbContext.Departments.FirstOrDefaultAsync();
@@ -687,52 +718,126 @@ namespace HospitalAI.QueueService.Controllers
                     appointmentDate = DateTime.UtcNow;
                 }
 
-                // Bắt đầu giao dịch Serializable chống Overbooking khi nhiều request tranh suất cuối
-                if (_dbContext.Database.IsRelational())
+                // Bắt đầu khóa đồng bộ 2 lớp (SemaphoreSlim + Serializable Transaction + Distributed App Lock) chống Overbooking
+                await _bookingLock.WaitAsync();
+                try
                 {
-                    slotTx = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                    if (_dbContext.Database.IsRelational())
+                    {
+                        slotTx = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                        // Khóa ứng dụng phân tán cấp SQL Server (Distributed Application Lock)
+                        // Đồng bộ hạn ngạch (Quota) trên toàn bộ các container / instance backend độc lập
+                        try
+                        {
+                            var lockResource = $"QuotaLock_{schedule.Id}_{appointmentDate:yyyyMMdd}_{slotStartTime}";
+                            var connection = _dbContext.Database.GetDbConnection();
+                            if (connection.State != System.Data.ConnectionState.Open)
+                            {
+                                await connection.OpenAsync();
+                            }
+
+                            using var cmd = connection.CreateCommand();
+                            cmd.Transaction = _dbContext.Database.CurrentTransaction?.GetDbTransaction();
+                            cmd.CommandText = "sp_getapplock";
+                            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                            cmd.CommandTimeout = 15;
+
+                            var pResource = cmd.CreateParameter();
+                            pResource.ParameterName = "@Resource";
+                            pResource.Value = lockResource;
+                            pResource.DbType = System.Data.DbType.String;
+                            cmd.Parameters.Add(pResource);
+
+                            var pMode = cmd.CreateParameter();
+                            pMode.ParameterName = "@LockMode";
+                            pMode.Value = "Exclusive";
+                            pMode.DbType = System.Data.DbType.String;
+                            cmd.Parameters.Add(pMode);
+
+                            var pOwner = cmd.CreateParameter();
+                            pOwner.ParameterName = "@LockOwner";
+                            pOwner.Value = "Transaction";
+                            pOwner.DbType = System.Data.DbType.String;
+                            cmd.Parameters.Add(pOwner);
+
+                            var pTimeout = cmd.CreateParameter();
+                            pTimeout.ParameterName = "@LockTimeout";
+                            pTimeout.Value = 10000;
+                            pTimeout.DbType = System.Data.DbType.Int32;
+                            cmd.Parameters.Add(pTimeout);
+
+                            var pReturn = cmd.CreateParameter();
+                            pReturn.ParameterName = "@ReturnValue";
+                            pReturn.Direction = System.Data.ParameterDirection.ReturnValue;
+                            cmd.Parameters.Add(pReturn);
+
+                            await cmd.ExecuteNonQueryAsync();
+                            int retCode = Convert.ToInt32(pReturn.Value);
+
+                            if (retCode < 0)
+                            {
+                                if (slotTx != null) await slotTx.RollbackAsync();
+                                return StatusCode(409, new { message = $"Không thể xác lập khóa Quota phân tán tại SQL Server (Mã lỗi: {retCode}). Khung giờ đang bận hoặc có xung đột, vui lòng thử lại!" });
+                            }
+                        }
+                        catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 1205)
+                        {
+                            if (slotTx != null) await slotTx.RollbackAsync();
+                            return StatusCode(409, new { message = "Giao dịch bị xung đột khóa (Deadlock victim) tại SQL Server. Vui lòng thử lại!" });
+                        }
+                        catch (Exception appLockEx)
+                        {
+                            if (slotTx != null) await slotTx.RollbackAsync();
+                            Console.WriteLine($"[Appointments Error] sp_getapplock failed: {appLockEx.Message}");
+                            return StatusCode(500, new { message = $"Lỗi khi thiết lập khóa đồng bộ hạn ngạch (Quota Lock) tại cơ sở dữ liệu: {appLockEx.Message}" });
+                        }
+                    }
+
+                    // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó
+                    var existingDbDuplicate = await _dbContext.Appointments.FirstOrDefaultAsync(a =>
+                        a.PatientId == patient.Id &&
+                        a.AppointmentDate.Date == appointmentDate.Date &&
+                        a.Status != "Cancelled");
+
+                    if (existingDbDuplicate != null)
+                    {
+                        if (slotTx != null) await slotTx.CommitAsync();
+                        model.Id = existingDbDuplicate.Id.ToString();
+                        return Ok(model);
+                    }
+
+                    // Kiểm tra định mức Quota trong SQL Server với khóa cô lập giao dịch
+                    var currentBookedCount = await _dbContext.Appointments.CountAsync(a =>
+                        a.ScheduleId == schedule.Id &&
+                        a.AppointmentDate.Date == appointmentDate.Date &&
+                        a.Status != "Cancelled");
+
+                    if (currentBookedCount >= schedule.MaxPatients)
+                    {
+                        if (slotTx != null) await slotTx.RollbackAsync();
+                        return BadRequest(new { message = $"Khung giờ {model.AppointmentTime} vào ngày {model.AppointmentDate} đã đủ số lượng khám ({currentBookedCount}/{schedule.MaxPatients}). Quý khách vui lòng chọn khung giờ khác!" });
+                    }
+
+                    var appointmentEntity = new Appointment
+                    {
+                        Id = aptGuid,
+                        PatientId = patient.Id,
+                        ScheduleId = schedule.Id,
+                        AppointmentDate = appointmentDate,
+                        Symptoms = model.SymptomsReason,
+                        Status = model.Status
+                    };
+                    _dbContext.Appointments.Add(appointmentEntity);
+                    await _dbContext.SaveChangesAsync();
+
+                    if (slotTx != null)
+                    {
+                        await slotTx.CommitAsync();
+                    }
                 }
-
-                // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó
-                var existingDbDuplicate = await _dbContext.Appointments.FirstOrDefaultAsync(a =>
-                    a.PatientId == patient.Id &&
-                    a.AppointmentDate.Date == appointmentDate.Date &&
-                    a.Status != "Cancelled");
-
-                if (existingDbDuplicate != null)
+                finally
                 {
-                    if (slotTx != null) await slotTx.CommitAsync();
-                    model.Id = existingDbDuplicate.Id.ToString();
-                    return Ok(model);
-                }
-
-                // Kiểm tra định mức Quota trong SQL Server với khóa cô lập giao dịch
-                var currentBookedCount = await _dbContext.Appointments.CountAsync(a =>
-                    a.ScheduleId == schedule.Id &&
-                    a.AppointmentDate.Date == appointmentDate.Date &&
-                    a.Status != "Cancelled");
-
-                if (currentBookedCount >= schedule.MaxPatients)
-                {
-                    if (slotTx != null) await slotTx.RollbackAsync();
-                    return BadRequest(new { message = $"Khung giờ {model.AppointmentTime} vào ngày {model.AppointmentDate} đã đủ số lượng khám ({currentBookedCount}/{schedule.MaxPatients}). Quý khách vui lòng chọn khung giờ khác!" });
-                }
-
-                var appointmentEntity = new Appointment
-                {
-                    Id = aptGuid,
-                    PatientId = patient.Id,
-                    ScheduleId = schedule.Id,
-                    AppointmentDate = appointmentDate,
-                    Symptoms = model.SymptomsReason,
-                    Status = model.Status
-                };
-                _dbContext.Appointments.Add(appointmentEntity);
-                await _dbContext.SaveChangesAsync();
-
-                if (slotTx != null)
-                {
-                    await slotTx.CommitAsync();
+                    _bookingLock.Release();
                 }
             }
             catch (Exception dbEx)
@@ -742,7 +847,7 @@ namespace HospitalAI.QueueService.Controllers
                     try { await slotTx.RollbackAsync(); } catch { }
                 }
                 Console.WriteLine($"[Appointments Warning] DB persistence error: {dbEx.Message}");
-                // Nếu lỗi là do overbooking hoặc logic, không nuốt lỗi nếu đã có phản hồi
+                return StatusCode(500, new { message = "Lỗi xung đột đồng thời hoặc lỗi CSDL khi lưu lịch hẹn. Vui lòng thử lại!" });
             }
 
             // 2. Tạo QR Code Check-in
@@ -791,10 +896,11 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         /// <summary>
-        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Dành cho Lễ tân, Sàng lọc, Y tế, Bác sĩ, Thu ngân, Admin)
+        /// Check-in Tiếp nhận Điện tử bằng Mã QR (Hỗ trợ Kiosk tự phục vụ, Bệnh nhân tự quét hoặc Nhân viên tiếp nhận / Sàng lọc)
+        /// Áp dụng Nguyên tắc Quyền tối thiểu (Least Privilege): Chỉ Receptionist, Triage, Patient
         /// </summary>
         [HttpPost("checkin-qr")]
-        [Authorize(Roles = "Receptionist,Triage,Nurse,Doctor,Cashier,Admin")]
+        [Authorize(Roles = "Receptionist,Triage,Patient")]
         public async Task<IActionResult> CheckInWithQr([FromBody] CheckInQrDto dto)
         {
             EnsureDataLoaded();
@@ -917,9 +1023,89 @@ namespace HospitalAI.QueueService.Controllers
                 return NotFound(new { message = "Không tìm thấy thông tin lịch hẹn với Mã QR này." });
             }
 
+            // Bảo mật chống IDOR: Nếu người gọi là tài khoản Bệnh nhân (Patient), bắt buộc kiểm tra quyền sở hữu lịch hẹn
+            var isStaff = User.IsInRole("Receptionist") || User.IsInRole("Triage") || User.IsInRole("Admin");
+            if (!isStaff)
+            {
+                var currentPhone = User.FindFirstValue(ClaimTypes.Name) ?? "";
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+                var isOwner = (!string.IsNullOrWhiteSpace(appointment.PatientPhone) && appointment.PatientPhone == currentPhone) ||
+                              (!string.IsNullOrWhiteSpace(appointment.PatientCode) && appointment.PatientCode == currentPhone);
+
+                if (!isOwner && Guid.TryParse(appointment.Id, out var parsedAptId))
+                {
+                    try
+                    {
+                        var dbApt = await _dbContext.Appointments.Include(a => a.Patient).FirstOrDefaultAsync(a => a.Id == parsedAptId);
+                        if (dbApt?.Patient != null)
+                        {
+                            if (dbApt.Patient.UserId.HasValue && dbApt.Patient.UserId.Value.ToString() == currentUserId)
+                            {
+                                isOwner = true;
+                            }
+                            else if (dbApt.Patient.EmergencyContactPhone == currentPhone || dbApt.Patient.PatientCode == currentPhone)
+                            {
+                                isOwner = true;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                if (!isOwner)
+                {
+                    return StatusCode(403, new { message = "Từ chối quyền truy cập: Bạn không có quyền check-in lịch hẹn của bệnh nhân khác!" });
+                }
+            }
+
+            // Ghi nhận xác thực thiết bị Kiosk nếu có Header X-Kiosk-Device-Id
+            var kioskDeviceId = Request.Headers["X-Kiosk-Device-Id"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(kioskDeviceId))
+            {
+                Console.WriteLine($"[Kiosk Terminal] Thiết bị {kioskDeviceId} đang xử lý check-in lịch hẹn {appointment.Id}");
+            }
+
+            // Kiểm tra trạng thái lịch hẹn
             if (appointment.Status == "Cancelled")
             {
                 return BadRequest(new { message = "Lịch hẹn này đã bị hủy trước đó." });
+            }
+
+            if (appointment.Status == "Completed")
+            {
+                return BadRequest(new { message = "Lịch hẹn này đã hoàn tất khám bệnh, không thể check-in lại." });
+            }
+
+            // Idempotency: Nếu lịch hẹn đã check-in QR trước đó, trả về ngay thông tin hiện tại không duplicate xử lý
+            if (appointment.CheckInStatus == "CheckedInQR" || appointment.Status == "CheckedIn")
+            {
+                return Ok(appointment);
+            }
+
+            // Kiểm soát quy tắc ngày khám & thời gian theo giờ địa phương Việt Nam (Asia/Ho_Chi_Minh)
+            var vnNow = GetVietnamNow();
+            var todayVn = vnNow.Date;
+
+            if (DateTime.TryParse(appointment.AppointmentDate, out var aptDate))
+            {
+                // A. Chặn check-in trước ngày khám
+                if (aptDate.Date > todayVn)
+                {
+                    return BadRequest(new { message = $"Chưa đến ngày khám hẹn ({appointment.AppointmentDate}). Quý khách chỉ có thể check-in tại Kiosk vào đúng ngày khám đã đăng ký theo giờ Việt Nam!" });
+                }
+
+                // B. Chặn check-in khi đã quá ngày khám
+                if (aptDate.Date < todayVn)
+                {
+                    return BadRequest(new { message = $"Lịch hẹn ngày {appointment.AppointmentDate} đã quá hạn tiếp nhận (hết ngày khám). Quý khách vui lòng liên hệ quầy tiếp nhận để được hỗ trợ!" });
+                }
+
+                // C. Kiểm tra khung giờ trong ngày: Tại Kiosk tự động, nếu đã hết giờ tiếp nhận hành chính (> 17:30), chuyển tiếp đến quầy tiếp nhận
+                if (!isStaff && (vnNow.Hour > 17 || (vnNow.Hour == 17 && vnNow.Minute > 30)))
+                {
+                    return BadRequest(new { message = "Kiosk đã hết giờ tiếp nhận tự động trong ngày (sau 17:30). Quý khách vui lòng đến quầy Tiếp nhận trực tiếp để được hỗ trợ!" });
+                }
             }
 
             // Idempotency: Nếu lịch hẹn đã check-in QR trước đó, trả về ngay thông tin hiện tại không duplicate xử lý

@@ -16,6 +16,7 @@ namespace HospitalAI.ExaminationService.Controllers;
 public class ExaminationsController : ControllerBase
 {
     private readonly IExaminationService _examinationService;
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (int Count, DateTime WindowStart)> _rateLimiter = new();
 
     public ExaminationsController(IExaminationService examinationService)
     {
@@ -178,6 +179,7 @@ public class ExaminationsController : ControllerBase
 
     /// <summary>
     /// Xác thực tính toàn vẹn Chữ ký số EMR (Hỗ trợ quét QR trên bản in PDF)
+    /// Endpoint công khai có cơ chế giới hạn truy vấn (Rate Limit) chống dò quét ID bệnh án
     /// </summary>
     [HttpGet("{id:guid}/verify-signature")]
     [AllowAnonymous]
@@ -186,14 +188,76 @@ public class ExaminationsController : ControllerBase
         if (id == Guid.Empty)
             return BadRequest(new { message = "Mã ID lượt khám không hợp lệ." });
 
+        // Giới hạn tần suất tra cứu công khai chống enumeration dò quét ID
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "default_client";
+        var now = DateTime.UtcNow;
+        var entry = _rateLimiter.AddOrUpdate(clientIp, (1, now), (k, old) =>
+            (now - old.WindowStart).TotalMinutes < 1 ? (old.Count + 1, old.WindowStart) : (1, now));
+
+        if (entry.Count > 60)
+        {
+            return StatusCode(429, new { message = "Bạn đã thực hiện quá nhiều yêu cầu xác minh trong thời gian ngắn. Vui lòng thử lại sau 1 phút!" });
+        }
+
         try
         {
             var result = await _examinationService.VerifySignatureAsync(id);
             return Ok(result);
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { message = ex.Message });
+            // Trả về thông điệp an toàn, không xác nhận sự tồn tại cụ thể
+            return NotFound(new { message = "Không tìm thấy hồ sơ bệnh án hoặc mã xác thực không hợp lệ." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Cập nhật & Chứng thực Kết quả Cận lâm sàng (Chỉ dành cho Nhân viên Y tế và Bác sĩ)
+    /// Nhân viên sàng lọc y tế (Triage) không được phép can thiệp kết quả CLS
+    /// </summary>
+    [HttpPut("{id:guid}/cls-result")]
+    [Authorize(Roles = "Nurse,Doctor")]
+    public async Task<IActionResult> UpdateClsResult(Guid id, [FromBody] UpdateClsResultDto dto)
+    {
+        if (id == Guid.Empty || dto.ServiceOrderDetailId == Guid.Empty)
+            return BadRequest(new { message = "Mã lượt khám hoặc mã dịch vụ CLS không hợp lệ." });
+
+        try
+        {
+            var success = await _examinationService.UpdateClsResultAsync(id, dto.ServiceOrderDetailId, dto.Result, dto.Status);
+            if (!success)
+                return NotFound(new { message = "Không tìm thấy chỉ định dịch vụ CLS tương ứng." });
+
+            return Ok(new { message = "Cập nhật và chứng thực kết quả cận lâm sàng thành công." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Ghi nhận Chỉ số Sinh tồn & Sàng lọc ban đầu (Dành cho Nhân viên Sàng lọc y tế Triage, Y tế và Bác sĩ)
+    /// Tiếp tân, Thu ngân, Nhà thuốc không có quyền can thiệp chỉ số sinh tồn y tế
+    /// </summary>
+    [HttpPost("{id:guid}/vital-signs")]
+    [Authorize(Roles = "Triage,Nurse,Doctor")]
+    public async Task<IActionResult> RecordVitalSigns(Guid id, [FromBody] RecordVitalSignsDto dto)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Mã lượt khám không hợp lệ." });
+
+        try
+        {
+            var success = await _examinationService.RecordVitalSignsAsync(id, dto);
+            if (!success)
+                return NotFound(new { message = "Không tìm thấy lượt khám tương ứng." });
+
+            return Ok(new { message = "Ghi nhận chỉ số sinh tồn và phân loại sàng lọc thành công." });
         }
         catch (Exception ex)
         {

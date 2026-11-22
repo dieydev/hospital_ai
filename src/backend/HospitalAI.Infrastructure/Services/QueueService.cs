@@ -5,7 +5,9 @@ using HospitalAI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace HospitalAI.Infrastructure.Services;
@@ -15,6 +17,59 @@ public class QueueService : IQueueService
     private readonly HospitalDbContext _context;
     private readonly IFcmNotificationService? _fcmService;
     private static readonly System.Threading.SemaphoreSlim _ticketLock = new(1, 1);
+    private static readonly string _dataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? AppContext.BaseDirectory;
+    private static readonly string _auditFilePath = Path.Combine(_dataDir, "queue_priority_audit.json");
+    private static readonly object _auditFileLock = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, PriorityAuditRecord> _auditRecords = LoadAuditRecordsFromFile();
+
+    private static System.Collections.Concurrent.ConcurrentDictionary<Guid, PriorityAuditRecord> LoadAuditRecordsFromFile()
+    {
+        var dict = new System.Collections.Concurrent.ConcurrentDictionary<Guid, PriorityAuditRecord>();
+        try
+        {
+            if (File.Exists(_auditFilePath))
+            {
+                var json = File.ReadAllText(_auditFilePath);
+                var items = JsonSerializer.Deserialize<Dictionary<Guid, PriorityAuditRecord>>(json);
+                if (items != null)
+                {
+                    foreach (var kvp in items) dict[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[QueueService Warning] Could not load audit log: {ex.Message}");
+        }
+        return dict;
+    }
+
+    private static void SaveAuditRecordsToFile()
+    {
+        lock (_auditFileLock)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(_auditFilePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+                var json = JsonSerializer.Serialize(_auditRecords);
+                File.WriteAllText(_auditFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[QueueService Warning] Could not persist audit log: {ex.Message}");
+            }
+        }
+    }
+
+    public record PriorityAuditRecord(
+        string? PriorityReason,
+        string? ConfirmedBy,
+        DateTime? ConfirmedAt,
+        string? Reason);
 
     public QueueService(HospitalDbContext context, IFcmNotificationService? fcmService = null)
     {
@@ -80,6 +135,76 @@ public class QueueService : IQueueService
         {
             var today = DateTime.UtcNow.Date;
 
+            // NGUYÊN TẮC BẢO MẬT & ĐÚNG LUẬT: Không tin trực tiếp dto.Priority hay dto.PriorityReason từ client
+            var priority = "Normal";
+            string? priorityReason = null;
+            string? confirmedBy = null;
+            DateTime? confirmedAt = null;
+            string? emergencyReason = null;
+
+            // 1. Chỉ cho phép kích hoạt tình trạng Cấp cứu (Emergency) khi có xác nhận hợp lệ của nhân sự chuyên môn y tế
+            if (dto.IsEmergencyConfirmed == true || string.Equals(dto.Priority, "Emergency", StringComparison.OrdinalIgnoreCase))
+            {
+                if (dto.IsEmergencyConfirmed == true &&
+                    !string.IsNullOrWhiteSpace(dto.EmergencyConfirmedBy) &&
+                    !string.IsNullOrWhiteSpace(dto.EmergencyReason))
+                {
+                    priority = "Emergency";
+                    confirmedBy = dto.EmergencyConfirmedBy.Trim();
+                    confirmedAt = dto.EmergencyConfirmedAt ?? DateTime.UtcNow;
+                    emergencyReason = dto.EmergencyReason.Trim();
+                    priorityReason = $"Tình trạng cấp cứu - Xác nhận bởi nhân sự chuyên môn ({confirmedBy}) lúc {confirmedAt:yyyy-MM-dd HH:mm:ss}. Lý do: {emergencyReason}";
+                }
+                else
+                {
+                    // Client gửi yêu cầu cấp cứu nhưng thiếu xác nhận chuyên môn y tế -> Không cấp quyền khẩn cấp
+                    priority = "Normal";
+                    priorityReason = null;
+                }
+            }
+
+            // 2. Nếu không phải cấp cứu, kiểm tra đối tượng ưu tiên luật định theo Khoản 2 Điều 3 Luật Khám bệnh, chữa bệnh số 15/2023/QH15
+            if (priority != "Emergency")
+            {
+                if (patient.DateOfBirth != default)
+                {
+                    var age = today.Year - patient.DateOfBirth.Year;
+                    if (patient.DateOfBirth.Date > today.AddYears(-age)) age--;
+
+                    // Người từ đủ 75 tuổi trở lên (Khoản 2 Điều 3 Luật KBCB 15/2023/QH15)
+                    if (age >= 75)
+                    {
+                        priority = "Priority";
+                        priorityReason = $"Người cao tuổi từ đủ 75 tuổi trở lên ({age} tuổi) - Điều 3 Luật KBCB 15/2023/QH15";
+                    }
+                    // Trẻ em dưới 6 tuổi (Khoản 2 Điều 3 Luật KBCB 15/2023/QH15)
+                    else if (age < 6)
+                    {
+                        priority = "Priority";
+                        priorityReason = $"Trẻ em dưới 6 tuổi ({age} tuổi) - Điều 3 Luật KBCB 15/2023/QH15";
+                    }
+                }
+
+                // Phụ nữ có thai (Khoản 2 Điều 3 Luật KBCB 15/2023/QH15)
+                if (dto.IsPregnant == true)
+                {
+                    priority = "Priority";
+                    priorityReason = "Phụ nữ có thai - Khoản 2 Điều 3 Luật KBCB 15/2023/QH15";
+                }
+                // Người khuyết tật đặc biệt nặng, người khuyết tật nặng (Khoản 2 Điều 3 Luật KBCB 15/2023/QH15)
+                else if (dto.IsDisabled == true)
+                {
+                    priority = "Priority";
+                    priorityReason = "Người khuyết tật nặng/đặc biệt nặng - Khoản 2 Điều 3 Luật KBCB 15/2023/QH15";
+                }
+                // Người có công với cách mạng (Khoản 2 Điều 3 Luật KBCB 15/2023/QH15)
+                else if (dto.HasRevolutionaryMerit == true)
+                {
+                    priority = "Priority";
+                    priorityReason = "Người có công với cách mạng - Khoản 2 Điều 3 Luật KBCB 15/2023/QH15";
+                }
+            }
+
             // Idempotency: Kiểm tra nếu phiếu đã được cấp cho lịch hẹn này trong ngày (chống duplicate khi quét lại mã)
             if (dto.AppointmentId.HasValue && dto.AppointmentId.Value != Guid.Empty)
             {
@@ -137,7 +262,7 @@ public class QueueService : IQueueService
                         AppointmentId = dto.AppointmentId,
                         SequenceNumber = lastSequence + 1,
                         Status = "Waiting",
-                        Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
+                        Priority = priority,
                         CreatedAt = DateTime.UtcNow
                     };
 
@@ -145,6 +270,9 @@ public class QueueService : IQueueService
                     await _context.SaveChangesAsync();
 
                     if (tx != null) await tx.CommitAsync();
+
+                    _auditRecords[ticket.Id] = new PriorityAuditRecord(priorityReason, confirmedBy, confirmedAt, emergencyReason);
+                    SaveAuditRecordsToFile();
 
                     ticket.Patient = patient;
                     ticket.Department = department;
@@ -271,7 +399,7 @@ public class QueueService : IQueueService
             age = DateTime.UtcNow.Year - q.Patient.DateOfBirth.Year;
         }
 
-        return new QueueTicketDto
+        var dto = new QueueTicketDto
         {
             Id = q.Id,
             PatientId = q.PatientId,
@@ -291,5 +419,15 @@ public class QueueService : IQueueService
             VisitType = q.AppointmentId.HasValue ? "FollowUp" : "New",
             CreatedAt = q.CreatedAt
         };
+
+        if (_auditRecords.TryGetValue(q.Id, out var audit))
+        {
+            dto.PriorityReason = audit.PriorityReason;
+            dto.EmergencyConfirmedBy = audit.ConfirmedBy;
+            dto.EmergencyConfirmedAt = audit.ConfirmedAt;
+            dto.EmergencyReason = audit.Reason;
+        }
+
+        return dto;
     }
 }

@@ -20,6 +20,10 @@ public class QueueTicketDto
     public int SequenceNumber { get; set; }
     public string Status { get; set; } = "Waiting"; // Waiting, Calling, Processing, Skipped, Finished
     public string Priority { get; set; } = "Normal"; // Normal, Priority, Emergency
+    public string? PriorityReason { get; set; } // Căn cứ ưu tiên theo Điều 3 Luật KBCB 15/2023/QH15 hoặc đánh giá sàng lọc
+    public string? EmergencyConfirmedBy { get; set; }
+    public DateTime? EmergencyConfirmedAt { get; set; }
+    public string? EmergencyReason { get; set; }
     public Guid? AppointmentId { get; set; }
     public string? VisitType { get; set; } // "New" / "FollowUp"
     public DateTime CreatedAt { get; set; }
@@ -35,6 +39,19 @@ public class IssueQueueTicketDto
 
     [StringLength(50)]
     public string Priority { get; set; } = "Normal";
+
+    public string? PriorityReason { get; set; }
+
+    // Phân loại đối tượng ưu tiên theo Khoản 2 Điều 3 Luật Khám bệnh, chữa bệnh số 15/2023/QH15
+    public bool? IsPregnant { get; set; }              // Phụ nữ có thai
+    public bool? IsDisabled { get; set; }              // Người khuyết tật đặc biệt nặng, người khuyết tật nặng
+    public bool? HasRevolutionaryMerit { get; set; }   // Người có công với cách mạng
+
+    // Xác nhận khẩn cấp từ nhân sự y tế chuyên môn (Nhân viên sàng lọc y tế hoặc Bác sĩ lâm sàng)
+    public bool? IsEmergencyConfirmed { get; set; }
+    public string? EmergencyConfirmedBy { get; set; }
+    public DateTime? EmergencyConfirmedAt { get; set; }
+    public string? EmergencyReason { get; set; }
 
     public Guid? AppointmentId { get; set; }
 

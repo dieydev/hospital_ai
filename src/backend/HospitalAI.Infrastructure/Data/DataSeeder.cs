@@ -597,6 +597,14 @@ public static class DataSeeder
                         PrescriptionDispensedAt DATETIME2 NULL,
                         PrescriptionDispensedBy NVARCHAR(100) NULL;
                 END;
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.LuotKhamBenh') AND name = 'MaGiayHenTaiKham')
+                BEGIN
+                    ALTER TABLE dbo.LuotKhamBenh ADD
+                        MaGiayHenTaiKham NVARCHAR(100) NULL,
+                        MaBenhAnCu NVARCHAR(100) NULL,
+                        MucDoDapUng NVARCHAR(100) NULL,
+                        DienTienLamSang NVARCHAR(1000) NULL;
+                END;
                 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.LuotKhamBenh') AND name = 'PrescriptionDispenseStatus')
                 BEGIN
                     ALTER TABLE dbo.LuotKhamBenh ADD

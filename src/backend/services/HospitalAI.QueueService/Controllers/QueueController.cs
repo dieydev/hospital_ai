@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace HospitalAI.QueueService.Controllers;
@@ -53,6 +54,43 @@ public class QueueController : ControllerBase
     {
         try
         {
+            // BẢO VỆ CHỐNG GIẢ MẠO CẤP CỨU (Anti-Tampering & Least Privilege):
+            // Các trường IsEmergencyConfirmed, EmergencyConfirmedBy, EmergencyConfirmedAt TUYỆT ĐỐI không được tin client.
+            // Danh tính người xác nhận bắt buộc phải được kiểm tra từ JWT Claims và quyền Backend (chỉ Triage hoặc Doctor).
+            if (dto.IsEmergencyConfirmed == true || string.Equals(dto.Priority, "Emergency", StringComparison.OrdinalIgnoreCase))
+            {
+                var isClinicalStaff = User.IsInRole("Triage") || User.IsInRole("Doctor");
+                if (isClinicalStaff && !string.IsNullOrWhiteSpace(dto.EmergencyReason))
+                {
+                    var staffRole = User.IsInRole("Doctor") ? "Bác sĩ lâm sàng" : "Nhân viên sàng lọc y tế";
+                    var staffName = User.FindFirst("name")?.Value 
+                                    ?? User.FindFirst(ClaimTypes.Name)?.Value 
+                                    ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                                    ?? "Cán bộ y tế chuyên môn";
+
+                    dto.IsEmergencyConfirmed = true;
+                    dto.EmergencyConfirmedBy = $"{staffRole} - {staffName}";
+                    dto.EmergencyConfirmedAt = DateTime.UtcNow; // Server timestamp, không dùng client timestamp
+                    dto.Priority = "Emergency";
+                }
+                else
+                {
+                    // Người dùng không có vai trò Triage/Doctor hoặc không có lý do chuyên môn -> Thu hồi toàn bộ cờ cấp cứu
+                    dto.IsEmergencyConfirmed = false;
+                    dto.EmergencyConfirmedBy = null;
+                    dto.EmergencyConfirmedAt = null;
+                    dto.EmergencyReason = null;
+                    dto.Priority = "Normal";
+                }
+            }
+            else
+            {
+                // Không phải trường hợp cấp cứu: xóa sạch các trường xác nhận để ngăn client gửi giá trị rác
+                dto.IsEmergencyConfirmed = false;
+                dto.EmergencyConfirmedBy = null;
+                dto.EmergencyConfirmedAt = null;
+            }
+
             var result = await _queueService.IssueQueueTicketAsync(dto);
 
             // Bắn tín hiệu SignalR thời gian thực đến Web Bác sĩ, Tiếp tân và Mobile App

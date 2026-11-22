@@ -191,3 +191,22 @@ public class VerifySignatureResponseDto
     public string IntegrityStatus { get; set; } = string.Empty; // Ho so toan ven, chua bi chinh sua
     public string CertificateIssuer { get; set; } = string.Empty;
 }
+
+public class UpdateClsResultDto
+{
+    public Guid ServiceOrderDetailId { get; set; }
+    public string Result { get; set; } = string.Empty;
+    public string Status { get; set; } = "Đã có kết quả";
+}
+
+public class RecordVitalSignsDto
+{
+    public int? PulseRate { get; set; }
+    public decimal? Temperature { get; set; }
+    public string? BloodPressure { get; set; }
+    public int? RespiratoryRate { get; set; }
+    public decimal? Weight { get; set; }
+    public decimal? Height { get; set; }
+    public int? SpO2 { get; set; }
+    public string? TriageNotes { get; set; }
+}

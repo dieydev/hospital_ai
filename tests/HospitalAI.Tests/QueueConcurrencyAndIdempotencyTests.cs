@@ -1,13 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using HospitalAI.Application.DTOs;
 using HospitalAI.Domain.Entities;
 using HospitalAI.Infrastructure.Data;
+using HospitalAI.QueueService.Controllers;
+using HospitalAI.QueueService.Hubs;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Moq;
 namespace HospitalAI.Tests;
 
-using Microsoft.EntityFrameworkCore;
 using QueueService = HospitalAI.Infrastructure.Services.QueueService;
 
 public class QueueConcurrencyAndIdempotencyTests
@@ -172,12 +180,16 @@ public class QueueConcurrencyAndIdempotencyTests
             Priority = "Normal"
         });
 
-        // Bệnh nhân cấp cứu lấy số sau (STT 102)
+        // Bệnh nhân cấp cứu lấy số sau (STT 102) có xác nhận hợp lệ từ Nhân viên sàng lọc y tế
         await service.IssueQueueTicketAsync(new IssueQueueTicketDto
         {
             PatientId = pEmergency.Id,
             DepartmentId = dept.Id,
-            Priority = "Emergency"
+            Priority = "Emergency",
+            IsEmergencyConfirmed = true,
+            EmergencyConfirmedBy = "NV Sàng lọc y tế Trần Thị Lan",
+            EmergencyConfirmedAt = DateTime.UtcNow,
+            EmergencyReason = "Khó thở cấp tính, suy hô hấp SpO2 giảm"
         });
 
         // Gọi bác sĩ mời bệnh nhân kế tiếp
@@ -187,6 +199,35 @@ public class QueueConcurrencyAndIdempotencyTests
         Assert.NotNull(calledTicket);
         Assert.Equal("Emergency", calledTicket.Priority);
         Assert.Equal(pEmergency.Id, calledTicket.PatientId);
+    }
+
+    [Fact]
+    public async Task IssueTicket_ClientSendsEmergencyWithoutStaffConfirmation_ShouldDefaultToNormal()
+    {
+        // Arrange
+        var dbName = "QueueDb_UntrustedEmergency_" + Guid.NewGuid();
+        using var context = CreateInMemoryDbContext(dbName);
+
+        var dept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Cấp Cứu" };
+        var patient = new Patient { Id = Guid.NewGuid(), FullName = "Bệnh nhân Tự Gửi Khẩn Cấp", DateOfBirth = DateTime.UtcNow.AddYears(-30) };
+
+        context.Departments.Add(dept);
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
+
+        var service = new QueueService(context);
+
+        // Act: Client tự gửi Priority = "Emergency" mà không có xác nhận chuyên môn y tế
+        var ticket = await service.IssueQueueTicketAsync(new IssueQueueTicketDto
+        {
+            PatientId = patient.Id,
+            DepartmentId = dept.Id,
+            Priority = "Emergency" // Không có IsEmergencyConfirmed = true và EmergencyConfirmedBy
+        });
+
+        // Assert: Không được tin client, phải fallback về Normal
+        Assert.Equal("Normal", ticket.Priority);
+        Assert.Null(ticket.EmergencyConfirmedBy);
     }
 
     [Fact]
@@ -277,5 +318,129 @@ public class QueueConcurrencyAndIdempotencyTests
         Assert.Equal(ticket1.SequenceNumber, ticket2.SequenceNumber);
         Assert.Equal("FollowUp", ticket2.VisitType);
         Assert.Equal(1, await context.QueueTickets.CountAsync());
+    }
+
+    [Fact]
+    public async Task QueueController_IssueTicket_WhenPatientRoleAttemptsToSpoofEmergency_MustBeSanitizedToNormal()
+    {
+        // Arrange
+        var dbName = "QueueDb_SpoofEmergency_" + Guid.NewGuid();
+        using var context = CreateInMemoryDbContext(dbName);
+
+        var dept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Cấp Cứu" };
+        var patient = new Patient { Id = Guid.NewGuid(), FullName = "Bệnh nhân Gian Lận Cấp Cứu", DateOfBirth = DateTime.UtcNow.AddYears(-30) };
+        context.Departments.Add(dept);
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
+
+        var service = new QueueService(context);
+        var hubMock = new Mock<IHubContext<QueueHub>>();
+        var clientsMock = new Mock<IHubClients>();
+        var clientProxyMock = new Mock<IClientProxy>();
+        clientsMock.Setup(c => c.All).Returns(clientProxyMock.Object);
+        hubMock.Setup(h => h.Clients).Returns(clientsMock.Object);
+
+        var controller = new QueueController(service, hubMock.Object);
+
+        // Giả lập JWT Principal có Role = "Patient" (Bệnh nhân)
+        var userClaims = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "patient_user_id"),
+            new Claim(ClaimTypes.Name, "Nguyen Van Patient"),
+            new Claim(ClaimTypes.Role, "Patient")
+        }, "TestAuth"));
+
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = userClaims }
+        };
+
+        // Act: Bệnh nhân cố tình gửi các trường xác nhận cấp cứu giả mạo
+        var dto = new IssueQueueTicketDto
+        {
+            PatientId = patient.Id,
+            DepartmentId = dept.Id,
+            Priority = "Emergency",
+            IsEmergencyConfirmed = true,
+            EmergencyConfirmedBy = "BS Giả Mạo Nguyễn Văn A",
+            EmergencyConfirmedAt = DateTime.UtcNow,
+            EmergencyReason = "Bệnh nhân tự ghi cấp cứu để chen hàng"
+        };
+
+        var actionResult = await controller.IssueTicket(dto);
+
+        // Assert: Backend phát hiện JWT không có quyền Triage/Doctor -> Triệt tiêu toàn bộ cờ cấp cứu
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var ticket = Assert.IsType<QueueTicketDto>(okResult.Value);
+
+        Assert.Equal("Normal", ticket.Priority);
+        Assert.Null(ticket.EmergencyConfirmedBy);
+        Assert.Null(ticket.EmergencyConfirmedAt);
+        Assert.Null(ticket.EmergencyReason);
+    }
+
+    [Fact]
+    public async Task QueueController_IssueTicket_WhenTriageStaffConfirmsEmergency_MustUseJwtIdentity()
+    {
+        // Arrange
+        var dbName = "QueueDb_TriageEmergency_" + Guid.NewGuid();
+        using var context = CreateInMemoryDbContext(dbName);
+
+        var dept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Cấp Cứu" };
+        var patient = new Patient { Id = Guid.NewGuid(), FullName = "Bệnh nhân Cấp Cứu Thật", DateOfBirth = DateTime.UtcNow.AddYears(-30) };
+        context.Departments.Add(dept);
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
+
+        var service = new QueueService(context);
+        var hubMock = new Mock<IHubContext<QueueHub>>();
+        var clientsMock = new Mock<IHubClients>();
+        var clientProxyMock = new Mock<IClientProxy>();
+        clientsMock.Setup(c => c.All).Returns(clientProxyMock.Object);
+        hubMock.Setup(h => h.Clients).Returns(clientsMock.Object);
+
+        var controller = new QueueController(service, hubMock.Object);
+
+        // Giả lập JWT Principal có Role = "Triage" (Nhân viên sàng lọc y tế)
+        var userClaims = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "triage_user_id"),
+            new Claim(ClaimTypes.Name, "Lê Thị Lan Anh"),
+            new Claim(ClaimTypes.Role, "Triage")
+        }, "TestAuth"));
+
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = userClaims }
+        };
+
+        // Act: Nhân viên sàng lọc y tế xác nhận cấp cứu hợp lệ
+        var dto = new IssueQueueTicketDto
+        {
+            PatientId = patient.Id,
+            DepartmentId = dept.Id,
+            Priority = "Emergency",
+            IsEmergencyConfirmed = true,
+            EmergencyReason = "Đau thắt ngực dữ dội, SpO2 giảm sâu nghi nhồi máu cơ tim"
+        };
+
+        var actionResult = await controller.IssueTicket(dto);
+
+        // Assert: Backend xác thực quyền Triage, tự động đóng dấu danh tính từ JWT Claims
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var ticket = Assert.IsType<QueueTicketDto>(okResult.Value);
+
+        Assert.Equal("Emergency", ticket.Priority);
+        Assert.NotNull(ticket.EmergencyConfirmedBy);
+        Assert.Contains("Nhân viên sàng lọc y tế", ticket.EmergencyConfirmedBy);
+        Assert.Contains("Lê Thị Lan Anh", ticket.EmergencyConfirmedBy);
+        Assert.NotNull(ticket.EmergencyConfirmedAt);
+        Assert.Equal("Đau thắt ngực dữ dội, SpO2 giảm sâu nghi nhồi máu cơ tim", ticket.EmergencyReason);
+
+        // Xác nhận file audit log được lưu bền vững trên đĩa
+        var auditFile = Path.Combine(Environment.GetEnvironmentVariable("DATA_DIR") ?? AppContext.BaseDirectory, "queue_priority_audit.json");
+        Assert.True(File.Exists(auditFile), "File queue_priority_audit.json phải tồn tại trên ổ đĩa để lưu vết bền vững.");
+        var fileContent = File.ReadAllText(auditFile);
+        Assert.Contains(ticket.Id.ToString(), fileContent);
     }
 }

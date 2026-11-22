@@ -90,10 +90,10 @@ public class BillingController : ControllerBase
     }
 
     /// <summary>
-    /// Thu tiền mặt viện phí tại quầy (Phân định trách nhiệm: Tiếp nhận chỉ thu phí khám ban đầu, Thu ngân thu toàn bộ)
+    /// Thu tiền mặt viện phí tại quầy (Phân định trách nhiệm: Tiếp nhận chỉ thu phí khám ban đầu, Thu ngân thu toàn bộ. Admin bị chặn)
     /// </summary>
     [HttpPost("{id}/pay-cash")]
-    [Authorize(Roles = "Cashier,Receptionist,Admin")]
+    [Authorize(Roles = "Cashier,Receptionist")]
     public async Task<IActionResult> PayCash(Guid id)
     {
         if (id == Guid.Empty)
@@ -121,7 +121,11 @@ public class BillingController : ControllerBase
         var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (Guid.TryParse(currentUserId, out var cashierGuid))
         {
-            billing.CashierId = cashierGuid;
+            var staff = await _dbContext.StaffProfiles.FirstOrDefaultAsync(s => s.UserId == cashierGuid || s.Id == cashierGuid);
+            if (staff != null)
+            {
+                billing.CashierId = staff.Id;
+            }
         }
 
         billing.Status = "Paid";
@@ -153,10 +157,10 @@ public class BillingController : ControllerBase
     }
 
     /// <summary>
-    /// Xác nhận thanh toán Chuyển khoản VietQR Ngân hàng (Thu ngân xác thực giao dịch chuyển khoản đối soát)
+    /// Xác nhận thanh toán Chuyển khoản VietQR Ngân hàng (Thu ngân xác thực giao dịch chuyển khoản đối soát thủ công. Admin bị chặn)
     /// </summary>
     [HttpPost("{id}/pay-transfer")]
-    [Authorize(Roles = "Cashier,Receptionist,Admin")]
+    [Authorize(Roles = "Cashier,Receptionist")]
     public async Task<IActionResult> PayTransfer(Guid id, [FromQuery] string? transactionRef = null)
     {
         if (id == Guid.Empty)
@@ -204,7 +208,11 @@ public class BillingController : ControllerBase
         var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (Guid.TryParse(currentUserId, out var cashierGuid))
         {
-            billing.CashierId = cashierGuid;
+            var staff = await _dbContext.StaffProfiles.FirstOrDefaultAsync(s => s.UserId == cashierGuid || s.Id == cashierGuid);
+            if (staff != null)
+            {
+                billing.CashierId = staff.Id;
+            }
         }
 
         billing.Status = "Paid";

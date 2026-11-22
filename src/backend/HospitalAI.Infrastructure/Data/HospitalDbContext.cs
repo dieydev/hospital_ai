@@ -222,6 +222,14 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.Title).HasColumnName("ChucDanh").HasMaxLength(50);
             entity.Property(e => e.IsAvailable).HasColumnName("TrangThaiSanSang");
 
+            entity.Property(e => e.PracticeLicenseNumber).HasColumnName("PracticeLicenseNumber").HasMaxLength(50);
+            entity.Property(e => e.PracticeLicenseDate).HasColumnName("PracticeLicenseDate").HasMaxLength(20);
+            entity.Property(e => e.PracticeLicenseIssuer).HasColumnName("PracticeLicenseIssuer").HasMaxLength(150);
+            entity.Property(e => e.ScopeOfPractice).HasColumnName("ScopeOfPractice").HasMaxLength(255);
+            entity.Property(e => e.NationalPractitionerId).HasColumnName("NationalPractitionerId").HasMaxLength(50);
+            entity.Property(e => e.DegreeLevel).HasColumnName("DegreeLevel").HasMaxLength(50);
+            entity.Property(e => e.PracticeStatus).HasColumnName("PracticeStatus").HasMaxLength(30);
+
             entity.HasOne(s => s.Department)
                   .WithMany()
                   .HasForeignKey(s => s.DepartmentId);
