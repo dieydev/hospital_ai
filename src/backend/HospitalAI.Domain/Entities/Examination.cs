@@ -83,6 +83,11 @@ public class Examination
     public string? DoctorIssuer { get; set; } // Nơi cấp CCHN
     public bool? IsPracticeScopeCompliant { get; set; } = true;
 
+    // Quản lý cấp phát thuốc Nhà thuốc (Dược sĩ / Pharmacy)
+    public string? PrescriptionDispenseStatus { get; set; } = "Chờ cấp phát"; // "Chờ cấp phát", "Đã cấp phát", "Đã hủy"
+    public DateTime? PrescriptionDispensedAt { get; set; }
+    public string? PrescriptionDispensedBy { get; set; }
+
     public ICollection<PrescriptionDetail> PrescriptionDetails { get; set; } = new List<PrescriptionDetail>();
     public ICollection<ServiceOrderDetail> ServiceOrderDetails { get; set; } = new List<ServiceOrderDetail>();
 }

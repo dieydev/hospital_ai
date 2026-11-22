@@ -181,6 +181,21 @@ public class BillingController : ControllerBase
             }
         }
 
+        // Chống giả mạo xác nhận thanh toán: Bắt buộc phải có mã giao dịch/đối soát hợp lệ từ ngân hàng
+        if (string.IsNullOrWhiteSpace(transactionRef))
+        {
+            return BadRequest(new { Message = "Vui lòng cung cấp mã tham chiếu giao dịch (TransactionRef) hoặc mã chuẩn chi ngân hàng để đối soát thanh toán hợp lệ." });
+        }
+
+        var cleanRef = transactionRef.Trim();
+
+        // Chống Replay / Giao dịch trùng lặp: Kiểm tra mã tham chiếu giao dịch đã từng được dùng cho hóa đơn nào khác chưa
+        var isDuplicateTxn = await _dbContext.Billings.AnyAsync(b => b.TransactionRef == cleanRef && b.Id != id);
+        if (isDuplicateTxn)
+        {
+            return Conflict(new { Message = "Mã giao dịch đối soát này đã được ghi nhận cho một hóa đơn khác trong hệ thống. Cảnh báo giao dịch trùng lặp hoặc giả mạo!" });
+        }
+
         var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (Guid.TryParse(currentUserId, out var cashierGuid))
         {
@@ -190,7 +205,7 @@ public class BillingController : ControllerBase
         billing.Status = "Paid";
         billing.PaidAt = DateTime.UtcNow;
         billing.PaymentMethod = "Chuyển khoản VietQR";
-        billing.TransactionRef = !string.IsNullOrWhiteSpace(transactionRef) ? transactionRef.Trim() : $"VQR-{DateTime.UtcNow:yyyyMMddHHmmss}-{billing.Id.ToString().Substring(0, 6).ToUpper()}";
+        billing.TransactionRef = cleanRef;
 
         // Cập nhật trạng thái liên quan
         if (billing.BillingType == "Registration" && billing.ExaminationId.HasValue)

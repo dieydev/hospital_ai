@@ -122,10 +122,22 @@ namespace HospitalAI.ExaminationService.Controllers
 
                     if (billing.Status != "Paid")
                     {
+                        var vnp_TransactionNo = Request.Query["vnp_TransactionNo"].ToString();
+                        var finalRef = !string.IsNullOrEmpty(vnp_TransactionNo) && vnp_TransactionNo != "0" 
+                            ? $"VNPAY-{vnp_TransactionNo}" 
+                            : vnp_TxnRef;
+
+                        // Chống Replay Attack: Kiểm tra mã giao dịch cổng thanh toán VNPay có bị dùng lặp lại không
+                        var isReplay = await _dbContext.Billings.AnyAsync(b => b.TransactionRef == finalRef && b.Id != billing.Id);
+                        if (isReplay)
+                        {
+                            return BadRequest(new { Message = "Cảnh báo gian lận: Mã giao dịch VNPay đã được sử dụng trước đó (Replay Attack)." });
+                        }
+
                         billing.Status = "Paid";
                         billing.PaidAt = DateTime.UtcNow;
                         billing.PaymentMethod = "VNPay";
-                        billing.TransactionRef = vnp_TxnRef;
+                        billing.TransactionRef = finalRef;
 
                         // Cập nhật trạng thái phiếu chỉ định cận lâm sàng nếu có
                         if (billing.BillingType == "ServiceOrder")
@@ -195,10 +207,22 @@ namespace HospitalAI.ExaminationService.Controllers
 
                 if (vnp_ResponseCode == "00")
                 {
+                    var vnp_TransactionNo = Request.Query["vnp_TransactionNo"].ToString();
+                    var finalRef = !string.IsNullOrEmpty(vnp_TransactionNo) && vnp_TransactionNo != "0" 
+                        ? $"VNPAY-{vnp_TransactionNo}" 
+                        : vnp_TxnRef;
+
+                    // Chống Replay Webhook IPN
+                    var isReplay = await _dbContext.Billings.AnyAsync(b => b.TransactionRef == finalRef && b.Id != billing.Id);
+                    if (isReplay)
+                    {
+                        return Ok(new { RspCode = "02", Message = "Duplicate transaction reference" });
+                    }
+
                     billing.Status = "Paid";
                     billing.PaidAt = DateTime.UtcNow;
                     billing.PaymentMethod = "VNPay";
-                    billing.TransactionRef = vnp_TxnRef;
+                    billing.TransactionRef = finalRef;
 
                     if (billing.BillingType == "ServiceOrder")
                     {

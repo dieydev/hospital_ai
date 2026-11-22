@@ -72,6 +72,9 @@ public class HospitalDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(q => q.DepartmentId)
                   .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.DepartmentId, e.CreatedAt });
+            entity.HasIndex(e => new { e.PatientId, e.DepartmentId, e.CreatedAt });
         });
 
         // Map to SSMS Table: dbo.TaiKhoan

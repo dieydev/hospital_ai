@@ -575,7 +575,17 @@ public static class DataSeeder
                         DoctorScopeOfPractice NVARCHAR(500) NULL,
                         DoctorDegreeLevel NVARCHAR(50) NULL,
                         DoctorIssuer NVARCHAR(255) NULL,
-                        IsPracticeScopeCompliant BIT NOT NULL DEFAULT 1;
+                        IsPracticeScopeCompliant BIT NOT NULL DEFAULT 1,
+                        PrescriptionDispenseStatus NVARCHAR(50) NULL DEFAULT N'Chờ cấp phát',
+                        PrescriptionDispensedAt DATETIME2 NULL,
+                        PrescriptionDispensedBy NVARCHAR(100) NULL;
+                END;
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.LuotKhamBenh') AND name = 'PrescriptionDispenseStatus')
+                BEGIN
+                    ALTER TABLE dbo.LuotKhamBenh ADD
+                        PrescriptionDispenseStatus NVARCHAR(50) NULL DEFAULT N'Chờ cấp phát',
+                        PrescriptionDispensedAt DATETIME2 NULL,
+                        PrescriptionDispensedBy NVARCHAR(100) NULL;
                 END;";
 
             var alterChiTietDonThuoc = @"
@@ -595,9 +605,34 @@ public static class DataSeeder
                         EveningDose NVARCHAR(50) NULL;
                 END;";
 
+            var ensureVitalSignsAndBilling = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ChiSoSinhHieu')
+                BEGIN
+                    CREATE TABLE dbo.ChiSoSinhHieu (
+                        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+                        LuotKhamId UNIQUEIDENTIFIER NOT NULL,
+                        Mach INT NOT NULL,
+                        NhietDo DECIMAL(4,2) NOT NULL,
+                        HuyetApTamThu INT NULL,
+                        HuyetApTamTruong INT NULL,
+                        CanNang DECIMAL(5,2) NOT NULL,
+                        ChieuCao DECIMAL(5,2) NOT NULL,
+                        ThoiDiemDo DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'NguoiThuTienId')
+                BEGIN
+                    ALTER TABLE dbo.HoaDon ADD NguoiThuTienId UNIQUEIDENTIFIER NULL;
+                END;
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'MaGiaoDich')
+                BEGIN
+                    ALTER TABLE dbo.HoaDon ADD MaGiaoDich NVARCHAR(100) NULL;
+                END;";
+
             await context.Database.ExecuteSqlRawAsync(alterHoSoNhanVien);
             await context.Database.ExecuteSqlRawAsync(alterLuotKhamBenh);
             await context.Database.ExecuteSqlRawAsync(alterChiTietDonThuoc);
+            await context.Database.ExecuteSqlRawAsync(ensureVitalSignsAndBilling);
 
             // Gán dữ liệu mẫu CCHN TT 32/2023 cho nhân sự nếu chưa có
             var updateDefaultLicense = @"

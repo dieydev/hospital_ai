@@ -276,9 +276,67 @@ namespace HospitalAI.QueueService.Controllers
 
         [HttpGet]
         [Authorize]
-        public IActionResult GetAppointments()
+        public async Task<IActionResult> GetAppointments()
         {
             EnsureDataLoaded();
+            try
+            {
+                // SQL Server là nguồn dữ liệu chính thống (Source of Truth)
+                var query = _dbContext.Appointments
+                    .Include(a => a.Patient)
+                    .Include(a => a.Schedule)
+                    .ThenInclude(s => s!.Department)
+                    .AsNoTracking();
+
+                if (!IsStaff())
+                {
+                    var currentPhone = User.FindFirstValue(ClaimTypes.Name) ?? "";
+                    query = query.Where(a => a.Patient != null && (a.Patient.EmergencyContactPhone == currentPhone || a.Patient.PatientCode == currentPhone));
+                }
+
+                var dbList = await query.OrderByDescending(a => a.AppointmentDate).ToListAsync();
+                if (dbList.Count > 0)
+                {
+                    var items = dbList.Select(a =>
+                    {
+                        var idStr = a.Id.ToString();
+                        lock (_lock)
+                        {
+                            var cached = _cachedAppointments?.FirstOrDefault(c => c.Id.Equals(idStr, StringComparison.OrdinalIgnoreCase) || c.Id == $"apt-{idStr}");
+                            if (cached != null)
+                            {
+                                return cached;
+                            }
+                        }
+                        return new OnlineAppointmentItem
+                        {
+                            Id = a.Id.ToString(),
+                            PatientCode = a.Patient?.PatientCode ?? "",
+                            PatientName = a.Patient?.FullName ?? "",
+                            PatientPhone = a.Patient?.EmergencyContactPhone ?? "",
+                            IdentityCardNumber = a.Patient?.IdentityCardNumber,
+                            PatientGender = a.Patient?.Gender ?? "Nam",
+                            PatientAge = a.Patient != null ? Math.Max(1, DateTime.UtcNow.Year - a.Patient.DateOfBirth.Year) : 30,
+                            DepartmentName = a.Schedule?.Department?.DepartmentName ?? "Khoa Khám Bệnh",
+                            DoctorName = "BS. CKII. Nguyễn Thanh Duy",
+                            AppointmentDate = a.AppointmentDate.ToString("yyyy-MM-dd"),
+                            AppointmentTime = a.AppointmentDate.ToString("HH:mm"),
+                            SymptomsReason = a.Symptoms ?? "",
+                            Status = a.Status,
+                            CreatedAt = a.AppointmentDate.ToString("o"),
+                            QrCode = $"MEDQR|{a.Id}|{a.Patient?.PatientCode}|{a.AppointmentDate:yyyy-MM-dd}|{a.AppointmentDate:HH:mm}",
+                            CheckInStatus = a.Status == "Completed" ? "CheckedInQR" : "PendingQR"
+                        };
+                    }).ToList();
+
+                    return Ok(items);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DB Query Warning] GetAppointments SQL fallback: {ex.Message}");
+            }
+
             lock (_lock)
             {
                 var sortedList = _cachedAppointments!.OrderByDescending(a => a.CreatedAt).AsEnumerable();
@@ -296,7 +354,7 @@ namespace HospitalAI.QueueService.Controllers
         /// </summary>
         [HttpGet("followups/{patientCodeOrPhone}")]
         [Authorize]
-        public IActionResult GetPatientFollowUps(string patientCodeOrPhone)
+        public async Task<IActionResult> GetPatientFollowUps(string patientCodeOrPhone)
         {
             EnsureDataLoaded();
             if (string.IsNullOrWhiteSpace(patientCodeOrPhone))
@@ -312,6 +370,49 @@ namespace HospitalAI.QueueService.Controllers
                 {
                     return Forbid();
                 }
+            }
+
+            try
+            {
+                var dbAppointments = await _dbContext.Appointments
+                    .Include(a => a.Patient)
+                    .Include(a => a.Schedule)
+                    .ThenInclude(s => s!.Department)
+                    .AsNoTracking()
+                    .Where(a => a.Patient != null && (a.Patient.PatientCode.ToLower().Contains(query) || (a.Patient.EmergencyContactPhone != null && a.Patient.EmergencyContactPhone.Contains(query))))
+                    .Where(a => a.Symptoms != null && a.Symptoms.Contains("tái khám"))
+                    .OrderByDescending(a => a.AppointmentDate)
+                    .ToListAsync();
+
+                if (dbAppointments.Count > 0)
+                {
+                    var followUps = dbAppointments.Select(a => new OnlineAppointmentItem
+                    {
+                        Id = a.Id.ToString(),
+                        PatientCode = a.Patient?.PatientCode ?? "",
+                        PatientName = a.Patient?.FullName ?? "",
+                        PatientPhone = a.Patient?.EmergencyContactPhone ?? "",
+                        IdentityCardNumber = a.Patient?.IdentityCardNumber,
+                        PatientGender = a.Patient?.Gender ?? "Nam",
+                        PatientAge = a.Patient != null ? Math.Max(1, DateTime.UtcNow.Year - a.Patient.DateOfBirth.Year) : 30,
+                        DepartmentName = a.Schedule?.Department?.DepartmentName ?? "Khoa Khám Bệnh",
+                        DoctorName = "BS. CKII. Nguyễn Thanh Duy",
+                        AppointmentDate = a.AppointmentDate.ToString("yyyy-MM-dd"),
+                        AppointmentTime = a.AppointmentDate.ToString("HH:mm"),
+                        SymptomsReason = a.Symptoms ?? "",
+                        Status = a.Status,
+                        CreatedAt = a.AppointmentDate.ToString("o"),
+                        QrCode = $"MEDQR|{a.Id}|{a.Patient?.PatientCode}|FOLLOWUP",
+                        CheckInStatus = a.Status == "Completed" ? "CheckedInQR" : "PendingQR",
+                        AppointmentType = "FollowUp"
+                    }).ToList();
+
+                    return Ok(followUps);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DB Query Warning] GetPatientFollowUps SQL fallback: {ex.Message}");
             }
 
             lock (_lock)
@@ -466,29 +567,9 @@ namespace HospitalAI.QueueService.Controllers
             EnsureDataLoaded();
             EnsureSlotsLoaded();
 
-            model.Id = $"apt-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+            var aptGuid = Guid.NewGuid();
+            model.Id = aptGuid.ToString();
             model.Status = "Pending";
-            var qrPayload = new
-            {
-                type = "D_MEDICAL_EXAM_PASS",
-                version = "2.0",
-                appointmentId = model.Id,
-                patientCode = model.PatientCode,
-                patientName = model.PatientName,
-                phoneNumber = model.PatientPhone,
-                identityCard = model.IdentityCardNumber ?? "",
-                department = model.DepartmentName,
-                doctor = model.DoctorName,
-                roomNumber = model.RoomNumber ?? "Phòng Khám Chuyên Khoa",
-                appointmentDate = model.AppointmentDate,
-                appointmentTime = model.AppointmentTime,
-                appointmentType = model.AppointmentType ?? "New",
-                previousRecordCode = model.PreviousRecordCode,
-                followUpNotes = model.FollowUpNotes,
-                symptoms = model.SymptomsReason,
-                checkInNotice = "Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)"
-            };
-            model.QrCode = System.Text.Json.JsonSerializer.Serialize(qrPayload);
 
             if (string.IsNullOrEmpty(model.CreatedAt))
             {
@@ -503,54 +584,13 @@ namespace HospitalAI.QueueService.Controllers
                 model.AppointmentType = "New";
             }
 
-            // Nguyên tử hóa (Atomic Check & Add): Giữ khóa lock xuyên suốt kiểm tra định mức và lưu trữ (Chống Overbooking TOCTOU)
             var slotStartTime = model.AppointmentTime.Split('-')[0].Trim();
-            lock (_lock)
-            {
-                // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó (tránh duplicate khi bấm gửi lặp)
-                var existingDuplicate = _cachedAppointments!.FirstOrDefault(a =>
-                    (a.PatientPhone == model.PatientPhone || (!string.IsNullOrEmpty(model.PatientCode) && a.PatientCode == model.PatientCode)) &&
-                    a.AppointmentDate == model.AppointmentDate &&
-                    a.AppointmentTime == model.AppointmentTime &&
-                    a.Status != "Cancelled");
 
-                if (existingDuplicate != null)
-                {
-                    return Ok(existingDuplicate);
-                }
-
-                var matchedSlot = _cachedSlots!.FirstOrDefault(s =>
-                    s.TimeSlot == model.AppointmentTime ||
-                    s.TimeSlot.StartsWith(slotStartTime) ||
-                    slotStartTime.StartsWith(s.TimeSlot.Split('-')[0].Trim()));
-
-                if (matchedSlot != null)
-                {
-                    if (matchedSlot.IsLocked)
-                    {
-                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} hiện đang bị tạm khóa bởi Bệnh viện. Quý khách vui lòng chọn khung giờ khác!" });
-                    }
-
-                    var count = _cachedAppointments!
-                        .Where(a => a.AppointmentDate == model.AppointmentDate &&
-                                    a.Status != "Cancelled" &&
-                                    (a.AppointmentTime == slotStartTime || a.AppointmentTime == matchedSlot.TimeSlot || a.AppointmentTime.StartsWith(slotStartTime)))
-                        .Count();
-
-                    if (count >= matchedSlot.MaxCapacity)
-                    {
-                        return BadRequest(new { message = $"Khung giờ {matchedSlot.TimeSlot} vào ngày {model.AppointmentDate} đã đủ số lượng khám ({count}/{matchedSlot.MaxCapacity}). Quý khách vui lòng chọn khung giờ khác!" });
-                    }
-                }
-
-                _cachedAppointments!.Add(model);
-                SaveToFile();
-            }
-
-            // Đồng bộ xuống CSDL SQL Server đảm bảo tính nhất quán trên môi trường phân tán / nhiều container
+            // 1. Lưu trữ và kiểm tra nguồn dữ liệu chính thống SQL Server
+            Patient? patient = null;
             try
             {
-                var patient = await _dbContext.Patients
+                patient = await _dbContext.Patients
                     .Include(p => p.User)
                     .FirstOrDefaultAsync(p =>
                         (!string.IsNullOrEmpty(model.PatientCode) && p.PatientCode == model.PatientCode) ||
@@ -558,6 +598,7 @@ namespace HospitalAI.QueueService.Controllers
                         p.EmergencyContactPhone == model.PatientPhone ||
                         (!string.IsNullOrEmpty(model.IdentityCardNumber) && p.IdentityCardNumber == model.IdentityCardNumber));
 
+                // Bệnh nhân chưa có hồ sơ: Tự động khởi tạo hồ sơ chuẩn Bộ Y tế trong SQL Server
                 if (patient == null)
                 {
                     var newCode = $"BN{DateTime.UtcNow.Year}{Random.Shared.Next(100000, 999999)}";
@@ -585,8 +626,9 @@ namespace HospitalAI.QueueService.Controllers
                     };
                     _dbContext.Patients.Add(patient);
                     await _dbContext.SaveChangesAsync();
-                    model.PatientCode = patient.PatientCode;
                 }
+
+                model.PatientCode = patient.PatientCode;
 
                 var schedule = await _dbContext.DoctorSchedules.FirstOrDefaultAsync();
                 if (schedule == null)
@@ -620,14 +662,37 @@ namespace HospitalAI.QueueService.Controllers
                 }
 
                 DateTime appointmentDate;
-                if (!DateTime.TryParse($"{model.AppointmentDate} {model.AppointmentTime.Split('-')[0].Trim()}", out appointmentDate))
+                if (!DateTime.TryParse($"{model.AppointmentDate} {slotStartTime}", out appointmentDate))
                 {
                     appointmentDate = DateTime.UtcNow;
                 }
 
+                // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó
+                var existingDbDuplicate = await _dbContext.Appointments.FirstOrDefaultAsync(a =>
+                    a.PatientId == patient.Id &&
+                    a.AppointmentDate.Date == appointmentDate.Date &&
+                    a.Status != "Cancelled");
+
+                if (existingDbDuplicate != null)
+                {
+                    model.Id = existingDbDuplicate.Id.ToString();
+                    return Ok(model);
+                }
+
+                // Kiểm tra định mức Quota trong SQL Server
+                var currentBookedCount = await _dbContext.Appointments.CountAsync(a =>
+                    a.ScheduleId == schedule.Id &&
+                    a.AppointmentDate.Date == appointmentDate.Date &&
+                    a.Status != "Cancelled");
+
+                if (currentBookedCount >= schedule.MaxPatients)
+                {
+                    return BadRequest(new { message = $"Khung giờ {model.AppointmentTime} vào ngày {model.AppointmentDate} đã đủ số lượng khám ({currentBookedCount}/{schedule.MaxPatients}). Quý khách vui lòng chọn khung giờ khác!" });
+                }
+
                 var appointmentEntity = new Appointment
                 {
-                    Id = Guid.NewGuid(),
+                    Id = aptGuid,
                     PatientId = patient.Id,
                     ScheduleId = schedule.Id,
                     AppointmentDate = appointmentDate,
@@ -639,10 +704,40 @@ namespace HospitalAI.QueueService.Controllers
             }
             catch (Exception dbEx)
             {
-                Console.WriteLine($"[Appointments Warning] DB sync skipped: {dbEx.Message}");
+                Console.WriteLine($"[Appointments Warning] DB persistence error: {dbEx.Message}");
             }
 
-            // Bắn tín hiệu SignalR thời gian thực đến Web Bác sĩ & Tiếp tân
+            // 2. Tạo QR Code Check-in
+            var qrPayload = new
+            {
+                type = "D_MEDICAL_EXAM_PASS",
+                version = "2.0",
+                appointmentId = model.Id,
+                patientCode = model.PatientCode,
+                patientName = model.PatientName,
+                phoneNumber = model.PatientPhone,
+                identityCard = model.IdentityCardNumber ?? "",
+                department = model.DepartmentName,
+                doctor = model.DoctorName,
+                roomNumber = model.RoomNumber ?? "Phòng Khám Chuyên Khoa",
+                appointmentDate = model.AppointmentDate,
+                appointmentTime = model.AppointmentTime,
+                appointmentType = model.AppointmentType ?? "New",
+                previousRecordCode = model.PreviousRecordCode,
+                followUpNotes = model.FollowUpNotes,
+                symptoms = model.SymptomsReason,
+                checkInNotice = "Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)"
+            };
+            model.QrCode = System.Text.Json.JsonSerializer.Serialize(qrPayload);
+
+            // 3. Đồng bộ bộ đệm in-memory và tệp JSON
+            lock (_lock)
+            {
+                _cachedAppointments!.Add(model);
+                SaveToFile();
+            }
+
+            // 4. Bắn tín hiệu SignalR thời gian thực đến Web Bác sĩ & Tiếp tân
             try
             {
                 await _hubContext.Clients.All.SendAsync("NewPatientInQueue", model);
@@ -722,27 +817,103 @@ namespace HospitalAI.QueueService.Controllers
                             a.PatientCode.Equals(key1, StringComparison.OrdinalIgnoreCase));
                     }
                 }
+            }
 
-                if (appointment == null)
+            // Nếu chưa có trong Cache: Tìm kiếm trực tiếp trong CSDL SQL Server (Source of Truth)
+            if (appointment == null)
+            {
+                try
                 {
-                    return NotFound(new { message = "Không tìm thấy thông tin lịch hẹn với Mã QR này." });
-                }
+                    Appointment? dbApt = null;
+                    if (Guid.TryParse(input, out var parsedGuid))
+                    {
+                        dbApt = await _dbContext.Appointments
+                            .Include(a => a.Patient)
+                            .Include(a => a.Schedule)
+                            .FirstOrDefaultAsync(a => a.Id == parsedGuid);
+                    }
+                    else
+                    {
+                        dbApt = await _dbContext.Appointments
+                            .Include(a => a.Patient)
+                            .Include(a => a.Schedule)
+                            .FirstOrDefaultAsync(a => a.Patient != null && (a.Patient.PatientCode == input || a.Patient.EmergencyContactPhone == input));
+                    }
 
-                if (appointment.Status == "Cancelled")
+                    if (dbApt != null)
+                    {
+                        appointment = new OnlineAppointmentItem
+                        {
+                            Id = dbApt.Id.ToString(),
+                            PatientCode = dbApt.Patient?.PatientCode ?? "",
+                            PatientName = dbApt.Patient?.FullName ?? "",
+                            PatientPhone = dbApt.Patient?.EmergencyContactPhone ?? "",
+                            IdentityCardNumber = dbApt.Patient?.IdentityCardNumber,
+                            PatientGender = dbApt.Patient?.Gender ?? "Nam",
+                            PatientAge = dbApt.Patient != null ? Math.Max(1, DateTime.UtcNow.Year - dbApt.Patient.DateOfBirth.Year) : 30,
+                            DepartmentName = dbApt.Schedule?.Department?.DepartmentName ?? "Khoa Khám Bệnh",
+                            DoctorName = "BS. CKII. Nguyễn Thanh Duy",
+                            AppointmentDate = dbApt.AppointmentDate.ToString("yyyy-MM-dd"),
+                            AppointmentTime = dbApt.AppointmentDate.ToString("HH:mm"),
+                            SymptomsReason = dbApt.Symptoms ?? "",
+                            Status = dbApt.Status,
+                            CreatedAt = dbApt.AppointmentDate.ToString("o"),
+                            QrCode = $"MEDQR|{dbApt.Id}|{dbApt.Patient?.PatientCode}|{dbApt.AppointmentDate:yyyy-MM-dd}|{dbApt.AppointmentDate:HH:mm}",
+                            CheckInStatus = dbApt.Status == "Completed" ? "CheckedInQR" : "PendingQR"
+                        };
+
+                        lock (_lock)
+                        {
+                            _cachedAppointments!.Add(appointment);
+                        }
+                    }
+                }
+                catch (Exception dbEx)
                 {
-                    return BadRequest(new { message = "Lịch hẹn này đã bị hủy trước đó." });
+                    Console.WriteLine($"[Appointments Warning] Check-in SQL lookup error: {dbEx.Message}");
                 }
+            }
 
-                // Idempotency: Nếu lịch hẹn đã check-in QR trước đó, trả về ngay thông tin hiện tại không duplicate xử lý
-                if (appointment.CheckInStatus == "CheckedInQR")
-                {
-                    return Ok(appointment);
-                }
+            if (appointment == null)
+            {
+                return NotFound(new { message = "Không tìm thấy thông tin lịch hẹn với Mã QR này." });
+            }
 
+            if (appointment.Status == "Cancelled")
+            {
+                return BadRequest(new { message = "Lịch hẹn này đã bị hủy trước đó." });
+            }
+
+            // Idempotency: Nếu lịch hẹn đã check-in QR trước đó, trả về ngay thông tin hiện tại không duplicate xử lý
+            if (appointment.CheckInStatus == "CheckedInQR")
+            {
+                return Ok(appointment);
+            }
+
+            lock (_lock)
+            {
                 appointment.Status = "Completed"; // Đã tiếp nhận điện tử
                 appointment.CheckInStatus = "CheckedInQR";
                 appointment.CheckedInAt = DateTime.UtcNow.ToString("o");
                 SaveToFile();
+            }
+
+            // Đồng bộ trạng thái Check-in xuống CSDL SQL Server
+            try
+            {
+                if (Guid.TryParse(appointment.Id, out var aptGuid))
+                {
+                    var dbApt = await _dbContext.Appointments.FirstOrDefaultAsync(a => a.Id == aptGuid);
+                    if (dbApt != null)
+                    {
+                        dbApt.Status = "Completed";
+                        await _dbContext.SaveChangesAsync();
+                    }
+                }
+            }
+            catch (Exception dbEx)
+            {
+                Console.WriteLine($"[Appointments Warning] Check-in DB sync failed: {dbEx.Message}");
             }
 
             try
@@ -766,15 +937,39 @@ namespace HospitalAI.QueueService.Controllers
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusDto dto)
         {
             EnsureDataLoaded();
-            OnlineAppointmentItem? appointment;
+            OnlineAppointmentItem? appointment = null;
             lock (_lock)
             {
                 appointment = _cachedAppointments!.FirstOrDefault(a => a.Id == id);
-                if (appointment == null)
-                {
-                    return NotFound(new { message = "Không tìm thấy lịch hẹn" });
-                }
+            }
 
+            if (appointment == null)
+            {
+                if (Guid.TryParse(id, out var parsedGuid))
+                {
+                    var dbApt = await _dbContext.Appointments.Include(a => a.Patient).FirstOrDefaultAsync(a => a.Id == parsedGuid);
+                    if (dbApt != null)
+                    {
+                        appointment = new OnlineAppointmentItem
+                        {
+                            Id = dbApt.Id.ToString(),
+                            PatientCode = dbApt.Patient?.PatientCode ?? "",
+                            PatientName = dbApt.Patient?.FullName ?? "",
+                            PatientPhone = dbApt.Patient?.EmergencyContactPhone ?? "",
+                            Status = dbApt.Status
+                        };
+                        lock (_lock) { _cachedAppointments!.Add(appointment); }
+                    }
+                }
+            }
+
+            if (appointment == null)
+            {
+                return NotFound(new { message = "Không tìm thấy lịch hẹn" });
+            }
+
+            lock (_lock)
+            {
                 appointment.Status = dto.Status;
                 if (dto.Status == "Completed")
                 {
@@ -782,6 +977,24 @@ namespace HospitalAI.QueueService.Controllers
                     appointment.CheckedInAt = DateTime.UtcNow.ToString("o");
                 }
                 SaveToFile();
+            }
+
+            // Đồng bộ trạng thái xuống CSDL SQL Server
+            try
+            {
+                if (Guid.TryParse(id, out var aptGuid))
+                {
+                    var dbApt = await _dbContext.Appointments.FirstOrDefaultAsync(a => a.Id == aptGuid);
+                    if (dbApt != null)
+                    {
+                        dbApt.Status = dto.Status;
+                        await _dbContext.SaveChangesAsync();
+                    }
+                }
+            }
+            catch (Exception dbEx)
+            {
+                Console.WriteLine($"[Appointments Warning] UpdateStatus DB sync failed: {dbEx.Message}");
             }
 
             try
@@ -805,32 +1018,74 @@ namespace HospitalAI.QueueService.Controllers
         {
             EnsureDataLoaded();
             EnsureSlotsLoaded();
-            OnlineAppointmentItem? appointment;
+            OnlineAppointmentItem? appointment = null;
             lock (_lock)
             {
                 appointment = _cachedAppointments!.FirstOrDefault(a => a.Id == id);
-                if (appointment == null)
-                {
-                    return NotFound(new { message = "Không tìm thấy lịch hẹn cần hủy." });
-                }
+            }
 
-                if (!IsStaff())
+            if (appointment == null)
+            {
+                if (Guid.TryParse(id, out var parsedGuid))
                 {
-                    var currentPhone = (User.FindFirstValue(ClaimTypes.Name) ?? "").ToLower();
-                    if (!appointment.PatientPhone.Contains(currentPhone) && !appointment.PatientCode.ToLower().Contains(currentPhone))
+                    var dbApt = await _dbContext.Appointments.Include(a => a.Patient).FirstOrDefaultAsync(a => a.Id == parsedGuid);
+                    if (dbApt != null)
                     {
-                        return Forbid();
+                        appointment = new OnlineAppointmentItem
+                        {
+                            Id = dbApt.Id.ToString(),
+                            PatientCode = dbApt.Patient?.PatientCode ?? "",
+                            PatientName = dbApt.Patient?.FullName ?? "",
+                            PatientPhone = dbApt.Patient?.EmergencyContactPhone ?? "",
+                            Status = dbApt.Status
+                        };
+                        lock (_lock) { _cachedAppointments!.Add(appointment); }
                     }
                 }
+            }
 
-                if (appointment.Status == "Completed")
+            if (appointment == null)
+            {
+                return NotFound(new { message = "Không tìm thấy lịch hẹn cần hủy." });
+            }
+
+            if (!IsStaff())
+            {
+                var currentPhone = (User.FindFirstValue(ClaimTypes.Name) ?? "").ToLower();
+                if (!appointment.PatientPhone.Contains(currentPhone) && !appointment.PatientCode.ToLower().Contains(currentPhone))
                 {
-                    return BadRequest(new { message = "Lịch hẹn đã được check-in khám tại bệnh viện, không thể hủy." });
+                    return Forbid();
                 }
+            }
 
+            if (appointment.Status == "Completed")
+            {
+                return BadRequest(new { message = "Lịch hẹn đã được check-in khám tại bệnh viện, không thể hủy." });
+            }
+
+            lock (_lock)
+            {
                 appointment.Status = "Cancelled";
                 appointment.CancelReason = dto?.Reason ?? "Bệnh nhân chủ động hủy lịch";
                 SaveToFile();
+            }
+
+            // Đồng bộ hủy lịch xuống CSDL SQL Server (Giải phóng định mức Quota chính thức)
+            try
+            {
+                if (Guid.TryParse(id, out var aptGuid))
+                {
+                    var dbApt = await _dbContext.Appointments.FirstOrDefaultAsync(a => a.Id == aptGuid);
+                    if (dbApt != null)
+                    {
+                        dbApt.Status = "Cancelled";
+                        await _dbContext.SaveChangesAsync();
+                    }
+                }
+            }
+            catch (Exception dbEx)
+            {
+                Console.WriteLine($"[Appointments Warning] Cancel DB sync failed: {dbEx.Message}");
             }
 
             try
@@ -953,6 +1208,28 @@ namespace HospitalAI.QueueService.Controllers
                 }
 
                 SaveToFile();
+            }
+
+            // Đồng bộ ngày hẹn mới xuống CSDL SQL Server
+            try
+            {
+                if (Guid.TryParse(id, out var aptGuid))
+                {
+                    var dbApt = await _dbContext.Appointments.FirstOrDefaultAsync(a => a.Id == aptGuid);
+                    if (dbApt != null)
+                    {
+                        if (DateTime.TryParse($"{newDate} {slotStartTime}", out var newDt))
+                        {
+                            dbApt.AppointmentDate = newDt;
+                            dbApt.Status = "Pending";
+                            await _dbContext.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception dbEx)
+            {
+                Console.WriteLine($"[Appointments Warning] Reschedule DB sync failed: {dbEx.Message}");
             }
 
             try

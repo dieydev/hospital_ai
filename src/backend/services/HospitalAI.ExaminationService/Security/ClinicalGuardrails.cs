@@ -93,14 +93,20 @@ public static class ClinicalGuardrails
     }
 
     /// <summary>
-    /// Ẩn số điện thoại, CCCD/CMND theo chuẩn HIPAA & Nghị định 13/2023/NĐ-CP
+    /// Ẩn số điện thoại, CCCD/CMND, Email, Mã thẻ BHYT theo chuẩn HIPAA & Nghị định 13/2023/NĐ-CP
     /// </summary>
-    private static string SanitizePII(string input)
+    public static string SanitizePII(string input)
     {
-        // Ẩn SĐT 10 số
-        var result = Regex.Replace(input, @"(0|\+84)[3|5|7|8|9][0-9]{8}", "[SĐT_ĐÃ_MÃ_HÓA]");
-        // Ẩn CCCD 12 số
+        if (string.IsNullOrEmpty(input)) return input;
+        var result = input;
+        // 1. Ẩn CCCD 12 số trước (có biên từ \b để không bị nuốt bởi regex SĐT)
         result = Regex.Replace(result, @"\b[0-9]{12}\b", "[CCCD_ĐÃ_MÃ_HÓA]");
+        // 2. Ẩn Mã thẻ BHYT (15 ký tự: 2 chữ cái in hoa + 13 chữ số)
+        result = Regex.Replace(result, @"\b[A-Z]{2}[0-9]{13}\b", "[BHYT_ĐÃ_MÃ_HÓA]");
+        // 3. Ẩn Email
+        result = Regex.Replace(result, @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "[EMAIL_ĐÃ_MÃ_HÓA]");
+        // 4. Ẩn SĐT 10 số (chính xác đầu số viễn thông Việt Nam và có biên từ \b)
+        result = Regex.Replace(result, @"\b(0|\+84)[35789][0-9]{8}\b", "[SĐT_ĐÃ_MÃ_HÓA]");
         return result;
     }
 

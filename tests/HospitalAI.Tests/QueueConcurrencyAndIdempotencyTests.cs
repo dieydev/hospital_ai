@@ -5,11 +5,10 @@ using System.Threading.Tasks;
 using HospitalAI.Application.DTOs;
 using HospitalAI.Domain.Entities;
 using HospitalAI.Infrastructure.Data;
-using HospitalAI.Infrastructure.Services;
-using Microsoft.EntityFrameworkCore;
-using Xunit;
-
 namespace HospitalAI.Tests;
+
+using Microsoft.EntityFrameworkCore;
+using QueueService = HospitalAI.Infrastructure.Services.QueueService;
 
 public class QueueConcurrencyAndIdempotencyTests
 {

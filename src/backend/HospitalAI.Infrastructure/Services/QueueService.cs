@@ -114,44 +114,58 @@ public class QueueService : IQueueService
                 return dtoItem;
             }
 
-            // Đồng bộ hóa cấp số thứ tự qua Database Transaction mức Serializable (chống trùng lặp trên môi trường multi-instance / multi-container)
+            // Đồng bộ hóa cấp số thứ tự qua Database Transaction mức Serializable có Retry & Backoff (chống deadlock/trùng lặp trên môi trường multi-instance / multi-container)
             var isRelational = _context.Database.IsRelational();
-            using var tx = isRelational ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
-            try
-            {
-                var lastSequence = await _context.QueueTickets
-                    .Where(q => q.DepartmentId == dto.DepartmentId && q.CreatedAt.Date == today)
-                    .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
+            int maxRetries = 3;
+            int attempt = 0;
 
-                var ticket = new QueueTicket
+            while (attempt < maxRetries)
+            {
+                attempt++;
+                using var tx = isRelational ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
+                try
                 {
-                    Id = Guid.NewGuid(),
-                    PatientId = dto.PatientId,
-                    DepartmentId = dto.DepartmentId,
-                    AppointmentId = dto.AppointmentId,
-                    SequenceNumber = lastSequence + 1,
-                    Status = "Waiting",
-                    Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    var lastSequence = await _context.QueueTickets
+                        .Where(q => q.DepartmentId == dto.DepartmentId && q.CreatedAt.Date == today)
+                        .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
 
-                _context.QueueTickets.Add(ticket);
-                await _context.SaveChangesAsync();
+                    var ticket = new QueueTicket
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = dto.PatientId,
+                        DepartmentId = dto.DepartmentId,
+                        AppointmentId = dto.AppointmentId,
+                        SequenceNumber = lastSequence + 1,
+                        Status = "Waiting",
+                        Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
+                        CreatedAt = DateTime.UtcNow
+                    };
 
-                if (tx != null) await tx.CommitAsync();
+                    _context.QueueTickets.Add(ticket);
+                    await _context.SaveChangesAsync();
 
-                ticket.Patient = patient;
-                ticket.Department = department;
+                    if (tx != null) await tx.CommitAsync();
 
-                var result = MapToDto(ticket);
-                if (!string.IsNullOrEmpty(dto.VisitType)) result.VisitType = dto.VisitType;
-                return result;
+                    ticket.Patient = patient;
+                    ticket.Department = department;
+
+                    var result = MapToDto(ticket);
+                    if (!string.IsNullOrEmpty(dto.VisitType)) result.VisitType = dto.VisitType;
+                    return result;
+                }
+                catch (Exception ex) when (attempt < maxRetries && (ex is DbUpdateException || ex.Message.Contains("deadlock") || ex.Message.Contains("1205") || ex.Message.Contains("conflict")))
+                {
+                    if (tx != null) await tx.RollbackAsync();
+                    await Task.Delay(Random.Shared.Next(40, 120));
+                }
+                catch
+                {
+                    if (tx != null) await tx.RollbackAsync();
+                    throw;
+                }
             }
-            catch
-            {
-                if (tx != null) await tx.RollbackAsync();
-                throw;
-            }
+
+            throw new InvalidOperationException("Không thể cấp số thứ tự do xung đột hệ thống sau 3 lần thử. Vui lòng thử lại!");
         }
         finally
         {

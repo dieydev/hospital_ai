@@ -11,6 +11,7 @@
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Moq" Version="4.21.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
@@ -23,6 +24,8 @@
     <ProjectReference Include="..\..\src\backend\HospitalAI.Domain\HospitalAI.Domain.csproj" />
     <ProjectReference Include="..\..\src\backend\HospitalAI.Application\HospitalAI.Application.csproj" />
     <ProjectReference Include="..\..\src\backend\HospitalAI.Infrastructure\HospitalAI.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\backend\services\HospitalAI.ExaminationService\HospitalAI.ExaminationService.csproj" />
+    <ProjectReference Include="..\..\src\backend\services\HospitalAI.QueueService\HospitalAI.QueueService.csproj" />
   </ItemGroup>
 
 </Project>
