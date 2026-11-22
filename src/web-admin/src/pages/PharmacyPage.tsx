@@ -134,13 +134,43 @@ export const PharmacyPage: React.FC = () => {
       return;
     }
 
+    // 1. Chống cấp phát trùng (Chống trừ kho 2 lần)
+    if (record.status === 'Đã cấp phát') {
+      showToast(`Toa thuốc [${record.prescriptionCode}] đã được cấp phát trước đó. Không thể cấp phát trùng!`, 'warning');
+      return;
+    }
+
+    // 2. Kiểm tra đơn đã bị hủy hoặc thay thế
+    if (record.status === 'Đã hủy') {
+      showToast(`Toa thuốc [${record.prescriptionCode}] đã bị hủy bởi Bác sĩ lâm sàng, không được phép cấp phát!`, 'error');
+      return;
+    }
+
+    // 3. Kiểm tra số lượng tồn kho và hạn sử dụng (HSD)
+    for (const med of record.medicines) {
+      const drug = drugCatalog.find((d) => d.code === med.drugCode);
+      if (drug) {
+        if (drug.stockQuantity < med.quantity) {
+          showToast(`Thuốc [${drug.name}] không đủ tồn kho để cấp phát (Yêu cầu: ${med.quantity}, Tồn: ${drug.stockQuantity})!`, 'error');
+          return;
+        }
+        if (drug.expiryDate) {
+          const expDate = new Date(drug.expiryDate);
+          if (expDate < new Date()) {
+            showToast(`Thuốc [${drug.name}] đã hết hạn sử dụng (${drug.expiryDate}), nghiêm cấm cấp phát cho người bệnh!`, 'error');
+            return;
+          }
+        }
+      }
+    }
+
     const updated = prescriptions.map((item) => {
       if (item.id === record.id) {
         return {
           ...item,
           status: 'Đã cấp phát' as const,
           dispensedAt: new Date().toLocaleString('vi-VN'),
-          dispensedBy: permissions.isAdmin ? 'Quản trị viên (DS. Trực)' : 'Dược sĩ Nhà thuốc D-Medical',
+          dispensedBy: permissions.isAdmin ? 'Quản trị viên (Admin)' : 'Nhà thuốc (D-Medical)',
         };
       }
       return item;

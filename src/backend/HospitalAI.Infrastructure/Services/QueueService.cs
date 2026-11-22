@@ -88,7 +88,7 @@ public class QueueService : IQueueService
                     .Include(q => q.Department)
                     .FirstOrDefaultAsync(q => q.AppointmentId == dto.AppointmentId.Value 
                         && q.CreatedAt.Date == today 
-                        && (q.Status == "Waiting" || q.Status == "Calling"));
+                        && (q.Status == "Waiting" || q.Status == "Calling" || q.Status == "Processing" || q.Status == "WaitingCLS"));
 
                 if (existingAptTicket != null)
                 {
@@ -105,7 +105,7 @@ public class QueueService : IQueueService
                 .FirstOrDefaultAsync(q => q.PatientId == dto.PatientId 
                     && q.DepartmentId == dto.DepartmentId 
                     && q.CreatedAt.Date == today 
-                    && (q.Status == "Waiting" || q.Status == "Calling"));
+                    && (q.Status == "Waiting" || q.Status == "Calling" || q.Status == "Processing" || q.Status == "WaitingCLS"));
 
             if (existingActiveTicket != null)
             {
@@ -114,31 +114,44 @@ public class QueueService : IQueueService
                 return dtoItem;
             }
 
-            var lastSequence = await _context.QueueTickets
-                .Where(q => q.DepartmentId == dto.DepartmentId && q.CreatedAt.Date == today)
-                .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
-
-            var ticket = new QueueTicket
+            // Đồng bộ hóa cấp số thứ tự qua Database Transaction mức Serializable (chống trùng lặp trên môi trường multi-instance / multi-container)
+            var isRelational = _context.Database.IsRelational();
+            using var tx = isRelational ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
+            try
             {
-                Id = Guid.NewGuid(),
-                PatientId = dto.PatientId,
-                DepartmentId = dto.DepartmentId,
-                AppointmentId = dto.AppointmentId,
-                SequenceNumber = lastSequence + 1,
-                Status = "Waiting",
-                Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
-                CreatedAt = DateTime.UtcNow
-            };
+                var lastSequence = await _context.QueueTickets
+                    .Where(q => q.DepartmentId == dto.DepartmentId && q.CreatedAt.Date == today)
+                    .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
 
-            _context.QueueTickets.Add(ticket);
-            await _context.SaveChangesAsync();
+                var ticket = new QueueTicket
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = dto.PatientId,
+                    DepartmentId = dto.DepartmentId,
+                    AppointmentId = dto.AppointmentId,
+                    SequenceNumber = lastSequence + 1,
+                    Status = "Waiting",
+                    Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            ticket.Patient = patient;
-            ticket.Department = department;
+                _context.QueueTickets.Add(ticket);
+                await _context.SaveChangesAsync();
 
-            var result = MapToDto(ticket);
-            if (!string.IsNullOrEmpty(dto.VisitType)) result.VisitType = dto.VisitType;
-            return result;
+                if (tx != null) await tx.CommitAsync();
+
+                ticket.Patient = patient;
+                ticket.Department = department;
+
+                var result = MapToDto(ticket);
+                if (!string.IsNullOrEmpty(dto.VisitType)) result.VisitType = dto.VisitType;
+                return result;
+            }
+            catch
+            {
+                if (tx != null) await tx.RollbackAsync();
+                throw;
+            }
         }
         finally
         {

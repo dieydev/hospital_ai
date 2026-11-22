@@ -43,6 +43,7 @@ import {
   ThunderboltOutlined,
   CreditCardOutlined,
   QrcodeOutlined,
+  SyncOutlined,
   DownloadOutlined,
   TeamOutlined,
   CheckCircleFilled,
@@ -103,6 +104,7 @@ export const PatientBookingPage: React.FC = () => {
 
   // VNPay & VietQR Online Payment States
   const [isVietQrPaid, setIsVietQrPaid] = useState(false);
+  const [isVietQrVerifying, setIsVietQrVerifying] = useState(false);
   const [isVnPayPaid, setIsVnPayPaid] = useState(false);
   const [vnPayModalOpen, setVnPayModalOpen] = useState(false);
   const [vnPayTransactionInfo, setVnPayTransactionInfo] = useState<{
@@ -482,6 +484,7 @@ export const PatientBookingPage: React.FC = () => {
 
       setCreatedAppointment(newApt);
       setIsVietQrPaid(false);
+      setIsVietQrVerifying(false);
       setIsVnPayPaid(false);
       setVnPayTransactionInfo(null);
       setCurrentStep(completionStepIndex); // Màn hình thành công
@@ -842,6 +845,7 @@ export const PatientBookingPage: React.FC = () => {
     setSelectedSlot('');
     setCreatedAppointment(null);
     setIsVietQrPaid(false);
+    setIsVietQrVerifying(false);
     setIsVnPayPaid(false);
     setVnPayTransactionInfo(null);
     setBookingForTarget('self');
@@ -3279,7 +3283,11 @@ export const PatientBookingPage: React.FC = () => {
                         </span>
                         {isVietQrPaid ? (
                           <Tag color="green" style={{ margin: 0, fontWeight: 800, padding: '2px 10px', borderRadius: 12 }}>
-                            ĐÃ THANH TOÁN
+                            ĐÃ XÁC NHẬN
+                          </Tag>
+                        ) : isVietQrVerifying ? (
+                          <Tag color="processing" icon={<SyncOutlined spin />} style={{ margin: 0, fontWeight: 700, padding: '2px 8px', borderRadius: 12 }}>
+                            ĐANG ĐỐI SOÁT NGÂN HÀNG
                           </Tag>
                         ) : (
                           <Tag color="orange" style={{ margin: 0, fontWeight: 700, padding: '2px 8px', borderRadius: 12 }}>
@@ -3387,23 +3395,40 @@ export const PatientBookingPage: React.FC = () => {
                             <CheckCircleFilled style={{ color: '#10b981', marginRight: 6 }} />
                             Đã xác nhận thanh toán! Bạn được cấp Thẻ Khám Ưu Tiên vào thẳng buồng khám.
                           </div>
+                        ) : isVietQrVerifying ? (
+                          <Button
+                            type="dashed"
+                            icon={<SyncOutlined spin />}
+                            style={{
+                              color: '#0284c7',
+                              borderColor: '#0284c7',
+                              fontWeight: 700,
+                              height: 40,
+                              borderRadius: 10,
+                              backgroundColor: '#f0f9ff',
+                            }}
+                            block
+                            disabled
+                          >
+                            Đang Chờ Đối Soát Ngân Hàng...
+                          </Button>
                         ) : (
                           <Button
                             type="primary"
                             icon={<CheckCircleOutlined />}
                             style={{
-                              backgroundColor: '#10b981',
-                              borderColor: '#10b981',
+                              backgroundColor: '#0284c7',
+                              borderColor: '#0284c7',
                               fontWeight: 700,
                               height: 40,
                               borderRadius: 10,
                             }}
                             block
                             onClick={() => {
-                              setIsVietQrPaid(true);
+                              setIsVietQrVerifying(true);
                               showSuccessAlert(
-                                'Thanh Toán Thành Công!',
-                                'Hệ thống đã ghi nhận thanh toán VietQR của bạn. Bạn được cấp quyền Thẻ Khám Ưu Tiên, đến viện vào thẳng buồng khám theo giờ hẹn!'
+                                'Đã Ghi Nhận Chuyển Khoản!',
+                                'Hệ thống đang tiến hành đối soát giao dịch VietQR với ngân hàng.\n\nQuý khách vui lòng lưu lại biên lai chuyển khoản (ảnh màn hình) để xuất trình đối chiếu tại Quầy Thu Ngân hoặc Kiosk khi đến khám.'
                               );
                             }}
                           >

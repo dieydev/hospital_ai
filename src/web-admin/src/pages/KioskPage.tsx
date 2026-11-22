@@ -29,6 +29,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { queueService, QueueTicketItem } from '../services/queueService';
 import { appointmentService } from '../services/appointmentService';
+import { patientService } from '../services/patientService';
 import { showToast } from '../utils/sweetAlert';
 
 const { Title, Text } = Typography;
@@ -264,6 +265,44 @@ export const KioskPage: React.FC = () => {
         });
 
         if (foundApt) {
+          // Idempotency: Kiểm tra nếu lịch hẹn này đã được cấp STT trong ngày (chống cấp trùng STT tại Kiosk)
+          const existingTicket = currentQueue.find(
+            (t) => (t.appointmentId && t.appointmentId === foundApt.id) ||
+                   (t.patientCode && t.patientCode.toLowerCase() === foundApt.patientCode.toLowerCase())
+          );
+
+          if (existingTicket) {
+            if (existingTicket.status === 'Finished') {
+              setKioskStatus('error_not_found');
+              setResultMessage(`Lịch hẹn của bệnh nhân ${foundApt.patientName} đã hoàn thành lượt khám hôm nay.`);
+              speakAnnouncement(`Lượt khám của ${foundApt.patientName} đã được hoàn tất.`);
+              setIsProcessing(false);
+              return;
+            }
+
+            // Đã có STT đang chờ hoặc đang gọi -> Hiển thị lại STT hiện có, không cấp trùng
+            setMatchedTicket(existingTicket);
+            setKioskStatus('success');
+            setResultMessage('');
+            const speechText = `Bệnh nhân ${existingTicket.patientName} đã có số thứ tự #${existingTicket.sequenceNumber}. Xin mời đến ${existingTicket.departmentName}, ${existingTicket.location}.`;
+            speakAnnouncement(speechText);
+            setIsProcessing(false);
+            return;
+          }
+
+          // Lấy mã ID bệnh nhân thực tế từ hệ thống để cấp STT chuẩn CSDL
+          let realPatientId = '';
+          try {
+            const patientData = await patientService.getPatientByCode(foundApt.patientCode);
+            if (patientData && patientData.id) {
+              realPatientId = patientData.id;
+            }
+          } catch {}
+
+          if (!realPatientId) {
+            realPatientId = '00000000-0000-0000-0000-' + foundApt.patientCode.padEnd(12, '0').slice(-12);
+          }
+
           // Bệnh nhân có lịch hẹn đặt trước -> Kiosk tự động cấp STT vào phòng khám theo hẹn!
           const depts = await queueService.getDepartments();
           const targetDept =
@@ -272,7 +311,8 @@ export const KioskPage: React.FC = () => {
             ) || depts[0];
 
           const newTicket = await queueService.issueQueueTicket({
-            patientId: `apt-${foundApt.patientCode}`,
+            patientId: realPatientId,
+            appointmentId: foundApt.id,
             departmentId: targetDept.id,
             priority: foundApt.appointmentType === 'FollowUp' ? 'Priority' : 'Normal',
             patientName: foundApt.patientName,

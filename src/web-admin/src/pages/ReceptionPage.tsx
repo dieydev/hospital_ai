@@ -347,15 +347,38 @@ export const ReceptionPage: React.FC = () => {
 
       // If typed new patient name instead of selecting existing patient
       if (!targetPatientId && values.hoTen) {
-        const newPatient = await patientService.createPatient({
-          fullName: values.hoTen,
-          identityCardNumber: values.soCCCD || `038090${Date.now().toString().slice(-6)}`,
-          gender: values.gioiTinh || 'Nam',
-          dateOfBirth: values.ngaySinh || '1990-01-01',
-          phoneNumber: values.soDienThoai || '0900000000',
-          address: values.diaChi || 'TP.HCM',
-        });
-        targetPatientId = newPatient.id;
+        // Kiểm tra xem bệnh nhân đã có hồ sơ trong hệ thống qua CCCD hoặc SĐT chưa (Chống tạo trùng hồ sơ)
+        const cccdToCheck = values.soCCCD?.trim();
+        const phoneToCheck = values.soDienThoai?.trim();
+        let existingPatient: any = null;
+
+        if (cccdToCheck) {
+          try {
+            existingPatient = await patientService.getPatientByIdentity(cccdToCheck);
+          } catch {}
+        }
+        if (!existingPatient && phoneToCheck) {
+          try {
+            const searchRes = await patientService.getPatients(phoneToCheck);
+            const list = searchRes.items || [];
+            existingPatient = list.find((p: any) => p.soDienThoai === phoneToCheck || p.phoneNumber === phoneToCheck) || null;
+          } catch {}
+        }
+
+        if (existingPatient) {
+          targetPatientId = existingPatient.id;
+          showToast(`Đã nhận diện hồ sơ cũ của bệnh nhân ${existingPatient.hoTen || existingPatient.fullName} (${existingPatient.maBenhNhan || existingPatient.patientCode})`, 'info');
+        } else {
+          const newPatient = await patientService.createPatient({
+            fullName: values.hoTen.trim(),
+            identityCardNumber: cccdToCheck || `038090${Date.now().toString().slice(-6)}`,
+            gender: values.gioiTinh || 'Nam',
+            dateOfBirth: values.ngaySinh || '1990-01-01',
+            phoneNumber: phoneToCheck || '0900000000',
+            address: values.diaChi?.trim() || 'Chưa cập nhật',
+          });
+          targetPatientId = newPatient.id;
+        }
       }
 
       if (!targetPatientId) {

@@ -799,7 +799,9 @@ export const ExaminationsPage: React.FC = () => {
         diseaseStage: values.diseaseStage || 'Cấp tính',
         diagnosisType: values.diagnosisType || 'Xác định',
         plan: values.plan || '',
-        status: 'Hoàn thành',
+        status: services.some((s) => !s.status || s.status === 'Đã chỉ định' || s.status === 'Chờ kết quả' || s.status === 'Đang thực hiện')
+          ? 'Chờ kết quả CLS'
+          : 'Hoàn thành',
         prescriptionDetails: prescriptions,
         serviceOrderDetails: services,
         doctorLicenseNumber: '004568/BD-GPHN',
@@ -809,14 +811,35 @@ export const ExaminationsPage: React.FC = () => {
         nationalSyncStatus: 'Synced',
       });
 
-      // Cập nhật trạng thái phiếu khám thành 'Finished' để xóa khỏi hàng đợi
+      // Kiểm tra trạng thái cận lâm sàng: Không xóa khỏi hàng đợi nếu đang chờ kết quả CLS
+      const hasPendingCls = services.some(
+        (s) => !s.status || s.status === 'Đã chỉ định' || s.status === 'Chờ kết quả' || s.status === 'Đang thực hiện'
+      );
+
       if (values.ticketId) {
-        await queueService.updateQueueTicketStatus(values.ticketId, 'Finished');
+        if (hasPendingCls) {
+          await queueService.updateQueueTicketStatus(values.ticketId, 'WaitingCLS');
+        } else {
+          await queueService.updateQueueTicketStatus(values.ticketId, 'Finished');
+        }
       }
 
       const disp = values.disposition || 'outpatient';
       const patient = patients.find((p) => p.id === values.patientId);
       const pName = patient ? patient.hoTen : 'Bệnh nhân';
+
+      if (hasPendingCls) {
+        showSuccessAlert(
+          'Đã Lưu Chỉ Định Cận Lâm Sàng (CLS)!',
+          `Bệnh nhân: ${pName}\n` +
+          `• Dịch vụ chỉ định: ${services.length} xét nghiệm/CĐHA\n` +
+          `• Trạng thái hồ sơ: Chờ kết quả CLS\n` +
+          `• Trạng thái hàng đợi: Chờ thực hiện CLS (WaitingCLS)\n\n` +
+          `Bệnh nhân sẽ quay lại phòng khám để Bác sĩ đánh giá và kết luận điều trị sau khi có kết quả.`
+        );
+        fetchExaminations();
+        return;
+      }
 
       if (disp === 'inpatient') {
         showSuccessAlert(

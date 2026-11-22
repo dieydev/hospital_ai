@@ -72,16 +72,20 @@ public class ExaminationsController : ControllerBase
     }
 
     /// <summary>
-    /// Tạo mới lượt khám bệnh SOAP, ICD-10 và kê đơn thuốc (Chỉ dành cho Bác sĩ và Admin)
+    /// Tạo mới lượt khám bệnh SOAP, ICD-10 và kê đơn thuốc (Chỉ Bác sĩ có CCHN theo TT 32/2023)
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Doctor,Admin")]
+    [Authorize(Roles = "Doctor")]
     public async Task<IActionResult> CreateExamination([FromBody] CreateExaminationDto dto)
     {
         try
         {
             var result = await _examinationService.CreateExaminationAsync(dto);
             return CreatedAtAction(nameof(GetExaminationById), new { id = result.Id }, result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -90,10 +94,10 @@ public class ExaminationsController : ControllerBase
     }
 
     /// <summary>
-    /// Cập nhật lượt khám bệnh (Chỉ dành cho Bác sĩ và Admin)
+    /// Cập nhật lượt khám bệnh (Chỉ Bác sĩ điều trị - Không cho phép sửa bệnh án đã ký số)
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Doctor,Admin")]
+    [Authorize(Roles = "Doctor")]
     public async Task<IActionResult> UpdateExamination(Guid id, [FromBody] CreateExaminationDto dto)
     {
         if (id == Guid.Empty)
@@ -104,6 +108,10 @@ public class ExaminationsController : ControllerBase
             var result = await _examinationService.UpdateExaminationAsync(id, dto);
             return Ok(result);
         }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
@@ -111,7 +119,7 @@ public class ExaminationsController : ControllerBase
     }
 
     /// <summary>
-    /// Xóa lượt khám bệnh (Chỉ dành cho Quản trị viên)
+    /// Xóa lượt khám bệnh (Chỉ dành cho Quản trị viên - Không thể xóa bệnh án đã ký số)
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Admin")]
@@ -120,18 +128,29 @@ public class ExaminationsController : ControllerBase
         if (id == Guid.Empty)
             return BadRequest(new { message = "Mã ID lượt khám không hợp lệ." });
 
-        var success = await _examinationService.DeleteExaminationAsync(id);
-        if (!success)
-            return NotFound(new { message = $"Không tìm thấy lượt khám với ID {id}" });
+        try
+        {
+            var success = await _examinationService.DeleteExaminationAsync(id);
+            if (!success)
+                return NotFound(new { message = $"Không tìm thấy lượt khám với ID {id}" });
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     /// <summary>
-    /// Ký số Bác sĩ vào Hồ sơ Bệnh án EMR theo chuẩn Bộ Y Tế
+    /// Ký số Bác sĩ vào Hồ sơ Bệnh án EMR theo chuẩn Bộ Y Tế (Chỉ Bác sĩ có chứng chỉ hành nghề)
     /// </summary>
     [HttpPost("{id:guid}/sign")]
-    [Authorize(Roles = "Doctor,Admin")]
+    [Authorize(Roles = "Doctor")]
     public async Task<IActionResult> SignExamination(Guid id, [FromBody] SignExaminationRequestDto dto)
     {
         if (id == Guid.Empty)
@@ -146,6 +165,10 @@ public class ExaminationsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
         {

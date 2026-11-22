@@ -178,6 +178,29 @@ public class ExaminationService : IExaminationService
         }
 
         _context.Examinations.Add(exam);
+
+        // Lưu vết lịch sử Chỉ số sinh hiệu vào bảng ChiSoSinhHieu (Audit & Vital Signs History)
+        int? systolic = null, diastolic = null;
+        if (!string.IsNullOrWhiteSpace(dto.BloodPressure) && dto.BloodPressure.Contains('/'))
+        {
+            var parts = dto.BloodPressure.Split('/');
+            if (int.TryParse(parts[0].Trim(), out var s)) systolic = s;
+            if (int.TryParse(parts[1].Trim(), out var d)) diastolic = d;
+        }
+
+        _context.VitalSigns.Add(new VitalSign
+        {
+            Id = Guid.NewGuid(),
+            ExaminationId = exam.Id,
+            PulseRate = dto.PulseRate,
+            Temperature = dto.Temperature,
+            SystolicBloodPressure = systolic,
+            DiastolicBloodPressure = diastolic,
+            Weight = dto.Weight,
+            Height = dto.Height,
+            MeasurementTime = DateTime.UtcNow
+        });
+
         await _context.SaveChangesAsync();
 
         exam.Patient = patient;
@@ -195,6 +218,12 @@ public class ExaminationService : IExaminationService
 
         if (exam == null)
             throw new KeyNotFoundException($"Không tìm thấy phiếu lượt khám với ID {id}");
+
+        // Kiểm tra tính toàn vẹn: Không cho phép sửa trực tiếp bệnh án đã hoàn tất hoặc ký số
+        if (exam.IsDigitallySigned == true)
+        {
+            throw new InvalidOperationException("Hồ sơ bệnh án EMR đã được ký số điện tử và đóng hồ sơ theo quy định Bộ Y Tế. Không thể chỉnh sửa trực tiếp nội dung chuyên môn.");
+        }
 
         exam.Subjective = dto.Subjective;
         exam.PulseRate = dto.PulseRate;
@@ -225,6 +254,28 @@ public class ExaminationService : IExaminationService
         exam.SymptomProgress = dto.SymptomProgress ?? exam.SymptomProgress;
         exam.DigitalSignature = dto.DigitalSignature;
 
+        // Lưu vết lịch sử sinh hiệu mới vào bảng ChiSoSinhHieu
+        int? updSystolic = null, updDiastolic = null;
+        if (!string.IsNullOrWhiteSpace(dto.BloodPressure) && dto.BloodPressure.Contains('/'))
+        {
+            var parts = dto.BloodPressure.Split('/');
+            if (int.TryParse(parts[0].Trim(), out var s)) updSystolic = s;
+            if (int.TryParse(parts[1].Trim(), out var d)) updDiastolic = d;
+        }
+
+        _context.VitalSigns.Add(new VitalSign
+        {
+            Id = Guid.NewGuid(),
+            ExaminationId = exam.Id,
+            PulseRate = dto.PulseRate,
+            Temperature = dto.Temperature,
+            SystolicBloodPressure = updSystolic,
+            DiastolicBloodPressure = updDiastolic,
+            Weight = dto.Weight,
+            Height = dto.Height,
+            MeasurementTime = DateTime.UtcNow
+        });
+
         // Update Prescriptions
         _context.PrescriptionDetails.RemoveRange(exam.PrescriptionDetails);
         if (dto.PrescriptionDetails != null)
@@ -254,6 +305,11 @@ public class ExaminationService : IExaminationService
     {
         var exam = await _context.Examinations.FindAsync(id);
         if (exam == null) return false;
+
+        if (exam.IsDigitallySigned == true)
+        {
+            throw new InvalidOperationException("Hồ sơ bệnh án EMR đã được ký số điện tử pháp lý, không thể xóa bỏ khỏi hệ thống.");
+        }
 
         _context.Examinations.Remove(exam);
         await _context.SaveChangesAsync();

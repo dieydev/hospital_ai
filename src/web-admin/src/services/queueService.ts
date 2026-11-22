@@ -20,12 +20,13 @@ export interface QueueTicketItem {
   departmentName: string;
   location: string;
   sequenceNumber: number;
-  status: 'Waiting' | 'Calling' | 'Processing' | 'Skipped' | 'Finished';
+  status: 'Waiting' | 'Calling' | 'Processing' | 'WaitingCLS' | 'Skipped' | 'Finished';
   priority: 'Normal' | 'Priority' | 'Emergency';
   visitType?: 'New' | 'FollowUp';
   paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived';
   queueType?: 'Exam' | 'ParaclinicalResult';
   previousRecordCode?: string;
+  appointmentId?: string;
   createdAt: string;
 }
 
@@ -41,6 +42,7 @@ export interface IssueTicketParams {
   healthInsuranceNumber?: string;
   visitType?: 'New' | 'FollowUp';
   paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived';
+  appointmentId?: string;
 }
 
 const QUEUE_STORAGE_KEY = 'hospital_local_queue_tickets';

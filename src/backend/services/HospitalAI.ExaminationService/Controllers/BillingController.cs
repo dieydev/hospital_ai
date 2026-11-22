@@ -90,7 +90,7 @@ public class BillingController : ControllerBase
     }
 
     /// <summary>
-    /// Thu tiền mặt viện phí tại quầy (Dành cho Thu ngân, Lễ tân và Admin)
+    /// Thu tiền mặt viện phí tại quầy (Phân định trách nhiệm: Tiếp nhận chỉ thu phí khám ban đầu, Thu ngân thu toàn bộ)
     /// </summary>
     [HttpPost("{id}/pay-cash")]
     [Authorize(Roles = "Cashier,Receptionist,Admin")]
@@ -108,6 +108,21 @@ public class BillingController : ControllerBase
 
         if (billing.Status == "Paid")
             return BadRequest(new { Message = "Hóa đơn đã được thanh toán trước đó" });
+
+        // Phân định trách nhiệm: Nhân viên tiếp nhận chỉ được thu phí khám ban đầu (Registration)
+        if (User.IsInRole("Receptionist") && !User.IsInRole("Cashier") && !User.IsInRole("Admin"))
+        {
+            if (billing.BillingType != "Registration")
+            {
+                return BadRequest(new { Message = "Nhân viên tiếp nhận chỉ có thẩm quyền thu phí khám ban đầu (Registration). Vui lòng chuyển bệnh nhân sang quầy Thu ngân để thanh toán viện phí cận lâm sàng hoặc thuốc." });
+            }
+        }
+
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (Guid.TryParse(currentUserId, out var cashierGuid))
+        {
+            billing.CashierId = cashierGuid;
+        }
 
         billing.Status = "Paid";
         billing.PaidAt = DateTime.UtcNow;
@@ -134,6 +149,70 @@ public class BillingController : ControllerBase
 
         await _dbContext.SaveChangesAsync();
 
-        return Ok(new { Message = "Thanh toán tiền mặt thành công", Success = true });
+        return Ok(new { Message = "Thanh toán tiền mặt thành công", Success = true, BillingId = billing.Id });
+    }
+
+    /// <summary>
+    /// Xác nhận thanh toán Chuyển khoản VietQR Ngân hàng (Thu ngân xác thực giao dịch chuyển khoản đối soát)
+    /// </summary>
+    [HttpPost("{id}/pay-transfer")]
+    [Authorize(Roles = "Cashier,Receptionist,Admin")]
+    public async Task<IActionResult> PayTransfer(Guid id, [FromQuery] string? transactionRef = null)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { Message = "Mã hóa đơn không hợp lệ" });
+
+        var billing = await _dbContext.Billings
+            .Include(b => b.Items)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (billing == null)
+            return NotFound(new { Message = "Không tìm thấy hóa đơn" });
+
+        if (billing.Status == "Paid")
+            return BadRequest(new { Message = "Hóa đơn đã được thanh toán trước đó" });
+
+        // Phân định trách nhiệm thu phí
+        if (User.IsInRole("Receptionist") && !User.IsInRole("Cashier") && !User.IsInRole("Admin"))
+        {
+            if (billing.BillingType != "Registration")
+            {
+                return BadRequest(new { Message = "Nhân viên tiếp nhận chỉ có thẩm quyền xác nhận thu phí khám ban đầu. Vui lòng chuyển bệnh nhân sang quầy Thu ngân." });
+            }
+        }
+
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (Guid.TryParse(currentUserId, out var cashierGuid))
+        {
+            billing.CashierId = cashierGuid;
+        }
+
+        billing.Status = "Paid";
+        billing.PaidAt = DateTime.UtcNow;
+        billing.PaymentMethod = "Chuyển khoản VietQR";
+        billing.TransactionRef = !string.IsNullOrWhiteSpace(transactionRef) ? transactionRef.Trim() : $"VQR-{DateTime.UtcNow:yyyyMMddHHmmss}-{billing.Id.ToString().Substring(0, 6).ToUpper()}";
+
+        // Cập nhật trạng thái liên quan
+        if (billing.BillingType == "Registration" && billing.ExaminationId.HasValue)
+        {
+            var exam = await _dbContext.Examinations.FirstOrDefaultAsync(e => e.Id == billing.ExaminationId.Value);
+            if (exam != null)
+            {
+                exam.Status = "Paid";
+            }
+        }
+        else if (billing.BillingType == "ServiceOrder")
+        {
+            var item = billing.Items.FirstOrDefault();
+            if (item != null && item.ReferenceId.HasValue)
+            {
+                var serviceOrder = await _dbContext.ServiceOrders.FirstOrDefaultAsync(s => s.Id == item.ReferenceId.Value);
+                if (serviceOrder != null) serviceOrder.Status = "Paid";
+            }
+        }
+
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new { Message = "Xác nhận chuyển khoản VietQR thành công", Success = true, BillingId = billing.Id, TransactionRef = billing.TransactionRef });
     }
 }

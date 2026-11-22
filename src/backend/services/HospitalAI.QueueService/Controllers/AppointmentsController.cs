@@ -547,38 +547,95 @@ namespace HospitalAI.QueueService.Controllers
                 SaveToFile();
             }
 
-            // Đồng bộ xuống CSDL EF Core nếu kết nối hoạt động
+            // Đồng bộ xuống CSDL SQL Server đảm bảo tính nhất quán trên môi trường phân tán / nhiều container
             try
             {
                 var patient = await _dbContext.Patients
                     .Include(p => p.User)
                     .FirstOrDefaultAsync(p =>
-                        p.PatientCode == model.PatientCode ||
+                        (!string.IsNullOrEmpty(model.PatientCode) && p.PatientCode == model.PatientCode) ||
                         (p.User != null && p.User.PhoneNumber == model.PatientPhone) ||
                         p.EmergencyContactPhone == model.PatientPhone ||
                         (!string.IsNullOrEmpty(model.IdentityCardNumber) && p.IdentityCardNumber == model.IdentityCardNumber));
-                var schedule = await _dbContext.DoctorSchedules.FirstOrDefaultAsync();
 
-                if (patient != null && schedule != null)
+                if (patient == null)
                 {
-                    DateTime appointmentDate;
-                    if (!DateTime.TryParse($"{model.AppointmentDate} {model.AppointmentTime}", out appointmentDate))
+                    var newCode = $"BN{DateTime.UtcNow.Year}{Random.Shared.Next(100000, 999999)}";
+                    var cccd = !string.IsNullOrWhiteSpace(model.IdentityCardNumber)
+                        ? model.IdentityCardNumber.Trim()
+                        : $"CD{Random.Shared.Next(100000000, 999999999)}";
+
+                    // Chống trùng CCCD nếu đã tồn tại
+                    if (await _dbContext.Patients.AnyAsync(p => p.IdentityCardNumber == cccd))
                     {
-                        appointmentDate = DateTime.UtcNow;
+                        cccd = $"P{DateTime.UtcNow.Ticks % 1000000000000:D12}";
                     }
 
-                    var appointmentEntity = new Appointment
+                    patient = new Patient
                     {
                         Id = Guid.NewGuid(),
-                        PatientId = patient.Id,
-                        ScheduleId = schedule.Id,
-                        AppointmentDate = appointmentDate,
-                        Symptoms = model.SymptomsReason,
-                        Status = model.Status
+                        PatientCode = !string.IsNullOrWhiteSpace(model.PatientCode) ? model.PatientCode : newCode,
+                        FullName = model.PatientName,
+                        Gender = !string.IsNullOrWhiteSpace(model.PatientGender) ? model.PatientGender : "Nam",
+                        DateOfBirth = DateTime.UtcNow.AddYears(-25),
+                        IdentityCardNumber = cccd,
+                        Address = "Đặt khám trực tuyến qua App/Web",
+                        EmergencyContactPhone = model.PatientPhone,
+                        CreatedAt = DateTime.UtcNow
                     };
-                    _dbContext.Appointments.Add(appointmentEntity);
+                    _dbContext.Patients.Add(patient);
+                    await _dbContext.SaveChangesAsync();
+                    model.PatientCode = patient.PatientCode;
+                }
+
+                var schedule = await _dbContext.DoctorSchedules.FirstOrDefaultAsync();
+                if (schedule == null)
+                {
+                    var dept = await _dbContext.Departments.FirstOrDefaultAsync();
+                    if (dept == null)
+                    {
+                        dept = new Department
+                        {
+                            Id = Guid.NewGuid(),
+                            DepartmentName = model.DepartmentName ?? "Khoa Khám Bệnh",
+                            Location = "Khu A - Tầng 1",
+                            RoomType = "KhamLamSang"
+                        };
+                        _dbContext.Departments.Add(dept);
+                        await _dbContext.SaveChangesAsync();
+                    }
+
+                    var staff = await _dbContext.StaffProfiles.FirstOrDefaultAsync();
+                    schedule = new DoctorSchedule
+                    {
+                        Id = Guid.NewGuid(),
+                        StaffId = staff?.Id ?? Guid.NewGuid(),
+                        DepartmentId = dept.Id,
+                        WorkDate = DateTime.UtcNow.Date,
+                        TimeSlot = model.AppointmentTime,
+                        MaxPatients = 20
+                    };
+                    _dbContext.DoctorSchedules.Add(schedule);
                     await _dbContext.SaveChangesAsync();
                 }
+
+                DateTime appointmentDate;
+                if (!DateTime.TryParse($"{model.AppointmentDate} {model.AppointmentTime.Split('-')[0].Trim()}", out appointmentDate))
+                {
+                    appointmentDate = DateTime.UtcNow;
+                }
+
+                var appointmentEntity = new Appointment
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = patient.Id,
+                    ScheduleId = schedule.Id,
+                    AppointmentDate = appointmentDate,
+                    Symptoms = model.SymptomsReason,
+                    Status = model.Status
+                };
+                _dbContext.Appointments.Add(appointmentEntity);
+                await _dbContext.SaveChangesAsync();
             }
             catch (Exception dbEx)
             {

@@ -525,6 +525,11 @@ export const patientService = {
     return mapBackendToPatient(response.data);
   },
 
+  async getPatientByIdentity(cccd: string): Promise<Patient> {
+    const response = await api.get(`/patients/identity/${cccd}`);
+    return mapBackendToPatient(response.data);
+  },
+
   async createPatient(params: PatientCreateParams): Promise<Patient> {
     const response = await api.post('/patients', params);
     return mapBackendToPatient(response.data);
