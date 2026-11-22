@@ -52,73 +52,73 @@ export const usePermissions = (): HospitalPermissions => {
 
   if (isAdmin) {
     userRole = 'Admin';
-    roleNameVN = 'Quản trị viên Hệ thống';
+    roleNameVN = 'Quản trị viên (Admin)';
   } else if (isDoctor) {
     userRole = 'Doctor';
-    roleNameVN = 'Bác sĩ Lâm sàng';
+    roleNameVN = 'Bác sĩ lâm sàng';
   } else if (isPharmacy) {
     userRole = 'Pharmacy';
-    roleNameVN = 'Dược sĩ Nhà thuốc';
+    roleNameVN = 'Nhà thuốc';
   } else if (isCashier) {
     userRole = 'Cashier';
-    roleNameVN = 'Thu ngân Viện phí';
+    roleNameVN = 'Thu ngân';
   } else if (isReceptionist) {
     userRole = 'Receptionist';
-    roleNameVN = 'Lễ tân Tiếp nhận';
+    roleNameVN = 'Nhân viên tiếp nhận';
   } else if (isTriage) {
     userRole = 'Triage';
-    roleNameVN = 'Sàng lọc Y tế';
+    roleNameVN = 'Nhân viên sàng lọc y tế';
   } else if (isNurse) {
     userRole = 'Nurse';
     roleNameVN = 'Nhân viên Y tế';
   }
 
-  // 1. Phân quyền nghiệp vụ Nhà thuốc & Dược: Chỉ Dược sĩ & Admin
+  // 1. Phân quyền nghiệp vụ Nhà thuốc & Dược: Chỉ Nhà thuốc & Admin
   const canDispenseMedicine = isAdmin || isPharmacy;
   const canManagePharmacyInventory = isAdmin || isPharmacy;
 
-  // 2. Phân quyền Khám bệnh & Lâm sàng: Chỉ Bác sĩ & Admin
+  // 2. Phân quyền Khám bệnh & Lâm sàng: Chỉ Bác sĩ lâm sàng & Admin
   const canPrescribe = isAdmin || isDoctor;
   const canOrderCLS = isAdmin || isDoctor;
   const canSignEMR = isAdmin || isDoctor;
 
-  // 3. Phân quyền Viện phí & Tài chính: Thu ngân, Lễ tân & Admin
+  // 3. Phân quyền Viện phí & Tài chính: Thu ngân, Nhân viên tiếp nhận & Admin
   const canProcessBilling = isAdmin || isCashier || isReceptionist;
 
-  // 4. Phân quyền Tiếp nhận & Sàng lọc: Lễ tân, Sàng lọc, Y tế & Admin
+  // 4. Phân quyền Tiếp nhận & Sàng lọc: Nhân viên tiếp nhận, Nhân viên sàng lọc y tế, Nhân viên Y tế & Admin
   const canRegisterPatient = isAdmin || isReceptionist || isTriage || isNurse;
   const canPerformTriage = isAdmin || isTriage || isNurse || isDoctor;
 
-  // 5. Phân quyền Quản trị hệ thống: Chỉ Admin tuyệt đối
+  // 5. Phân quyền Quản trị hệ thống: Chỉ Quản trị viên (Admin) tuyệt đối
   const canManageCatalogs = isAdmin;
   const canManageAccounts = isAdmin;
 
-  // 6. Phân quyền Báo cáo thống kê: Admin, Bác sĩ, Thu ngân
+  // 6. Phân quyền Báo cáo thống kê: Quản trị viên (Admin), Bác sĩ lâm sàng, Thu ngân
   const canViewReports = isAdmin || isDoctor || isCashier;
 
   const getLockTooltip = (permissionKey: keyof Omit<HospitalPermissions, 'userRole' | 'roleNameVN' | 'getLockTooltip'>): string => {
     switch (permissionKey) {
       case 'canDispenseMedicine':
-        return 'Chỉ Dược sĩ Nhà thuốc hoặc Quản trị viên mới có thẩm quyền Cấp phát thuốc theo đơn.';
+        return 'Chỉ bộ phận Nhà thuốc hoặc Quản trị viên (Admin) mới có thẩm quyền Cấp phát thuốc theo đơn.';
       case 'canManagePharmacyInventory':
-        return 'Chỉ Dược sĩ Nhà thuốc hoặc Quản trị viên mới có thẩm quyền Nhập kho & Chỉnh sửa kho Dược.';
+        return 'Chỉ bộ phận Nhà thuốc hoặc Quản trị viên (Admin) mới có thẩm quyền Nhập kho & Chỉnh sửa kho thuốc.';
       case 'canPrescribe':
-        return 'Chỉ Bác sĩ điều trị có chứng chỉ hành nghề mới được quyền Kê đơn thuốc.';
+        return 'Chỉ Bác sĩ lâm sàng có chứng chỉ hành nghề mới được quyền Kê đơn thuốc.';
       case 'canOrderCLS':
         return 'Chỉ Bác sĩ lâm sàng mới có quyền Chỉ định Cận lâm sàng & Xét nghiệm.';
       case 'canSignEMR':
-        return 'Chỉ Bác sĩ điều trị hoặc Trưởng khoa mới có thẩm quyền Ký số Bệnh án điện tử.';
+        return 'Chỉ Bác sĩ lâm sàng mới có thẩm quyền Ký số Bệnh án điện tử.';
       case 'canProcessBilling':
-        return 'Chỉ Thu ngân hoặc Nhân viên thu viện phí mới có thẩm quyền Thu tiền & Xuất hóa đơn.';
+        return 'Chỉ Thu ngân mới có thẩm quyền Thu tiền & Xuất hóa đơn.';
       case 'canRegisterPatient':
-        return 'Chức năng dành cho Bộ phận Tiếp nhận & Đăng ký bệnh nhân.';
+        return 'Chức năng dành cho Nhân viên tiếp nhận người bệnh.';
       case 'canPerformTriage':
-        return 'Chức năng dành cho Bộ phận Sàng lọc & Phân luồng y tế người bệnh.';
+        return 'Chức năng dành cho Nhân viên sàng lọc y tế người bệnh.';
       case 'canManageCatalogs':
       case 'canManageAccounts':
         return 'Chức năng Quản trị Bệnh viện: Chỉ Quản trị viên (Admin) mới có quyền truy cập.';
       case 'canViewReports':
-        return 'Chức năng Báo cáo thống kê dành cho Ban Giám Đốc, Bác sĩ và Bộ phận Tài chính.';
+        return 'Chức năng Báo cáo thống kê dành cho Quản trị viên (Admin), Bác sĩ lâm sàng và Thu ngân.';
       default:
         return 'Tài khoản của bạn không có quyền thực hiện thao tác này.';
     }

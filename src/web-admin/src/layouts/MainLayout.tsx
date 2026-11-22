@@ -803,20 +803,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   <Text strong style={{ fontSize: 12.5, color: isDarkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.2, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                     {(!user?.hoTen || user.hoTen === 'Bệnh nhân' || user.hoTen.includes('nh\uFFFD') || user.hoTen.includes('?'))
                       ? (isAdmin
-                          ? 'Quản trị viên'
+                          ? 'Quản trị viên (Admin)'
                           : isDoctor
-                            ? 'BS. Nguyễn Thanh Duy'
+                            ? 'Bác sĩ lâm sàng'
                             : isReceptionist
-                              ? 'Nhân viên Tiếp nhận'
+                              ? 'Nhân viên tiếp nhận'
                               : isTriage
-                                ? 'Nhân viên Sàng lọc'
+                                ? 'Nhân viên sàng lọc y tế'
                                 : isPharmacy
-                                  ? 'Dược sĩ Nhà thuốc'
+                                  ? 'Nhà thuốc'
                                   : isNurse
-                                    ? 'Cán bộ Y tế'
+                                    ? 'Nhân viên Y tế'
                                     : isCashier
-                                      ? 'Thu ngân Viện phí'
-                                      : 'Cán bộ Y tế')
+                                      ? 'Thu ngân'
+                                      : 'Bệnh nhân')
                       : user.hoTen
                     }
                   </Text>
@@ -824,20 +824,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     {user?.chucDanh
                       ? user.chucDanh
                       : isAdmin
-                        ? 'Quản trị viên'
+                        ? 'Quản trị viên (Admin)'
                         : isDoctor
-                          ? 'Bác sĩ Điều trị'
+                          ? 'Bác sĩ lâm sàng'
                           : isReceptionist
-                            ? 'Nhân viên Tiếp nhận'
+                            ? 'Nhân viên tiếp nhận'
                             : isTriage
-                              ? 'Nhân viên Sàng lọc'
+                              ? 'Nhân viên sàng lọc y tế'
                               : isPharmacy
-                                ? 'Dược sĩ Nhà thuốc'
+                                ? 'Nhà thuốc'
                                 : isNurse
                                   ? 'Nhân viên Y tế'
                                   : isCashier
                                     ? 'Thu ngân'
-                                    : 'Cán bộ Y tế'
+                                    : 'Bệnh nhân'
                     }
                   </Text>
                 </div>

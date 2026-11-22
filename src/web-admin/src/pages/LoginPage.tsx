@@ -199,21 +199,21 @@ export const LoginPage: React.FC = () => {
     let resolvedFullName = user.fullName || user.hoTen || '';
     if (!resolvedFullName || resolvedFullName === 'Bệnh nhân' || resolvedFullName.includes('nh\uFFFD') || resolvedFullName.includes('?')) {
       if (hasRole('Admin') || hasRole('Quản trị viên')) {
-        resolvedFullName = 'Quản trị viên Hệ thống';
+        resolvedFullName = 'Quản trị viên (Admin)';
       } else if (hasRole('Doctor') || hasRole('Bác sĩ')) {
         resolvedFullName = user.title || 'BS. CKII. Nguyễn Thanh Duy';
       } else if (hasRole('Receptionist') || hasRole('Nhân viên tiếp nhận')) {
-        resolvedFullName = 'Nhân viên Tiếp nhận';
-      } else if (hasRole('Triage') || hasRole('Nhân viên sàng lọc bệnh')) {
-        resolvedFullName = 'Nhân viên Sàng lọc bệnh';
+        resolvedFullName = 'Nhân viên tiếp nhận';
+      } else if (hasRole('Triage') || hasRole('Nhân viên sàng lọc y tế') || hasRole('Nhân viên sàng lọc bệnh')) {
+        resolvedFullName = 'Nhân viên sàng lọc y tế';
       } else if (hasRole('Pharmacy') || hasRole('Nhà thuốc')) {
-        resolvedFullName = 'Dược sĩ Nhà thuốc BV';
-      } else if (hasRole('Nurse') || hasRole('Y tế')) {
-        resolvedFullName = 'Cán bộ Y tế';
+        resolvedFullName = 'Nhà thuốc';
+      } else if (hasRole('Nurse') || hasRole('Y tế') || hasRole('Nhân viên Y tế')) {
+        resolvedFullName = 'Nhân viên Y tế';
       } else if (hasRole('Cashier') || hasRole('Thu ngân')) {
-        resolvedFullName = 'Thu ngân Viện phí';
+        resolvedFullName = 'Thu ngân';
       } else {
-        resolvedFullName = isStaffOrAdmin ? 'Cán bộ Y tế' : 'Bệnh nhân';
+        resolvedFullName = isStaffOrAdmin ? 'Nhân viên Y tế' : 'Bệnh nhân';
       }
     }
 

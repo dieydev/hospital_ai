@@ -246,14 +246,14 @@ export const AccountsPage: React.FC = () => {
     if (has('Admin') || has('Quản trị viên')) {
       return (
         <Tag color="purple" icon={<CrownOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
-          Quản trị viên
+          Quản trị viên (Admin)
         </Tag>
       );
     }
     if (has('Doctor') || has('Bác sĩ')) {
       return (
         <Tag color="blue" icon={<MedicineBoxOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
-          Bác sĩ
+          Bác sĩ lâm sàng
         </Tag>
       );
     }
@@ -264,10 +264,10 @@ export const AccountsPage: React.FC = () => {
         </Tag>
       );
     }
-    if (has('Triage') || has('Nhân viên sàng lọc bệnh')) {
+    if (has('Triage') || has('Nhân viên sàng lọc y tế') || has('Nhân viên sàng lọc bệnh')) {
       return (
         <Tag color="volcano" icon={<HeartOutlined />} style={{ borderRadius: 6, fontWeight: 600 }}>
-          Sàng lọc bệnh
+          Nhân viên sàng lọc y tế
         </Tag>
       );
     }
@@ -641,13 +641,13 @@ export const AccountsPage: React.FC = () => {
             >
               <Option value="all">Tất cả vai trò</Option>
               <Option value="Admin">Quản trị viên (Admin)</Option>
-              <Option value="Doctor">Bác sĩ (Doctor)</Option>
-              <Option value="Receptionist">Nhân viên tiếp nhận (Receptionist)</Option>
-              <Option value="Triage">Nhân viên sàng lọc bệnh (Triage)</Option>
-              <Option value="Pharmacy">Nhà thuốc (Pharmacy)</Option>
-              <Option value="Nurse">Y tế (Nurse)</Option>
-              <Option value="Cashier">Thu ngân (Cashier)</Option>
-              <Option value="Patient">Bệnh nhân (Patient)</Option>
+              <Option value="Doctor">Bác sĩ lâm sàng</Option>
+              <Option value="Receptionist">Nhân viên tiếp nhận</Option>
+              <Option value="Triage">Nhân viên sàng lọc y tế</Option>
+              <Option value="Nurse">Nhân viên Y tế</Option>
+              <Option value="Pharmacy">Nhà thuốc</Option>
+              <Option value="Cashier">Thu ngân</Option>
+              <Option value="Patient">Bệnh nhân</Option>
             </Select>
           </Col>
 
@@ -758,13 +758,13 @@ export const AccountsPage: React.FC = () => {
               >
                 <Select placeholder="Chọn vai trò">
                   <Option value="Admin">Quản trị viên (Admin)</Option>
-                  <Option value="Doctor">Bác sĩ (Doctor)</Option>
-                  <Option value="Receptionist">Nhân viên tiếp nhận (Receptionist)</Option>
-                  <Option value="Triage">Nhân viên sàng lọc bệnh (Triage)</Option>
-                  <Option value="Pharmacy">Nhà thuốc (Pharmacy)</Option>
-                  <Option value="Nurse">Nhân viên Y tế (Nurse)</Option>
-                  <Option value="Cashier">Thu ngân (Cashier)</Option>
-                  <Option value="Patient">Bệnh nhân (Patient)</Option>
+                  <Option value="Doctor">Bác sĩ lâm sàng</Option>
+                  <Option value="Receptionist">Nhân viên tiếp nhận</Option>
+                  <Option value="Triage">Nhân viên sàng lọc y tế</Option>
+                  <Option value="Nurse">Nhân viên Y tế</Option>
+                  <Option value="Pharmacy">Nhà thuốc</Option>
+                  <Option value="Cashier">Thu ngân</Option>
+                  <Option value="Patient">Bệnh nhân</Option>
                 </Select>
               </Form.Item>
             </Col>

@@ -133,14 +133,14 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
   const getStaffRoleLabel = () => {
     const roles: string[] = user?.vaiTro || [];
     const has = (key: string) => roles.some((r) => r.toLowerCase() === key.toLowerCase());
-    if (has('Admin') || has('Quản trị viên')) return 'Quản trị viên';
-    if (has('Doctor') || has('Bác sĩ')) return 'Bác sĩ';
-    if (has('Triage') || has('Nhân viên sàng lọc bệnh')) return 'Sàng lọc';
+    if (has('Admin') || has('Quản trị viên')) return 'Quản trị viên (Admin)';
+    if (has('Doctor') || has('Bác sĩ')) return 'Bác sĩ lâm sàng';
+    if (has('Triage') || has('Nhân viên sàng lọc y tế') || has('Nhân viên sàng lọc bệnh')) return 'Nhân viên sàng lọc y tế';
     if (has('Cashier') || has('Thu ngân')) return 'Thu ngân';
-    if (has('Pharmacy') || has('Nhà thuốc')) return 'Dược sĩ';
-    if (has('Receptionist') || has('Lễ tân')) return 'Tiếp nhận';
-    if (has('Nurse') || has('Y tế')) return 'Y tế';
-    return 'Cán bộ Y tế';
+    if (has('Pharmacy') || has('Nhà thuốc')) return 'Nhà thuốc';
+    if (has('Receptionist') || has('Nhân viên tiếp nhận') || has('Lễ tân')) return 'Nhân viên tiếp nhận';
+    if (has('Nurse') || has('Y tế') || has('Nhân viên Y tế')) return 'Nhân viên Y tế';
+    return 'Nhân viên Y tế';
   };
 
   const renderRoleTag = () => {
@@ -148,24 +148,24 @@ export const PatientPortalHeader: React.FC<PatientPortalHeaderProps> = ({
     const has = (key: string) => roles.some((r) => r.toLowerCase() === key.toLowerCase());
 
     if (has('Admin') || has('Quản trị viên')) {
-      return <Tag color="purple" style={{ margin: 0, fontWeight: 700 }}>Quản trị viên</Tag>;
+      return <Tag color="purple" style={{ margin: 0, fontWeight: 700 }}>Quản trị viên (Admin)</Tag>;
     }
     if (has('Doctor') || has('Bác sĩ')) {
-      return <Tag color="blue" style={{ margin: 0, fontWeight: 700 }}>Bác sĩ</Tag>;
+      return <Tag color="blue" style={{ margin: 0, fontWeight: 700 }}>Bác sĩ lâm sàng</Tag>;
     }
-    if (has('Triage') || has('Nhân viên sàng lọc bệnh')) {
-      return <Tag color="volcano" style={{ margin: 0, fontWeight: 700 }}>Nhân viên Sàng lọc</Tag>;
+    if (has('Triage') || has('Nhân viên sàng lọc y tế') || has('Nhân viên sàng lọc bệnh')) {
+      return <Tag color="volcano" style={{ margin: 0, fontWeight: 700 }}>Nhân viên sàng lọc y tế</Tag>;
     }
     if (has('Cashier') || has('Thu ngân')) {
-      return <Tag color="gold" style={{ margin: 0, fontWeight: 700 }}>Thu ngân Viện phí</Tag>;
+      return <Tag color="gold" style={{ margin: 0, fontWeight: 700 }}>Thu ngân</Tag>;
     }
     if (has('Pharmacy') || has('Nhà thuốc') || has('Dược')) {
-      return <Tag color="green" style={{ margin: 0, fontWeight: 700 }}>Dược sĩ / Nhà thuốc</Tag>;
+      return <Tag color="green" style={{ margin: 0, fontWeight: 700 }}>Nhà thuốc</Tag>;
     }
     if (has('Receptionist') || has('Nhân viên tiếp nhận') || has('Lễ tân')) {
-      return <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Nhân viên Tiếp nhận</Tag>;
+      return <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Nhân viên tiếp nhận</Tag>;
     }
-    if (has('Nurse') || has('Y tế')) {
+    if (has('Nurse') || has('Y tế') || has('Nhân viên Y tế')) {
       return <Tag color="teal" style={{ margin: 0, fontWeight: 700 }}>Nhân viên Y tế</Tag>;
     }
     return <Tag color="cyan" style={{ margin: 0, fontWeight: 700 }}>Bệnh nhân</Tag>;
