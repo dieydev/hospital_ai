@@ -1,0 +1,164 @@
+====================================================================================================
+DANH MỤC ĐẶC TẢ USE CASE TOÀN DIỆN – HỆ THỐNG HOSPITAL AI (v2.6.2-FINAL)
+Tài liệu phục vụ Vẽ Biểu đồ UML (draw.io) & Thuyết minh Đồ án Tốt nghiệp
+Chuẩn hóa khớp 100% với: 
+  - Quy trình Khám Ngoại Trú Lần Đầu (Khamlandau.png)
+  - Quy trình Khám Ngoại Trú Tái Khám (Taikham.png)
+  - Bảng Phạm Vi Đề Tài (BCTN_2026_Xac dinh pham vi chuc nang de tai.xlsx)
+  - Kiến trúc Mã nguồn Backend / Frontend v2.6.2-FINAL
+====================================================================================================
+
+TỔNG QUAN HỆ THỐNG & RANH GIỚI UML:
+- Đúng 8 Actor người dùng nội bộ/bệnh nhân (Không đổi tên, không gộp, không xóa vai trò).
+- 4 Tác nhân ngoài (External Systems) được vẽ hình chữ nhật <<system>> bên phải System Boundary.
+- Tổng số: 72 Use Case chi tiết phân bổ hoàn chỉnh trên 8 Actor.
+- Quan hệ <<include>>: Bắt buộc thực hiện trong luồng nghiệp vụ chính.
+- Quan hệ <<extend>>: Hành động rẽ nhánh có điều kiện (khi cần CLS, khi có thuốc, khi tái khám, v.v.).
+- Nét liền (Solid): Nghiệp vụ nội bộ bệnh viện đã hoàn thiện và kiểm thử đạt 91/91 tests.
+- Nét đứt (Dashed): Cổng liên thông bên ngoài Nhà nước (Cổng Đơn thuốc QG, Cổng BHYT).
+
+====================================================================================================
+PHẦN 1: MA TRẬN 8 NHÓM CHỨC NĂNG TRÊN SƠ ĐỒ USE CASE TỔNG QUÁT (OVERVIEW DIAGRAM)
+====================================================================================================
+
+| STT | Phân hệ Cốt lõi (System Boundary) | Phạm vi nghiệp vụ theo 2 Lưu đồ | Actor nội bộ tương tác | Tác nhân ngoài |
+|:---:|:---|:---|:---|:---|
+| 1 | Tiếp đón & Đăng ký khám | Khám lần đầu trực tiếp tại quầy, Tiếp nhận tái khám, Đặt hẹn online | Bệnh nhân, Nhân viên tiếp nhận | - |
+| 2 | Sàng lọc sinh hiệu & Phân luồng | Đo sinh hiệu, đánh giá ưu tiên KCB 2023, xác nhận cấp cứu, điều phối buồng khám | Nhân viên tiếp nhận, Nhân viên sàng lọc y tế | - |
+| 3 | Check-in QR & Cấp STT Kiosk | Quét QR lịch hẹn/tái khám, bốc số trực tiếp, cấp STT hàng chờ tự động | Bệnh nhân | - |
+| 4 | Khám lâm sàng & Hồ sơ EMR | Bác sĩ gọi số, xem EMR cũ, khám SOAP, chẩn đoán ICD-10, ký số EMR, chuyển viện | Bác sĩ lâm sàng, Nhân viên Y tế, Bệnh nhân | - |
+| 5 | Quản lý Cận lâm sàng hai chiều | Bác sĩ chỉ định CLS -> Y tế lấy mẫu/thực hiện -> Quét QR quay lại -> Bác sĩ đọc KQ | Bác sĩ lâm sàng, Nhân viên Y tế, Bệnh nhân | - |
+| 6 | Quản lý Dược & Cấp phát thuốc | Thẩm định đơn, kiểm tra CCHN, trừ kho nguyên tử, cấp phát thuốc ngoại trú | Bác sĩ lâm sàng, Nhà thuốc, Bệnh nhân | Cổng Đơn thuốc Quốc gia (Nét đứt) |
+| 7 | Viện phí & Quyết toán BHYT | Thu công khám trước, thu tiền CLS, quyết toán BHYT (Tiền mặt & VietQR) | Thu ngân, Nhân viên tiếp nhận, Bệnh nhân | Cổng VietQR/Ngân hàng, Cổng BHYT (Nét đứt) |
+| 8 | Quản trị hệ thống, AI & Báo cáo | Phân quyền RBAC, CCHN TT32, danh mục khoa/giá/ICD-10, Audit log, Trợ lý Gemini AI | Quản trị viên (Admin), Bác sĩ, Bệnh nhân | Google Gemini AI |
+
+====================================================================================================
+PHẦN 2: DANH MỤC CHI TIẾT 72 USE CASE THEO ĐÚNG 8 ACTOR
+====================================================================================================
+
+----------------------------------------------------------------------------------------------------
+ACTOR 1: BỆNH NHÂN (PATIENT) - Kênh: Mobile App / Web Portal / Kiosk Sảnh
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-PAT-01   Đăng ký & Đăng nhập tài khoản               Xác thực qua SĐT, CCCD gắn chip, mật khẩu, JWT token                            -                                           Đã triển khai thật
+UC-PAT-02   Đặt lịch khám trực tuyến (Online)           Chọn chuyên khoa, bác sĩ lâm sàng, chọn ngày khám và khung giờ trống           <<include>> Chọn khoa, bác sĩ, giờ          Đã triển khai thật
+UC-PAT-03   Đặt lịch khám hộ cho người thân             Nhập thông tin người thân (Họ tên, CCCD, SĐT, quan hệ)                         <<extend>> từ UC-PAT-02 (Khám cho thân nhân) Đã triển khai thật
+UC-PAT-04   Quản lý & Hủy/đổi lịch hẹn đã đặt           Xem danh sách phiếu hẹn khám, hủy lịch hẹn trước giờ khám                       -                                           Đã triển khai thật
+UC-PAT-05   Lấy số thứ tự khám trực tiếp tại Kiosk      Bệnh nhân khám trực tiếp tự bấm màn hình cảm ứng Kiosk nhận STT                 Phân luồng với UC-PAT-02 (Khám trực tiếp)   Đã triển khai thật
+UC-PAT-06   Quét mã QR Check-in tự động tại Kiosk       Quét mã QR lịch hẹn online hoặc QR tái khám tại đầu đọc Kiosk để nhận STT phòng khám -                                     Đã triển khai thật
+UC-PAT-07   Quét mã QR quay lại phòng khám sau CLS      Sau khi làm xong xét nghiệm/X-quang, quét QR để xếp hàng chờ đọc kết quả        <<include>> trong quy trình CLS hai chiều   Đã triển khai thật
+UC-PAT-08   Theo dõi tiến độ hàng đợi thời gian thực    Xem số thứ tự đang khám, số người còn chờ trước mình qua SignalR                -                                           Đã triển khai thật
+UC-PAT-09   Xem Hồ sơ Bệnh án Điện tử (EMR) cá nhân     Xem lịch sử tất cả các đợt khám, chẩn đoán bệnh chính/phụ, kết luận điều trị     -                                           Đã triển khai thật
+UC-PAT-10   Xem kết quả Cận lâm sàng trực tuyến         Xem kết quả xét nghiệm máu/nước tiểu, kết quả chẩn đoán hình ảnh phim X-quang   <<extend>> từ UC-PAT-09                     Đã triển khai thật
+UC-PAT-11   Xem đơn thuốc điện tử & nhắc lịch uống      Xem chi tiết tên thuốc, liều lượng, số ngày uống và chia 4 cữ Sáng/Trưa/Chiều/Tối <<extend>> từ UC-PAT-09                 Đã triển khai thật
+UC-PAT-12   Thanh toán viện phí qua VietQR              Quét mã QR động chuyển khoản ngân hàng trả tiền công khám, phí CLS, tiền thuốc  Kết nối External: VietQR / Ngân hàng        Đã triển khai thật
+UC-PAT-13   Hỏi đáp sức khỏe với Trợ lý Gemini AI       Trò chuyện hỏi đáp triệu chứng, nhận khuyến nghị phòng ngừa và gợi ý chuyên khoa Kết nối External: Google Gemini AI          Đã triển khai thật
+
+----------------------------------------------------------------------------------------------------
+ACTOR 2: NHÂN VIÊN TIẾP NHẬN (RECEPTIONIST) - Kênh: Web Admin Phân hệ Tiếp đón
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-REC-01   Đăng nhập Bàn làm việc Tiếp đón             Xác thực tài khoản và quyền Nhân viên tiếp nhận                                 -                                           Đã triển khai thật
+UC-REC-02   Tiếp nhận bệnh nhân khám lần đầu trực tiếp  Kiểm tra CCCD, BHYT, tra cứu xác nhận bệnh nhân chưa có hồ sơ trên hệ thống   -                                           Đã triển khai thật
+UC-REC-03   Đăng ký tạo mới hồ sơ bệnh nhân             Nhập thông tin nhân thân, số CCCD, địa chỉ, số thẻ BHYT, người liên hệ          <<extend>> từ UC-REC-02 (Nếu chưa có hồ sơ) Đã triển khai thật
+UC-REC-04   Tiếp nhận bệnh nhân tái khám                Kiểm tra giấy hẹn/mã QR, giữ nguyên Mã BN cũ, tạo đợt tái khám liên kết EMR cũ <<include>> Tra cứu hồ sơ cũ               Đã triển khai thật
+UC-REC-05   Tiếp nhận & Check-in lịch hẹn đặt trước     Tra cứu mã QR lịch hẹn đặt từ App/Web, xác thực thông tin và xác nhận đến khám  <<include>> UC-REC-06                       Đã triển khai thật
+UC-REC-06   Cấp số thứ tự khám ban đầu                  Phân luồng và in phiếu STT đưa bệnh nhân vào phòng Sàng lọc hoặc bàn khám       -                                           Đã triển khai thật
+UC-REC-07   Hỗ trợ quản lý, đổi/hủy lịch hẹn            Điều phối khung giờ khám, hỗ trợ đổi ngày hoặc hủy lịch hẹn theo yêu cầu BN     -                                           Đã triển khai thật
+UC-REC-08   Thu phí công khám ban đầu tại quầy          Thu tiền mặt hoặc tạo mã VietQR thu tạm ứng đối với đối tượng yêu cầu nộp trước -                                           Đã triển khai thật
+
+----------------------------------------------------------------------------------------------------
+ACTOR 3: NHÂN VIÊN SÀNG LỌC Y TẾ (TRIAGE) - Kênh: Web Admin Phân hệ Sàng lọc & Phân luồng
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-TRG-01   Đăng nhập Bàn làm việc Sàng lọc y tế        Xác thực tài khoản và quyền Nhân viên sàng lọc y tế                             -                                           Đã triển khai thật
+UC-TRG-02   Đo và ghi nhận chỉ số sinh hiệu             Đo Huyết áp, Mạch, Thân nhiệt, Nhịp thở, SpO2, Chiều cao, Cân nặng ban đầu      -                                           Đã triển khai thật
+UC-TRG-03   Cập nhật triệu chứng và lý do khám          Khai thác và ghi nhận triệu chứng khó chịu chính của người bệnh                 <<include>> trong UC-TRG-02                 Đã triển khai thật
+UC-TRG-04   Đánh giá đối tượng ưu tiên khám             Áp dụng tiêu chí Luật KCB 2023 (Người già >=75t, trẻ em <6t, phụ nữ mang thai)  <<extend>> từ UC-TRG-02                     Đã triển khai thật
+UC-TRG-05   Xác nhận cảnh báo cấp cứu chuyên môn        Kích hoạt luồng cấp cứu khẩn cấp, xác thực thẩm quyền JWT, lưu nhật ký bền vững  <<extend>> từ UC-TRG-02 (Ca nguy kịch)      Đã triển khai thật
+UC-TRG-06   Phân luồng phòng khám chuyên khoa           Điều phối bệnh nhân vào buồng khám chuyên khoa phù hợp (Nội, Ngoại, Tim mạch...) <<include>> UC-TRG-02                     Đã triển khai thật
+
+----------------------------------------------------------------------------------------------------
+ACTOR 4: BÁC SĨ LÂM SÀNG (DOCTOR) - Kênh: Web Admin Phân hệ Bàn khám Bác sĩ
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-DOC-01   Đăng nhập Bàn khám Bác sĩ                   Xác thực tài khoản, kiểm tra Giấy phép hành nghề CCHN (TT 32/2023)              -                                           Đã triển khai thật
+UC-DOC-02   Gọi bệnh nhân vào khám theo hàng chờ        Gọi số tiếp theo theo danh sách chờ thời gian thực SignalR                      -                                           Đã triển khai thật
+UC-DOC-03   Xem sinh hiệu và tiền sử bệnh án            Xem các chỉ số đo từ phòng sàng lọc, tiền sử bệnh nền và tiền sử dị ứng thuốc  <<include>> trong quy trình khám            Đã triển khai thật
+UC-DOC-04   Tra cứu hồ sơ EMR cũ & đáp ứng điều trị     Tra cứu diễn biến điều trị, đơn thuốc đợt trước (Bắt buộc đối với ca Tái khám)  <<include>> khi Bệnh nhân Tái khám          Đã triển khai thật
+UC-DOC-05   Ghi nhận bệnh án lâm sàng chuẩn SOAP        Nhập triệu chứng chủ quan (S), khám thực thể (O), đánh giá (A), kế hoạch (P)    -                                           Đã triển khai thật
+UC-DOC-06   Chẩn đoán và gán mã bệnh ICD-10             Chọn mã bệnh chính, mã bệnh kèm theo theo chuẩn 8 chương TT 06/2026/TT-BYT      <<include>> trong UC-DOC-05                 Đã triển khai thật
+UC-DOC-07   Chỉ định dịch vụ Cận lâm sàng (CLS)         Chỉ định xét nghiệm máu/nước tiểu, X-quang, CT, MRI, siêu âm theo yêu cầu khám  <<extend>> từ UC-DOC-05 (Khi cần làm CLS)   Đã triển khai thật
+UC-DOC-08   Xem và đánh giá kết quả Cận lâm sàng        Xem phiếu kết quả xét nghiệm, xem phim X-quang số, đánh giá đáp ứng điều trị    <<extend>> từ UC-DOC-07                     Đã triển khai thật
+UC-DOC-09   Kê đơn thuốc điện tử ngoại trú              Kê đơn theo danh mục thuốc bệnh viện, liều dùng, số ngày, chia 4 cữ (TT 26/2025)<<extend>> từ UC-DOC-05 (Khi có thuốc)     Đã triển khai thật
+UC-DOC-10   Xem cảnh báo tương tác thuốc & dị ứng (AI)  Hệ thống AI tự động phân tích cảnh báo tương tác thuốc bất lợi, quá liều        <<include>> trong UC-DOC-09                 Đã triển khai thật
+UC-DOC-11   Tham vấn Trợ lý Y tế Gemini AI              Tham vấn phác đồ điều trị Bộ Y tế, tra cứu thông tin y khoa đối với ca bệnh khó Kết nối External: Google Gemini AI          Đã triển khai thật
+UC-DOC-12   Ký số chứng thực Bệnh án điện tử EMR        Ký xác nhận bệnh án với mã băm toàn vẹn HMAC-SHA256, hiển thị số CCHN bác sĩ    <<include>> trong UC-DOC-15                 Đã triển khai thật
+UC-DOC-13   Lập chỉ định Nhập viện hoặc Chuyển viện     Lập phiếu chỉ định nhập viện hoặc chuyển tuyến chuyên môn                       <<extend>> từ UC-DOC-15 (Ca nặng)           Đã triển khai thật
+UC-DOC-14   Lập phiếu hẹn tái khám & In hồ sơ           Lập giấy hẹn tái khám sau 7-14 ngày, in đơn thuốc chuẩn A4 và hướng dẫn bệnh nhân<<extend>> từ UC-DOC-15 (Điều trị ngoại trú)Đã triển khai thật
+UC-DOC-15   Kết luận và Hoàn tất lượt khám              Kết luận phác đồ điều trị, đóng ca khám, chuyển dữ liệu sang Thu ngân           -                                           Đã triển khai thật
+
+----------------------------------------------------------------------------------------------------
+ACTOR 5: NHÂN VIÊN Y TẾ (NURSE) - Kênh: Web Admin Phân hệ Y tế & Phòng Kỹ thuật CLS
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-NUR-01   Đăng nhập Bàn làm việc Nhân viên Y tế       Xác thực tài khoản và quyền Nhân viên Y tế (Điều dưỡng/KTV CLS)                 -                                           Đã triển khai thật
+UC-NUR-02   Gọi số & Hỗ trợ tiếp nhận bệnh nhân vào bàn Hỗ trợ bác sĩ gọi số tiếp theo, chuẩn bị bệnh nhân vào bàn khám lâm sàng       -                                           Đã triển khai thật
+UC-NUR-03   Đo bổ sung sinh hiệu & Thực hiện y lệnh     Đo lại sinh hiệu khi cần, thực hiện test nhanh, sơ cứu hoặc y lệnh của bác sĩ   -                                           Đã triển khai thật
+UC-NUR-04   Tiếp nhận phiếu chỉ định Cận lâm sàng       Quét mã QR phiếu chỉ định CLS, kiểm tra điều kiện thực hiện của bệnh nhân       -                                           Đã triển khai thật
+UC-NUR-05   Thực hiện & Cập nhật kết quả CLS            Lấy mẫu bệnh phẩm xét nghiệm, chụp chiếu CĐHA, nhập kết quả kỹ thuật vào hệ thống<<include>> trong quy trình CLS     Đã triển khai thật
+UC-NUR-06   Hướng dẫn luồng di chuyển của bệnh nhân     Hướng dẫn bệnh nhân quay lại phòng khám sau khi làm CLS hoặc sang Thu ngân/Dược Hoạt động quy trình thực địa        Đã triển khai thật
+
+----------------------------------------------------------------------------------------------------
+ACTOR 6: NHÀ THUỐC (PHARMACY) - Kênh: Web Admin Phân hệ Quản lý Kho Dược & Nhà thuốc
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-PHA-01   Đăng nhập Bàn làm việc Nhà thuốc            Xác thực tài khoản và quyền Dược sĩ / Nhà thuốc                                 -                                           Đã triển khai thật
+UC-PHA-02   Tiếp nhận & Thẩm định đơn thuốc điện tử     Tra cứu đơn qua Mã BN/Mã đơn, kiểm tra tính hợp lệ và trạng thái đóng viện phí   -                                           Đã triển khai thật
+UC-PHA-03   Kiểm tra tính hợp lệ CCHN người kê đơn      Kiểm tra bác sĩ kê đơn có CCHN hợp lệ và đúng phạm vi chuyên môn quy định      <<include>> trong UC-PHA-02                 Đã triển khai thật
+UC-PHA-04   Cấp phát thuốc & Trừ kho tự động            Soạn thuốc theo đơn, khóa giao dịch nguyên tử SQL Server, trừ tồn theo lô và HSD<<include>> UC-PHA-02                       Đã triển khai thật
+UC-PHA-05   Quản lý danh mục dược, số lô và HSD         Quản lý tên thuốc, hàm lượng, giá bán, số lô, hạn dùng, đường dùng              -                                           Đã triển khai thật
+UC-PHA-06   Nhập kho dược phẩm mới                      Lập phiếu nhập kho thuốc từ nhà cung ứng, cập nhật số lượng tồn kho             -                                           Đã triển khai thật
+UC-PHA-07   Theo dõi thuốc sắp hết hạn & tồn kho thấp   Cảnh báo danh mục thuốc có hạn dùng < 3 tháng hoặc số lượng tồn dưới định mức   -                                           Đã triển khai thật
+UC-PHA-08   Tra cứu liên thông Cổng Đơn thuốc Quốc gia  Kiểm tra mã đơn liên thông ERX trên donthuocquocgia.vn                          Kết nối External: Cổng Đơn thuốc QG (Nét đứt)Thiết kế kiến trúc
+
+----------------------------------------------------------------------------------------------------
+ACTOR 7: THU NGÂN (CASHIER) - Kênh: Web Admin Phân hệ Quản lý Viện phí
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-CAS-01   Đăng nhập Bàn làm việc Thu ngân             Xác thực tài khoản và quyền Thu ngân viện phí                                   -                                           Đã triển khai thật
+UC-CAS-02   Tra cứu hóa đơn & Chi phí khám chữa bệnh    Tra cứu công nợ các khoản viện phí (Công khám, CLS, Thuốc) theo Mã BN/CCCD       -                                           Đã triển khai thật
+UC-CAS-03   Thu tiền mặt trực tiếp & Xuất biên lai      Thu tiền mặt trực tiếp tại quầy, xuất biên lai thu tiền viện phí có mã số thuế  Generalization của Thanh toán viện phí      Đã triển khai thật
+UC-CAS-04   Tạo mã thanh toán VietQR động               Sinh mã VietQR động theo ca khám có sẵn số tiền và nội dung chuyển khoản        Generalization của Thanh toán viện phí      Đã triển khai thật
+UC-CAS-05   Đối soát & Xác nhận chuyển khoản ngân hàng  Kiểm tra giao dịch chuyển khoản thành công, cập nhật trạng thái hóa đơn sang Paid-                                          Đã triển khai thật
+UC-CAS-06   Quyết toán chi phí BHYT và Mẫu 79a/80a      Tính toán mức hưởng BHYT (80%, 95%, 100%), tính số tiền người bệnh cùng chi trả Kết nối External: Cổng BHYT (Nét đứt)      Thiết kế kiến trúc
+UC-CAS-07   Xuất báo cáo doanh thu viện phí ca trực     Thống kê tiền mặt, tiền chuyển khoản, doanh thu theo chuyên khoa cuối ca trực   -                                           Đã triển khai thật
+
+----------------------------------------------------------------------------------------------------
+ACTOR 8: QUẢN TRỊ VIÊN (ADMIN) - Kênh: Web Admin Quản trị Cấp cao Toàn viện
+----------------------------------------------------------------------------------------------------
+Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
+UC-ADM-01   Đăng nhập Bàn làm việc Quản trị viên        Xác thực tài khoản Quản trị viên cấp cao (Admin)                                -                                           Đã triển khai thật
+UC-ADM-02   Quản trị tài khoản & Phân quyền (RBAC)      Tạo, khóa, phân quyền tài khoản nhân viên theo đúng 8 Actor quy chuẩn           -                                           Đã triển khai thật
+UC-ADM-03   Quản lý Giấy phép hành nghề CCHN (TT 32)    Quản lý số CCHN, ngày cấp, nơi cấp, phạm vi chuyên môn bác sĩ (Bền vững SQL)    -                                           Đã triển khai thật
+UC-ADM-04   Quản trị danh mục Khoa & Phòng khám         Thêm, sửa, đóng/mở buồng khám, phòng xét nghiệm, cấu hình Quota tiếp nhận       -                                           Đã triển khai thật
+UC-ADM-05   Quản trị danh mục Dịch vụ kỹ thuật & Bảng giá Cập nhật giá công khám, giá xét nghiệm, giá CĐHA và mức giá BHYT quy định   -                                           Đã triển khai thật
+UC-ADM-06   Quản trị danh mục Bệnh ICD-10 (TT 06/2026)  Chuẩn hóa 8 chương bệnh, 31 nhóm mã bệnh lâm sàng theo quy định Bộ Y tế         -                                           Đã triển khai thật
+UC-ADM-07   Xem Dashboard Báo cáo & Thống kê BI toàn viện Báo cáo số lượt tiếp đón, doanh thu toàn viện, công suất phòng khám           -                                           Đã triển khai thật
+UC-ADM-08   Xem Nhật ký & Kiểm toán hệ thống (Audit)    Truy vết lịch sử đăng nhập, thao tác bệnh án, đơn thuốc, audit xác nhận cấp cứu -                                           Đã triển khai thật
+UC-ADM-09   Giám sát Sức khỏe Vi dịch vụ (Microservices)Giám sát trạng thái hoạt động Gateway, Identity, Patient, Queue, Examination, DB -                                           Đã triển khai thật
+
+====================================================================================================
+PHẦN 3: BỐ CỤC 10 TRANG VẼ UML KHUYẾN NGHỊ CHO BÁO CÁO ĐỒ ÁN TỐT NGHIỆP
+====================================================================================================
+Trang 00: Sơ đồ Use Case Tổng quan Toàn viện (8 Phân hệ x 8 Actor x 4 External Systems) - Khổ Ngang (Landscape)
+Trang 01: Sơ đồ chi tiết Actor 1 - Bệnh nhân (Patient) - 13 Use Cases - Khổ Đứng (Portrait)
+Trang 02: Sơ đồ chi tiết Actor 2 - Nhân viên tiếp nhận (Receptionist) - 8 Use Cases - Khổ Đứng (Portrait)
+Trang 03: Sơ đồ chi tiết Actor 3 - Nhân viên sàng lọc y tế (Triage) - 6 Use Cases - Khổ Đứng (Portrait)
+Trang 04: Sơ đồ chi tiết Actor 4 - Bác sĩ lâm sàng (Doctor) - 15 Use Cases - Khổ Ngang (Landscape)
+Trang 05: Sơ đồ chi tiết Actor 5 - Nhân viên Y tế (Nurse) - 6 Use Cases - Khổ Đứng (Portrait)
+Trang 06: Sơ đồ chi tiết Actor 6 - Nhà thuốc (Pharmacy) - 8 Use Cases - Khổ Đứng (Portrait)
+Trang 07: Sơ đồ chi tiết Actor 7 - Thu ngân (Cashier) - 7 Use Cases - Khổ Đứng (Portrait)
+Trang 08: Sơ đồ chi tiết Actor 8 - Quản trị viên (Admin) - 9 Use Cases - Khổ Đứng (Portrait)
+Trang 09: Sơ đồ Tương tác với 4 Hệ thống ngoài (External Systems Integration) - Khổ Đứng (Portrait)
+====================================================================================================
