@@ -28,10 +28,13 @@ import {
   SafetyOutlined,
   WarningOutlined,
   UserOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons';
 import { Patient } from '../types';
 import { patientService, PatientCreateParams } from '../services/patientService';
+import { queueService, DepartmentItem } from '../services/queueService';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { showSuccessAlert, showErrorAlert, showConfirmDelete, showToast } from '../utils/sweetAlert';
@@ -61,6 +64,17 @@ export const PatientsPage: React.FC = () => {
 
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Direct Walk-in Booking State
+  const [isDirectBookingModalOpen, setIsDirectBookingModalOpen] = useState<boolean>(false);
+  const [directBookingPatient, setDirectBookingPatient] = useState<Patient | null>(null);
+  const [directBookingForm] = Form.useForm();
+  const [departments, setDepartments] = useState<DepartmentItem[]>([]);
+  const [bookingSubmitting, setBookingSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    queueService.getDepartments().then((data) => setDepartments(data)).catch(() => {});
+  }, []);
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
@@ -200,6 +214,64 @@ export const PatientsPage: React.FC = () => {
     }
   };
 
+  // Open Direct Walk-in Booking Modal
+  const openDirectBookingModal = (patient: Patient) => {
+    setDirectBookingPatient(patient);
+    const hasBhyt = Boolean(patient.maTheBHYT);
+    const isPriorityAge = patient.tuoi !== undefined && (patient.tuoi >= 75 || patient.tuoi < 6);
+    directBookingForm.setFieldsValue({
+      departmentId: departments[0]?.id || 'dept-01',
+      visitType: 'New',
+      priority: isPriorityAge ? 'Priority' : 'Normal',
+      paymentStatus: hasBhyt ? 'InsuranceWaived' : 'Paid',
+      reason: '',
+    });
+    setIsDirectBookingModalOpen(true);
+  };
+
+  // Submit Direct Walk-in Booking (Cấp STT & Đưa vào hàng chờ)
+  const handleDirectBookingSubmit = async (values: any) => {
+    if (!directBookingPatient) return;
+    setBookingSubmitting(true);
+    try {
+      const selectedDept = departments.find((d) => d.id === values.departmentId) || departments[0];
+      const hasBhyt = Boolean(directBookingPatient.maTheBHYT);
+      const isPriority = values.priority === 'Priority';
+      const isEmergency = values.priority === 'Emergency';
+
+      const ticket = await queueService.issueQueueTicket({
+        patientId: directBookingPatient.id,
+        departmentId: values.departmentId || (selectedDept ? selectedDept.id : 'dept-01'),
+        priority: isEmergency ? 'Emergency' : isPriority ? 'Priority' : 'Normal',
+        patientName: directBookingPatient.hoTen,
+        patientCode: directBookingPatient.maBenhNhan,
+        patientAge: directBookingPatient.tuoi,
+        patientGender: directBookingPatient.gioiTinh,
+        identityCardNumber: directBookingPatient.soCCCD,
+        healthInsuranceNumber: directBookingPatient.maTheBHYT,
+        visitType: values.visitType || 'New',
+        paymentStatus: values.paymentStatus || (hasBhyt ? 'InsuranceWaived' : 'Paid'),
+      });
+
+      setIsDirectBookingModalOpen(false);
+      directBookingForm.resetFields();
+
+      showSuccessAlert(
+        'Đăng Ký Khám Trực Tiếp Thành Công!',
+        `Đã cấp Số Thứ Tự: #${ticket.sequenceNumber}\n` +
+        `• Bệnh nhân: ${directBookingPatient.hoTen} (${directBookingPatient.maBenhNhan})\n` +
+        `• Chuyên khoa: ${ticket.departmentName} (${ticket.location})\n` +
+        `• Phân loại: ${values.visitType === 'FollowUp' ? 'Tái khám' : 'Khám mới lần đầu'}\n` +
+        `• Viện phí: ${ticket.paymentStatus === 'InsuranceWaived' ? 'Miễn tạm ứng (BHYT)' : ticket.paymentStatus === 'Paid' ? 'Đã thanh toán tạm ứng' : 'Chưa nộp phí'}\n\n` +
+        `Phiếu khám đã được chuyển vào hàng chờ buồng khám Bác sĩ!`
+      );
+    } catch (err: any) {
+      showErrorAlert('Không thể cấp số', err.message || 'Lỗi khi tạo lượt khám trực tiếp.');
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
+
   // View Detail Modal
   const openDetailModal = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -297,9 +369,18 @@ export const PatientsPage: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 220,
+      width: 310,
       render: (_: unknown, record: Patient) => (
         <Space size="small">
+          <Button
+            icon={<CalendarOutlined />}
+            type="primary"
+            size="small"
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
+            onClick={() => openDirectBookingModal(record)}
+          >
+            Đặt khám
+          </Button>
           <Button
             icon={<FileTextOutlined />}
             type="primary"
@@ -832,6 +913,189 @@ export const PatientsPage: React.FC = () => {
                 {selectedPatient.ngayTao ? dayjs(selectedPatient.ngayTao).format('DD/MM/YYYY HH:mm') : 'N/A'}
               </Descriptions.Item>
             </Descriptions>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal Đăng Ký Khám Trực Tiếp (Direct Walk-in Booking & Issue Queue Ticket) */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CalendarOutlined style={{ color: '#0284c7', fontSize: 20 }} />
+            <div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: isDarkMode ? '#f8fafc' : '#0369a1' }}>
+                Đăng Ký Khám Trực Tiếp Tại Bệnh Viện (Walk-in)
+              </span>
+              <div style={{ fontSize: 12, fontWeight: 400, color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                Cấp số thứ tự và phân luồng bệnh nhân trực tiếp vào hàng chờ buồng khám
+              </div>
+            </div>
+          </div>
+        }
+        open={isDirectBookingModalOpen}
+        onCancel={() => {
+          setIsDirectBookingModalOpen(false);
+          directBookingForm.resetFields();
+        }}
+        footer={null}
+        width={680}
+        destroyOnClose
+      >
+        {directBookingPatient && (
+          <div>
+            {/* Patient Mini Banner */}
+            <div
+              style={{
+                padding: '12px 16px',
+                borderRadius: 10,
+                background: isDarkMode ? '#1e293b' : '#f0f9ff',
+                border: isDarkMode ? '1px solid #334155' : '1px solid #bae6fd',
+                marginBottom: 18,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Text strong style={{ fontSize: 15, color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+                    {directBookingPatient.hoTen}
+                  </Text>
+                  <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                    {directBookingPatient.maBenhNhan}
+                  </Tag>
+                  <Tag color={directBookingPatient.gioiTinh === 'Nam' ? 'blue' : 'magenta'}>
+                    {directBookingPatient.gioiTinh}
+                  </Tag>
+                  {directBookingPatient.tuoi !== undefined && (
+                    <Tag color="cyan">{directBookingPatient.tuoi} tuổi</Tag>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: isDarkMode ? '#94a3b8' : '#64748b', marginTop: 4 }}>
+                  CCCD: <span style={{ fontFamily: 'monospace' }}>{directBookingPatient.soCCCD}</span> | SĐT: {directBookingPatient.soDienThoai}
+                </div>
+              </div>
+              <div>
+                {directBookingPatient.maTheBHYT ? (
+                  <Tag color="green" icon={<SafetyOutlined />} style={{ padding: '4px 8px', fontSize: 12 }}>
+                    BHYT: {directBookingPatient.maTheBHYT}
+                  </Tag>
+                ) : (
+                  <Tag color="orange" style={{ padding: '4px 8px', fontSize: 12 }}>
+                    Khám Dịch Vụ (Không BHYT)
+                  </Tag>
+                )}
+              </div>
+            </div>
+
+            <Form
+              form={directBookingForm}
+              layout="vertical"
+              onFinish={handleDirectBookingSubmit}
+            >
+              <Row gutter={16}>
+                <Col span={14}>
+                  <Form.Item
+                    name="departmentId"
+                    label={<Text strong>Chuyên Khoa / Buồng Khám</Text>}
+                    rules={[{ required: true, message: 'Vui lòng chọn chuyên khoa khám!' }]}
+                  >
+                    <Select placeholder="Chọn khoa tiếp nhận" size="large">
+                      {departments.map((d) => (
+                        <Option key={d.id} value={d.id}>
+                          {d.departmentName} ({d.location})
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={10}>
+                  <Form.Item
+                    name="visitType"
+                    label={<Text strong>Loại Hình Khám</Text>}
+                    rules={[{ required: true }]}
+                  >
+                    <Select size="large">
+                      <Option value="New">Khám Lần Đầu (Mới)</Option>
+                      <Option value="FollowUp">Khám Tái Khám</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="priority"
+                    label={<Text strong>Mức Độ Phân Luồng Ưu Tiên</Text>}
+                    rules={[{ required: true }]}
+                  >
+                    <Select size="large">
+                      <Option value="Normal">Khám Thường (Thứ tự chuẩn)</Option>
+                      <Option value="Priority">Ưu Tiên (Luật KCB: Cao tuổi / Trẻ nhỏ / Thai phụ)</Option>
+                      <Option value="Emergency">Cấp Cứu Khẩn Cấp (Vào khám ngay)</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="paymentStatus"
+                    label={<Text strong>Trạng Thái Viện Phí Ban Đầu</Text>}
+                    rules={[{ required: true }]}
+                  >
+                    <Select size="large">
+                      <Option value="InsuranceWaived">Miễn Tạm Ứng (Hưởng BHYT)</Option>
+                      <Option value="Paid">Đã Thu Phí Khám (Tiền mặt / VietQR)</Option>
+                      <Option value="Unpaid">Chưa Nộp Phí (Cần qua Thu ngân)</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item
+                name="reason"
+                label={<Text strong>Lý Do Đến Khám / Triệu Chứng Ban Đầu</Text>}
+              >
+                <Input.TextArea
+                  rows={2}
+                  placeholder="Ví dụ: Đau đầu, sốt nhẹ 2 ngày, ho có đờm, đau thượng vị..."
+                />
+              </Form.Item>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 12,
+                  marginTop: 20,
+                  borderTop: isDarkMode ? '1px solid #334155' : '1px solid #f1f5f9',
+                  paddingTop: 16,
+                }}
+              >
+                <Button
+                  onClick={() => setIsDirectBookingModalOpen(false)}
+                  size="large"
+                >
+                  Hủy Bỏ
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={bookingSubmitting}
+                  icon={<CheckCircleOutlined />}
+                  size="large"
+                  style={{
+                    backgroundColor: '#0284c7',
+                    borderColor: '#0284c7',
+                    fontWeight: 600,
+                  }}
+                >
+                  Xác Nhận Đăng Ký & Cấp Số STT
+                </Button>
+              </div>
+            </Form>
           </div>
         )}
       </Modal>

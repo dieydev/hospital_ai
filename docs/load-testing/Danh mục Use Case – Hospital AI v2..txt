@@ -11,7 +11,7 @@ Chuẩn hóa khớp 100% với:
 TỔNG QUAN HỆ THỐNG & RANH GIỚI UML:
 - Đúng 8 Actor người dùng nội bộ/bệnh nhân (Không đổi tên, không gộp, không xóa vai trò).
 - 4 Tác nhân ngoài (External Systems) được vẽ hình chữ nhật <<system>> bên phải System Boundary.
-- Tổng số: 72 Use Case chi tiết phân bổ hoàn chỉnh trên 8 Actor.
+- Tổng số: 73 Use Case chi tiết phân bổ hoàn chỉnh trên 8 Actor.
 - Quan hệ <<include>>: Bắt buộc thực hiện trong luồng nghiệp vụ chính.
 - Quan hệ <<extend>>: Hành động rẽ nhánh có điều kiện (khi cần CLS, khi có thuốc, khi tái khám, v.v.).
 - Nét liền (Solid): Nghiệp vụ nội bộ bệnh viện đã hoàn thiện và kiểm thử đạt 91/91 tests.
@@ -29,11 +29,11 @@ PHẦN 1: MA TRẬN 8 NHÓM CHỨC NĂNG TRÊN SƠ ĐỒ USE CASE TỔNG QUÁT (
 | 4 | Khám lâm sàng & Hồ sơ EMR | Bác sĩ gọi số, xem EMR cũ, khám SOAP, chẩn đoán ICD-10, ký số EMR, chuyển viện | Bác sĩ lâm sàng, Nhân viên Y tế, Bệnh nhân | - |
 | 5 | Quản lý Cận lâm sàng hai chiều | Bác sĩ chỉ định CLS -> Y tế lấy mẫu/thực hiện -> Quét QR quay lại -> Bác sĩ đọc KQ | Bác sĩ lâm sàng, Nhân viên Y tế, Bệnh nhân | - |
 | 6 | Quản lý Dược & Cấp phát thuốc | Thẩm định đơn, kiểm tra CCHN, trừ kho nguyên tử, cấp phát thuốc ngoại trú | Bác sĩ lâm sàng, Nhà thuốc, Bệnh nhân | Cổng Đơn thuốc Quốc gia (Nét đứt) |
-| 7 | Viện phí & Quyết toán BHYT | Thu công khám trước, thu tiền CLS, quyết toán BHYT (Tiền mặt & VietQR) | Thu ngân, Nhân viên tiếp nhận, Bệnh nhân | Cổng VietQR/Ngân hàng, Cổng BHYT (Nét đứt) |
+| 7 | Viện phí & Quyết toán BHYT | Thu công khám trước, thu tiền CLS, quyết toán BHYT (Tiền mặt & VietQR/VNPAY) | Thu ngân, Nhân viên tiếp nhận, Bệnh nhân | Cổng VietQR/VNPAY Sandbox, Cổng BHYT (Nét đứt) |
 | 8 | Quản trị hệ thống, AI & Báo cáo | Phân quyền RBAC, CCHN TT32, danh mục khoa/giá/ICD-10, Audit log, Trợ lý Gemini AI | Quản trị viên (Admin), Bác sĩ, Bệnh nhân | Google Gemini AI |
 
 ====================================================================================================
-PHẦN 2: DANH MỤC CHI TIẾT 72 USE CASE THEO ĐÚNG 8 ACTOR
+PHẦN 2: DANH MỤC CHI TIẾT 73 USE CASE THEO ĐÚNG 8 ACTOR
 ====================================================================================================
 
 ----------------------------------------------------------------------------------------------------
@@ -41,18 +41,19 @@ ACTOR 1: BỆNH NHÂN (PATIENT) - Kênh: Mobile App / Web Portal / Kiosk Sảnh
 ----------------------------------------------------------------------------------------------------
 Mã UC       Tên Use Case                                Mô tả chi tiết nghiệp vụ                                                        Quan hệ UML khuyến nghị                     Trạng thái
 UC-PAT-01   Đăng ký & Đăng nhập tài khoản               Xác thực qua SĐT, CCCD gắn chip, mật khẩu, JWT token                            -                                           Đã triển khai thật
-UC-PAT-02   Đặt lịch khám trực tuyến (Online)           Chọn chuyên khoa, bác sĩ lâm sàng, chọn ngày khám và khung giờ trống           <<include>> Chọn khoa, bác sĩ, giờ          Đã triển khai thật
-UC-PAT-03   Đặt lịch khám hộ cho người thân             Nhập thông tin người thân (Họ tên, CCCD, SĐT, quan hệ)                         <<extend>> từ UC-PAT-02 (Khám cho thân nhân) Đã triển khai thật
-UC-PAT-04   Quản lý & Hủy/đổi lịch hẹn đã đặt           Xem danh sách phiếu hẹn khám, hủy lịch hẹn trước giờ khám                       -                                           Đã triển khai thật
-UC-PAT-05   Lấy số thứ tự khám trực tiếp tại Kiosk      Bệnh nhân khám trực tiếp tự bấm màn hình cảm ứng Kiosk nhận STT                 Phân luồng với UC-PAT-02 (Khám trực tiếp)   Đã triển khai thật
-UC-PAT-06   Quét mã QR Check-in tự động tại Kiosk       Quét mã QR lịch hẹn online hoặc QR tái khám tại đầu đọc Kiosk để nhận STT phòng khám -                                     Đã triển khai thật
-UC-PAT-07   Quét mã QR quay lại phòng khám sau CLS      Sau khi làm xong xét nghiệm/X-quang, quét QR để xếp hàng chờ đọc kết quả        <<include>> trong quy trình CLS hai chiều   Đã triển khai thật
-UC-PAT-08   Theo dõi tiến độ hàng đợi thời gian thực    Xem số thứ tự đang khám, số người còn chờ trước mình qua SignalR                -                                           Đã triển khai thật
-UC-PAT-09   Xem Hồ sơ Bệnh án Điện tử (EMR) cá nhân     Xem lịch sử tất cả các đợt khám, chẩn đoán bệnh chính/phụ, kết luận điều trị     -                                           Đã triển khai thật
-UC-PAT-10   Xem kết quả Cận lâm sàng trực tuyến         Xem kết quả xét nghiệm máu/nước tiểu, kết quả chẩn đoán hình ảnh phim X-quang   <<extend>> từ UC-PAT-09                     Đã triển khai thật
-UC-PAT-11   Xem đơn thuốc điện tử & nhắc lịch uống      Xem chi tiết tên thuốc, liều lượng, số ngày uống và chia 4 cữ Sáng/Trưa/Chiều/Tối <<extend>> từ UC-PAT-09                 Đã triển khai thật
-UC-PAT-12   Thanh toán viện phí qua VietQR              Quét mã QR động chuyển khoản ngân hàng trả tiền công khám, phí CLS, tiền thuốc  Kết nối External: VietQR / Ngân hàng        Đã triển khai thật
-UC-PAT-13   Hỏi đáp sức khỏe với Trợ lý Gemini AI       Trò chuyện hỏi đáp triệu chứng, nhận khuyến nghị phòng ngừa và gợi ý chuyên khoa Kết nối External: Google Gemini AI          Đã triển khai thật
+UC-PAT-02   Đăng ký khám trực tiếp tại quầy tiếp đón    Đến trực tiếp bệnh viện, xuất trình CCCD/BHYT, đăng ký chuyên khoa với tiếp đón Tương tác với UC-REC-02 & UC-REC-03        Đã triển khai thật
+UC-PAT-03   Đặt lịch khám trực tuyến (Online)           Chọn chuyên khoa, bác sĩ lâm sàng, chọn ngày khám và khung giờ trống           <<include>> Chọn khoa, bác sĩ, giờ          Đã triển khai thật
+UC-PAT-04   Đặt lịch khám hộ cho người thân             Nhập thông tin người thân (Họ tên, CCCD, SĐT, quan hệ)                         <<extend>> từ UC-PAT-03 (Khám cho thân nhân) Đã triển khai thật
+UC-PAT-05   Quản lý & Hủy/đổi lịch hẹn đã đặt           Xem danh sách phiếu hẹn khám, hủy lịch hẹn trước giờ khám                       -                                           Đã triển khai thật
+UC-PAT-06   Lấy số thứ tự khám trực tiếp tại Kiosk      Bệnh nhân khám trực tiếp tự bấm màn hình cảm ứng Kiosk nhận STT                 Phân luồng kênh Kiosk (Khám trực tiếp)      Đã triển khai thật
+UC-PAT-07   Quét mã QR Check-in tự động tại Kiosk       Quét mã QR lịch hẹn online hoặc QR tái khám tại đầu đọc Kiosk để nhận STT phòng khám -                                     Đã triển khai thật
+UC-PAT-08   Quét mã QR quay lại phòng khám sau CLS      Sau khi làm xong xét nghiệm/X-quang, quét QR để xếp hàng chờ đọc kết quả        <<include>> trong quy trình CLS hai chiều   Đã triển khai thật
+UC-PAT-09   Theo dõi tiến độ hàng đợi thời gian thực    Xem số thứ tự đang khám, số người còn chờ trước mình qua SignalR                -                                           Đã triển khai thật
+UC-PAT-10   Xem Hồ sơ Bệnh án Điện tử (EMR) cá nhân     Xem lịch sử tất cả các đợt khám, chẩn đoán bệnh chính/phụ, kết luận điều trị     -                                           Đã triển khai thật
+UC-PAT-11   Xem kết quả Cận lâm sàng trực tuyến         Xem kết quả xét nghiệm máu/nước tiểu, kết quả chẩn đoán hình ảnh phim X-quang   <<extend>> từ UC-PAT-10                     Đã triển khai thật
+UC-PAT-12   Xem đơn thuốc điện tử & nhắc lịch uống      Xem chi tiết tên thuốc, liều lượng, số ngày uống và chia 4 cữ Sáng/Trưa/Chiều/Tối <<extend>> từ UC-PAT-10                 Đã triển khai thật
+UC-PAT-13   Thanh toán viện phí trực tuyến (VNPAY/VietQR)Quét mã VietQR động hoặc chuyển khoản VNPAY Sandbox trả công khám, CLS, thuốc   Kết nối External: VNPAY / VietQR            Đã triển khai thật
+UC-PAT-14   Hỏi đáp sức khỏe với Trợ lý Gemini AI       Trò chuyện hỏi đáp triệu chứng, nhận khuyến nghị phòng ngừa và gợi ý chuyên khoa Kết nối External: Google Gemini AI          Đã triển khai thật
 
 ----------------------------------------------------------------------------------------------------
 ACTOR 2: NHÂN VIÊN TIẾP NHẬN (RECEPTIONIST) - Kênh: Web Admin Phân hệ Tiếp đón
@@ -152,7 +153,7 @@ UC-ADM-09   Giám sát Sức khỏe Vi dịch vụ (Microservices)Giám sát tr�
 PHẦN 3: BỐ CỤC 10 TRANG VẼ UML KHUYẾN NGHỊ CHO BÁO CÁO ĐỒ ÁN TỐT NGHIỆP
 ====================================================================================================
 Trang 00: Sơ đồ Use Case Tổng quan Toàn viện (8 Phân hệ x 8 Actor x 4 External Systems) - Khổ Ngang (Landscape)
-Trang 01: Sơ đồ chi tiết Actor 1 - Bệnh nhân (Patient) - 13 Use Cases - Khổ Đứng (Portrait)
+Trang 01: Sơ đồ chi tiết Actor 1 - Bệnh nhân (Patient) - 14 Use Cases - Khổ Đứng (Portrait)
 Trang 02: Sơ đồ chi tiết Actor 2 - Nhân viên tiếp nhận (Receptionist) - 8 Use Cases - Khổ Đứng (Portrait)
 Trang 03: Sơ đồ chi tiết Actor 3 - Nhân viên sàng lọc y tế (Triage) - 6 Use Cases - Khổ Đứng (Portrait)
 Trang 04: Sơ đồ chi tiết Actor 4 - Bác sĩ lâm sàng (Doctor) - 15 Use Cases - Khổ Ngang (Landscape)
