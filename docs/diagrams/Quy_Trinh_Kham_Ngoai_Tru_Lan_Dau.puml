@@ -1,0 +1,133 @@
+@startuml
+title LƯU ĐỒ QUY TRÌNH KHÁM NGOẠI TRÚ LẦN ĐẦU (SWIMLANE UML ACTIVITY DIAGRAM)
+
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #0284c7
+  FontName "Segoe UI", Arial
+  FontSize 12
+  FontColor #0F172A
+  BorderThickness 1.5
+}
+skinparam arrow {
+  Color #334155
+  FontColor #0F172A
+  FontSize 11
+}
+skinparam swimlane {
+  BorderColor #94A3B8
+  BorderThickness 1.2
+  TitleFontColor #FFFFFF
+  TitleFontSize 13
+  TitleFontStyle bold
+}
+
+|#0284C7| Bệnh nhân |
+|#0369A1| Kiosk & Hệ thống |
+|#D97706| Nhân viên tiếp nhận |
+|#7C3AED| Nhân viên sàng lọc y tế |
+|#16A34A| Bác sĩ lâm sàng |
+|#DB2777| Nhân viên Y tế (CLS) |
+|#DC2626| Thu ngân |
+|#9333EA| Nhà thuốc |
+
+|Bệnh nhân|
+start
+:Đăng ký khám ngoại trú lần đầu;
+if (Hình thức đăng ký?) then ([Online qua Web/App])
+  :Đặt lịch online trên Web hoặc Mobile App;
+  |Kiosk & Hệ thống|
+  :Xác nhận lịch hẹn & Cấp mã QR;
+  |Bệnh nhân|
+  :Đến bệnh viện theo đúng ngày hẹn;
+else ([Trực tiếp tại quầy])
+  :Đến quầy tiếp nhận tại sảnh bệnh viện;
+  |Nhân viên tiếp nhận|
+  :Kiểm tra CCCD (Đề án 06), thẻ BHYT & tạo hồ sơ BN mới;
+endif
+
+|Nhân viên sàng lọc y tế|
+:Xác thực thông tin người bệnh & check-in;
+if (Thông tin hợp lệ?) then ([Không hợp lệ])
+  |Nhân viên tiếp nhận|
+  :Hỗ trợ bổ sung thông tin hồ sơ;
+  |Nhân viên sàng lọc y tế|
+else ([Hợp lệ])
+endif
+
+:Đo sinh hiệu (Mạch, HA, Nhiệt độ, SpO2, BMI),\nkhai thác triệu chứng ban đầu & phân khoa khám;
+
+|Kiosk & Hệ thống|
+:Hệ thống xác nhận lượt khám và phòng khám chuyên khoa;
+if (Cần thu phí khám trước?) then ([Có])
+  |Thu ngân|
+  :Thu phí khám ban đầu (Tiền mặt / VietQR / VNPAY);
+else ([Không])
+endif
+
+|Bệnh nhân|
+:Đến Kiosk tự phục vụ và quét mã QR;
+|Kiosk & Hệ thống|
+if (Lượt khám đủ điều kiện cấp STT?) then ([Không đủ ĐK])
+  :Thông báo lỗi & hướng dẫn xử lý tại quầy;
+  stop
+else ([Đủ ĐK])
+  :Tự động cấp STT theo phòng khám;\nKiosk in phiếu STT & cập nhật hàng chờ Realtime;
+endif
+
+|Bác sĩ lâm sàng|
+:Y tế gọi số và tiếp nhận bệnh nhân vào phòng khám;
+:Bác sĩ thăm khám lâm sàng & ghi chép bệnh án điện tử SOAP;
+|Kiosk & Hệ thống|
+:Trợ lý AI gợi ý mã ICD-10 & kiểm tra tương tác thuốc (DDI);
+
+|Bác sĩ lâm sàng|
+if (Cần cận lâm sàng?) then ([Có chỉ định CLS])
+  :Bác sĩ lập phiếu chỉ định CLS (X-quang, Xét nghiệm, Siêu âm...);
+  if (Cần thanh toán CLS trước?) then ([Có])
+    |Thu ngân|
+    :Thu ngân xử lý thanh toán chi phí CLS;
+  else ([Không])
+  endif
+  |Nhân viên Y tế (CLS)|
+  :Tiếp nhận theo hàng chờ ưu tiên CLS,\nthực hiện kỹ thuật chụp chiếu / xét nghiệm;
+  :Nhập kết quả chỉ số, tải ảnh phim & ký chứng thực kết quả;
+  |Kiosk & Hệ thống|
+  :AI Vision hỗ trợ phân tích tổn thương X-Quang lồng ngực;
+  |Bệnh nhân|
+  :Quét QR xác nhận quay lại phòng khám Bác sĩ;
+  |Bác sĩ lâm sàng|
+  :Y tế gọi bệnh nhân theo hàng chờ đọc kết quả CLS;
+  :Đọc kết quả CLS đã chứng thực và đánh giá tổn thương;
+else ([Không chỉ định CLS])
+endif
+
+:Bác sĩ kết luận chẩn đoán xác định,\nlên đơn điều trị & hoàn thiện hồ sơ EMR;
+|Kiosk & Hệ thống|
+:Ký số điện tử RSA/SHA-256 & Khóa bất biến bệnh án EMR;
+
+|Bác sĩ lâm sàng|
+if (Chỉ định tiếp theo?) then ([Nhập viện hoặc chuyển viện])
+  :Lập chỉ định nhập viện hoặc chuyển viện tuyến trên;
+  |Thu ngân|
+  :Đối soát chi phí khám ngoại trú phát sinh;
+  |Nhân viên tiếp nhận|
+  :Bàn giao hồ sơ bệnh nhân sang quy trình liên quan;
+  |Bệnh nhân|
+  stop
+else ([Điều trị ngoại trú])
+  |Thu ngân|
+  :Thu ngân quyết toán viện phí & khấu trừ chế độ BHYT;
+  if (Có đơn thuốc điều trị?) then ([Có đơn thuốc])
+    |Nhà thuốc|
+    :Kiểm tra đơn thuốc điện tử trạng thái PAID;\nThực thi trừ kho thuốc nguyên tử và cấp phát thuốc;
+  else ([Không có thuốc])
+  endif
+  |Bác sĩ lâm sàng|
+  :Lưu diễn biến điều trị & lập giấy hẹn tái khám nếu cần;
+  |Bệnh nhân|
+  :Nhận toa thuốc điện tử, nghe dặn dò\nvà hoàn tất quy trình khám ngoại trú lần đầu;
+  stop
+endif
+
+@enduml

@@ -1,0 +1,124 @@
+@startuml
+title LƯU ĐỒ QUY TRÌNH KHÁM NGOẠI TRÚ TÁI KHÁM (SWIMLANE UML ACTIVITY DIAGRAM)
+
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #0284c7
+  FontName "Segoe UI", Arial
+  FontSize 12
+  FontColor #0F172A
+  BorderThickness 1.5
+}
+skinparam arrow {
+  Color #334155
+  FontColor #0F172A
+  FontSize 11
+}
+skinparam swimlane {
+  BorderColor #94A3B8
+  BorderThickness 1.2
+  TitleFontColor #FFFFFF
+  TitleFontSize 13
+  TitleFontStyle bold
+}
+
+|#0284C7| Bệnh nhân |
+|#0369A1| Kiosk & Hệ thống |
+|#D97706| Nhân viên tiếp nhận |
+|#7C3AED| Nhân viên sàng lọc y tế |
+|#16A34A| Bác sĩ lâm sàng |
+|#DB2777| Nhân viên Y tế (CLS) |
+|#DC2626| Thu ngân |
+|#9333EA| Nhà thuốc |
+
+|Bệnh nhân|
+start
+:Đến tái khám theo giấy hẹn hoặc mã QR;
+|Nhân viên tiếp nhận|
+:Kiểm tra giấy hẹn hoặc mã QR tái khám;
+:Tra cứu hồ sơ bệnh nhân cũ và xác thực thông tin;
+if (Giấy hẹn và thông tin hợp lệ?) then ([Không hợp lệ])
+  :Nhân viên tiếp nhận hỗ trợ xác minh;
+  if (Đủ điều kiện tái khám?) then ([Không đủ ĐK])
+    :Chuyển đăng ký khám thông thường hoặc hẹn lại;
+    stop
+  else ([Đủ ĐK])
+  endif
+else ([Hợp lệ])
+endif
+
+:Giữ nguyên mã định danh bệnh nhân cũ (PatientId),\ntạo lượt tái khám mới (liên kết PreviousRecordId);
+:Xác nhận hoặc cấp mã QR cho lượt tái khám;
+
+|Nhân viên sàng lọc y tế|
+:Đo sinh hiệu ngày tái khám & cập nhật triệu chứng hiện tại;
+:Xác nhận chuyên khoa và phòng khám Bác sĩ đã hẹn;
+
+|Kiosk & Hệ thống|
+if (Cần thu phí khám trước?) then ([Có])
+  |Thu ngân|
+  :Thu ngân thu phí khám tái khám;
+else ([Không])
+endif
+
+|Bệnh nhân|
+:Đến Kiosk tự phục vụ và quét mã QR tái khám;
+|Kiosk & Hệ thống|
+if (Lượt tái khám đủ điều kiện cấp STT?) then ([Không đủ ĐK])
+  :Hướng dẫn xử lý thông tin hoặc thanh toán tại quầy;
+  stop
+else ([Đủ ĐK])
+  :Cấp STT Ưu tiên theo phòng khám chuyên khoa cũ;\nKiosk in phiếu STT & cập nhật hàng chờ Realtime;
+endif
+
+|Bác sĩ lâm sàng|
+:Y tế gọi số và tiếp nhận bệnh nhân tái khám;
+:Bác sĩ mở xem lại toàn bộ hồ sơ EMR cũ,\nkết quả điều trị & đơn thuốc đợt trước;
+:Khám lâm sàng và đánh giá mức độ thuyên giảm / đáp ứng thuốc;
+
+if (Cần cận lâm sàng kiểm tra lại?) then ([Có chỉ định CLS theo dõi])
+  :Bác sĩ lập phiếu chỉ định CLS kiểm tra lại chỉ số;
+  if (Cần thanh toán CLS trước?) then ([Có])
+    |Thu ngân|
+    :Thu ngân xử lý thanh toán chi phí CLS;
+  else ([Không])
+  endif
+  |Nhân viên Y tế (CLS)|
+  :Thực hiện kỹ thuật CLS theo dõi (Xét nghiệm máu, X-Quang...);\nNhập kết quả và ký chứng thực;
+  |Bệnh nhân|
+  :Quét QR xác nhận quay lại phòng khám Bác sĩ;
+  |Bác sĩ lâm sàng|
+  :Y tế gọi bệnh nhân theo hàng chờ đọc kết quả CLS;
+  :Đọc kết quả mới, so sánh đối chiếu chỉ số cũ - mới;
+else ([Không chỉ định CLS])
+endif
+
+:Bác sĩ kết luận chẩn đoán xác định,\nđiều chỉnh điều trị (chỉnh liều, đổi thuốc hoặc duy trì phác đồ);
+|Kiosk & Hệ thống|
+:Ký số điện tử RSA/SHA-256 & Khóa bệnh án EMR;
+
+|Bác sĩ lâm sàng|
+if (Chỉ định tiếp theo?) then ([Nhập viện hoặc chuyển viện])
+  :Lập chỉ định nhập viện hoặc chuyển tuyến;
+  |Thu ngân|
+  :Đối soát chi phí khám ngoại trú phát sinh;
+  |Nhân viên tiếp nhận|
+  :Bàn giao hồ sơ EMR sang quy trình liên quan;
+  |Bệnh nhân|
+  stop
+else ([Điều trị ngoại trú])
+  |Thu ngân|
+  :Thu ngân quyết toán viện phí & khấu trừ chế độ BHYT;
+  if (Có đơn thuốc tái khám?) then ([Có đơn thuốc])
+    |Nhà thuốc|
+    :Kiểm tra đơn thuốc điện tử trạng thái PAID;\nThực thi trừ kho thuốc nguyên tử và cấp phát thuốc;
+  else ([Không có thuốc])
+  endif
+  |Bác sĩ lâm sàng|
+  :Lưu diễn biến điều trị & lập giấy hẹn tái khám kế tiếp;
+  |Bệnh nhân|
+  :Nhận toa thuốc tái khám, nghe dặn dò\nvà hoàn tất quy trình khám ngoại trú tái khám;
+  stop
+endif
+
+@enduml

@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1830" width="1560" height="1830" style="background-color: #ffffff; font-family: Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+<defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#334155" />
+      </marker>
+      <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#16a34a" />
+      </marker>
+      <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626" />
+      </marker>
+      <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+        <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.08" />
+      </filter>
+    </defs>
+<rect x="20" y="10" width="1520" height="40" rx="8" fill="#0f172a" />
+<text x="780.0" y="36" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff" letter-spacing="0.5">LƯU ĐỒ QUY TRÌNH KHÁM NGOẠI TRÚ TÁI KHÁM (SWIMLANE ACTIVITY DIAGRAM)</text>
+<rect x="20" y="60" width="190" height="1750" fill="#e0f2fe" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="20" y="60" width="190" height="70" fill="#0284c7" stroke="#cbd5e1" stroke-width="1" />
+<text x="115.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Bệnh nhân</text>
+<text x="115.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Patient)</text>
+<rect x="210" y="60" width="190" height="1750" fill="#f0f9ff" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="210" y="60" width="190" height="70" fill="#0369a1" stroke="#cbd5e1" stroke-width="1" />
+<text x="305.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Kiosk & Hệ thống</text>
+<text x="305.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Kiosk / AI Server)</text>
+<rect x="400" y="60" width="190" height="1750" fill="#fef3c7" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="400" y="60" width="190" height="70" fill="#d97706" stroke="#cbd5e1" stroke-width="1" />
+<text x="495.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Nhân viên tiếp nhận</text>
+<text x="495.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Receptionist)</text>
+<rect x="590" y="60" width="190" height="1750" fill="#ede9fe" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="590" y="60" width="190" height="70" fill="#7c3aed" stroke="#cbd5e1" stroke-width="1" />
+<text x="685.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Nhân viên sàng lọc</text>
+<text x="685.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Triage Nurse)</text>
+<rect x="780" y="60" width="190" height="1750" fill="#dcfce7" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="780" y="60" width="190" height="70" fill="#16a34a" stroke="#cbd5e1" stroke-width="1" />
+<text x="875.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Bác sĩ lâm sàng</text>
+<text x="875.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Doctor)</text>
+<rect x="970" y="60" width="190" height="1750" fill="#fce7f3" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="970" y="60" width="190" height="70" fill="#db2777" stroke="#cbd5e1" stroke-width="1" />
+<text x="1065.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Nhân viên Y tế (CLS)</text>
+<text x="1065.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Lab Tech / Radiology)</text>
+<rect x="1160" y="60" width="190" height="1750" fill="#fee2e2" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="1160" y="60" width="190" height="70" fill="#dc2626" stroke="#cbd5e1" stroke-width="1" />
+<text x="1255.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Thu ngân</text>
+<text x="1255.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Cashier)</text>
+<rect x="1350" y="60" width="190" height="1750" fill="#f3e8ff" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1" />
+<rect x="1350" y="60" width="190" height="70" fill="#9333ea" stroke="#cbd5e1" stroke-width="1" />
+<text x="1445.0" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ffffff">Nhà thuốc</text>
+<text x="1445.0" y="108" text-anchor="middle" font-size="10.5" font-weight="500" fill="#ffffff" fill-opacity="0.85">(Pharmacist)</text>
+<line x1="115" y1="164" x2="115" y2="198" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="189" y1="220" x2="421" y2="220" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="495" y1="242" x2="495" y2="267" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 585 290 L 585 360 L 569 360 " fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-red)" />
+<rect x="560.0" y="311.0" width="50" height="16" rx="4" fill="#ffffff" stroke="#dc2626" stroke-width="0.8" opacity="0.95"/>
+<text x="585.0" y="323.0" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">[Không]</text>
+<line x1="495" y1="382" x2="495" y2="407" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 580 430 L 580 478 L 495 478 " fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-red)" />
+<rect x="555.0" y="440.0" width="50" height="16" rx="4" fill="#ffffff" stroke="#dc2626" stroke-width="0.8" opacity="0.95"/>
+<text x="580.0" y="452.0" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">[Không đủ ĐK]</text>
+<line x1="495" y1="522" x2="495" y2="545" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 410 430 L 410 350 L 421 350 " fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)" />
+<rect x="385.0" y="376.0" width="50" height="16" rx="4" fill="#ffffff" stroke="#16a34a" stroke-width="0.8" opacity="0.95"/>
+<text x="410.0" y="388.0" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">[Đủ ĐK]</text>
+<line x1="495" y1="313" x2="495" y2="328" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)" />
+<rect x="501" y="312.5" width="50" height="16" rx="4" fill="#ffffff" stroke="#16a34a" stroke-width="0.8"/>
+<text x="526" y="324.5" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">[Có]</text>
+<line x1="495" y1="372" x2="495" y2="398" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 495 460 L 685 460 L 685 468 " fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="685" y1="512" x2="685" y2="538" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 685 600 L 305 600 L 305 607 " fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="360" y1="630" x2="1181" y2="630" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-red)" />
+<rect x="745.5" y="612" width="50" height="16" rx="4" fill="#ffffff" stroke="#dc2626" stroke-width="0.8"/>
+<text x="770.5" y="624" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">[Có]</text>
+<path d="M 305 665 L 115 665 L 115 678 " fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)" />
+<rect x="185.0" y="651.0" width="50" height="16" rx="4" fill="#ffffff" stroke="#16a34a" stroke-width="0.8" opacity="0.95"/>
+<text x="210.0" y="663.0" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">[Không]</text>
+<path d="M 1255 675 L 115 675 L 115 678 " fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="189" y1="700" x2="250" y2="700" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="305" y1="723" x2="305" y2="748" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)" />
+<rect x="311" y="727.5" width="50" height="16" rx="4" fill="#ffffff" stroke="#16a34a" stroke-width="0.8"/>
+<text x="336" y="739.5" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">[Đủ ĐK]</text>
+<path d="M 305 805 L 875 805 L 875 818 " fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="875" y1="862" x2="875" y2="888" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="875" y1="932" x2="875" y2="958" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="875" y1="1002" x2="875" y2="1027" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="875" y1="1073" x2="875" y2="1098" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arrow)" />
+<rect x="881" y="1077.5" width="50" height="16" rx="4" fill="#ffffff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="906" y="1089.5" text-anchor="middle" font-size="10" font-weight="600" fill="#7c3aed">[Có CLS]</text>
+<line x1="949" y1="1120" x2="1181" y2="1120" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 1255 1165 L 1165 1165 L 1165 1190 L 1139 1190 " fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 975 1190 L 975 1260 L 189 1260 " fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="189" y1="1260" x2="801" y2="1260" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="875" y1="1282" x2="875" y2="1318" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 790 1050 L 790 1340 L 801 1340 " fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)" />
+<rect x="765.0" y="1181.0" width="50" height="16" rx="4" fill="#ffffff" stroke="#16a34a" stroke-width="0.8" opacity="0.95"/>
+<text x="790.0" y="1193.0" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">[Không CLS]</text>
+<line x1="875" y1="1362" x2="875" y2="1395" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 795 1420 L 795 1455 L 875 1455 L 875 1468 " fill="none" stroke="#d97706" stroke-width="1.8" marker-end="url(#arrow)" />
+<rect x="770.0" y="1423.5" width="50" height="16" rx="4" fill="#ffffff" stroke="#d97706" stroke-width="0.8" opacity="0.95"/>
+<text x="795.0" y="1435.5" text-anchor="middle" font-size="10" font-weight="600" fill="#d97706">[Nhập/Chuyển viện]</text>
+<line x1="949" y1="1490" x2="1181" y2="1490" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 595 1505 L 595 1550 L 569 1550 " fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="421" y1="1550" x2="130" y2="1550" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 1255 1420 L 1255 1548 " fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)" />
+<rect x="1230.0" y="1470.0" width="50" height="16" rx="4" fill="#ffffff" stroke="#16a34a" stroke-width="0.8" opacity="0.95"/>
+<text x="1255.0" y="1482.0" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">[Ngoại trú]</text>
+<line x1="1329" y1="1570" x2="1400" y2="1570" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<line x1="1445" y1="1593" x2="1445" y2="1618" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arrow)" />
+<rect x="1451" y="1597.5" width="50" height="16" rx="4" fill="#ffffff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="1476" y="1609.5" text-anchor="middle" font-size="10" font-weight="600" fill="#7c3aed">[Có thuốc]</text>
+<line x1="1371" y1="1640" x2="189" y2="1640" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<path d="M 1505 1570 L 1505 1680 L 165 1680 L 115 1662 " fill="none" stroke="#64748b" stroke-width="1.8" marker-end="url(#arrow)" />
+<rect x="1480.0" y="1611.0" width="50" height="16" rx="4" fill="#ffffff" stroke="#64748b" stroke-width="0.8" opacity="0.95"/>
+<text x="1505.0" y="1623.0" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">[Không thuốc]</text>
+<line x1="115" y1="1662" x2="115" y2="1695" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)" />
+<circle cx="115" cy="150" r="14" fill="#0f172a" stroke="#475569" stroke-width="2" />
+<rect x="41.0" y="198.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="115" y="217" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Bệnh nhân đến tái khám</text>
+<text x="115" y="230" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">theo giấy hẹn / QR</text>
+<rect x="421.0" y="198.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="495" y="217" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Kiểm tra giấy hẹn/QR</text>
+<text x="495" y="230" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">& Tra cứu hồ sơ cũ</text>
+<polygon points="495,267.0 547.5,290 495,313.0 442.5,290" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.8" filter="url(#shadow)" />
+<text x="495" y="287" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">Giấy hẹn &</text>
+<text x="495" y="299" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">TT hợp lệ?</text>
+<rect x="421.0" y="338.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="495" y="357" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Tiếp nhận hỗ trợ</text>
+<text x="495" y="370" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">xác minh điều kiện</text>
+<polygon points="495,407.0 547.5,430 495,453.0 442.5,430" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.8" filter="url(#shadow)" />
+<text x="495" y="427" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">Đủ điều kiện</text>
+<text x="495" y="439" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">tái khám?</text>
+<rect x="421.0" y="478.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="495" y="497" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Chuyển đăng ký khám</text>
+<text x="495" y="510" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">thường hoặc hẹn lại</text>
+<circle cx="495" cy="560" r="15" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+<circle cx="495" cy="560" r="9" fill="#0f172a" />
+<rect x="421.0" y="328.0" width="148" height="44" rx="10" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.6" filter="url(#shadow)" />
+<text x="495" y="347" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Giữ mã bệnh nhân cũ,</text>
+<text x="495" y="360" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">tạo lượt tái khám mới</text>
+<rect x="421.0" y="398.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="495" y="417" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Xác nhận hoặc cấp mã QR</text>
+<text x="495" y="430" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">cho lượt tái khám</text>
+<rect x="611.0" y="468.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="685" y="487" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Đo sinh hiệu ngày tái khám</text>
+<text x="685" y="500" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">& cập nhật triệu chứng</text>
+<rect x="611.0" y="538.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="685" y="557" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Xác nhận chuyên khoa</text>
+<text x="685" y="570" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">& phòng Bác sĩ hẹn</text>
+<polygon points="305,607.0 360.0,630 305,653.0 250.0,630" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.8" filter="url(#shadow)" />
+<text x="305" y="627" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">Cần thu phí</text>
+<text x="305" y="639" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">khám trước?</text>
+<rect x="1181.0" y="608.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="1255" y="627" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Thu phí khám</text>
+<text x="1255" y="640" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">tái khám</text>
+<rect x="41.0" y="678.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="115" y="697" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Đến Kiosk và</text>
+<text x="115" y="710" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">quét mã QR tái khám</text>
+<polygon points="305,677.0 360.0,700 305,723.0 250.0,700" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.8" filter="url(#shadow)" />
+<text x="305" y="697" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">Đủ điều kiện</text>
+<text x="305" y="709" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">cấp STT?</text>
+<rect x="231.0" y="748.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="305" y="767" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Cấp STT Ưu tiên phòng cũ</text>
+<text x="305" y="780" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">& Cập nhật hàng chờ</text>
+<rect x="801.0" y="818.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="875" y="837" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Gọi số & Tiếp nhận</text>
+<text x="875" y="850" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">bệnh nhân tái khám</text>
+<rect x="801.0" y="888.0" width="148" height="44" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.6" filter="url(#shadow)" />
+<text x="875" y="907" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Xem toàn bộ hồ sơ cũ,</text>
+<text x="875" y="920" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">kết quả & đơn thuốc trước</text>
+<rect x="801.0" y="958.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="875" y="977" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Khám lâm sàng & Đánh giá</text>
+<text x="875" y="990" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">đáp ứng phác đồ trước</text>
+<polygon points="875,1027.0 930.0,1050 875,1073.0 820.0,1050" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.8" filter="url(#shadow)" />
+<text x="875" y="1047" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">Cần CLS</text>
+<text x="875" y="1059" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">theo dõi?</text>
+<rect x="801.0" y="1098.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="875" y="1117" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Lập chỉ định CLS</text>
+<text x="875" y="1130" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">kiểm tra chỉ số</text>
+<rect x="1181.0" y="1098.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="1255" y="1117" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Thu phí dịch vụ</text>
+<text x="1255" y="1130" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">CLS kiểm tra</text>
+<rect x="991.0" y="1168.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="1065" y="1187" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Thực hiện CLS theo dõi</text>
+<text x="1065" y="1200" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">& Ký chứng thực kết quả</text>
+<rect x="41.0" y="1238.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="115" y="1257" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Quét QR xác nhận</text>
+<text x="115" y="1270" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">quay lại phòng khám</text>
+<rect x="801.0" y="1238.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="875" y="1257" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Đọc kết quả mới, so sánh</text>
+<text x="875" y="1270" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">chỉ số cũ - mới</text>
+<rect x="801.0" y="1318.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="875" y="1337" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Kết luận, điều chỉnh điều trị</text>
+<text x="875" y="1350" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">(chỉnh liều, đổi phác đồ)</text>
+<polygon points="875,1395.0 930.0,1420 875,1445.0 820.0,1420" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.8" filter="url(#shadow)" />
+<text x="875" y="1417" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">Chỉ định</text>
+<text x="875" y="1429" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">tiếp theo?</text>
+<rect x="801.0" y="1468.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="875" y="1487" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Chỉ định nhập viện</text>
+<text x="875" y="1500" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">hoặc chuyển tuyến</text>
+<rect x="1181.0" y="1468.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="1255" y="1487" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Đối soát chi phí</text>
+<text x="1255" y="1500" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">khám ngoại trú</text>
+<rect x="421.0" y="1528.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="495" y="1547" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Bàn giao hồ sơ EMR</text>
+<text x="495" y="1560" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">sang quy trình liên quan</text>
+<circle cx="115" cy="1550" r="15" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+<circle cx="115" cy="1550" r="9" fill="#0f172a" />
+<rect x="1181.0" y="1548.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="1255" y="1567" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Quyết toán viện phí</text>
+<text x="1255" y="1580" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">& Chế độ BHYT</text>
+<polygon points="1445,1547.0 1490.0,1570 1445,1593.0 1400.0,1570" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.8" filter="url(#shadow)" />
+<text x="1445" y="1567" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">Có đơn</text>
+<text x="1445" y="1579" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">thuốc?</text>
+<rect x="1371.0" y="1618.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="1445" y="1637" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Kiểm tra đơn PAID &</text>
+<text x="1445" y="1650" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Cấp phát thuốc tái khám</text>
+<rect x="41.0" y="1618.0" width="148" height="44" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="1.6" filter="url(#shadow)" />
+<text x="115" y="1637" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">Lưu diễn biến điều trị,</text>
+<text x="115" y="1650" text-anchor="middle" font-size="11" font-weight="600" fill="#0f172a">hẹn tái khám đợt tiếp</text>
+<circle cx="115" cy="1710" r="15" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+<circle cx="115" cy="1710" r="9" fill="#0f172a" />
+</svg>
