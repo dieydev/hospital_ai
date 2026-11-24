@@ -355,12 +355,16 @@ export const LoginPage: React.FC = () => {
 
     // Bẫy lỗi mật khẩu: Tối thiểu 6 ký tự và có ký tự in hoa
     if (!inputPass || inputPass.length < 6) {
-      setErrorMsg('Mật khẩu phải có độ dài tối thiểu 6 ký tự!');
+      const msg = 'Mật khẩu phải có độ dài tối thiểu 6 ký tự!';
+      setErrorMsg(msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
     if (!/[A-Z]/.test(inputPass)) {
-      setErrorMsg('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: Admin@123)!');
+      const msg = 'Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: Admin@123)!';
+      setErrorMsg(msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
@@ -810,17 +814,30 @@ export const LoginPage: React.FC = () => {
 
     // Bẫy lỗi chặt chẽ: Mật khẩu bắt buộc tối thiểu 6 ký tự và có ký tự in hoa
     if (!pass || pass.length < 6) {
-      setErrorMsg('Mật khẩu phải có độ dài tối thiểu 6 ký tự!');
+      const msg = 'Mật khẩu phải có độ dài tối thiểu 6 ký tự!';
+      setErrorMsg(msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
     if (!/[A-Z]/.test(pass)) {
-      setErrorMsg('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!');
+      const msg = 'Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!';
+      setErrorMsg(msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
-    if (values.confirmPassword && pass !== values.confirmPassword) {
-      setErrorMsg('Mật khẩu xác nhận không khớp!');
+    if (!values.confirmPassword) {
+      const msg = 'Vui lòng xác nhận lại mật khẩu!';
+      setErrorMsg(msg);
+      showToast(msg, 'warning');
+      setLoading(false);
+      return;
+    }
+    if (pass !== values.confirmPassword) {
+      const msg = 'Mật khẩu xác nhận không khớp!';
+      setErrorMsg(msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
@@ -1256,6 +1273,13 @@ export const LoginPage: React.FC = () => {
             name="unified_login"
             initialValues={{ remember: true }}
             onFinish={onLoginFinish}
+            onFinishFailed={(errorInfo) => {
+              const firstError = errorInfo.errorFields?.[0]?.errors?.[0];
+              if (firstError) {
+                showToast(firstError, 'warning');
+                setErrorMsg(firstError);
+              }
+            }}
             layout="vertical"
             requiredMark={false}
           >
@@ -1398,6 +1422,13 @@ export const LoginPage: React.FC = () => {
                 name="reg_step1"
                 initialValues={{ fullName: regFullName, phoneNumber: regPhoneNumber }}
                 onFinish={handleSendRegisterOtp}
+                onFinishFailed={(errorInfo) => {
+                  const firstError = errorInfo.errorFields?.[0]?.errors?.[0];
+                  if (firstError) {
+                    showToast(firstError, 'warning');
+                    setErrorMsg(firstError);
+                  }
+                }}
                 layout="vertical"
                 requiredMark={false}
               >
@@ -1654,6 +1685,13 @@ export const LoginPage: React.FC = () => {
                 form={registerStep3Form}
                 name="reg_step3"
                 onFinish={onRegisterFinalFinish}
+                onFinishFailed={(errorInfo) => {
+                  const firstError = errorInfo.errorFields?.[0]?.errors?.[0];
+                  if (firstError) {
+                    showToast(firstError, 'warning');
+                    setErrorMsg(firstError);
+                  }
+                }}
                 layout="vertical"
                 requiredMark={false}
               >
@@ -1856,7 +1894,16 @@ export const LoginPage: React.FC = () => {
           centered
         >
           {forgotStep === 1 && (
-            <Form form={forgotPhoneForm} layout="vertical" onFinish={handleSendForgotOtp} style={{ marginTop: 16 }}>
+            <Form
+              form={forgotPhoneForm}
+              layout="vertical"
+              onFinish={handleSendForgotOtp}
+              onFinishFailed={(errorInfo) => {
+                const firstError = errorInfo.errorFields?.[0]?.errors?.[0];
+                if (firstError) showToast(firstError, 'warning');
+              }}
+              style={{ marginTop: 16 }}
+            >
               <Text style={{ fontSize: 13, color: '#64748b', display: 'block', marginBottom: 14 }}>
                 Nhập số điện thoại đã đăng ký để nhận mã xác thực OTP khôi phục mật khẩu.
               </Text>
@@ -1896,7 +1943,16 @@ export const LoginPage: React.FC = () => {
           )}
 
           {forgotStep === 2 && (
-            <Form form={forgotResetForm} layout="vertical" onFinish={handleResetPasswordSubmit} style={{ marginTop: 16 }}>
+            <Form
+              form={forgotResetForm}
+              layout="vertical"
+              onFinish={handleResetPasswordSubmit}
+              onFinishFailed={(errorInfo) => {
+                const firstError = errorInfo.errorFields?.[0]?.errors?.[0];
+                if (firstError) showToast(firstError, 'warning');
+              }}
+              style={{ marginTop: 16 }}
+            >
               <div
                 style={{
                   backgroundColor: '#f0f9ff',
