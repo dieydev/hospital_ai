@@ -474,6 +474,9 @@ public class AuthService : IAuthService
             string.IsNullOrWhiteSpace(request.NewPassword))
             throw new Exception("Vui lòng nhập đầy đủ thông tin số điện thoại, mã OTP và mật khẩu mới.");
 
+        // Chuẩn hóa kiểm tra mật khẩu: tối thiểu 6 ký tự, có ít nhất 1 chữ in hoa
+        ValidatePasswordStrong(request.NewPassword);
+
         var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
         var storeKey = $"forgot_{normalizedPhone}";
 
@@ -507,12 +510,6 @@ public class AuthService : IAuthService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhone);
         if (user == null)
             throw new Exception("Không tìm thấy tài khoản với số điện thoại này.");
-
-        // Validate độ mạnh mật khẩu
-        if (request.NewPassword.Length < 8)
-            throw new Exception("Mật khẩu mới phải có ít nhất 8 ký tự.");
-        if (!Regex.IsMatch(request.NewPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"))
-            throw new Exception("Mật khẩu cần gồm chữ hoa, chữ thường, số và ký tự đặc biệt (@$!%*?&).");
 
         user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
         await _context.SaveChangesAsync();

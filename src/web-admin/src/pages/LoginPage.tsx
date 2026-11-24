@@ -1001,6 +1001,20 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
+    const newPwd = values.newPassword;
+    if (!newPwd || newPwd.length < 6) {
+      showToast('Mật khẩu phải có độ dài tối thiểu 6 ký tự!', 'warning');
+      return;
+    }
+    if (!/[A-Z]/.test(newPwd)) {
+      showToast('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!', 'warning');
+      return;
+    }
+    if (values.confirmNewPassword && newPwd !== values.confirmNewPassword) {
+      showToast('Mật khẩu xác nhận không khớp!', 'warning');
+      return;
+    }
+
     setForgotLoading(true);
     const normalized = forgotPhone;
 
@@ -1011,8 +1025,18 @@ export const LoginPage: React.FC = () => {
         newPassword: values.newPassword,
       });
       showToast('Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.', 'success');
+      setForgotModalVisible(false);
+      loginForm.setFieldsValue({ username: normalized, password: values.newPassword });
     } catch (err: any) {
-      // Fallback lưu local
+      const errMsg = err.response?.data?.message || err.message;
+      if (err.response?.status >= 400 && err.response?.status < 500) {
+        // Lỗi từ backend validation (ví dụ mật khẩu không đạt chuẩn, OTP sai, v.v.)
+        showToast(errMsg || 'Đặt lại mật khẩu thất bại. Vui lòng kiểm tra lại thông tin!', 'error');
+        return;
+      }
+
+      // Fallback lưu local CHỈ KHI máy chủ mất kết nối hoàn toàn (offline mode)
+      let fallbackSuccess = false;
       try {
         const stored = localStorage.getItem('hospital_registered_users');
         if (stored) {
@@ -1023,17 +1047,23 @@ export const LoginPage: React.FC = () => {
           if (idx >= 0) {
             list[idx].password = values.newPassword;
             localStorage.setItem('hospital_registered_users', JSON.stringify(list));
+            fallbackSuccess = true;
           }
         }
       } catch {
         // ignore
       }
-      showToast('Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.', 'success');
-    }
 
-    setForgotLoading(false);
-    setForgotModalVisible(false);
-    loginForm.setFieldsValue({ username: normalized, password: values.newPassword });
+      if (fallbackSuccess) {
+        showToast('Đặt lại mật khẩu thành công (chế độ offline)! Vui lòng đăng nhập.', 'success');
+        setForgotModalVisible(false);
+        loginForm.setFieldsValue({ username: normalized, password: values.newPassword });
+      } else {
+        showToast(errMsg || 'Không thể kết nối đến máy chủ để đặt lại mật khẩu!', 'error');
+      }
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   // Đăng nhập Google OAuth: Kết nối CSDL Backend & Giữ nguyên hồ sơ bệnh nhân đã lưu
