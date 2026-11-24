@@ -353,6 +353,18 @@ export const LoginPage: React.FC = () => {
     const inputPass = values.password;
     const u = inputUser.toLowerCase();
 
+    // Bẫy lỗi mật khẩu: Tối thiểu 6 ký tự và có ký tự in hoa
+    if (!inputPass || inputPass.length < 6) {
+      setErrorMsg('Mật khẩu phải có độ dài tối thiểu 6 ký tự!');
+      setLoading(false);
+      return;
+    }
+    if (!/[A-Z]/.test(inputPass)) {
+      setErrorMsg('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: Admin@123)!');
+      setLoading(false);
+      return;
+    }
+
     // 1. Thử gọi API Backend nếu Server đang chạy
     try {
       const response = await api.post('/auth/login', {
@@ -796,6 +808,23 @@ export const LoginPage: React.FC = () => {
     const pass = values.password;
     const enteredOtp = otpValues.join('').trim() || '123456';
 
+    // Bẫy lỗi chặt chẽ: Mật khẩu bắt buộc tối thiểu 6 ký tự và có ký tự in hoa
+    if (!pass || pass.length < 6) {
+      setErrorMsg('Mật khẩu phải có độ dài tối thiểu 6 ký tự!');
+      setLoading(false);
+      return;
+    }
+    if (!/[A-Z]/.test(pass)) {
+      setErrorMsg('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!');
+      setLoading(false);
+      return;
+    }
+    if (values.confirmPassword && pass !== values.confirmPassword) {
+      setErrorMsg('Mật khẩu xác nhận không khớp!');
+      setLoading(false);
+      return;
+    }
+
     // 1. Thử gọi API Backend đăng ký tài khoản
     try {
       const regRes = await api.post('/auth/register', {
@@ -828,7 +857,8 @@ export const LoginPage: React.FC = () => {
       }
     } catch (err: any) {
       const errMsg = err.response?.data?.message;
-      if (errMsg && (errMsg.includes('đã tồn tại') || errMsg.includes('đã được đăng ký'))) {
+      // Bất kỳ lỗi nghiệp vụ nào từ Backend (mật khẩu không đạt, SĐT trùng...) phải chặn ngay và hiển thị lỗi, KHÔNG ĐƯỢC fallback
+      if (errMsg) {
         setErrorMsg(errMsg);
         setLoading(false);
         return;
@@ -1218,6 +1248,7 @@ export const LoginPage: React.FC = () => {
 
             <Form.Item
               name="password"
+              hasFeedback
               label={
                 <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
                   Mật khẩu <span style={{ color: '#ef4444' }}>*</span>
@@ -1618,13 +1649,14 @@ export const LoginPage: React.FC = () => {
 
                 <Form.Item
                   name="password"
+                  hasFeedback
                   label={
                     <span style={{ fontWeight: 600, color: isDarkMode ? '#f8fafc' : '#334155' }}>
                       Mật khẩu mới <span style={{ color: '#ef4444' }}>*</span>
                     </span>
                   }
                   rules={[
-                    { required: true, message: 'Vui lòng nhập mật khẩu!' },
+                    { required: true, message: 'Vui lòng nhập mật khẩu mới!' },
                     {
                       validator(_, value) {
                         if (!value) return Promise.resolve();
@@ -1632,7 +1664,7 @@ export const LoginPage: React.FC = () => {
                           return Promise.reject(new Error('Mật khẩu phải có tối thiểu 6 ký tự!'));
                         }
                         if (!/[A-Z]/.test(value)) {
-                          return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa!'));
+                          return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!'));
                         }
                         return Promise.resolve();
                       },
@@ -1646,6 +1678,9 @@ export const LoginPage: React.FC = () => {
                     style={{ borderRadius: 10 }}
                   />
                 </Form.Item>
+                <div style={{ fontSize: 12, color: '#0284c7', marginTop: -14, marginBottom: 16 }}>
+                  ℹ️ Yêu cầu: Tối thiểu 6 ký tự, bắt buộc có ít nhất 1 chữ in hoa (VD: MatKhau123).
+                </div>
 
                 <Form.Item
                   name="confirmPassword"
