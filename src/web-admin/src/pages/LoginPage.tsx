@@ -82,6 +82,7 @@ const PasswordCriteriaChecklist: React.FC<PasswordCriteriaProps> = ({ value = ''
   const currentVal = value || '';
   const hasMinLen = currentVal.length >= 6;
   const hasUppercase = /[A-Z]/.test(currentVal);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(currentVal);
 
   return (
     <div
@@ -131,10 +132,28 @@ const PasswordCriteriaChecklist: React.FC<PasswordCriteriaProps> = ({ value = ''
           }}
         >
           Chứa ít nhất 1 ký tự in hoa (A-Z){' '}
-          {hasUppercase ? (
+          {hasUppercase && <span style={{ fontSize: 11.5, color: '#10b981' }}>✓ Đã đạt</span>}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+        {hasSpecial ? (
+          <CheckCircleFilled style={{ color: '#10b981', fontSize: 15 }} />
+        ) : (
+          <CheckCircleOutlined style={{ color: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 15 }} />
+        )}
+        <span
+          style={{
+            color: hasSpecial ? '#10b981' : isDarkMode ? '#cbd5e1' : '#475569',
+            fontWeight: hasSpecial ? 600 : 400,
+            transition: 'color 0.2s',
+          }}
+        >
+          Chứa ít nhất 1 ký tự đặc biệt (!, @, #, $, %, *...){' '}
+          {hasSpecial ? (
             <span style={{ fontSize: 11.5, color: '#10b981' }}>✓ Đã đạt</span>
           ) : (
-            <span style={{ fontSize: 11.5, color: isDarkMode ? '#94a3b8' : '#64748b' }}>(VD: MatKhau123)</span>
+            <span style={{ fontSize: 11.5, color: isDarkMode ? '#94a3b8' : '#64748b' }}>(VD: MatKhau@123)</span>
           )}
         </span>
       </div>
@@ -896,7 +915,14 @@ export const LoginPage: React.FC = () => {
       return;
     }
     if (!/[A-Z]/.test(pass)) {
-      const msg = 'Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!';
+      const msg = 'Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau@123)!';
+      setErrorMsg(msg);
+      showToast(msg, 'warning');
+      setLoading(false);
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(pass)) {
+      const msg = 'Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (ví dụ: @, #, $, !)!';
       setErrorMsg(msg);
       showToast(msg, 'warning');
       setLoading(false);
@@ -1099,7 +1125,11 @@ export const LoginPage: React.FC = () => {
       return;
     }
     if (!/[A-Z]/.test(newPwd)) {
-      showToast('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!', 'warning');
+      showToast('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau@123)!', 'warning');
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(newPwd)) {
+      showToast('Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (ví dụ: @, #, $, !)!', 'warning');
       return;
     }
     if (values.confirmNewPassword && newPwd !== values.confirmNewPassword) {
@@ -1807,7 +1837,10 @@ export const LoginPage: React.FC = () => {
                           return Promise.reject(new Error('Mật khẩu phải có tối thiểu 6 ký tự!'));
                         }
                         if (!/[A-Z]/.test(value)) {
-                          return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau123)!'));
+                          return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: MatKhau@123)!'));
+                        }
+                        if (!/[^a-zA-Z0-9]/.test(value)) {
+                          return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (ví dụ: @, #, $, !)!'));
                         }
                         return Promise.resolve();
                       },
@@ -1816,7 +1849,7 @@ export const LoginPage: React.FC = () => {
                 >
                   <Input.Password
                     prefix={<LockOutlined style={{ color: '#0284c7' }} />}
-                    placeholder="Tối thiểu 6 ký tự, có chữ in hoa (VD: MatKhau123)..."
+                    placeholder="Tối thiểu 6 ký tự, có chữ in hoa và ký tự đặc biệt (VD: MatKhau@123)..."
                     size="large"
                     style={{ borderRadius: 10 }}
                   />
@@ -2105,6 +2138,9 @@ export const LoginPage: React.FC = () => {
                       if (!/[A-Z]/.test(value)) {
                         return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa!'));
                       }
+                      if (!/[^a-zA-Z0-9]/.test(value)) {
+                        return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (ví dụ: @, #, $, !)!'));
+                      }
                       return Promise.resolve();
                     },
                   },
@@ -2112,7 +2148,7 @@ export const LoginPage: React.FC = () => {
               >
                 <Input.Password
                   prefix={<LockOutlined style={{ color: '#0284c7' }} />}
-                  placeholder="Tối thiểu 6 ký tự, có chữ in hoa (VD: MatKhau123)..."
+                  placeholder="Tối thiểu 6 ký tự, có chữ in hoa và ký tự đặc biệt (VD: MatKhau@123)..."
                   size="large"
                   style={{ borderRadius: 10 }}
                 />

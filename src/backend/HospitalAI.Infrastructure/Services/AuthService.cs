@@ -1258,6 +1258,10 @@ public class AuthService : IAuthService
         {
             throw new Exception("Mật khẩu phải chứa ít nhất 1 ký tự in hoa.");
         }
+        if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
+        {
+            throw new Exception("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (ví dụ: @, #, $, !, %, *...).");
+        }
     }
 
     public async Task<List<UserAccountItemDto>> GetUsersAsync()
