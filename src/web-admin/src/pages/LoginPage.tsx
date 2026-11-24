@@ -22,6 +22,7 @@ import {
   PhoneOutlined,
   SafetyCertificateOutlined,
   CheckCircleFilled,
+  CheckCircleOutlined,
   ReloadOutlined,
   EditOutlined,
   KeyOutlined,
@@ -71,6 +72,76 @@ const DOCTORS_PRESETS: Record<string, { name: string; dept: string; title: strin
   'dr.thanh': { name: 'BS. CKI. Trịnh Văn Thành', dept: 'Khoa Cấp Cứu & Hồi Sức', title: 'Trưởng Kíp Cấp Cứu' },
 };
 
+// Component hiển thị Checklist điều kiện mật khẩu trực quan (Live tick khi đạt yêu cầu)
+interface PasswordCriteriaProps {
+  value?: string;
+  isDarkMode?: boolean;
+}
+
+const PasswordCriteriaChecklist: React.FC<PasswordCriteriaProps> = ({ value = '', isDarkMode = false }) => {
+  const currentVal = value || '';
+  const hasMinLen = currentVal.length >= 6;
+  const hasUppercase = /[A-Z]/.test(currentVal);
+
+  return (
+    <div
+      style={{
+        marginTop: 4,
+        marginBottom: 14,
+        padding: '10px 14px',
+        borderRadius: 8,
+        backgroundColor: isDarkMode ? '#1e293b' : '#f0f9ff',
+        border: `1px solid ${isDarkMode ? '#334155' : '#bae6fd'}`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 700, color: isDarkMode ? '#94a3b8' : '#0369a1', marginBottom: 2 }}>
+        Yêu cầu bảo mật mật khẩu:
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+        {hasMinLen ? (
+          <CheckCircleFilled style={{ color: '#10b981', fontSize: 15 }} />
+        ) : (
+          <CheckCircleOutlined style={{ color: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 15 }} />
+        )}
+        <span
+          style={{
+            color: hasMinLen ? '#10b981' : isDarkMode ? '#cbd5e1' : '#475569',
+            fontWeight: hasMinLen ? 600 : 400,
+            transition: 'color 0.2s',
+          }}
+        >
+          Tối thiểu 6 ký tự {hasMinLen && <span style={{ fontSize: 11.5, color: '#10b981' }}>✓ Đã đạt</span>}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+        {hasUppercase ? (
+          <CheckCircleFilled style={{ color: '#10b981', fontSize: 15 }} />
+        ) : (
+          <CheckCircleOutlined style={{ color: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 15 }} />
+        )}
+        <span
+          style={{
+            color: hasUppercase ? '#10b981' : isDarkMode ? '#cbd5e1' : '#475569',
+            fontWeight: hasUppercase ? 600 : 400,
+            transition: 'color 0.2s',
+          }}
+        >
+          Chứa ít nhất 1 ký tự in hoa (A-Z){' '}
+          {hasUppercase ? (
+            <span style={{ fontSize: 11.5, color: '#10b981' }}>✓ Đã đạt</span>
+          ) : (
+            <span style={{ fontSize: 11.5, color: isDarkMode ? '#94a3b8' : '#64748b' }}>(VD: MatKhau123)</span>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const LoginPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -86,6 +157,10 @@ export const LoginPage: React.FC = () => {
   const [registerStep3Form] = Form.useForm();
   const [forgotPhoneForm] = Form.useForm();
   const [forgotResetForm] = Form.useForm();
+
+  // Theo dõi giá trị mật khẩu realtime để cập nhật tick điều kiện trực quan
+  const regPassword = Form.useWatch('password', registerStep3Form) || '';
+  const forgotNewPassword = Form.useWatch('newPassword', forgotResetForm) || '';
 
   // Multi-step Registration States:
   const [registerStep, setRegisterStep] = useState<1 | 2 | 3>(1);
@@ -1746,9 +1821,7 @@ export const LoginPage: React.FC = () => {
                     style={{ borderRadius: 10 }}
                   />
                 </Form.Item>
-                <div style={{ fontSize: 12, color: '#0284c7', marginTop: -14, marginBottom: 16 }}>
-                  ℹ️ Yêu cầu: Tối thiểu 6 ký tự, bắt buộc có ít nhất 1 chữ in hoa (VD: MatKhau123).
-                </div>
+                <PasswordCriteriaChecklist value={regPassword} isDarkMode={isDarkMode} />
 
                 <Form.Item
                   name="confirmPassword"
@@ -2044,6 +2117,7 @@ export const LoginPage: React.FC = () => {
                   style={{ borderRadius: 10 }}
                 />
               </Form.Item>
+              <PasswordCriteriaChecklist value={forgotNewPassword} isDarkMode={isDarkMode} />
 
               <Form.Item
                 name="confirmNewPassword"
