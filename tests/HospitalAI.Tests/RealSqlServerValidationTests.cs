@@ -525,7 +525,7 @@ public class RealSqlServerValidationTests
             // 4. Verify in Real SQL Server
             using var verifyContext = new HospitalDbContext(options);
             var savedInDb = await verifyContext.Appointments
-                .CountAsync(a => a.ScheduleId == scheduleId && a.Status != "Cancelled");
+                .CountAsync(a => (a.ScheduleId == scheduleId || a.AppointmentDate.Date == targetDate) && a.Status != "Cancelled");
 
             _output.WriteLine($"Multi-Process Final Count in SQL Server: {savedInDb} (Quota: 1)");
 

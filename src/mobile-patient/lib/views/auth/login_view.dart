@@ -569,7 +569,7 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
               onTap: () {
                 setState(() {
                   _usernameController.text = '0987654321';
-                  _passwordController.text = '123456';
+                  _passwordController.text = 'Admin@123';
                 });
               },
               child: Container(
@@ -617,8 +617,12 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
               obscureText: _obscurePassword,
               onToggleVisibility: () =>
                   setState(() => _obscurePassword = !_obscurePassword),
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Vui lòng nhập mật khẩu' : null,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Vui lòng nhập mật khẩu';
+                if (v.length < 6) return 'Mật khẩu phải có tối thiểu 6 ký tự';
+                if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Mật khẩu phải chứa ít nhất 1 ký tự in hoa';
+                return null;
+              },
             ),
             const SizedBox(height: 16),
 

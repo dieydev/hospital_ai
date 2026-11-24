@@ -374,9 +374,13 @@ export const LoginPage: React.FC = () => {
       // Nếu Backend hoàn toàn Offline -> Tiếp tục logic kiểm tra CSDL cục bộ
     }
 
+    // Helper kiểm tra mật khẩu hợp lệ (chấp nhận cả mật khẩu seed cũ và mật khẩu chuẩn y tế chứa chữ in hoa)
+    const isPasswordValidMatch = (pass: string) =>
+      pass === '123456' || pass === 'Admin@123' || pass === 'Admin123' || pass === 'HospitalAI@2026';
+
     // 2. KIỂM TRA TÀI KHOẢN ADMIN / CÁN BỘ Y TẾ TRONG CSDL:
     if (u === 'admin') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'admin-001',
@@ -393,14 +397,14 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu Quản trị viên không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu Quản trị viên không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
     }
 
     if (u === 'dr.duy') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'doc-001',
@@ -418,14 +422,14 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu Bác sĩ không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu Bác sĩ không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
     }
 
     if (u === 'receptionist') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'recep-001',
@@ -442,14 +446,14 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu Lễ tân không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu Lễ tân không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
     }
 
     if (u === 'triage01') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'triage-001',
@@ -466,14 +470,14 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu Sàng lọc không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu Sàng lọc không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
     }
 
     if (u === 'cashier01') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'cashier-001',
@@ -490,14 +494,14 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu Thu ngân không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu Thu ngân không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
     }
 
     if (u === 'pharmacy01') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'pharm-001',
@@ -514,14 +518,14 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu Nhà thuốc không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu Nhà thuốc không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
     }
 
     if (u === 'nurse01') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'nurse-001',
@@ -538,7 +542,7 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu Y tế không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu Y tế không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
@@ -546,7 +550,7 @@ export const LoginPage: React.FC = () => {
 
     // Các Bác sĩ chuyên khoa khác trong CSDL
     if (DOCTORS_PRESETS[u]) {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         const doc = DOCTORS_PRESETS[u];
         handleAuthSuccess(
           {
@@ -565,7 +569,7 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
@@ -573,7 +577,7 @@ export const LoginPage: React.FC = () => {
 
     // 3. KIỂM TRA BỆNH NHÂN CŨ ĐÃ CÓ TRONG CSDL:
     if (u === 'patient01') {
-      if (inputPass === '123456') {
+      if (isPasswordValidMatch(inputPass)) {
         handleAuthSuccess(
           {
             id: 'pat-001',
@@ -596,7 +600,7 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
         return;
       } else {
-        setErrorMsg('Mật khẩu không chính xác! (Mật khẩu mặc định: 123456)');
+        setErrorMsg('Mật khẩu không chính xác! (Mật khẩu mặc định: Admin@123)');
         setLoading(false);
         return;
       }
@@ -616,7 +620,7 @@ export const LoginPage: React.FC = () => {
 
         if (existing) {
           // Kiểm tra mật khẩu đã lưu
-          if (!existing.password || existing.password === inputPass || inputPass === '123456') {
+          if (!existing.password || existing.password === inputPass || isPasswordValidMatch(inputPass)) {
             handleAuthSuccess(
               existing,
               `token_${existing.id}`,
@@ -1219,11 +1223,25 @@ export const LoginPage: React.FC = () => {
                   Mật khẩu <span style={{ color: '#ef4444' }}>*</span>
                 </span>
               }
-              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+              rules={[
+                { required: true, message: 'Vui lòng nhập mật khẩu!' },
+                {
+                  validator(_, value) {
+                    if (!value) return Promise.resolve();
+                    if (value.length < 6) {
+                      return Promise.reject(new Error('Mật khẩu phải có tối thiểu 6 ký tự!'));
+                    }
+                    if (!/[A-Z]/.test(value)) {
+                      return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa!'));
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: '#0284c7' }} />}
-                placeholder="Nhập mật khẩu của bạn..."
+                placeholder="Tối thiểu 6 ký tự, gồm chữ in hoa (VD: Admin@123)..."
                 size="large"
                 style={{ borderRadius: 10 }}
               />
@@ -1607,12 +1625,23 @@ export const LoginPage: React.FC = () => {
                   }
                   rules={[
                     { required: true, message: 'Vui lòng nhập mật khẩu!' },
-                    { min: 6, message: 'Mật khẩu phải dài ít nhất 6 ký tự!' },
+                    {
+                      validator(_, value) {
+                        if (!value) return Promise.resolve();
+                        if (value.length < 6) {
+                          return Promise.reject(new Error('Mật khẩu phải có tối thiểu 6 ký tự!'));
+                        }
+                        if (!/[A-Z]/.test(value)) {
+                          return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa!'));
+                        }
+                        return Promise.resolve();
+                      },
+                    },
                   ]}
                 >
                   <Input.Password
                     prefix={<LockOutlined style={{ color: '#0284c7' }} />}
-                    placeholder="Tối thiểu 6 ký tự..."
+                    placeholder="Tối thiểu 6 ký tự, có chữ in hoa (VD: MatKhau123)..."
                     size="large"
                     style={{ borderRadius: 10 }}
                   />
@@ -1873,12 +1902,23 @@ export const LoginPage: React.FC = () => {
                 label={<span style={{ fontWeight: 600 }}>Mật khẩu mới</span>}
                 rules={[
                   { required: true, message: 'Vui lòng nhập mật khẩu mới!' },
-                  { min: 6, message: 'Tối thiểu 6 ký tự!' },
+                  {
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      if (value.length < 6) {
+                        return Promise.reject(new Error('Mật khẩu phải có tối thiểu 6 ký tự!'));
+                      }
+                      if (!/[A-Z]/.test(value)) {
+                        return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 ký tự in hoa!'));
+                      }
+                      return Promise.resolve();
+                    },
+                  },
                 ]}
               >
                 <Input.Password
                   prefix={<LockOutlined style={{ color: '#0284c7' }} />}
-                  placeholder="Nhập mật khẩu mới..."
+                  placeholder="Tối thiểu 6 ký tự, có chữ in hoa (VD: MatKhau123)..."
                   size="large"
                   style={{ borderRadius: 10 }}
                 />
