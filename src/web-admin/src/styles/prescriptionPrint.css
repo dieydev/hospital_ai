@@ -53,6 +53,7 @@
   }
 
   #printable-ticket {
+    display: block !important;
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
@@ -185,4 +186,8 @@
   justify-content: space-between;
   margin-top: 32px;
   padding-top: 16px;
+}
+
+.print-only-ticket {
+  display: none;
 }

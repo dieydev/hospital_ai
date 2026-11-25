@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System;
 using HospitalAI.Infrastructure.Data;
+using HospitalAI.Infrastructure.Services;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace HospitalAI.ExaminationService.Controllers
 {
@@ -15,11 +17,13 @@ namespace HospitalAI.ExaminationService.Controllers
     {
         private readonly IPaymentService _paymentService;
         private readonly HospitalDbContext _dbContext;
+        private readonly IConfiguration? _configuration;
 
-        public PaymentController(IPaymentService paymentService, HospitalDbContext dbContext)
+        public PaymentController(IPaymentService paymentService, HospitalDbContext dbContext, IConfiguration? configuration = null)
         {
             _paymentService = paymentService;
             _dbContext = dbContext;
+            _configuration = configuration;
         }
 
         [HttpPost("create-payment-url")]
@@ -56,9 +60,10 @@ namespace HospitalAI.ExaminationService.Controllers
                 return BadRequest(new { message = "Hóa đơn viện phí này đã được thanh toán trước đó." });
             }
 
-            // IDOR Protection: Bệnh nhân chỉ được thanh toán hóa đơn của chính mình
-            var isStaff = User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") || User.IsInRole("Nurse");
-            if (!isStaff)
+            // IDOR Protection: Bệnh nhân chỉ được thanh toán hóa đơn của chính mình; Kiosk hợp lệ được phép tạo mã thanh toán VNPay cho hóa đơn thật
+            var isStaff = User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") || User.IsInRole("Nurse") || User.IsInRole("Cashier");
+            var (isKioskAuthorized, _, _) = KioskTerminalValidator.ValidateRequest(Request, User, _configuration);
+            if (!isStaff && !isKioskAuthorized)
             {
                 var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (billing.Patient == null || !billing.Patient.UserId.HasValue || billing.Patient.UserId.Value.ToString() != currentUserId)

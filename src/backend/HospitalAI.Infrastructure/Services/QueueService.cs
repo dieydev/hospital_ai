@@ -69,7 +69,10 @@ public class QueueService : IQueueService
         string? PriorityReason,
         string? ConfirmedBy,
         DateTime? ConfirmedAt,
-        string? Reason);
+        string? Reason,
+        string? QueueType = null,
+        string? PreviousRecordCode = null,
+        string? VisitType = null);
 
     public QueueService(HospitalDbContext context, IFcmNotificationService? fcmService = null)
     {
@@ -116,7 +119,9 @@ public class QueueService : IQueueService
             .ThenBy(q => q.SequenceNumber)
             .ToListAsync();
 
-        return list.Select(MapToDto).ToList();
+        var dtos = list.Select(MapToDto).ToList();
+        await HydrateBillingStatusAsync(dtos);
+        return dtos;
     }
 
     public async Task<QueueTicketDto> IssueQueueTicketAsync(IssueQueueTicketDto dto)
@@ -219,6 +224,7 @@ public class QueueService : IQueueService
                 {
                     var dtoItem = MapToDto(existingAptTicket);
                     if (!string.IsNullOrEmpty(dto.VisitType)) dtoItem.VisitType = dto.VisitType;
+                    await HydrateBillingStatusAsync(new List<QueueTicketDto> { dtoItem });
                     return dtoItem;
                 }
             }
@@ -236,6 +242,7 @@ public class QueueService : IQueueService
             {
                 var dtoItem = MapToDto(existingActiveTicket);
                 if (!string.IsNullOrEmpty(dto.VisitType)) dtoItem.VisitType = dto.VisitType;
+                await HydrateBillingStatusAsync(new List<QueueTicketDto> { dtoItem });
                 return dtoItem;
             }
 
@@ -271,7 +278,15 @@ public class QueueService : IQueueService
 
                     if (tx != null) await tx.CommitAsync();
 
-                    _auditRecords[ticket.Id] = new PriorityAuditRecord(priorityReason, confirmedBy, confirmedAt, emergencyReason);
+                    var resolvedQueueType = string.IsNullOrWhiteSpace(dto.QueueType) ? "Exam" : dto.QueueType.Trim();
+                    _auditRecords[ticket.Id] = new PriorityAuditRecord(
+                        priorityReason,
+                        confirmedBy,
+                        confirmedAt,
+                        emergencyReason,
+                        resolvedQueueType,
+                        dto.PreviousRecordCode,
+                        dto.VisitType);
                     SaveAuditRecordsToFile();
 
                     ticket.Patient = patient;
@@ -279,6 +294,7 @@ public class QueueService : IQueueService
 
                     var result = MapToDto(ticket);
                     if (!string.IsNullOrEmpty(dto.VisitType)) result.VisitType = dto.VisitType;
+                    await HydrateBillingStatusAsync(new List<QueueTicketDto> { result });
                     return result;
                 }
                 catch (Exception ex) when (attempt < maxRetries && (ex is DbUpdateException || ex.Message.Contains("deadlock") || ex.Message.Contains("1205") || ex.Message.Contains("conflict")))
@@ -314,7 +330,43 @@ public class QueueService : IQueueService
         ticket.Status = status;
         await _context.SaveChangesAsync();
 
-        return MapToDto(ticket);
+        var dto = MapToDto(ticket);
+        await HydrateBillingStatusAsync(new List<QueueTicketDto> { dto });
+        return dto;
+    }
+
+    public async Task<QueueTicketDto> MarkTicketAsParaclinicalReturnAsync(Guid ticketId, string? previousRecordCode = null)
+    {
+        var ticket = await _context.QueueTickets
+            .Include(q => q.Patient)
+            .Include(q => q.Department)
+            .FirstOrDefaultAsync(q => q.Id == ticketId);
+
+        if (ticket == null)
+            throw new KeyNotFoundException($"Không tìm thấy phiếu hàng chờ với ID {ticketId}");
+
+        ticket.Status = "Waiting";
+        if (!string.Equals(ticket.Priority, "Emergency", StringComparison.OrdinalIgnoreCase))
+        {
+            ticket.Priority = "Priority";
+        }
+
+        await _context.SaveChangesAsync();
+
+        _auditRecords.TryGetValue(ticket.Id, out var existingAudit);
+        _auditRecords[ticket.Id] = new PriorityAuditRecord(
+            existingAudit?.PriorityReason ?? "Ưu tiên quay lại phòng khám đọc kết quả Cận lâm sàng (CLS)",
+            existingAudit?.ConfirmedBy,
+            existingAudit?.ConfirmedAt,
+            existingAudit?.Reason,
+            "ParaclinicalResult",
+            previousRecordCode ?? existingAudit?.PreviousRecordCode,
+            existingAudit?.VisitType);
+        SaveAuditRecordsToFile();
+
+        var dto = MapToDto(ticket);
+        await HydrateBillingStatusAsync(new List<QueueTicketDto> { dto });
+        return dto;
     }
 
     public async Task<QueueTicketDto?> CallNextPatientAsync(Guid departmentId)
@@ -375,20 +427,48 @@ public class QueueService : IQueueService
             catch { }
         }
 
-        return MapToDto(nextTicket);
+        var dto = MapToDto(nextTicket);
+        await HydrateBillingStatusAsync(new List<QueueTicketDto> { dto });
+        return dto;
     }
 
-    private static string MaskString(string? input, int showStart = 3, int showEnd = 3)
+    private async Task HydrateBillingStatusAsync(List<QueueTicketDto> dtos)
     {
-        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-        var trimmed = input.Trim();
-        if (trimmed.Length <= showStart + showEnd)
+        if (dtos.Count == 0) return;
+        var patientIds = dtos.Select(d => d.PatientId).Where(id => id != Guid.Empty).Distinct().ToList();
+        if (patientIds.Count == 0) return;
+
+        var cutoff = DateTime.UtcNow.Date.AddDays(-1);
+        var unpaidBills = await _context.Billings
+            .AsNoTracking()
+            .Where(b => patientIds.Contains(b.PatientId)
+                && b.BillingType == "Registration"
+                && b.Status == "Unpaid"
+                && b.CreatedAt >= cutoff)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync();
+
+        var billMap = unpaidBills
+            .GroupBy(b => b.PatientId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        foreach (var dto in dtos)
         {
-            return new string('*', trimmed.Length);
+            if (billMap.TryGetValue(dto.PatientId, out var bill))
+            {
+                dto.PaymentStatus = "Unpaid";
+                dto.UnpaidBillingId = bill.Id;
+                dto.UnpaidAmount = bill.TotalAmount;
+            }
+            else if (!string.IsNullOrWhiteSpace(dto.HealthInsuranceNumber))
+            {
+                dto.PaymentStatus = "InsuranceWaived";
+            }
+            else
+            {
+                dto.PaymentStatus = "Paid";
+            }
         }
-        var start = trimmed.Substring(0, showStart);
-        var end = trimmed.Substring(trimmed.Length - showEnd);
-        return $"{start}{new string('*', trimmed.Length - showStart - showEnd)}{end}";
     }
 
     private static QueueTicketDto MapToDto(QueueTicket q)
@@ -407,8 +487,8 @@ public class QueueService : IQueueService
             PatientName = q.Patient?.FullName ?? string.Empty,
             PatientGender = q.Patient?.Gender ?? string.Empty,
             PatientAge = age,
-            IdentityCardNumber = MaskString(q.Patient?.IdentityCardNumber, 3, 3),
-            HealthInsuranceNumber = string.IsNullOrWhiteSpace(q.Patient?.HealthInsuranceNumber) ? null : MaskString(q.Patient?.HealthInsuranceNumber, 2, 3),
+            IdentityCardNumber = KioskTerminalValidator.MaskIdentifier(q.Patient?.IdentityCardNumber, 3, 3),
+            HealthInsuranceNumber = string.IsNullOrWhiteSpace(q.Patient?.HealthInsuranceNumber) ? null : KioskTerminalValidator.MaskIdentifier(q.Patient?.HealthInsuranceNumber, 2, 3),
             DepartmentId = q.DepartmentId,
             DepartmentName = q.Department?.DepartmentName ?? string.Empty,
             Location = q.Department?.Location ?? string.Empty,
@@ -417,6 +497,7 @@ public class QueueService : IQueueService
             Priority = q.Priority,
             AppointmentId = q.AppointmentId,
             VisitType = q.AppointmentId.HasValue ? "FollowUp" : "New",
+            QueueType = "Exam",
             CreatedAt = q.CreatedAt
         };
 
@@ -426,6 +507,9 @@ public class QueueService : IQueueService
             dto.EmergencyConfirmedBy = audit.ConfirmedBy;
             dto.EmergencyConfirmedAt = audit.ConfirmedAt;
             dto.EmergencyReason = audit.Reason;
+            if (!string.IsNullOrWhiteSpace(audit.QueueType)) dto.QueueType = audit.QueueType;
+            if (!string.IsNullOrWhiteSpace(audit.PreviousRecordCode)) dto.PreviousRecordCode = audit.PreviousRecordCode;
+            if (!string.IsNullOrWhiteSpace(audit.VisitType)) dto.VisitType = audit.VisitType;
         }
 
         return dto;

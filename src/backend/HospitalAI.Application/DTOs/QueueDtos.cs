@@ -26,6 +26,11 @@ public class QueueTicketDto
     public string? EmergencyReason { get; set; }
     public Guid? AppointmentId { get; set; }
     public string? VisitType { get; set; } // "New" / "FollowUp"
+    public string PaymentStatus { get; set; } = "Paid"; // "Paid", "Unpaid", "InsuranceWaived"
+    public string QueueType { get; set; } = "Exam"; // "Exam", "ParaclinicalResult"
+    public Guid? UnpaidBillingId { get; set; }
+    public decimal UnpaidAmount { get; set; }
+    public string? PreviousRecordCode { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
@@ -60,6 +65,12 @@ public class IssueQueueTicketDto
 
     [StringLength(50)]
     public string? VisitType { get; set; } = "New";
+
+    [StringLength(50)]
+    public string? QueueType { get; set; } = "Exam";
+
+    [StringLength(50)]
+    public string? PreviousRecordCode { get; set; }
 }
 
 public class UpdateQueueStatusDto

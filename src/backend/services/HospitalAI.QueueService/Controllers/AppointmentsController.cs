@@ -1,5 +1,6 @@
 using HospitalAI.Domain.Entities;
 using HospitalAI.Infrastructure.Data;
+using HospitalAI.Infrastructure.Services;
 using HospitalAI.QueueService.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -122,6 +123,48 @@ namespace HospitalAI.QueueService.Controllers
                 catch
                 {
                     return TimeZoneInfo.CreateCustomTimeZone("Asia/Ho_Chi_Minh", TimeSpan.FromHours(7), "Giờ Việt Nam (UTC+7)", "Giờ Việt Nam (UTC+7)");
+                }
+            }
+        }
+
+        internal static OnlineAppointmentItem? LookupCachedAppointment(string rawInput)
+        {
+            EnsureDataLoaded();
+            var input = (rawInput ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(input)) return null;
+
+            var parsed = KioskQrParser.Parse(input);
+            lock (_lock)
+            {
+                return _cachedAppointments!.FirstOrDefault(a =>
+                    a.Id.Equals(input, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrEmpty(a.QrCode) && a.QrCode.Equals(input, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(a.PatientCode) && a.PatientCode.Equals(input, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(a.PatientPhone) && a.PatientPhone.Equals(input, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(parsed.AppointmentId) && a.Id.Equals(parsed.AppointmentId, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(parsed.PreviousRecordCode) && !string.IsNullOrEmpty(a.PreviousRecordCode) && a.PreviousRecordCode.Equals(parsed.PreviousRecordCode, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(parsed.PatientCode) && a.PatientCode.Equals(parsed.PatientCode, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(parsed.LookupKey) && (
+                        a.Id.Equals(parsed.LookupKey, StringComparison.OrdinalIgnoreCase) ||
+                        a.PatientCode.Equals(parsed.LookupKey, StringComparison.OrdinalIgnoreCase) ||
+                        a.PatientPhone.Equals(parsed.LookupKey, StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrEmpty(a.IdentityCardNumber) && a.IdentityCardNumber.Equals(parsed.LookupKey, StringComparison.OrdinalIgnoreCase))
+                    )));
+            }
+        }
+
+        internal static void MarkCachedAppointmentCheckedIn(string appointmentId)
+        {
+            EnsureDataLoaded();
+            lock (_lock)
+            {
+                var found = _cachedAppointments!.FirstOrDefault(a => a.Id.Equals(appointmentId, StringComparison.OrdinalIgnoreCase));
+                if (found != null)
+                {
+                    found.Status = "CheckedIn";
+                    found.CheckInStatus = "CheckedInQR";
+                    found.CheckedInAt = DateTime.UtcNow.ToString("o");
+                    SaveToFile();
                 }
             }
         }
@@ -910,58 +953,7 @@ namespace HospitalAI.QueueService.Controllers
             }
 
             var input = dto.QrCodeOrId.Trim();
-            OnlineAppointmentItem? appointment = null;
-
-            lock (_lock)
-            {
-                // Tìm theo Id hoặc theo QrCode hoặc parse chuỗi JSON / MEDQR
-                appointment = _cachedAppointments!.FirstOrDefault(a =>
-                    a.Id.Equals(input, StringComparison.OrdinalIgnoreCase) ||
-                    (!string.IsNullOrEmpty(a.QrCode) && a.QrCode.Equals(input, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrEmpty(a.PatientCode) && a.PatientCode.Equals(input, StringComparison.OrdinalIgnoreCase)));
-
-                if (appointment == null && input.StartsWith("{") && input.EndsWith("}"))
-                {
-                    try
-                    {
-                        using var doc = System.Text.Json.JsonDocument.Parse(input);
-                        string? aptId = null;
-                        if (doc.RootElement.TryGetProperty("appointmentId", out var idProp)) aptId = idProp.GetString();
-                        else if (doc.RootElement.TryGetProperty("id", out var id2Prop)) aptId = id2Prop.GetString();
-
-                        if (!string.IsNullOrEmpty(aptId))
-                        {
-                            appointment = _cachedAppointments!.FirstOrDefault(a => a.Id.Equals(aptId, StringComparison.OrdinalIgnoreCase));
-                        }
-
-                        if (appointment == null && doc.RootElement.TryGetProperty("patientCode", out var pCodeProp))
-                        {
-                            var pCode = pCodeProp.GetString();
-                            if (!string.IsNullOrEmpty(pCode))
-                            {
-                                appointment = _cachedAppointments!.FirstOrDefault(a => a.PatientCode.Equals(pCode, StringComparison.OrdinalIgnoreCase));
-                            }
-                        }
-                    }
-                    catch { }
-                }
-
-                if (appointment == null && input.StartsWith("MEDQR|"))
-                {
-                    var parts = input.Split('|');
-                    if (parts.Length >= 2)
-                    {
-                        var key1 = parts[1];
-                        var key2 = parts.Length > 2 ? parts[2] : null;
-
-                        appointment = _cachedAppointments!.FirstOrDefault(a =>
-                            a.Id.Equals(key1, StringComparison.OrdinalIgnoreCase) ||
-                            (!string.IsNullOrEmpty(a.PreviousRecordCode) && a.PreviousRecordCode.Equals(key1, StringComparison.OrdinalIgnoreCase)) ||
-                            (!string.IsNullOrEmpty(key2) && a.PatientCode.Equals(key2, StringComparison.OrdinalIgnoreCase)) ||
-                            a.PatientCode.Equals(key1, StringComparison.OrdinalIgnoreCase));
-                    }
-                }
-            }
+            var appointment = LookupCachedAppointment(input);
 
             // Nếu chưa có trong Cache: Tìm kiếm trực tiếp trong CSDL SQL Server (Source of Truth)
             if (appointment == null)
