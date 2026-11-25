@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -19,7 +20,9 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _tokenGenerator;
     private readonly IConfiguration _configuration;
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt, int FailedAttempts)> _otpStore = new();
+
+    private sealed record OtpEntry(string Code, DateTime ExpiresAt, int FailedAttempts, DateTime SentAt);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, OtpEntry> _otpStore = new();
 
     public AuthService(HospitalDbContext context, IPasswordHasher passwordHasher, IJwtTokenGenerator tokenGenerator, IConfiguration configuration)
     {
@@ -29,23 +32,64 @@ public class AuthService : IAuthService
         _configuration = configuration;
     }
 
+    private static string NormalizePhone(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        var clean = raw.Trim().Replace(" ", "").Replace("-", "");
+        if (clean.StartsWith("+84") && clean.Length > 3)
+        {
+            clean = "0" + clean.Substring(3);
+        }
+        return clean;
+    }
+
+    private static (string Local0, string Intl84) GetPhoneVariants(string? raw)
+    {
+        var normalized = NormalizePhone(raw);
+        if (string.IsNullOrEmpty(normalized)) return (string.Empty, string.Empty);
+        var intl = normalized.StartsWith("0") ? "+84" + normalized.Substring(1) : normalized;
+        return (normalized, intl);
+    }
+
+    private static void PruneExpiredOtps()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var kvp in _otpStore)
+        {
+            if (kvp.Value.ExpiresAt <= now)
+            {
+                _otpStore.TryRemove(kvp.Key, out _);
+            }
+        }
+    }
+
+    private static string GenerateSecureOtp()
+    {
+        return RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+    }
+
     private static bool IsDevelopmentEnvironment()
     {
         var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        return string.IsNullOrEmpty(env) || env.Equals("Development", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
     {
+        var rawLogin = (request.Username ?? string.Empty).Trim();
+        var (localPhone, intlPhone) = GetPhoneVariants(rawLogin);
+
         var user = await _context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower() || u.Email.ToLower() == request.Username.ToLower() || u.PhoneNumber == request.Username);
+            .FirstOrDefaultAsync(u =>
+                u.Username.ToLower() == rawLogin.ToLower() ||
+                u.Email.ToLower() == rawLogin.ToLower() ||
+                (!string.IsNullOrEmpty(localPhone) && (u.PhoneNumber == localPhone || u.PhoneNumber == intlPhone)));
 
-        var isPasswordValid = (user != null && _passwordHasher.VerifyPassword(request.Password, user.PasswordHash)) ||
-            request.Password == "Admin@123" ||
-            request.Password == "Admin123" ||
-            request.Password == "HospitalAI@2026";
+        var isPasswordValid = user != null &&
+            !string.IsNullOrWhiteSpace(request.Password) &&
+            _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
 
         if (user == null || !isPasswordValid)
         {
@@ -229,61 +273,54 @@ public class AuthService : IAuthService
     {
         ValidatePasswordStrong(request.Password);
 
-        var normalizedPhone = string.IsNullOrWhiteSpace(request.PhoneNumber)
-            ? request.Username.Trim().Replace(" ", "").Replace("-", "")
-            : request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        var normalizedPhone = NormalizePhone(
+            string.IsNullOrWhiteSpace(request.PhoneNumber) ? request.Username : request.PhoneNumber);
+        var (localPhone, intlPhone) = GetPhoneVariants(normalizedPhone);
 
         var existingUser = await _context.Users.AnyAsync(u =>
-            u.PhoneNumber == normalizedPhone ||
-            u.Username.ToLower() == request.Username.ToLower() ||
-            u.Username.ToLower() == normalizedPhone.ToLower() ||
-            (normalizedPhone.StartsWith("0") && u.PhoneNumber == "+84" + normalizedPhone.Substring(1)) ||
-            (normalizedPhone.StartsWith("+84") && u.PhoneNumber == "0" + normalizedPhone.Substring(3)));
+            (!string.IsNullOrEmpty(localPhone) && (u.PhoneNumber == localPhone || u.PhoneNumber == intlPhone)) ||
+            u.Username.ToLower() == request.Username.Trim().ToLower() ||
+            (!string.IsNullOrEmpty(localPhone) && u.Username.ToLower() == localPhone.ToLower()));
 
         if (existingUser)
         {
             throw new Exception($"Số điện thoại {normalizedPhone} đã tồn tại trong hệ thống. Vui lòng đăng nhập.");
         }
 
-        // Xác thực mã OTP nếu có yêu cầu đăng ký qua OTP hoặc OTP được gửi lên
-        if (!string.IsNullOrWhiteSpace(request.OtpCode))
+        // Bắt buộc xác thực mã OTP hợp lệ từ _otpStore (Đã loại bỏ hoàn toàn Master OTP backdoor)
+        if (string.IsNullOrWhiteSpace(request.OtpCode))
         {
-            var isMasterOtp = request.OtpCode.Trim() == "123456";
+            throw new Exception("Vui lòng yêu cầu và nhập mã OTP để xác thực số điện thoại đăng ký.");
+        }
 
-            if (!isMasterOtp)
-            {
-                if (!_otpStore.TryGetValue(normalizedPhone, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
-                {
-                    _otpStore.TryRemove(normalizedPhone, out _);
-                    throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng xác thực lại.");
-                }
-
-                if (storedOtp.FailedAttempts >= 5)
-                {
-                    _otpStore.TryRemove(normalizedPhone, out _);
-                    throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
-                }
-
-                if (storedOtp.Code != request.OtpCode.Trim())
-                {
-                    var nextAttempts = storedOtp.FailedAttempts + 1;
-                    if (nextAttempts >= 5)
-                    {
-                        _otpStore.TryRemove(normalizedPhone, out _);
-                        throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
-                    }
-                    _otpStore[normalizedPhone] = (storedOtp.Code, storedOtp.ExpiresAt, nextAttempts);
-                    throw new Exception($"Mã OTP không chính xác. Bạn còn {5 - nextAttempts} lần thử.");
-                }
-            }
-
+        PruneExpiredOtps();
+        if (!_otpStore.TryGetValue(normalizedPhone, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
+        {
             _otpStore.TryRemove(normalizedPhone, out _);
+            throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng xác thực lại.");
         }
-        else if (_otpStore.ContainsKey(normalizedPhone))
+
+        if (storedOtp.FailedAttempts >= 5)
         {
-            // Số điện thoại đã kích hoạt gửi OTP nhưng không cung cấp OTP khi hoàn tất đăng ký
-            throw new Exception("Vui lòng nhập mã OTP để xác thực số điện thoại đăng ký.");
+            _otpStore.TryRemove(normalizedPhone, out _);
+            throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
         }
+
+        if (!CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.UTF8.GetBytes(storedOtp.Code),
+                System.Text.Encoding.UTF8.GetBytes(request.OtpCode.Trim())))
+        {
+            var nextAttempts = storedOtp.FailedAttempts + 1;
+            if (nextAttempts >= 5)
+            {
+                _otpStore.TryRemove(normalizedPhone, out _);
+                throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
+            }
+            _otpStore[normalizedPhone] = storedOtp with { FailedAttempts = nextAttempts };
+            throw new Exception($"Mã OTP không chính xác. Bạn còn {5 - nextAttempts} lần thử.");
+        }
+
+        _otpStore.TryRemove(normalizedPhone, out _);
 
         // Đăng ký tài khoản công khai luôn cố định vai trò là 'Patient' (Bệnh nhân)
         // Quyền 'Admin', 'Doctor', 'Receptionist' phải do Bệnh viện tự cấp phát nội bộ
@@ -395,10 +432,21 @@ public class AuthService : IAuthService
             throw new Exception("Số điện thoại không được để trống.");
         }
 
-        var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
-        if (!Regex.IsMatch(normalizedPhone, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
+        var rawPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        if (!Regex.IsMatch(rawPhone, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
         {
             throw new Exception("Số điện thoại không đúng định dạng Việt Nam hợp lệ (10 chữ số).");
+        }
+
+        var normalizedPhone = NormalizePhone(rawPhone);
+        PruneExpiredOtps();
+
+        // Chống spam SMS/OTP: Yêu cầu chờ 30 giây giữa 2 lần gửi liên tiếp
+        if (_otpStore.TryGetValue(normalizedPhone, out var existingEntry) &&
+            existingEntry.ExpiresAt > DateTime.UtcNow &&
+            (DateTime.UtcNow - existingEntry.SentAt).TotalSeconds < 30)
+        {
+            throw new Exception("Vui lòng đợi ít nhất 30 giây trước khi yêu cầu gửi lại mã OTP.");
         }
 
         // Kiểm tra xem Số điện thoại đã được đăng ký tài khoản chưa
@@ -408,9 +456,14 @@ public class AuthService : IAuthService
             throw new Exception($"Số điện thoại {normalizedPhone} đã tồn tại trong hệ thống. Vui lòng đăng nhập.");
         }
 
-        // Tạo mã OTP ngẫu nhiên 6 chữ số
-        var otpCode = Random.Shared.Next(100000, 999999).ToString();
-        _otpStore[normalizedPhone] = (otpCode, DateTime.UtcNow.AddMinutes(5), 0);
+        // Tạo mã OTP CSPRNG ngẫu nhiên 6 chữ số
+        var otpCode = GenerateSecureOtp();
+        _otpStore[normalizedPhone] = new OtpEntry(otpCode, DateTime.UtcNow.AddMinutes(5), 0, DateTime.UtcNow);
+
+        if (IsDevelopmentEnvironment())
+        {
+            Console.WriteLine($"[DEV-OTP][REGISTER] SĐT: {normalizedPhone} | OTP: {otpCode}");
+        }
 
         return new SendOtpResponseDto
         {
@@ -425,41 +478,58 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(phoneNumber))
             return false;
 
-        var normalizedPhone = phoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        var (localPhone, intlPhone) = GetPhoneVariants(phoneNumber);
+        if (string.IsNullOrEmpty(localPhone)) return false;
+
         return await _context.Users.AnyAsync(u =>
-            u.PhoneNumber == normalizedPhone ||
-            u.Username.ToLower() == normalizedPhone.ToLower() ||
-            (normalizedPhone.StartsWith("0") && u.PhoneNumber == "+84" + normalizedPhone.Substring(1)) ||
-            (normalizedPhone.StartsWith("+84") && u.PhoneNumber == "0" + normalizedPhone.Substring(3)));
+            u.PhoneNumber == localPhone ||
+            u.PhoneNumber == intlPhone ||
+            u.Username.ToLower() == localPhone.ToLower() ||
+            u.Username.ToLower() == intlPhone.ToLower());
     }
 
     /// <summary>
     /// Gửi OTP để đặt lại mật khẩu - dành cho bệnh nhân đã đăng ký (quên mật khẩu).
-    /// Ngược với SendOtpAsync: SĐT phải tồn tại mới được gửi OTP.
+    /// Chống User Enumeration: Phản hồi thông điệp trung tính dù SĐT có tồn tại hay không.
     /// </summary>
     public async Task<SendOtpResponseDto> ForgotPasswordOtpAsync(ForgotPasswordOtpRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.PhoneNumber))
             throw new Exception("Số điện thoại không được để trống.");
 
-        var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
-        if (!Regex.IsMatch(normalizedPhone, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
+        var rawPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        if (!Regex.IsMatch(rawPhone, @"^(0|\+84)[3|5|7|8|9][0-9]{8}$"))
             throw new Exception("Số điện thoại không đúng định dạng Việt Nam hợp lệ (10 chữ số).");
 
-        // Kiểm tra SĐT phải ĐÃ TỒN TẠI mới được khôi phục mật khẩu
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhone);
-        if (user == null)
-            throw new Exception($"Số điện thoại {normalizedPhone} chưa được đăng ký tài khoản nào.");
+        var (localPhone, intlPhone) = GetPhoneVariants(rawPhone);
+        PruneExpiredOtps();
+        var storeKey = $"forgot_{localPhone}";
 
-        // Tạo mã OTP đặt lại mật khẩu, lưu vào store dùng key riêng "forgot_"
-        var otpCode = Random.Shared.Next(100000, 999999).ToString();
-        var storeKey = $"forgot_{normalizedPhone}";
-        _otpStore[storeKey] = (otpCode, DateTime.UtcNow.AddMinutes(5), 0);
+        if (_otpStore.TryGetValue(storeKey, out var existingEntry) &&
+            existingEntry.ExpiresAt > DateTime.UtcNow &&
+            (DateTime.UtcNow - existingEntry.SentAt).TotalSeconds < 30)
+        {
+            throw new Exception("Vui lòng đợi ít nhất 30 giây trước khi yêu cầu gửi lại mã OTP.");
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u =>
+            u.PhoneNumber == localPhone || u.PhoneNumber == intlPhone);
+
+        if (user != null)
+        {
+            var otpCode = GenerateSecureOtp();
+            _otpStore[storeKey] = new OtpEntry(otpCode, DateTime.UtcNow.AddMinutes(5), 0, DateTime.UtcNow);
+
+            if (IsDevelopmentEnvironment())
+            {
+                Console.WriteLine($"[DEV-OTP][FORGOT-PWD] SĐT: {localPhone} | OTP: {otpCode}");
+            }
+        }
 
         return new SendOtpResponseDto
         {
             Success = true,
-            Message = $"Mã OTP đặt lại mật khẩu đã được gửi đến số {normalizedPhone}",
+            Message = $"Nếu số điện thoại {localPhone} đã đăng ký trong hệ thống, mã OTP đặt lại mật khẩu sẽ được gửi trong giây lát.",
             OtpCode = null
         };
     }
@@ -474,11 +544,11 @@ public class AuthService : IAuthService
             string.IsNullOrWhiteSpace(request.NewPassword))
             throw new Exception("Vui lòng nhập đầy đủ thông tin số điện thoại, mã OTP và mật khẩu mới.");
 
-        // Chuẩn hóa kiểm tra mật khẩu: tối thiểu 6 ký tự, có ít nhất 1 chữ in hoa
         ValidatePasswordStrong(request.NewPassword);
 
-        var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
-        var storeKey = $"forgot_{normalizedPhone}";
+        var (localPhone, intlPhone) = GetPhoneVariants(request.PhoneNumber);
+        var storeKey = $"forgot_{localPhone}";
+        PruneExpiredOtps();
 
         if (!_otpStore.TryGetValue(storeKey, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
         {
@@ -486,14 +556,15 @@ public class AuthService : IAuthService
             throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
         }
 
-        // Chống Brute-Force: Giới hạn tối đa 5 lần thử sai
         if (storedOtp.FailedAttempts >= 5)
         {
             _otpStore.TryRemove(storeKey, out _);
             throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
         }
 
-        if (storedOtp.Code != request.OtpCode.Trim())
+        if (!CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.UTF8.GetBytes(storedOtp.Code),
+                System.Text.Encoding.UTF8.GetBytes(request.OtpCode.Trim())))
         {
             var nextAttempts = storedOtp.FailedAttempts + 1;
             if (nextAttempts >= 5)
@@ -501,20 +572,21 @@ public class AuthService : IAuthService
                 _otpStore.TryRemove(storeKey, out _);
                 throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
             }
-            _otpStore[storeKey] = (storedOtp.Code, storedOtp.ExpiresAt, nextAttempts);
+            _otpStore[storeKey] = storedOtp with { FailedAttempts = nextAttempts };
             throw new Exception($"Mã OTP không chính xác. Bạn còn {5 - nextAttempts} lần thử.");
         }
 
         _otpStore.TryRemove(storeKey, out _);
 
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhone);
+        var user = await _context.Users.FirstOrDefaultAsync(u =>
+            u.PhoneNumber == localPhone || u.PhoneNumber == intlPhone);
         if (user == null)
             throw new Exception("Không tìm thấy tài khoản với số điện thoại này.");
 
         user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
         await _context.SaveChangesAsync();
 
-        Console.WriteLine($"[RESET-PWD] SĐT: {normalizedPhone} đã đặt lại mật khẩu thành công.");
+        Console.WriteLine($"[RESET-PWD] SĐT: {localPhone} đã đặt lại mật khẩu thành công.");
         return true;
     }
 
@@ -525,39 +597,44 @@ public class AuthService : IAuthService
             throw new Exception("Vui lòng nhập đầy đủ số điện thoại và mã OTP.");
         }
 
-        var normalizedPhone = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        var (localPhone, intlPhone) = GetPhoneVariants(request.PhoneNumber);
+        PruneExpiredOtps();
 
-        if (!_otpStore.TryGetValue(normalizedPhone, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
+        if (!_otpStore.TryGetValue(localPhone, out var storedOtp) || storedOtp.ExpiresAt < DateTime.UtcNow)
         {
-            _otpStore.TryRemove(normalizedPhone, out _);
+            _otpStore.TryRemove(localPhone, out _);
             throw new Exception("Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại.");
         }
 
-        // Chống Brute-Force: Giới hạn tối đa 5 lần thử sai
         if (storedOtp.FailedAttempts >= 5)
         {
-            _otpStore.TryRemove(normalizedPhone, out _);
+            _otpStore.TryRemove(localPhone, out _);
             throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
         }
 
-        if (storedOtp.Code != request.OtpCode.Trim())
+        if (!CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.UTF8.GetBytes(storedOtp.Code),
+                System.Text.Encoding.UTF8.GetBytes(request.OtpCode.Trim())))
         {
             var nextAttempts = storedOtp.FailedAttempts + 1;
             if (nextAttempts >= 5)
             {
-                _otpStore.TryRemove(normalizedPhone, out _);
+                _otpStore.TryRemove(localPhone, out _);
                 throw new Exception("Bạn đã nhập sai OTP quá 5 lần. Mã OTP đã bị hủy để đảm bảo an toàn. Vui lòng yêu cầu mã mới.");
             }
-            _otpStore[normalizedPhone] = (storedOtp.Code, storedOtp.ExpiresAt, nextAttempts);
+            _otpStore[localPhone] = storedOtp with { FailedAttempts = nextAttempts };
             throw new Exception($"Mã OTP không chính xác. Bạn còn {5 - nextAttempts} lần thử.");
         }
 
-        _otpStore.TryRemove(normalizedPhone, out _);
+        _otpStore.TryRemove(localPhone, out _);
 
         var user = await _context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhone || u.Username == normalizedPhone);
+            .FirstOrDefaultAsync(u =>
+                u.PhoneNumber == localPhone ||
+                u.PhoneNumber == intlPhone ||
+                u.Username == localPhone);
 
         if (user == null)
         {
@@ -571,17 +648,22 @@ public class AuthService : IAuthService
 
             user = new User
             {
-                Username = normalizedPhone,
-                PhoneNumber = normalizedPhone,
+                Username = localPhone,
+                PhoneNumber = localPhone,
                 FullName = "Bệnh nhân mới",
                 PasswordHash = _passwordHasher.HashPassword(Guid.NewGuid().ToString("N")),
                 IsActive = true,
-                AvatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={normalizedPhone}",
+                AvatarUrl = $"https://api.dicebear.com/7.x/avataaars/svg?seed={localPhone}",
                 CreatedAt = DateTime.UtcNow
             };
             user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+        }
+
+        if (!user.IsActive)
+        {
+            throw new Exception("Tài khoản của bạn đã bị khóa.");
         }
 
         var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
@@ -674,10 +756,21 @@ public class AuthService : IAuthService
 
         if (existingPatientWithCccd != null && (patient == null || existingPatientWithCccd.Id != patient.Id))
         {
-            // CCCD này đã tồn tại trong CSDL. Kiểm tra quyền sở hữu hồ sơ:
+            // CCCD này đã tồn tại trong CSDL. Kiểm tra chặt chẽ quyền sở hữu hồ sơ:
             if (existingPatientWithCccd.UserId == null)
             {
-                // Hồ sơ chưa liên kết tài khoản nào -> Gán trực tiếp cho tài khoản này
+                // Hồ sơ vãng lai (Walk-in / Kiosk) chưa gắn với UserId nào:
+                // Chỉ cho phép liên kết nếu SĐT trên hồ sơ rỗng hoặc khớp chính xác với SĐT ĐÃ XÁC THỰC của user đang đăng nhập.
+                var (userLocalPhone, _) = GetPhoneVariants(user.PhoneNumber);
+                var (recordLocalPhone, _) = GetPhoneVariants(existingPatientWithCccd.EmergencyContactPhone);
+                bool hasVerifiedPhoneMatch = string.IsNullOrWhiteSpace(recordLocalPhone) ||
+                                             (!string.IsNullOrEmpty(userLocalPhone) && userLocalPhone == recordLocalPhone && userLocalPhone != "0900000000");
+
+                if (!hasVerifiedPhoneMatch)
+                {
+                    throw new Exception($"Số CCCD {cccd} đã tồn tại trên một hồ sơ khám tại quầy với số điện thoại khác. Vui lòng liên hệ Quầy Tiếp nhận để đối soát.");
+                }
+
                 if (patient != null && patient.Id != existingPatientWithCccd.Id)
                 {
                     _context.Patients.Remove(patient);
@@ -687,35 +780,8 @@ public class AuthService : IAuthService
             }
             else if (existingPatientWithCccd.UserId != user.Id)
             {
-                // Hồ sơ đang được gán cho một UserId khác. Kiểm tra xem tài khoản đó là ai:
-                var previousOwner = await _context.Users
-                    .Include(u => u.UserRoles)
-                    .ThenInclude(ur => ur.Role)
-                    .FirstOrDefaultAsync(u => u.Id == existingPatientWithCccd.UserId);
-
-                bool isStaffOrAdmin = previousOwner?.UserRoles.Any(ur => ur.Role != null && (ur.Role.Name == "Doctor" || ur.Role.Name == "Admin" || ur.Role.Name == "Receptionist")) ?? false;
-                bool isSamePerson = previousOwner != null && (
-                    (!string.IsNullOrEmpty(previousOwner.Email) && previousOwner.Email.ToLower() == user.Email?.ToLower()) ||
-                    (!string.IsNullOrEmpty(previousOwner.PhoneNumber) && previousOwner.PhoneNumber == request.PhoneNumber?.Trim()) ||
-                    previousOwner.PhoneNumber == "0900000000" ||
-                    previousOwner.Username.StartsWith("pat-")
-                );
-
-                if (isStaffOrAdmin || isSamePerson)
-                {
-                    // Tài khoản trước là tài khoản cán bộ y tế (như dr.duy) hoặc tài khoản thử nghiệm của cùng một người
-                    // -> Chuyển liên kết hồ sơ Bệnh nhân sang đúng tài khoản Bệnh nhân thực tế hiện tại
-                    if (patient != null && patient.Id != existingPatientWithCccd.Id)
-                    {
-                        _context.Patients.Remove(patient);
-                    }
-                    patient = existingPatientWithCccd;
-                    patient.UserId = user.Id;
-                }
-                else
-                {
-                    throw new Exception($"Số CCCD {cccd} đã được đăng ký bởi bệnh nhân khác trên hệ thống.");
-                }
+                // Tuyệt đối KHÔNG tự động chuyển quyền sở hữu hồ sơ bệnh nhân giữa 2 UserId khác nhau dựa trên input chưa xác thực
+                throw new Exception($"Số CCCD {cccd} đã được liên kết với tài khoản khác trên hệ thống. Vui lòng đăng nhập đúng tài khoản hoặc liên hệ Quầy Tiếp nhận để hỗ trợ.");
             }
         }
 

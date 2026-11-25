@@ -19,16 +19,38 @@ builder.Services.AddRequestTimeouts(options =>
     };
 });
 
-// Rate Limiting: 150 requests / phút / IP
+// Rate Limiting phân tách theo từng Client IP: 150 requests / phút / IP
+static string ResolveClientIp(HttpContext ctx)
+{
+    var forwarded = ctx.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+    if (!string.IsNullOrWhiteSpace(forwarded))
+    {
+        var firstIp = forwarded.Split(',')[0].Trim();
+        if (!string.IsNullOrEmpty(firstIp)) return firstIp;
+    }
+    return ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+}
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddFixedWindowLimiter("global", opt =>
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
     {
-        opt.PermitLimit = 150;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 10;
+        var path = httpContext.Request.Path.Value ?? string.Empty;
+        if (path.Equals("/health", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/api/health", StringComparison.OrdinalIgnoreCase))
+        {
+            return RateLimitPartition.GetNoLimiter("health");
+        }
+
+        var clientIp = ResolveClientIp(httpContext);
+        return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 150,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 10
+        });
     });
 });
 

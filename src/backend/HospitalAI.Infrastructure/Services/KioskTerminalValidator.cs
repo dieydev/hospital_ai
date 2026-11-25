@@ -44,6 +44,14 @@ public static class KioskTerminalValidator
             if (configured.Count > 0) return configured;
         }
 
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        var isProduction = string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase);
+        if (isProduction && configuration != null)
+        {
+            // Trong môi trường Production bắt buộc phải cấu hình secret riêng qua appsettings/env vars, không dùng secret mặc định trong mã nguồn
+            return new List<TerminalConfig>();
+        }
+
         return DefaultTerminals;
     }
 

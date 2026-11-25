@@ -21,7 +21,16 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
     public (string Token, DateTime ExpiresAt) GenerateToken(User user, IEnumerable<string> roles)
     {
-        var secretKey = _configuration["JwtSettings:SecretKey"] ?? "SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT";
+        var secretKey = _configuration["JwtSettings:SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+        if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
+        {
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Thiếu cấu hình JwtSettings:SecretKey hợp lệ (>= 32 ký tự) trong môi trường Production.");
+            }
+            secretKey = "DEV_LOCAL_ONLY_JWT_SIGNING_KEY_DO_NOT_USE_PROD_2026";
+        }
         var issuer = _configuration["JwtSettings:Issuer"] ?? "HospitalAI.Backend";
         var audience = _configuration["JwtSettings:Audience"] ?? "HospitalAI.Clients";
         var expiryMinutes = int.TryParse(_configuration["JwtSettings:ExpiryInMinutes"], out var mins) ? mins : 1440; // 24 hours

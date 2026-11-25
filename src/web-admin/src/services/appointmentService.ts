@@ -1,4 +1,6 @@
 import api from './api';
+import { UserAccount } from '../types';
+import { isStaffOrAdminUser } from '../utils/authHelper';
 
 export interface OnlineAppointmentItem {
   id: string;
@@ -12,7 +14,7 @@ export interface OnlineAppointmentItem {
   appointmentDate: string;
   appointmentTime: string;
   symptomsReason: string;
-  status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  status: 'Pending' | 'Confirmed' | 'CheckedIn' | 'Completed' | 'Cancelled';
   createdAt: string;
   sourceApp?: string;
   qrCode?: string;
@@ -92,6 +94,71 @@ let localSlots: TimeSlotQuotaItem[] = [
 ];
 
 export const appointmentService = {
+  getScannableQrValue(
+    item: Pick<OnlineAppointmentItem, 'id' | 'patientCode' | 'qrCode' | 'appointmentType' | 'symptomsReason'>
+  ): string {
+    const raw = (item.qrCode || '').trim();
+    if (raw.toUpperCase().startsWith('MEDQR|') && raw.length <= 120) {
+      return raw;
+    }
+    const isFollowUp =
+      item.appointmentType === 'FollowUp' ||
+      (item.symptomsReason || '').toLowerCase().includes('tái khám');
+    const codePart = (item.patientCode || '').trim();
+    return isFollowUp ? `MEDQR|${item.id}|${codePart}|FOLLOWUP` : `MEDQR|${item.id}|${codePart}`;
+  },
+
+  filterAppointmentsByQuery(items: OnlineAppointmentItem[], rawQuery: string): OnlineAppointmentItem[] {
+    const query = rawQuery.trim().toLowerCase();
+    if (!query) return items;
+    return items.filter(
+      (a) =>
+        (a.patientPhone || '').toLowerCase().includes(query) ||
+        (a.patientCode || '').toLowerCase().includes(query) ||
+        (a.id || '').toLowerCase().includes(query) ||
+        (a.patientName || '').toLowerCase().includes(query) ||
+        (a.departmentName || '').toLowerCase().includes(query) ||
+        (a.doctorName || '').toLowerCase().includes(query)
+    );
+  },
+
+  async getMyAppointments(user: UserAccount | null): Promise<OnlineAppointmentItem[]> {
+    if (!user) return [];
+
+    const normalizePhoneDigits = (raw?: string): string => {
+      if (!raw) return '';
+      const digits = raw.replace(/\D/g, '');
+      if (digits.startsWith('84') && digits.length >= 11) return '0' + digits.slice(2);
+      return digits;
+    };
+
+    const userPhone = normalizePhoneDigits(user.soDienThoai);
+    const userCode = (user.maBenhNhan || '').trim().toLowerCase();
+
+    try {
+      const response = await api.get('/appointments');
+      const items: OnlineAppointmentItem[] = Array.isArray(response.data) ? response.data : [];
+
+      // Với Bệnh nhân, backend đã lọc nghiêm ngặt theo tài khoản (UserId / SĐT / Mã BN)
+      if (!isStaffOrAdminUser(user)) {
+        return items;
+      }
+
+      // Nếu Cán bộ / Admin mở trang đặt khám của tôi, chỉ lọc phần khớp hồ sơ cá nhân (nếu có)
+      if (userPhone || userCode) {
+        return items.filter((a) => {
+          const aptPhone = normalizePhoneDigits(a.patientPhone);
+          const aptCode = (a.patientCode || '').trim().toLowerCase();
+          return Boolean((userPhone && aptPhone === userPhone) || (userCode && aptCode === userCode));
+        });
+      }
+
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
   async getAppointments(): Promise<OnlineAppointmentItem[]> {
     try {
       const response = await api.get('/appointments');
@@ -106,29 +173,18 @@ export const appointmentService = {
       const response = await api.post('/appointments', params);
       return response.data;
     } catch {
+      const generatedId = `apt-${Date.now()}`;
       const newApt: OnlineAppointmentItem = {
         ...params,
-        id: `apt-${Date.now()}`,
+        id: generatedId,
         status: 'Pending',
         createdAt: new Date().toISOString(),
         sourceApp: params.sourceApp || 'Web Booking Portal',
-        qrCode: JSON.stringify({
-          type: 'D_MEDICAL_EXAM_PASS',
-          version: '2.0',
-          appointmentId: `apt-${Date.now()}`,
+        qrCode: appointmentService.getScannableQrValue({
+          id: generatedId,
           patientCode: params.patientCode,
-          patientName: params.patientName,
-          phoneNumber: params.patientPhone,
-          department: params.departmentName,
-          doctor: params.doctorName,
-          roomNumber: params.roomNumber || 'Phòng Khám Chuyên Khoa',
-          appointmentDate: params.appointmentDate,
-          appointmentTime: params.appointmentTime,
-          appointmentType: params.appointmentType || 'New',
-          previousRecordCode: params.previousRecordCode,
-          followUpNotes: params.followUpNotes,
-          symptoms: params.symptomsReason,
-          checkInNotice: 'Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)',
+          appointmentType: params.appointmentType,
+          symptomsReason: params.symptomsReason,
         }),
         checkInStatus: 'PendingQR',
       };
@@ -306,7 +362,12 @@ export const appointmentService = {
         item.appointmentTime = newTime;
         item.status = 'Pending';
         item.rescheduledAt = new Date().toISOString();
-        item.qrCode = `MEDQR|${item.id}|${item.patientCode}|${newDate}|${newTime}`;
+        item.qrCode = appointmentService.getScannableQrValue({
+          id: item.id,
+          patientCode: item.patientCode,
+          appointmentType: item.appointmentType,
+          symptomsReason: item.symptomsReason,
+        });
         if (reason) {
           item.symptomsReason += ` [Đổi lịch từ ${oldTime} ${oldDate}: ${reason}]`;
         }

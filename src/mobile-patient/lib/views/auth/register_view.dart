@@ -119,38 +119,23 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     });
 
     try {
-      // 1. Kiểm tra tài khoản với giới hạn timeout 3s
-      try {
-        final isExisting = await context.read<AuthProvider>().checkPhoneExists(phone).timeout(const Duration(seconds: 3));
-        if (isExisting) {
-          if (!mounted) return;
-          setState(() {
-            _phoneError = 'Số điện thoại $phone đã được đăng ký tài khoản trong hệ thống.';
-          });
-          _showSwitchToLoginDialog(phone, 'Số điện thoại $phone đã tồn tại trong hệ thống D-Medical.');
-          return;
-        }
-      } catch (_) {
-        // Nếu máy chủ ngoại tuyến hoặc timeout, cho phép tiếp tục luồng xác thực demo
+      final isExisting = await context.read<AuthProvider>().checkPhoneExists(phone).timeout(const Duration(seconds: 6));
+      if (isExisting) {
+        if (!mounted) return;
+        setState(() {
+          _phoneError = 'Số điện thoại $phone đã được đăng ký tài khoản trong hệ thống.';
+        });
+        _showSwitchToLoginDialog(phone, 'Số điện thoại $phone đã tồn tại trong hệ thống D-Medical.');
+        return;
       }
 
-      if (!mounted) return;
-
-      // 2. Gửi mã OTP xác thực
-      String demoOtp = '123456';
-      try {
-        final res = await context.read<AuthProvider>().sendOtp(phone).timeout(const Duration(seconds: 3));
-        if (res['otpCode'] != null) {
-          demoOtp = res['otpCode'].toString();
-        }
-      } catch (_) {
-        // Tự động gán mã OTP demo 123456 khi offline
-      }
+      final res = await context.read<AuthProvider>().sendOtp(phone).timeout(const Duration(seconds: 8));
+      final serverOtp = res['otpCode']?.toString();
 
       if (!mounted) return;
       setState(() {
         _step = 2;
-        _demoOtp = demoOtp;
+        _demoOtp = serverOtp;
       });
       _startTimer();
       _fadeController.reset();
@@ -162,14 +147,11 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
         }
       });
 
-      _showToast('Mã OTP xác thực: $demoOtp (Mã mặc định: 123456)');
+      _showToast('Mã OTP xác thực đã được gửi đến số $phone.');
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _step = 2;
-        _demoOtp = '123456';
-      });
-      _showToast('Mã OTP xác thực: 123456');
+      final errMsg = e.toString().replaceAll('Exception: ', '');
+      _showToast(errMsg.isNotEmpty ? errMsg : 'Không thể gửi mã OTP. Vui lòng kiểm tra kết nối mạng!', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

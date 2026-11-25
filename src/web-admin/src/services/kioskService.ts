@@ -10,29 +10,62 @@ export interface KioskTerminalConfig {
   secret: string;
 }
 
+const KIOSK_PAIRING_STORAGE_KEY = 'dmedical_kiosk_terminal_secrets';
+
 export const KIOSK_TERMINALS: KioskTerminalConfig[] = [
   {
     terminalId: 'KIOSK-SANH-A-01',
     terminalName: 'Kiosk Sảnh A - Tiếp Nhận & Khám Bệnh',
     location: 'Sảnh A - Tầng Trệt',
     zoneType: 'Reception',
-    secret: import.meta.env.VITE_KIOSK_SECRET_A01 || 'DMED-KIOSK-A01-2026',
+    secret: import.meta.env.VITE_KIOSK_SECRET_A01 || '',
   },
   {
     terminalId: 'KIOSK-TAI-KHAM-02',
     terminalName: 'Kiosk Sảnh B - Tái Khám Theo Hẹn',
     location: 'Sảnh B - Tầng 1',
     zoneType: 'FollowUp',
-    secret: import.meta.env.VITE_KIOSK_SECRET_B02 || 'DMED-KIOSK-B02-2026',
+    secret: import.meta.env.VITE_KIOSK_SECRET_B02 || '',
   },
   {
     terminalId: 'KIOSK-CLS-03',
     terminalName: 'Kiosk Khu Cận Lâm Sàng - Trả Kết Quả',
     location: 'Khu Cận Lâm Sàng - Tầng 2',
     zoneType: 'Paraclinical',
-    secret: import.meta.env.VITE_KIOSK_SECRET_C03 || 'DMED-KIOSK-C03-2026',
+    secret: import.meta.env.VITE_KIOSK_SECRET_C03 || '',
   },
 ];
+
+const readPairedSecretsMap = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(KIOSK_PAIRING_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const getPairedTerminalSecret = (terminalId: string): string => {
+  const paired = readPairedSecretsMap()[terminalId];
+  if (paired && paired.trim()) return paired.trim();
+  const fromEnv = KIOSK_TERMINALS.find((t) => t.terminalId === terminalId)?.secret;
+  return fromEnv ? fromEnv.trim() : '';
+};
+
+export const setPairedTerminalSecret = (terminalId: string, secret: string): void => {
+  if (typeof window === 'undefined') return;
+  const map = readPairedSecretsMap();
+  map[terminalId] = secret.trim();
+  localStorage.setItem(KIOSK_PAIRING_STORAGE_KEY, JSON.stringify(map));
+};
+
+export const clearPairedTerminalSecret = (terminalId: string): void => {
+  if (typeof window === 'undefined') return;
+  const map = readPairedSecretsMap();
+  delete map[terminalId];
+  localStorage.setItem(KIOSK_PAIRING_STORAGE_KEY, JSON.stringify(map));
+};
 
 export interface KioskQrParseResult {
   format: 'CCCD_CHIP' | 'EXAM_PASS_JSON' | 'MEDQR' | 'URL' | 'RAW';
@@ -122,10 +155,14 @@ export interface KioskClsReturnResponse {
 
 export const getKioskHeaders = (terminalId: string) => {
   const terminal = KIOSK_TERMINALS.find((t) => t.terminalId === terminalId) || KIOSK_TERMINALS[0];
-  return {
+  const secret = getPairedTerminalSecret(terminal.terminalId);
+  const headers: Record<string, string> = {
     'X-Kiosk-Terminal-Id': terminal.terminalId,
-    'X-Kiosk-Terminal-Secret': terminal.secret,
   };
+  if (secret) {
+    headers['X-Kiosk-Terminal-Secret'] = secret;
+  }
+  return headers;
 };
 
 /**
@@ -224,7 +261,7 @@ export const kioskService = {
   async getPublicBoard(
     terminalId: string,
     options?: { departmentId?: string; queueType?: string; includeMaskedNames?: boolean }
-  ): Promise<{ tickets: QueueTicketItem[]; online: boolean }> {
+  ): Promise<{ tickets: QueueTicketItem[]; online: boolean; authRequired?: boolean }> {
     try {
       const response = await api.get<QueueTicketItem[]>('/kiosk/board', {
         headers: getKioskHeaders(terminalId),
@@ -234,12 +271,15 @@ export const kioskService = {
           includeMaskedNames: options?.includeMaskedNames ?? true,
         },
       });
-      return { tickets: response.data || [], online: true };
+      return { tickets: response.data || [], online: true, authRequired: false };
     } catch (err: any) {
+      if (err?.response?.status === 401 || err?.response?.status === 403) {
+        return { tickets: [], online: true, authRequired: true };
+      }
       if (!err?.response) {
         // Mất kết nối backend: fallback offline nhưng báo rõ trạng thái online=false
         const local = await queueService.getTodayQueue(options?.departmentId);
-        return { tickets: local, online: false };
+        return { tickets: local, online: false, authRequired: false };
       }
       throw err;
     }

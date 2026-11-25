@@ -237,15 +237,44 @@ public class FcmNotificationService : IFcmNotificationService
         await SendPushNotificationAsync(notif);
     }
 
+    private static string NormalizeRecipientIdentifier(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+        var trimmed = value.Trim().ToLowerInvariant();
+        if (trimmed.StartsWith("+84") && trimmed.Length > 3)
+        {
+            trimmed = "0" + trimmed.Substring(3);
+        }
+        return trimmed;
+    }
+
+    private static bool RecipientMatches(string? storedRecipient, IReadOnlyCollection<string> normalizedTargets)
+    {
+        var normStored = NormalizeRecipientIdentifier(storedRecipient);
+        if (string.IsNullOrEmpty(normStored) || normalizedTargets.Count == 0) return false;
+        return normalizedTargets.Contains(normStored);
+    }
+
     public Task<List<PushNotificationDto>> GetNotificationsByUserAsync(string userIdentifier)
     {
         if (string.IsNullOrWhiteSpace(userIdentifier))
             return Task.FromResult(new List<PushNotificationDto>());
 
-        var key = userIdentifier.Trim().ToLowerInvariant();
+        return GetNotificationsForIdentifiersAsync(new[] { userIdentifier });
+    }
+
+    public Task<List<PushNotificationDto>> GetNotificationsForIdentifiersAsync(IEnumerable<string> userIdentifiers)
+    {
+        var normalizedSet = userIdentifiers
+            .Select(NormalizeRecipientIdentifier)
+            .Where(s => !string.IsNullOrEmpty(s))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (normalizedSet.Count == 0)
+            return Task.FromResult(new List<PushNotificationDto>());
+
         var results = _notificationStore
-            .Where(n => string.Equals(n.RecipientPhoneOrId, key, StringComparison.OrdinalIgnoreCase) ||
-                        (n.RecipientPhoneOrId != null && n.RecipientPhoneOrId.EndsWith(key.TrimStart('0'))))
+            .Where(n => RecipientMatches(n.RecipientPhoneOrId, normalizedSet))
             .OrderByDescending(n => n.CreatedAt)
             .Take(50)
             .ToList();
@@ -253,16 +282,27 @@ public class FcmNotificationService : IFcmNotificationService
         return Task.FromResult(results);
     }
 
-    public Task<bool> MarkAsReadAsync(string notificationId)
+    public Task<bool> MarkAsReadAsync(string notificationId, IEnumerable<string>? allowedRecipients = null)
     {
         var item = _notificationStore.FirstOrDefault(n => n.Id == notificationId);
-        if (item != null)
+        if (item == null) return Task.FromResult(false);
+
+        if (allowedRecipients != null)
         {
-            item.IsRead = true;
-            SaveNotificationsToFile();
-            return Task.FromResult(true);
+            var normalizedSet = allowedRecipients
+                .Select(NormalizeRecipientIdentifier)
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (!RecipientMatches(item.RecipientPhoneOrId, normalizedSet))
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền thao tác thông báo của người dùng khác.");
+            }
         }
-        return Task.FromResult(false);
+
+        item.IsRead = true;
+        SaveNotificationsToFile();
+        return Task.FromResult(true);
     }
 }
 

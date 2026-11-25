@@ -63,6 +63,7 @@ export const KioskQrScanner: React.FC<KioskQrScannerProps> = ({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cropCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lastDecodedRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
@@ -93,7 +94,7 @@ export const KioskQrScanner: React.FC<KioskQrScannerProps> = ({
         throw new Error('Trình duyệt không hỗ trợ truy cập camera trực tiếp (cần HTTPS hoặc localhost).');
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
       setIsCameraActive(true);
@@ -131,9 +132,28 @@ export const KioskQrScanner: React.FC<KioskQrScannerProps> = ({
           if (ctx) {
             ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imgData.data, imgData.width, imgData.height, {
-              inversionAttempts: 'dontInvert',
+            let code = jsQR(imgData.data, imgData.width, imgData.height, {
+              inversionAttempts: 'attemptBoth',
             });
+
+            // Thử cắt vùng trung tâm 70% nếu màn hình điện thoại đặt gần hoặc ánh sáng chói xung quanh
+            if (!code?.data && canvas.width >= 360 && canvas.height >= 280) {
+              const cropCanvas = cropCanvasRef.current || document.createElement('canvas');
+              cropCanvasRef.current = cropCanvas;
+              const roiSize = Math.floor(Math.min(canvas.width, canvas.height) * 0.72);
+              const sx = Math.floor((canvas.width - roiSize) / 2);
+              const sy = Math.floor((canvas.height - roiSize) / 2);
+              cropCanvas.width = roiSize;
+              cropCanvas.height = roiSize;
+              const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+              if (cropCtx) {
+                cropCtx.drawImage(canvas, sx, sy, roiSize, roiSize, 0, 0, roiSize, roiSize);
+                const cropData = cropCtx.getImageData(0, 0, roiSize, roiSize);
+                code = jsQR(cropData.data, cropData.width, cropData.height, {
+                  inversionAttempts: 'attemptBoth',
+                });
+              }
+            }
 
             if (code?.data) {
               const now = Date.now();
@@ -170,25 +190,42 @@ export const KioskQrScanner: React.FC<KioskQrScannerProps> = ({
     };
   }, []);
 
-  // Giải mã QR từ file ảnh tải lên (hữu ích khi kiểm thử ảnh QR / ảnh CCCD)
+  // Giải mã QR từ file ảnh tải lên (nền trắng chống PNG trong suốt + đa tỷ lệ giúp quét chính xác cả ảnh cắt sát viền)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const tryDecodePass = (
+      img: HTMLImageElement,
+      targetMaxSide: number,
+      padding: number
+    ) => {
+      const canvas = canvasRef.current || document.createElement('canvas');
+      const maxDim = Math.max(img.width, img.height);
+      const scale = targetMaxSide > 0 && maxDim > targetMaxSide ? targetMaxSide / maxDim : 1;
+      const drawW = Math.max(1, Math.round(img.width * scale));
+      const drawH = Math.max(1, Math.round(img.height * scale));
+      canvas.width = drawW + padding * 2;
+      canvas.height = drawH + padding * 2;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return null;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, padding, padding, drawW, drawH);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      return jsQR(imgData.data, imgData.width, imgData.height, {
+        inversionAttempts: 'attemptBoth',
+      });
+    };
 
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const canvas = canvasRef.current || document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const decoded = jsQR(imgData.data, imgData.width, imgData.height, {
-          inversionAttempts: 'attemptBoth',
-        });
+        const decoded =
+          tryDecodePass(img, 0, 24) ||
+          tryDecodePass(img, 1000, 32) ||
+          tryDecodePass(img, 640, 28);
 
         if (decoded?.data) {
           playScannerBeep();
@@ -260,14 +297,15 @@ export const KioskQrScanner: React.FC<KioskQrScannerProps> = ({
         )}
 
         {/* 4 góc định vị */}
-        <div style={{ position: 'absolute', top: 14, left: 14, width: 24, height: 24, borderTop: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }} />
-        <div style={{ position: 'absolute', top: 14, right: 14, width: 24, height: 24, borderTop: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }} />
-        <div style={{ position: 'absolute', bottom: 14, left: 14, width: 24, height: 24, borderBottom: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }} />
-        <div style={{ position: 'absolute', bottom: 14, right: 14, width: 24, height: 24, borderBottom: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }} />
+        <div style={{ pointerEvents: 'none', position: 'absolute', top: 14, left: 14, width: 24, height: 24, borderTop: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }} />
+        <div style={{ pointerEvents: 'none', position: 'absolute', top: 14, right: 14, width: 24, height: 24, borderTop: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }} />
+        <div style={{ pointerEvents: 'none', position: 'absolute', bottom: 14, left: 14, width: 24, height: 24, borderBottom: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }} />
+        <div style={{ pointerEvents: 'none', position: 'absolute', bottom: 14, right: 14, width: 24, height: 24, borderBottom: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }} />
 
         {/* Tia laser quét */}
         <div
           style={{
+            pointerEvents: 'none',
             position: 'absolute',
             left: 16,
             right: 16,

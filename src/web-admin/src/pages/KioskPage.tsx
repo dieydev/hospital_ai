@@ -33,6 +33,7 @@ import {
   FullscreenOutlined,
   HomeOutlined,
   IdcardOutlined,
+  KeyOutlined,
   MedicineBoxOutlined,
   PrinterOutlined,
   ReloadOutlined,
@@ -55,8 +56,11 @@ import {
   KioskClsReturnResponse,
   KioskPreviousExamSummary,
   KioskWalkInRequest,
+  clearPairedTerminalSecret,
+  getPairedTerminalSecret,
   kioskService,
   parseKioskQrClient,
+  setPairedTerminalSecret,
 } from '../services/kioskService';
 import { DepartmentItem, QueueTicketItem, queueService } from '../services/queueService';
 import { signalrService } from '../services/signalrService';
@@ -178,6 +182,11 @@ export const KioskPage: React.FC = () => {
     };
   }, []);
 
+  // Trạng thái ghép nối trạm Kiosk vật lý (Không nhúng secret vào JS bundle công cộng)
+  const [isPairingRequired, setIsPairingRequired] = useState<boolean>(false);
+  const [isPairingModalOpen, setIsPairingModalOpen] = useState<boolean>(false);
+  const [pairingSecretInput, setPairingSecretInput] = useState<string>('');
+
   // Tải Khoa phòng + Bảng hàng chờ từ Backend
   const fetchKioskData = useCallback(async () => {
     setLoadingQueue(true);
@@ -193,6 +202,7 @@ export const KioskPage: React.FC = () => {
       setDepartments(depts);
       setLiveQueue(boardRes.tickets);
       setIsOnline(boardRes.online);
+      setIsPairingRequired(Boolean(boardRes.authRequired && !isStaffLoggedIn && !getPairedTerminalSecret(selectedTerminalId)));
     } catch {
       setIsOnline(false);
     } finally {
@@ -858,8 +868,8 @@ export const KioskPage: React.FC = () => {
         {ticket.queueType === 'ParaclinicalResult'
           ? '[ ƯU TIÊN ĐỌC KẾT QUẢ CLS ]'
           : ticket.visitType === 'FollowUp'
-          ? '[ TÁI KHÁM THEO HẸN ]'
-          : '[ KHÁM LẦN ĐẦU ]'}
+            ? '[ TÁI KHÁM THEO HẸN ]'
+            : '[ KHÁM LẦN ĐẦU ]'}
       </div>
 
       <div style={{ fontSize: 54, fontWeight: 900, margin: '4px 0', lineHeight: 1.1 }}>#{ticket.sequenceNumber}</div>
@@ -873,7 +883,14 @@ export const KioskPage: React.FC = () => {
       <div style={{ fontSize: 12, fontWeight: 700 }}>{ticket.location}</div>
 
       <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0' }}>
-        <QRCodeSVG value={`MEDQR|${ticket.id}|${ticket.patientCode}|${ticket.sequenceNumber}`} size={86} />
+        <QRCodeSVG
+          value={`MEDQR|${ticket.id}|${ticket.patientCode}|${ticket.sequenceNumber}`}
+          size={96}
+          level="M"
+          marginSize={2}
+          fgColor="#0f172a"
+          bgColor="#ffffff"
+        />
       </div>
       <div style={{ fontSize: 10 }}>Dùng mã QR trên để quét quay lại phòng khám sau CLS</div>
 
@@ -995,6 +1012,22 @@ export const KioskPage: React.FC = () => {
           </div>
 
           <Button
+            icon={<KeyOutlined />}
+            onClick={() => {
+              setPairingSecretInput(getPairedTerminalSecret(selectedTerminalId));
+              setIsPairingModalOpen(true);
+            }}
+            style={{
+              borderRadius: 10,
+              borderColor: isPairingRequired ? '#f59e0b' : '#bae6fd',
+              color: isPairingRequired ? '#b45309' : '#0369a1',
+              fontWeight: 600,
+            }}
+          >
+            {isPairingRequired ? 'Ghép Nối Trạm' : 'Thiết Bị Kiosk'}
+          </Button>
+
+          <Button
             icon={<HomeOutlined />}
             onClick={() => navigate(isStaffLoggedIn ? '/reception' : '/')}
             style={{
@@ -1012,6 +1045,33 @@ export const KioskPage: React.FC = () => {
 
       {/* NỘI DUNG CHÍNH */}
       <main style={{ flex: 1, padding: '20px 28px', maxWidth: 1380, margin: '0 auto', width: '100%' }}>
+        {isPairingRequired && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16, borderRadius: 12, borderColor: '#fcd34d' }}
+            message="Trạm Kiosk chưa được ghép nối khóa bảo mật thiết bị"
+            description="Để bảo vệ dữ liệu bệnh nhân theo tiêu chuẩn thực tế, khóa trạm Kiosk không được nhúng vào mã nguồn công cộng. Quản trị viên / Kỹ thuật IT vui lòng nhấn 'Ghép Nối Trạm' để nhập khóa thiết bị từ cấu hình máy chủ hoặc đăng nhập bằng tài khoản Tiếp nhận / Admin."
+            action={
+              <Space>
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<KeyOutlined />}
+                  onClick={() => {
+                    setPairingSecretInput('');
+                    setIsPairingModalOpen(true);
+                  }}
+                >
+                  Ghép Nối Ngay
+                </Button>
+                <Button size="small" onClick={() => navigate('/login?redirect=/kiosk')}>
+                  Đăng Nhập Staff
+                </Button>
+              </Space>
+            }
+          />
+        )}
         <Tabs
           activeKey={activeTab}
           onChange={(k) => {
@@ -1440,7 +1500,7 @@ export const KioskPage: React.FC = () => {
                         {activeUnpaidBilling
                           ? renderPaymentGateBox(activeUnpaidBilling)
                           : checkInResult?.ticket &&
-                            renderTicketResultBox(checkInResult.ticket, 'ĐÃ CẤP SỐ THỨ TỰ KHÁM MỚI')}
+                          renderTicketResultBox(checkInResult.ticket, 'ĐÃ CẤP SỐ THỨ TỰ KHÁM MỚI')}
                       </Card>
                     )}
                   </Col>
@@ -1527,8 +1587,8 @@ export const KioskPage: React.FC = () => {
                               clsResult.outcome === 'SUCCESS'
                                 ? 'success'
                                 : clsResult.outcome === 'PENDING_RESULTS'
-                                ? 'warning'
-                                : 'error'
+                                  ? 'warning'
+                                  : 'error'
                             }
                             showIcon
                             message={clsResult.message}
@@ -1727,26 +1787,26 @@ export const KioskPage: React.FC = () => {
                       },
                       ...(isDemoMode
                         ? [
-                            {
-                              title: 'Test Quét',
-                              key: 'action',
-                              width: 120,
-                              render: (_: unknown, r: QueueTicketItem) => (
-                                <Button
-                                  size="small"
-                                  type="primary"
-                                  icon={<ScanOutlined />}
-                                  onClick={() => {
-                                    setActiveTab('checkin');
-                                    setScanCode(r.patientCode);
-                                    handleCheckInSubmit(r.patientCode);
-                                  }}
-                                >
-                                  Quét thử
-                                </Button>
-                              ),
-                            },
-                          ]
+                          {
+                            title: 'Test Quét',
+                            key: 'action',
+                            width: 120,
+                            render: (_: unknown, r: QueueTicketItem) => (
+                              <Button
+                                size="small"
+                                type="primary"
+                                icon={<ScanOutlined />}
+                                onClick={() => {
+                                  setActiveTab('checkin');
+                                  setScanCode(r.patientCode);
+                                  handleCheckInSubmit(r.patientCode);
+                                }}
+                              >
+                                Quét thử
+                              </Button>
+                            ),
+                          },
+                        ]
                         : []),
                     ]}
                   />
@@ -1784,6 +1844,70 @@ export const KioskPage: React.FC = () => {
         width={380}
       >
         {ticketToPrint && renderThermalSlipMarkup(ticketToPrint)}
+      </Modal>
+
+      {/* Modal Ghép Nối Khóa Bảo Mật Trạm Kiosk */}
+      <Modal
+        title={
+          <Space>
+            <KeyOutlined style={{ color: '#0284c7' }} />
+            <span style={{ fontWeight: 700 }}>Ghép Nối Thiết Bị Kiosk ({selectedTerminalId})</span>
+          </Space>
+        }
+        open={isPairingModalOpen}
+        onCancel={() => setIsPairingModalOpen(false)}
+        footer={[
+          <Button
+            key="clear"
+            danger
+            onClick={() => {
+              clearPairedTerminalSecret(selectedTerminalId);
+              setPairingSecretInput('');
+              setIsPairingModalOpen(false);
+              fetchKioskData();
+              showToast(`Đã hủy ghép nối khóa trạm ${selectedTerminalId}.`, 'info');
+            }}
+          >
+            Hủy Khóa Trạm
+          </Button>,
+          <Button key="cancel" onClick={() => setIsPairingModalOpen(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+            onClick={() => {
+              if (!pairingSecretInput.trim()) {
+                showToast('Vui lòng nhập khóa bảo mật của trạm Kiosk!', 'warning');
+                return;
+              }
+              setPairedTerminalSecret(selectedTerminalId, pairingSecretInput.trim());
+              setIsPairingModalOpen(false);
+              fetchKioskData();
+              showToast(`Đã lưu khóa ghép nối cho ${selectedTerminalId}.`, 'success');
+            }}
+          >
+            Lưu & Kết Nối Trạm
+          </Button>,
+        ]}
+        width={460}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Text style={{ fontSize: 13, color: '#334155' }}>
+            Nhập <strong>X-Kiosk-Terminal-Secret</strong> được cấp riêng cho trạm <strong>{selectedTerminal.terminalName}</strong> trong biến môi trường máy chủ:
+          </Text>
+          <Input.Password
+            size="large"
+            prefix={<KeyOutlined style={{ color: '#0284c7' }} />}
+            placeholder="Nhập khóa bí mật thiết bị trạm Kiosk..."
+            value={pairingSecretInput}
+            onChange={(e) => setPairingSecretInput(e.target.value)}
+          />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Khóa chỉ được lưu cục bộ trên trình duyệt của máy Kiosk tại sảnh, tuyệt đối không nhúng sẵn trong mã nguồn công khai.
+          </Text>
+        </div>
       </Modal>
 
       {/* Portal Ẩn Chuyên Dụng Cho Lệnh In Nhiệt (Tránh Lỗi .ant-modal-wrap { display: none } Khi In) */}

@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -369,13 +370,17 @@ public class RealSqlServerValidationTests
             .UseSqlServer(WorkingConn)
             .Options;
 
-        // 1. Setup DoctorSchedule in SQL Server with MaxPatients = 1
-        var targetDate = DateTime.UtcNow.Date.AddDays(Random.Shared.Next(101, 150));
+        // 1. Setup DoctorSchedule in SQL Server with MaxPatients = 1 on a clean date
+        DateTime targetDate = DateTime.UtcNow.Date.AddDays(Random.Shared.Next(200, 1800));
         var testTimeSlot = $"21:{Random.Shared.Next(10, 50)} - 21:59";
         Guid scheduleId;
 
         using (var setupContext = new HospitalDbContext(options))
         {
+            while (await setupContext.Appointments.AnyAsync(a => a.AppointmentDate.Date == targetDate))
+            {
+                targetDate = targetDate.AddDays(1);
+            }
             var dept = await setupContext.Departments.FirstOrDefaultAsync();
             var staff = await setupContext.StaffProfiles.FirstOrDefaultAsync();
             var schedule = new DoctorSchedule
@@ -409,8 +414,10 @@ public class RealSqlServerValidationTests
             UseShellExecute = false,
             CreateNoWindow = true
         };
+        const string multiProcJwtSecret = "TEST_MULTI_PROCESS_JWT_SECRET_KEY_2026_32B";
         psi1.Environment["ConnectionStrings__DefaultConnection"] = WorkingConn;
         psi1.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
+        psi1.Environment["JwtSettings__SecretKey"] = multiProcJwtSecret;
 
         var psi2 = new ProcessStartInfo
         {
@@ -422,6 +429,7 @@ public class RealSqlServerValidationTests
         };
         psi2.Environment["ConnectionStrings__DefaultConnection"] = WorkingConn;
         psi2.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
+        psi2.Environment["JwtSettings__SecretKey"] = multiProcJwtSecret;
 
         using var proc1 = Process.Start(psi1);
         using var proc2 = Process.Start(psi2);
@@ -460,10 +468,29 @@ public class RealSqlServerValidationTests
             _output.WriteLine("Both backend instances are READY and listening.");
 
             var rnd = Random.Shared;
+            var phone1 = $"09{rnd.Next(10000000, 99999999)}";
+            var phone2 = $"09{rnd.Next(10000000, 99999999)}";
+
+            var jwtConfig = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+                .AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
+                {
+                    ["JwtSettings:SecretKey"] = multiProcJwtSecret,
+                    ["JwtSettings:Issuer"] = "HospitalAI.Backend",
+                    ["JwtSettings:Audience"] = "HospitalAI.Clients"
+                })
+                .Build();
+            var jwtGen = new HospitalAI.Infrastructure.Services.JwtTokenGenerator(jwtConfig);
+            var (token1, _) = jwtGen.GenerateToken(
+                new User { Id = Guid.NewGuid(), Username = phone1, FullName = "Patient Alpha", Email = "alpha@test.local" },
+                new[] { "Patient" });
+            var (token2, _) = jwtGen.GenerateToken(
+                new User { Id = Guid.NewGuid(), Username = phone2, FullName = "Patient Beta", Email = "beta@test.local" },
+                new[] { "Patient" });
+
             var body1 = System.Text.Json.JsonSerializer.Serialize(new
             {
                 patientName = "Bệnh nhân Process Alpha",
-                patientPhone = $"09{rnd.Next(10000000, 99999999)}",
+                patientPhone = phone1,
                 identityCardNumber = $"001{rnd.Next(100000000, 999999999)}",
                 appointmentDate = targetDate.ToString("yyyy-MM-dd"),
                 appointmentTime = testTimeSlot,
@@ -474,7 +501,7 @@ public class RealSqlServerValidationTests
             var body2 = System.Text.Json.JsonSerializer.Serialize(new
             {
                 patientName = "Bệnh nhân Process Beta",
-                patientPhone = $"09{rnd.Next(10000000, 99999999)}",
+                patientPhone = phone2,
                 identityCardNumber = $"001{rnd.Next(100000000, 999999999)}",
                 appointmentDate = targetDate.ToString("yyyy-MM-dd"),
                 appointmentTime = testTimeSlot,
@@ -489,6 +516,7 @@ public class RealSqlServerValidationTests
                 {
                     Content = new StringContent(body1, System.Text.Encoding.UTF8, "application/json")
                 };
+                req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token1);
                 var ts = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
                 var response = await client.SendAsync(req);
                 var content = await response.Content.ReadAsStringAsync();
@@ -502,6 +530,7 @@ public class RealSqlServerValidationTests
                 {
                     Content = new StringContent(body2, System.Text.Encoding.UTF8, "application/json")
                 };
+                req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token2);
                 var ts = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
                 var response = await client.SendAsync(req);
                 var content = await response.Content.ReadAsStringAsync();

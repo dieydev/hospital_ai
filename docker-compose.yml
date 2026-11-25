@@ -6,7 +6,7 @@ services:
       - "14333:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=@Duy12345
+      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD:?Configure SQL_SA_PASSWORD in .env}
       - MSSQL_PID=Developer
       - MSSQL_MEMORY_LIMIT_MB=1400
     deploy:
@@ -28,12 +28,13 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - DOTNET_gcServer=0
       - DOTNET_GCHeapHardLimitPercent=75
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
-      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=${SQL_SA_PASSWORD:?Configure SQL_SA_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Configure JWT_SECRET_KEY in .env}
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
       - DATA_DIR=/app/data
-      - Authentication__Google__ClientId=522428211167-ei79mb8vac5spld5m3djc4jes5llgken.apps.googleusercontent.com
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
+      - SEED_DEFAULT_PASSWORD=${SEED_DEFAULT_PASSWORD:-}
     volumes:
       - queue_data:/app/data
     deploy:
@@ -55,8 +56,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - DOTNET_gcServer=0
       - DOTNET_GCHeapHardLimitPercent=75
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
-      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=${SQL_SA_PASSWORD:?Configure SQL_SA_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Configure JWT_SECRET_KEY in .env}
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
       - DATA_DIR=/app/data
@@ -81,10 +82,25 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - DOTNET_gcServer=0
       - DOTNET_GCHeapHardLimitPercent=75
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
-      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=${SQL_SA_PASSWORD:?Configure SQL_SA_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Configure JWT_SECRET_KEY in .env}
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
+      - Kiosk__Terminals__0__TerminalId=KIOSK-SANH-A-01
+      - Kiosk__Terminals__0__TerminalName=Kiosk Sảnh A - Tiếp Nhận & Khám Bệnh
+      - Kiosk__Terminals__0__Location=Sảnh A - Tầng Trệt
+      - Kiosk__Terminals__0__ZoneType=Reception
+      - Kiosk__Terminals__0__Secret=${KIOSK_SECRET_A01:?Configure KIOSK_SECRET_A01 in .env}
+      - Kiosk__Terminals__1__TerminalId=KIOSK-TAI-KHAM-02
+      - Kiosk__Terminals__1__TerminalName=Kiosk Sảnh B - Tái Khám Theo Hẹn
+      - Kiosk__Terminals__1__Location=Sảnh B - Tầng 1
+      - Kiosk__Terminals__1__ZoneType=FollowUp
+      - Kiosk__Terminals__1__Secret=${KIOSK_SECRET_B02:?Configure KIOSK_SECRET_B02 in .env}
+      - Kiosk__Terminals__2__TerminalId=KIOSK-CLS-03
+      - Kiosk__Terminals__2__TerminalName=Kiosk Khu Cận Lâm Sàng - Trả Kết Quả
+      - Kiosk__Terminals__2__Location=Khu Cận Lâm Sàng - Tầng 2
+      - Kiosk__Terminals__2__ZoneType=Paraclinical
+      - Kiosk__Terminals__2__Secret=${KIOSK_SECRET_C03:?Configure KIOSK_SECRET_C03 in .env}
       - DATA_DIR=/app/data
     volumes:
       - queue_data:/app/data
@@ -107,21 +123,23 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - DOTNET_gcServer=0
       - DOTNET_GCHeapHardLimitPercent=75
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=@Duy12345;TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
-      - MongoDb__ConnectionString=mongodb://hospitalai_admin:HospitalAIMongo2026SecurePass@mongodb:27017/HospitalAI_AI_Logs?authSource=admin
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HospitalAI_DB;User Id=sa;Password=${SQL_SA_PASSWORD:?Configure SQL_SA_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=true;Max Pool Size=100;Min Pool Size=5;Connect Timeout=30;ConnectRetryCount=3;ConnectRetryInterval=5;
+      - MongoDb__ConnectionString=mongodb://${MONGO_INITDB_ROOT_USERNAME:-hospitalai_admin}:${MONGO_INITDB_ROOT_PASSWORD:?Configure MONGO_INITDB_ROOT_PASSWORD in .env}@mongodb:27017/HospitalAI_AI_Logs?authSource=admin
       - MongoDb__DatabaseName=HospitalAI_AI_Logs
-      - JwtSettings__SecretKey=SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Configure JWT_SECRET_KEY in .env}
       - JwtSettings__Issuer=HospitalAI.Backend
       - JwtSettings__Audience=HospitalAI.Clients
+      - DigitalSignature__SecretKey=${DIGITAL_SIGNATURE_SECRET:?Configure DIGITAL_SIGNATURE_SECRET in .env}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - DATA_DIR=/app/data
-      - Vnpay__TmnCode=3EKPO0UC
-      - Vnpay__HashSecret=PSKDJCFTWHVARXRNHOVHXRNSSXOVLGLR
-      - Vnpay__BaseUrl=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - Vnpay__TmnCode=${VNPAY_TMN_CODE:-}
+      - Vnpay__HashSecret=${VNPAY_HASH_SECRET:-}
+      - Vnpay__BaseUrl=${VNPAY_BASE_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
       - Vnpay__Command=pay
       - Vnpay__CurrCode=VND
       - Vnpay__Version=2.1.0
       - Vnpay__Locale=vn
-      - Vnpay__ReturnUrl=https://dmedical.site/api/payment/vnpay-return
+      - Vnpay__ReturnUrl=${VNPAY_RETURN_URL:-https://dmedical.site/api/payment/vnpay-return}
     volumes:
       - queue_data:/app/data
     deploy:

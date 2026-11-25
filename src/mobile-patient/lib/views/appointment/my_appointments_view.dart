@@ -500,9 +500,11 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
       if (item['symptomsReason'] != null) 'symptoms': item['symptomsReason'],
       'checkInNotice': 'Xuat trinh ma QR de vao phong kham (Khong can lay STT)',
     };
-    final qrData = item['qrCode'] != null && item['qrCode'].toString().startsWith('{')
-        ? item['qrCode'].toString()
-        : jsonEncode(qrPayload);
+    final rawQr = (item['qrCode'] ?? '').toString().trim();
+    final pCode = (item['patientCode'] ?? '').toString().trim();
+    final qrData = rawQr.toUpperCase().startsWith('MEDQR|') && rawQr.length <= 120
+        ? rawQr
+        : (isFollowUp ? 'MEDQR|$id|$pCode|FOLLOWUP' : 'MEDQR|$id|$pCode');
 
     showModalBottomSheet(
       context: parentContext,
@@ -583,15 +585,17 @@ class _MyAppointmentsViewState extends State<MyAppointmentsView> {
               child: QrImageView(
                 data: qrData,
                 version: QrVersions.auto,
-                size: 180,
+                errorCorrectionLevel: QrErrorCorrectLevel.M,
+                gapless: true,
+                size: 200,
                 backgroundColor: Colors.white,
-                eyeStyle: QrEyeStyle(
+                eyeStyle: const QrEyeStyle(
                   eyeShape: QrEyeShape.square,
-                  color: isFollowUp ? const Color(0xFF0369A1) : const Color(0xFF0369A1),
+                  color: Color(0xFF0F172A),
                 ),
-                dataModuleStyle: QrDataModuleStyle(
+                dataModuleStyle: const QrDataModuleStyle(
                   dataModuleShape: QrDataModuleShape.square,
-                  color: isFollowUp ? const Color(0xFF0284C7) : const Color(0xFF0284C7),
+                  color: Color(0xFF0F172A),
                 ),
               ),
             ),

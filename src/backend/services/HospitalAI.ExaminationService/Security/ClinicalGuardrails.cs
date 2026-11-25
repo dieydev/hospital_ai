@@ -99,14 +99,17 @@ public static class ClinicalGuardrails
     {
         if (string.IsNullOrEmpty(input)) return input;
         var result = input;
-        // 1. Ẩn CCCD 12 số trước (có biên từ \b để không bị nuốt bởi regex SĐT)
-        result = Regex.Replace(result, @"\b[0-9]{12}\b", "[CCCD_ĐÃ_MÃ_HÓA]");
+        // 1. Ẩn CCCD 12 số và CMND 9 số trước (có biên từ \b để không bị nuốt bởi regex SĐT)
+        result = Regex.Replace(result, @"\b([0-9]{12}|[0-9]{9})\b", "[CCCD_ĐÃ_MÃ_HÓA]");
         // 2. Ẩn Mã thẻ BHYT (15 ký tự: 2 chữ cái in hoa + 13 chữ số)
         result = Regex.Replace(result, @"\b[A-Z]{2}[0-9]{13}\b", "[BHYT_ĐÃ_MÃ_HÓA]");
         // 3. Ẩn Email
         result = Regex.Replace(result, @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "[EMAIL_ĐÃ_MÃ_HÓA]");
         // 4. Ẩn SĐT 10 số (chính xác đầu số viễn thông Việt Nam và có biên từ \b)
         result = Regex.Replace(result, @"\b(0|\+84)[35789][0-9]{8}\b", "[SĐT_ĐÃ_MÃ_HÓA]");
+        // 5. Ẩn Họ tên và Địa chỉ theo nhãn phổ biến trong bệnh án
+        result = Regex.Replace(result, @"(bệnh nhân|người bệnh|họ và tên|họ tên|bn)\s*:\s*[^,\n.;]+", "$1: [BỆNH_NHÂN_ĐÃ_ẨN_DANH]", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"(địa chỉ|thường trú|nơi ở|chỗ ở|tạm trú)\s*:\s*[^,\n.;]+", "$1: [ĐỊA_CHỈ_ĐÃ_MÃ_HÓA]", RegexOptions.IgnoreCase);
         return result;
     }
 

@@ -81,6 +81,13 @@ public class ExaminationsController : ControllerBase
     {
         try
         {
+            // Chống giả mạo danh tính Bác sĩ kê đơn: ưu tiên gắn DoctorId từ JWT của Bác sĩ đang đăng nhập
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(currentUserId, out var authenticatedDoctorId) && authenticatedDoctorId != Guid.Empty)
+            {
+                dto.DoctorId = authenticatedDoctorId;
+            }
+
             var result = await _examinationService.CreateExaminationAsync(dto);
             return CreatedAtAction(nameof(GetExaminationById), new { id = result.Id }, result);
         }

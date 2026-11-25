@@ -1,9 +1,12 @@
 using HospitalAI.Application.DTOs;
 using HospitalAI.Application.Interfaces;
+using HospitalAI.Infrastructure.Data;
+using HospitalAI.Infrastructure.Services;
 using HospitalAI.QueueService.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -16,11 +19,22 @@ public class QueueController : ControllerBase
 {
     private readonly IQueueService _queueService;
     private readonly IHubContext<QueueHub> _hubContext;
+    private readonly HospitalDbContext? _dbContext;
 
-    public QueueController(IQueueService queueService, IHubContext<QueueHub> hubContext)
+    public QueueController(
+        IQueueService queueService,
+        IHubContext<QueueHub> hubContext,
+        HospitalDbContext? dbContext = null)
     {
         _queueService = queueService;
         _hubContext = hubContext;
+        _dbContext = dbContext;
+    }
+
+    private bool IsStaff()
+    {
+        return User.IsInRole("Admin") || User.IsInRole("Doctor") || User.IsInRole("Receptionist") ||
+               User.IsInRole("Triage") || User.IsInRole("Pharmacy") || User.IsInRole("Nurse") || User.IsInRole("Cashier");
     }
 
     /// <summary>
@@ -35,13 +49,40 @@ public class QueueController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách hàng chờ trong ngày (Hiển thị bảng điện tử và app bệnh nhân)
+    /// Lấy danh sách hàng chờ trong ngày (Yêu cầu xác thực; bệnh nhân chỉ thấy đầy đủ vé của chính mình, vé khác được ẩn danh PII)
     /// </summary>
     [HttpGet]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IActionResult> GetTodayQueue([FromQuery] Guid? departmentId, [FromQuery] string? status)
     {
         var result = await _queueService.GetTodayQueueTicketsAsync(departmentId, status);
+
+        if (!IsStaff())
+        {
+            Guid? currentPatientId = null;
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (_dbContext != null && Guid.TryParse(currentUserId, out var userGuid))
+            {
+                var ownPatient = await _dbContext.Patients
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.UserId == userGuid);
+                currentPatientId = ownPatient?.Id;
+            }
+
+            foreach (var ticket in result)
+            {
+                if (!currentPatientId.HasValue || ticket.PatientId != currentPatientId.Value)
+                {
+                    ticket.PatientName = KioskTerminalValidator.MaskPersonName(ticket.PatientName);
+                    ticket.PatientCode = string.Empty;
+                    ticket.IdentityCardNumber = "***";
+                    ticket.HealthInsuranceNumber = null;
+                    ticket.UnpaidBillingId = null;
+                    ticket.UnpaidAmount = 0;
+                }
+            }
+        }
+
         return Ok(result);
     }
 

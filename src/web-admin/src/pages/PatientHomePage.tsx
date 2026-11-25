@@ -41,6 +41,8 @@ import {
   EnvironmentOutlined,
   PlayCircleFilled,
   PlayCircleOutlined,
+  ReloadOutlined,
+  LoginOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
@@ -285,9 +287,10 @@ export const PatientHomePage: React.FC = () => {
   const [requireLoginModalOpen, setRequireLoginModalOpen] = useState(false);
   const [completeProfileModalOpen, setCompleteProfileModalOpen] = useState(false);
 
-  // Tra cứu lịch hẹn modal
+  // Lịch khám của tài khoản & Tra cứu lịch hẹn modal
   const [lookupModalOpen, setLookupModalOpen] = useState(false);
   const [lookupPhone, setLookupPhone] = useState('');
+  const [accountAppointments, setAccountAppointments] = useState<OnlineAppointmentItem[]>([]);
   const [lookupResults, setLookupResults] = useState<OnlineAppointmentItem[]>([]);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupTypeFilter, setLookupTypeFilter] = useState<'ALL' | 'New' | 'FollowUp'>('ALL');
@@ -310,50 +313,81 @@ export const PatientHomePage: React.FC = () => {
   const [cancelCustomReason, setCancelCustomReason] = useState<string>('');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
-  // Mở modal tra cứu lịch hẹn (tự động nạp danh sách lịch của tài khoản nếu đã đăng nhập)
-  const openLookupModal = async () => {
-    setLookupModalOpen(true);
-    const phone = user?.soDienThoai?.trim();
-    if (phone) {
-      setLookupPhone(phone);
-      setLookupLoading(true);
-      try {
-        const all = await appointmentService.getAppointments();
-        const query = phone.toLowerCase();
-        const found = all.filter(
-          (a) =>
-            a.patientPhone.includes(query) ||
-            a.patientCode.toLowerCase().includes(query) ||
-            a.id.toLowerCase().includes(query)
-        );
-        setLookupResults(found);
-      } catch {
-        // fallback
-      } finally {
-        setLookupLoading(false);
+  // Tự động đồng bộ sẵn lịch khám của tài khoản đang đăng nhập (không chờ nhập SĐT)
+  useEffect(() => {
+    let active = true;
+    const preloadMyAppointments = async () => {
+      if (!user) {
+        if (active) {
+          setAccountAppointments([]);
+          setLookupResults([]);
+        }
+        return;
       }
+      try {
+        const myList = await appointmentService.getMyAppointments(user);
+        if (active) {
+          setAccountAppointments(myList);
+          setLookupResults(
+            lookupPhone.trim()
+              ? appointmentService.filterAppointmentsByQuery(myList, lookupPhone)
+              : myList
+          );
+        }
+      } catch {
+        // ignore
+      }
+    };
+    preloadMyAppointments();
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // Mở modal lịch khám / tra cứu lịch hẹn (tự động nạp ngay toàn bộ lịch của tài khoản đã đăng nhập)
+  const openLookupModal = async () => {
+    setLookupPhone('');
+    setLookupModalOpen(true);
+    if (!user) {
+      setLookupResults([]);
+      return;
+    }
+
+    if (accountAppointments.length > 0) {
+      setLookupResults(accountAppointments);
+    }
+
+    setLookupLoading(true);
+    try {
+      const myAppointments = await appointmentService.getMyAppointments(user);
+      setAccountAppointments(myAppointments);
+      setLookupResults(myAppointments);
+    } catch {
+      showToast('Lỗi tải danh sách lịch hẹn.', 'error');
+    } finally {
+      setLookupLoading(false);
     }
   };
 
-  // Handle lookup appointments
+  // Handle lookup / refresh appointments
   const handleLookup = async () => {
-    if (!lookupPhone.trim()) {
-      showToast('Vui lòng nhập số điện thoại hoặc mã hẹn!', 'warning');
+    if (!user) {
+      setLookupModalOpen(false);
+      setRequireLoginModalOpen(true);
       return;
     }
+
     setLookupLoading(true);
     try {
-      const all = await appointmentService.getAppointments();
-      const query = lookupPhone.trim().toLowerCase();
-      const found = all.filter(
-        (a) =>
-          a.patientPhone.includes(query) ||
-          a.patientCode.toLowerCase().includes(query) ||
-          a.id.toLowerCase().includes(query)
+      const myAppointments = await appointmentService.getMyAppointments(user);
+      setAccountAppointments(myAppointments);
+      setLookupResults(
+        lookupPhone.trim()
+          ? appointmentService.filterAppointmentsByQuery(myAppointments, lookupPhone)
+          : myAppointments
       );
-      setLookupResults(found);
     } catch {
-      showToast('Lỗi tra cứu lịch hẹn.', 'error');
+      showToast('Lỗi tải danh sách lịch hẹn.', 'error');
     } finally {
       setLookupLoading(false);
     }
@@ -426,6 +460,7 @@ export const PatientHomePage: React.FC = () => {
       );
 
       setRescheduleModalOpen(false);
+      setAccountAppointments((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       setLookupResults((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err: any) {
       showErrorAlert('Không thể đổi lịch', err.message || 'Lỗi khi cập nhật lịch khám');
@@ -454,6 +489,7 @@ export const PatientHomePage: React.FC = () => {
         `Lịch hẹn mã ${updated.id.toUpperCase()} đã được hủy. Khung giờ này đã được hoàn trả lại cho hệ thống.`
       );
       setCancelModalOpen(false);
+      setAccountAppointments((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       setLookupResults((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err: any) {
       showErrorAlert('Lỗi hủy lịch', err.message || 'Không thể hủy lịch khám');
@@ -1148,10 +1184,14 @@ export const PatientHomePage: React.FC = () => {
                     <button
                       type="button"
                       className="carousel-slide-btn carousel-slide-btn-secondary"
-                      onClick={() => setLookupModalOpen(true)}
+                      onClick={openLookupModal}
                     >
-                      <span>Tra cứu lịch hẹn</span>
-                      <SearchOutlined />
+                      <span>
+                        {user
+                          ? `Lịch khám của tôi${accountAppointments.length > 0 ? ` (${accountAppointments.length})` : ''}`
+                          : 'Tra cứu lịch hẹn'}
+                      </span>
+                      {user ? <CalendarOutlined /> : <SearchOutlined />}
                     </button>
                   </div>
                 </Col>
@@ -1165,7 +1205,7 @@ export const PatientHomePage: React.FC = () => {
                     </div>
                     <div style={{ textAlign: 'center', padding: '2px 0' }}>
                       <div style={{ display: 'inline-block', padding: 6, background: '#fff', borderRadius: 10, border: '1px solid #bae6fd' }}>
-                        <QRCodeSVG value="MEDQR|SAMPLE|BHYT|2026" size={96} level="M" fgColor="#0369a1" />
+                        <QRCodeSVG value="MEDQR|apt-001|BN20260015" size={96} level="M" marginSize={2} fgColor="#0f172a" bgColor="#ffffff" />
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: '#334155', textAlign: 'center' }}>
@@ -2060,12 +2100,12 @@ export const PatientHomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* MODAL TRA CỨU LỊCH HẸN & XEM LẠI MÃ QR */}
+      {/* MODAL LỊCH KHÁM CỦA TÔI / TRA CỨU LỊCH HẸN & XEM LẠI MÃ QR */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0369a1', fontSize: 16 }}>
-            <SearchOutlined />
-            <span>Tra cứu lịch hẹn khám</span>
+            {user ? <CalendarOutlined /> : <SearchOutlined />}
+            <span>{user ? 'Lịch khám của tài khoản' : 'Tra cứu lịch hẹn khám'}</span>
           </div>
         }
         open={lookupModalOpen}
@@ -2077,16 +2117,63 @@ export const PatientHomePage: React.FC = () => {
         centered
       >
         <div style={{ padding: '8px 0' }}>
-          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-            Nhập số điện thoại hoặc mã phiếu hẹn để kiểm tra lịch khám, lấy mã QR hoặc đổi/hủy lịch hẹn:
-          </p>
+          {user ? (
+            <p style={{ fontSize: 13, color: '#334155', marginBottom: 14 }}>
+              Đang hiển thị lịch khám của tài khoản <strong>{user.hoTen || user.tenDangNhap}</strong>
+              {user.soDienThoai ? ` (${user.soDienThoai})` : ''}. Bạn có thể lọc nhanh bên dưới:
+            </p>
+          ) : (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 10,
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ fontSize: 13, color: '#334155' }}>
+                Vui lòng đăng nhập để hệ thống tự động hiển thị lịch khám của tài khoản bạn.
+              </span>
+              <Button
+                type="primary"
+                size="small"
+                icon={<LoginOutlined />}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
+                onClick={() => {
+                  setLookupModalOpen(false);
+                  navigate('/login');
+                }}
+              >
+                Đăng nhập
+              </Button>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
             <Input
               size="large"
-              placeholder="Nhập SĐT (0987...) hoặc Mã phiếu (apt-...)"
+              allowClear
+              placeholder={
+                user
+                  ? 'Lọc nhanh theo chuyên khoa, bác sĩ, mã phiếu hoặc SĐT...'
+                  : 'Nhập SĐT (0987...) hoặc Mã phiếu (apt-...)'
+              }
               value={lookupPhone}
-              onChange={(e) => setLookupPhone(e.target.value)}
+              onChange={(e) => {
+                const nextVal = e.target.value;
+                setLookupPhone(nextVal);
+                if (user) {
+                  setLookupResults(
+                    appointmentService.filterAppointmentsByQuery(accountAppointments, nextVal)
+                  );
+                }
+              }}
               onPressEnter={handleLookup}
               prefix={<SearchOutlined style={{ color: '#0284c7' }} />}
               style={{ borderRadius: 10 }}
@@ -2094,15 +2181,21 @@ export const PatientHomePage: React.FC = () => {
             <Button
               type="primary"
               size="large"
+              icon={user ? <ReloadOutlined /> : undefined}
               onClick={handleLookup}
               loading={lookupLoading}
               style={{ backgroundColor: '#0284c7', fontWeight: 600, borderRadius: 10 }}
             >
-              Tìm kiếm
+              {user ? 'Làm mới' : 'Tìm kiếm'}
             </Button>
           </div>
 
-          {lookupResults.length > 0 ? (
+          {lookupLoading && lookupResults.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b' }}>
+              <Spin />
+              <div style={{ marginTop: 8, fontSize: 13 }}>Đang tải lịch khám của tài khoản...</div>
+            </div>
+          ) : lookupResults.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', gap: 8, paddingBottom: 6 }}>
                 <Button
@@ -2176,7 +2269,14 @@ export const PatientHomePage: React.FC = () => {
                         {!isCancelled && (
                           <div style={{ textAlign: 'center', flexShrink: 0 }}>
                             <div style={{ padding: 4, background: '#fff', borderRadius: 8, border: '1px solid #bae6fd' }}>
-                              <QRCodeSVG value={item.qrCode || `MEDQR|${item.id}`} size={64} level="M" fgColor="#0369a1" />
+                              <QRCodeSVG
+                                value={appointmentService.getScannableQrValue(item)}
+                                size={72}
+                                level="M"
+                                marginSize={2}
+                                fgColor="#0f172a"
+                                bgColor="#ffffff"
+                              />
                             </div>
                           </div>
                         )}
@@ -2219,9 +2319,11 @@ export const PatientHomePage: React.FC = () => {
                   );
                 })}
             </div>
-          ) : lookupPhone && !lookupLoading ? (
-            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
-              Không tìm thấy lịch hẹn phù hợp.
+          ) : !lookupLoading && (user || lookupPhone) ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b' }}>
+              {lookupPhone
+                ? 'Không tìm thấy lịch hẹn phù hợp với từ khóa vừa lọc.'
+                : 'Tài khoản này chưa có lịch hẹn khám nào.'}
             </div>
           ) : null}
         </div>
@@ -2240,7 +2342,14 @@ export const PatientHomePage: React.FC = () => {
         {viewingTicketAppointment && (
           <div style={{ textAlign: 'center', padding: '10px 0' }}>
             <div style={{ display: 'inline-block', padding: 14, background: '#fff', borderRadius: 16, border: '2px solid #bae6fd', marginBottom: 12 }}>
-              <QRCodeSVG value={viewingTicketAppointment.qrCode || `MEDQR|${viewingTicketAppointment.id}|${viewingTicketAppointment.patientCode}`} size={180} level="H" fgColor="#0369a1" />
+              <QRCodeSVG
+                value={appointmentService.getScannableQrValue(viewingTicketAppointment)}
+                size={220}
+                level="M"
+                marginSize={2}
+                fgColor="#0f172a"
+                bgColor="#ffffff"
+              />
             </div>
             <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: '#0284c7' }}>
               {viewingTicketAppointment.id.toUpperCase()}

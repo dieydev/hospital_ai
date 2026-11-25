@@ -127,6 +127,16 @@ namespace HospitalAI.QueueService.Controllers
             }
         }
 
+        private static string BuildCompactQrCode(string id, string? patientCode, string? appointmentType, string? symptomsReason)
+        {
+            var isFollowUp = string.Equals(appointmentType, "FollowUp", StringComparison.OrdinalIgnoreCase)
+                || (!string.IsNullOrWhiteSpace(symptomsReason) && symptomsReason.Contains("tái khám", StringComparison.OrdinalIgnoreCase));
+            var cleanCode = string.IsNullOrWhiteSpace(patientCode) ? string.Empty : patientCode.Trim();
+            return isFollowUp
+                ? $"MEDQR|{id}|{cleanCode}|FOLLOWUP"
+                : $"MEDQR|{id}|{cleanCode}";
+        }
+
         internal static OnlineAppointmentItem? LookupCachedAppointment(string rawInput)
         {
             EnsureDataLoaded();
@@ -346,11 +356,146 @@ namespace HospitalAI.QueueService.Controllers
                    User.IsInRole("Triage") || User.IsInRole("Pharmacy") || User.IsInRole("Nurse") || User.IsInRole("Cashier");
         }
 
+        private sealed class CallerAppointmentScope
+        {
+            public Guid? UserId { get; init; }
+            public HashSet<string> Identifiers { get; } = new(StringComparer.OrdinalIgnoreCase);
+            public HashSet<Guid> PatientIds { get; } = new();
+        }
+
+        private static bool LooksLikePhone(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            var trimmed = raw.Trim();
+            if (trimmed.Contains('@')) return false;
+            var stripped = trimmed.Replace("+", "").Replace(" ", "").Replace("-", "").Replace(".", "");
+            return stripped.Length >= 9 && stripped.Length <= 15 && stripped.All(char.IsDigit);
+        }
+
+        private static void AddIdentifierWithVariants(HashSet<string> target, string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return;
+            var trimmed = raw.Trim();
+            target.Add(trimmed);
+            target.Add(trimmed.ToLowerInvariant());
+            target.Add(trimmed.ToUpperInvariant());
+
+            if (LooksLikePhone(trimmed))
+            {
+                var digits = new string(trimmed.Where(char.IsDigit).ToArray());
+                target.Add(digits);
+                if (digits.StartsWith("84") && digits.Length >= 11)
+                {
+                    var local = "0" + digits.Substring(2);
+                    target.Add(local);
+                    target.Add("+" + digits);
+                }
+                else if (digits.StartsWith("0") && digits.Length >= 9)
+                {
+                    var intl = "84" + digits.Substring(1);
+                    target.Add(intl);
+                    target.Add("+" + intl);
+                }
+            }
+        }
+
+        private async Task<CallerAppointmentScope> ResolveCallerScopeAsync()
+        {
+            Guid? callerGuid = null;
+            var userIdStr = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(userIdStr, out var parsedGuid) && parsedGuid != Guid.Empty)
+            {
+                callerGuid = parsedGuid;
+            }
+
+            var scope = new CallerAppointmentScope { UserId = callerGuid };
+            AddIdentifierWithVariants(scope.Identifiers, User?.FindFirstValue(ClaimTypes.Name));
+            AddIdentifierWithVariants(scope.Identifiers, User?.FindFirstValue(ClaimTypes.MobilePhone));
+
+            try
+            {
+                if (callerGuid.HasValue)
+                {
+                    var callerUser = await _dbContext.Users
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Id == callerGuid.Value);
+                    if (callerUser != null)
+                    {
+                        AddIdentifierWithVariants(scope.Identifiers, callerUser.Username);
+                        AddIdentifierWithVariants(scope.Identifiers, callerUser.PhoneNumber);
+                    }
+                }
+
+                var tokenList = scope.Identifiers
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Distinct()
+                    .ToList();
+
+                var linkedPatients = await _dbContext.Patients
+                    .AsNoTracking()
+                    .Where(p =>
+                        (callerGuid.HasValue && p.UserId == callerGuid.Value) ||
+                        tokenList.Contains(p.PatientCode) ||
+                        (p.EmergencyContactPhone != null && tokenList.Contains(p.EmergencyContactPhone)))
+                    .ToListAsync();
+
+                foreach (var p in linkedPatients)
+                {
+                    scope.PatientIds.Add(p.Id);
+                    AddIdentifierWithVariants(scope.Identifiers, p.PatientCode);
+                    AddIdentifierWithVariants(scope.Identifiers, p.EmergencyContactPhone);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Appointments Warning] ResolveCallerScope DB lookup fallback: {ex.Message}");
+            }
+
+            return scope;
+        }
+
+        private static bool CallerMatchesAppointment(CallerAppointmentScope scope, OnlineAppointmentItem item, Patient? dbPatient = null)
+        {
+            if (dbPatient != null)
+            {
+                if (scope.UserId.HasValue && dbPatient.UserId == scope.UserId.Value) return true;
+                if (scope.PatientIds.Contains(dbPatient.Id)) return true;
+                if (!string.IsNullOrWhiteSpace(dbPatient.PatientCode) && scope.Identifiers.Contains(dbPatient.PatientCode.Trim())) return true;
+                if (!string.IsNullOrWhiteSpace(dbPatient.EmergencyContactPhone))
+                {
+                    var dbPhone = dbPatient.EmergencyContactPhone.Trim();
+                    var dbDigits = new string(dbPhone.Where(char.IsDigit).ToArray());
+                    if (scope.Identifiers.Contains(dbPhone) || (!string.IsNullOrEmpty(dbDigits) && scope.Identifiers.Contains(dbDigits)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(item.PatientCode) && scope.Identifiers.Contains(item.PatientCode.Trim()))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(item.PatientPhone))
+            {
+                var itemPhone = item.PatientPhone.Trim();
+                var itemDigits = new string(itemPhone.Where(char.IsDigit).ToArray());
+                if (scope.Identifiers.Contains(itemPhone) || (!string.IsNullOrEmpty(itemDigits) && scope.Identifiers.Contains(itemDigits)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetAppointments()
         {
             EnsureDataLoaded();
+            CallerAppointmentScope? callerScope = IsStaff() ? null : await ResolveCallerScopeAsync();
             try
             {
                 // SQL Server là nguồn dữ liệu chính thống (Source of Truth)
@@ -360,10 +505,17 @@ namespace HospitalAI.QueueService.Controllers
                     .ThenInclude(s => s!.Department)
                     .AsNoTracking();
 
-                if (!IsStaff())
+                if (callerScope != null)
                 {
-                    var currentPhone = User.FindFirstValue(ClaimTypes.Name) ?? "";
-                    query = query.Where(a => a.Patient != null && (a.Patient.EmergencyContactPhone == currentPhone || a.Patient.PatientCode == currentPhone));
+                    var scopedTokens = callerScope.Identifiers.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+                    var scopedPatientIds = callerScope.PatientIds.ToList();
+                    var callerUserId = callerScope.UserId;
+                    query = query.Where(a => a.Patient != null && (
+                        (callerUserId.HasValue && a.Patient.UserId == callerUserId.Value) ||
+                        scopedPatientIds.Contains(a.Patient.Id) ||
+                        scopedTokens.Contains(a.Patient.PatientCode) ||
+                        (a.Patient.EmergencyContactPhone != null && scopedTokens.Contains(a.Patient.EmergencyContactPhone))
+                    ));
                 }
 
                 var dbList = await query.OrderByDescending(a => a.AppointmentDate).ToListAsync();
@@ -396,7 +548,7 @@ namespace HospitalAI.QueueService.Controllers
                             SymptomsReason = a.Symptoms ?? "",
                             Status = a.Status,
                             CreatedAt = a.AppointmentDate.ToString("o"),
-                            QrCode = $"MEDQR|{a.Id}|{a.Patient?.PatientCode}|{a.AppointmentDate:yyyy-MM-dd}|{a.AppointmentDate:HH:mm}",
+                            QrCode = BuildCompactQrCode(a.Id.ToString(), a.Patient?.PatientCode, null, a.Symptoms),
                             CheckInStatus = a.Status == "Completed" ? "CheckedInQR" : "PendingQR"
                         };
                     }).ToList();
@@ -412,10 +564,9 @@ namespace HospitalAI.QueueService.Controllers
             lock (_lock)
             {
                 var sortedList = _cachedAppointments!.OrderByDescending(a => a.CreatedAt).AsEnumerable();
-                if (!IsStaff())
+                if (callerScope != null)
                 {
-                    var currentPhone = User.FindFirstValue(ClaimTypes.Name) ?? "";
-                    sortedList = sortedList.Where(a => a.PatientPhone == currentPhone || a.PatientCode == currentPhone);
+                    sortedList = sortedList.Where(a => CallerMatchesAppointment(callerScope, a));
                 }
                 return Ok(sortedList.ToList());
             }
@@ -617,7 +768,7 @@ namespace HospitalAI.QueueService.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> CreateAppointment([FromBody] OnlineAppointmentItem model)
         {
             if (string.IsNullOrWhiteSpace(model.PatientName) || string.IsNullOrWhiteSpace(model.PatientPhone) ||
@@ -626,13 +777,31 @@ namespace HospitalAI.QueueService.Controllers
                 return BadRequest(new { message = "Vui lòng điền đầy đủ họ tên, số điện thoại, ngày khám và khung giờ khám." });
             }
 
-            // IDOR Protection: Bệnh nhân chỉ được đặt lịch cho chính mình
+            User? callerUser = null;
             if (!IsStaff())
             {
-                var currentPhone = User?.FindFirstValue(ClaimTypes.Name);
-                if (!string.IsNullOrWhiteSpace(currentPhone))
+                var callerUserIdStr = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (Guid.TryParse(callerUserIdStr, out var callerGuid) && callerGuid != Guid.Empty)
                 {
-                    model.PatientPhone = currentPhone;
+                    try
+                    {
+                        callerUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == callerGuid);
+                    }
+                    catch { }
+                }
+
+                // IDOR Protection: Chỉ khóa PatientPhone theo SĐT xác thực của tài khoản (tránh ghi đè bằng username/email không phải SĐT)
+                var verifiedPhone = !string.IsNullOrWhiteSpace(callerUser?.PhoneNumber)
+                    ? callerUser.PhoneNumber.Trim()
+                    : (!string.IsNullOrWhiteSpace(User?.FindFirstValue(ClaimTypes.MobilePhone))
+                        ? User!.FindFirstValue(ClaimTypes.MobilePhone)!.Trim()
+                        : (LooksLikePhone(User?.FindFirstValue(ClaimTypes.Name))
+                            ? User!.FindFirstValue(ClaimTypes.Name)!.Trim()
+                            : null));
+
+                if (!string.IsNullOrWhiteSpace(verifiedPhone))
+                {
+                    model.PatientPhone = verifiedPhone;
                 }
             }
 
@@ -690,6 +859,16 @@ namespace HospitalAI.QueueService.Controllers
                         .FirstOrDefaultAsync(p => p.User != null && p.User.PhoneNumber == cleanPhone);
                 }
 
+                // Ưu tiên 4: Tra cứu theo UserId của tài khoản đang đăng nhập (trừ khi nhập CCCD/Mã BN riêng cho người thân)
+                if (patient == null && !IsStaff() && callerUser != null &&
+                    string.IsNullOrWhiteSpace(model.IdentityCardNumber) &&
+                    string.IsNullOrWhiteSpace(model.PatientCode))
+                {
+                    patient = await _dbContext.Patients
+                        .Include(p => p.User)
+                        .FirstOrDefaultAsync(p => p.UserId == callerUser.Id);
+                }
+
                 // Bệnh nhân chưa có hồ sơ: Tự động khởi tạo hồ sơ chuẩn Bộ Y tế trong SQL Server
                 if (patient == null)
                 {
@@ -714,6 +893,7 @@ namespace HospitalAI.QueueService.Controllers
                         IdentityCardNumber = cccd,
                         Address = "Đặt khám trực tuyến qua App/Web",
                         EmergencyContactPhone = model.PatientPhone,
+                        UserId = !IsStaff() ? callerUser?.Id : null,
                         CreatedAt = DateTime.UtcNow
                     };
                     _dbContext.Patients.Add(patient);
@@ -722,8 +902,18 @@ namespace HospitalAI.QueueService.Controllers
 
                 model.PatientCode = patient.PatientCode;
 
+                DateTime appointmentDate;
+                if (!DateTime.TryParse($"{model.AppointmentDate} {slotStartTime}", out appointmentDate))
+                {
+                    appointmentDate = DateTime.UtcNow;
+                }
+                var targetDay = appointmentDate.Date;
+
                 var schedule = await _dbContext.DoctorSchedules
-                    .FirstOrDefaultAsync(s => s.TimeSlot == model.AppointmentTime)
+                    .FirstOrDefaultAsync(s => s.TimeSlot == model.AppointmentTime && s.WorkDate.Date == targetDay)
+                    ?? await _dbContext.DoctorSchedules
+                        .OrderByDescending(s => s.WorkDate)
+                        .FirstOrDefaultAsync(s => s.TimeSlot == model.AppointmentTime)
                     ?? await _dbContext.DoctorSchedules.FirstOrDefaultAsync();
                 if (schedule == null)
                 {
@@ -753,12 +943,6 @@ namespace HospitalAI.QueueService.Controllers
                     };
                     _dbContext.DoctorSchedules.Add(schedule);
                     await _dbContext.SaveChangesAsync();
-                }
-
-                DateTime appointmentDate;
-                if (!DateTime.TryParse($"{model.AppointmentDate} {slotStartTime}", out appointmentDate))
-                {
-                    appointmentDate = DateTime.UtcNow;
                 }
 
                 // Bắt đầu khóa đồng bộ 2 lớp (SemaphoreSlim + Serializable Transaction + Distributed App Lock) chống Overbooking
@@ -893,28 +1077,8 @@ namespace HospitalAI.QueueService.Controllers
                 return StatusCode(500, new { message = "Lỗi xung đột đồng thời hoặc lỗi CSDL khi lưu lịch hẹn. Vui lòng thử lại!" });
             }
 
-            // 2. Tạo QR Code Check-in
-            var qrPayload = new
-            {
-                type = "D_MEDICAL_EXAM_PASS",
-                version = "2.0",
-                appointmentId = model.Id,
-                patientCode = model.PatientCode,
-                patientName = model.PatientName,
-                phoneNumber = model.PatientPhone,
-                identityCard = model.IdentityCardNumber ?? "",
-                department = model.DepartmentName,
-                doctor = model.DoctorName,
-                roomNumber = model.RoomNumber ?? "Phòng Khám Chuyên Khoa",
-                appointmentDate = model.AppointmentDate,
-                appointmentTime = model.AppointmentTime,
-                appointmentType = model.AppointmentType ?? "New",
-                previousRecordCode = model.PreviousRecordCode,
-                followUpNotes = model.FollowUpNotes,
-                symptoms = model.SymptomsReason,
-                checkInNotice = "Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)"
-            };
-            model.QrCode = System.Text.Json.JsonSerializer.Serialize(qrPayload);
+            // 2. Tạo QR Code Check-in dạng gọn MEDQR (ít ô vuông, máy quét Kiosk & camera đọc nhanh dưới 200ms)
+            model.QrCode = BuildCompactQrCode(model.Id, model.PatientCode, model.AppointmentType, model.SymptomsReason);
 
             // 3. Đồng bộ bộ đệm in-memory và tệp JSON
             lock (_lock)
@@ -994,7 +1158,7 @@ namespace HospitalAI.QueueService.Controllers
                             SymptomsReason = dbApt.Symptoms ?? "",
                             Status = dbApt.Status,
                             CreatedAt = dbApt.AppointmentDate.ToString("o"),
-                            QrCode = $"MEDQR|{dbApt.Id}|{dbApt.Patient?.PatientCode}|{dbApt.AppointmentDate:yyyy-MM-dd}|{dbApt.AppointmentDate:HH:mm}",
+                            QrCode = BuildCompactQrCode(dbApt.Id.ToString(), dbApt.Patient?.PatientCode, null, dbApt.Symptoms),
                             CheckInStatus = (dbApt.Status == "CheckedIn" || dbApt.Status == "Completed") ? "CheckedInQR" : "PendingQR"
                         };
 
@@ -1019,11 +1183,8 @@ namespace HospitalAI.QueueService.Controllers
             var isStaff = User.IsInRole("Receptionist") || User.IsInRole("Triage") || User.IsInRole("Admin");
             if (!isStaff)
             {
-                var currentPhone = User.FindFirstValue(ClaimTypes.Name) ?? "";
-                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
-
-                var isOwner = (!string.IsNullOrWhiteSpace(appointment.PatientPhone) && appointment.PatientPhone == currentPhone) ||
-                              (!string.IsNullOrWhiteSpace(appointment.PatientCode) && appointment.PatientCode == currentPhone);
+                var scope = await ResolveCallerScopeAsync();
+                var isOwner = CallerMatchesAppointment(scope, appointment);
 
                 if (!isOwner && Guid.TryParse(appointment.Id, out var parsedAptId))
                 {
@@ -1032,14 +1193,7 @@ namespace HospitalAI.QueueService.Controllers
                         var dbApt = await _dbContext.Appointments.Include(a => a.Patient).FirstOrDefaultAsync(a => a.Id == parsedAptId);
                         if (dbApt?.Patient != null)
                         {
-                            if (dbApt.Patient.UserId.HasValue && dbApt.Patient.UserId.Value.ToString() == currentUserId)
-                            {
-                                isOwner = true;
-                            }
-                            else if (dbApt.Patient.EmergencyContactPhone == currentPhone || dbApt.Patient.PatientCode == currentPhone)
-                            {
-                                isOwner = true;
-                            }
+                            isOwner = CallerMatchesAppointment(scope, appointment, dbApt.Patient);
                         }
                     }
                     catch { }
@@ -1267,8 +1421,18 @@ namespace HospitalAI.QueueService.Controllers
 
             if (!IsStaff())
             {
-                var currentPhone = (User.FindFirstValue(ClaimTypes.Name) ?? "").ToLower();
-                if (!appointment.PatientPhone.Contains(currentPhone) && !appointment.PatientCode.ToLower().Contains(currentPhone))
+                var scope = await ResolveCallerScopeAsync();
+                Patient? dbPatient = null;
+                if (Guid.TryParse(appointment.Id, out var parsedAptGuid))
+                {
+                    dbPatient = await _dbContext.Appointments
+                        .AsNoTracking()
+                        .Where(a => a.Id == parsedAptGuid)
+                        .Select(a => a.Patient)
+                        .FirstOrDefaultAsync();
+                }
+
+                if (!CallerMatchesAppointment(scope, appointment, dbPatient))
                 {
                     return Forbid();
                 }
@@ -1341,6 +1505,17 @@ namespace HospitalAI.QueueService.Controllers
             var newTime = dto.NewTime.Trim();
             var slotStartTime = newTime.Split('-')[0].Trim();
 
+            var callerScope = IsStaff() ? null : await ResolveCallerScopeAsync();
+            Patient? rescheduleDbPatient = null;
+            if (callerScope != null && Guid.TryParse(id, out var rescheduleGuid))
+            {
+                rescheduleDbPatient = await _dbContext.Appointments
+                    .AsNoTracking()
+                    .Where(a => a.Id == rescheduleGuid)
+                    .Select(a => a.Patient)
+                    .FirstOrDefaultAsync();
+            }
+
             OnlineAppointmentItem? appointment;
             lock (_lock)
             {
@@ -1350,13 +1525,9 @@ namespace HospitalAI.QueueService.Controllers
                     return NotFound(new { message = "Không tìm thấy lịch hẹn cần đổi." });
                 }
 
-                if (!IsStaff())
+                if (callerScope != null && !CallerMatchesAppointment(callerScope, appointment, rescheduleDbPatient))
                 {
-                    var currentPhone = (User.FindFirstValue(ClaimTypes.Name) ?? "").ToLower();
-                    if (!appointment.PatientPhone.Contains(currentPhone) && !appointment.PatientCode.ToLower().Contains(currentPhone))
-                    {
-                        return Forbid();
-                    }
+                    return Forbid();
                 }
 
                 if (appointment.Status == "Completed")
@@ -1397,27 +1568,7 @@ namespace HospitalAI.QueueService.Controllers
                 appointment.AppointmentTime = newTime;
                 appointment.Status = "Pending";
                 appointment.RescheduledAt = DateTime.UtcNow.ToString("o");
-                var rescheduleQrPayload = new
-                {
-                    type = "D_MEDICAL_EXAM_PASS",
-                    version = "2.0",
-                    appointmentId = appointment.Id,
-                    patientCode = appointment.PatientCode,
-                    patientName = appointment.PatientName,
-                    phoneNumber = appointment.PatientPhone,
-                    identityCard = appointment.IdentityCardNumber ?? "",
-                    department = appointment.DepartmentName,
-                    doctor = appointment.DoctorName,
-                    roomNumber = appointment.RoomNumber ?? "Phòng Khám Chuyên Khoa",
-                    appointmentDate = newDate,
-                    appointmentTime = newTime,
-                    appointmentType = appointment.AppointmentType ?? "New",
-                    previousRecordCode = appointment.PreviousRecordCode,
-                    followUpNotes = appointment.FollowUpNotes,
-                    symptoms = appointment.SymptomsReason,
-                    checkInNotice = "Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)"
-                };
-                appointment.QrCode = System.Text.Json.JsonSerializer.Serialize(rescheduleQrPayload);
+                appointment.QrCode = BuildCompactQrCode(appointment.Id, appointment.PatientCode, appointment.AppointmentType, appointment.SymptomsReason);
                 if (!string.IsNullOrWhiteSpace(dto.Reason))
                 {
                     appointment.SymptomsReason += $" [Đổi lịch từ {oldTime} {oldDate}: {dto.Reason}]";

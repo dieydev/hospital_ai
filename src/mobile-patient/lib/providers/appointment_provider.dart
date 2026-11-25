@@ -524,32 +524,18 @@ class AppointmentProvider extends ChangeNotifier {
       // để người bệnh không bị gián đoạn quy trình hoặc mất thông tin đã nhập
       final now = DateTime.now();
       final aptId = 'apt-${now.millisecondsSinceEpoch}';
-      final qrPayload = jsonEncode({
-        'type': 'D_MEDICAL_EXAM_PASS',
-        'version': '2.0',
-        'appointmentId': aptId,
-        'patientCode': appointmentData['patientCode'] ?? '',
-        'patientName': appointmentData['patientName'] ?? '',
-        'phoneNumber': appointmentData['patientPhone'] ?? '',
-        'identityCard': appointmentData['identityCardNumber'] ?? '',
-        'department': appointmentData['departmentName'] ?? '',
-        'doctor': appointmentData['doctorName'] ?? '',
-        'roomNumber': appointmentData['roomNumber'] ?? 'Phòng Khám Chuyên Khoa',
-        'appointmentDate': appointmentData['appointmentDate'] ?? '',
-        'appointmentTime': appointmentData['appointmentTime'] ?? '',
-        'appointmentType': appointmentData['appointmentType'] ?? 'New',
-        'previousRecordCode': appointmentData['previousRecordCode'],
-        'followUpNotes': appointmentData['followUpNotes'],
-        'symptoms': appointmentData['symptomsReason'] ?? '',
-        'checkInNotice': 'Xuất trình mã QR tại phòng khám để vào khám (Không cần lấy STT)'
-      });
+      final pCode = (appointmentData['patientCode'] ?? '').toString().trim();
+      final isFollowUp = appointmentData['appointmentType'] == 'FollowUp';
+      final qrCompact = isFollowUp
+          ? 'MEDQR|$aptId|$pCode|FOLLOWUP'
+          : 'MEDQR|$aptId|$pCode';
 
       final fallbackApt = {
         'id': aptId,
         ...appointmentData,
         'status': 'Pending',
         'createdAt': now.toIso8601String(),
-        'qrCode': qrPayload,
+        'qrCode': qrCompact,
         'checkInStatus': 'PendingQR',
         'isOfflineCreated': true,
       };
@@ -573,16 +559,9 @@ class AppointmentProvider extends ChangeNotifier {
     try {
       final res = await _apiService.get('/appointments');
       if (res is List) {
-        final phoneClean = phoneNumber.replaceAll(RegExp(r'\s+'), '');
-        _myAppointments = res
-            .whereType<Map<String, dynamic>>()
-            .where((a) {
-              final aPhone = (a['patientPhone']?.toString() ?? '').replaceAll(RegExp(r'\s+'), '');
-              final aCode = a['patientCode']?.toString() ?? '';
-              return (phoneClean.isNotEmpty && aPhone.contains(phoneClean)) ||
-                     (patientCode != null && patientCode.isNotEmpty && aCode == patientCode);
-            })
-            .toList();
+        // Backend /appointments đã lọc nghiêm ngặt theo tài khoản đăng nhập (UserId / SĐT / Mã BN)
+        // Không lọc bỏ client-side theo phoneNumber thô để tránh ẩn lịch hẹn khi đăng nhập bằng Google/username hoặc đặt cho người thân
+        _myAppointments = res.whereType<Map<String, dynamic>>().toList();
       }
     } catch (_) {
       // Giữ danh sách hiện tại nếu có lỗi mạng

@@ -1,13 +1,31 @@
 import { UserAccount } from '../types';
 
+const STAFF_ROLES_LOWER = [
+  'admin',
+  'doctor',
+  'receptionist',
+  'triage',
+  'pharmacy',
+  'nurse',
+  'cashier',
+  'quản trị viên',
+  'bác sĩ',
+  'nhân viên tiếp nhận',
+  'lễ tân',
+  'nhân viên sàng lọc bệnh',
+  'nhà thuốc',
+  'dược sĩ',
+  'y tế',
+  'nhân viên y tế',
+  'thu ngân',
+];
+
 /**
  * Kiểm tra xem tài khoản có thuộc nhóm Cán bộ Y tế / Quản trị viên hay không
  */
 export const isStaffOrAdminUser = (user: UserAccount | null): boolean => {
   if (!user || !user.vaiTro) return false;
-  return user.vaiTro.some((role) =>
-    ['Admin', 'Doctor', 'Nurse', 'Receptionist'].includes(role)
-  );
+  return user.vaiTro.some((role) => STAFF_ROLES_LOWER.includes(role.toLowerCase()));
 };
 
 /**
@@ -16,7 +34,8 @@ export const isStaffOrAdminUser = (user: UserAccount | null): boolean => {
 export const isPatientUser = (user: UserAccount | null): boolean => {
   if (!user) return false;
   if (isStaffOrAdminUser(user)) return false;
-  return user.vaiTro?.includes('Patient') || true;
+  if (!user.vaiTro || user.vaiTro.length === 0) return true;
+  return user.vaiTro.some((role) => role.toLowerCase() === 'patient' || role.toLowerCase() === 'bệnh nhân');
 };
 
 /**

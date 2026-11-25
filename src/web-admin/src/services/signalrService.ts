@@ -70,11 +70,18 @@ class SignalRService {
   public initConnection() {
     if (this.connection || this.isConnecting) return;
 
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) {
+      // Hub yêu cầu xác thực JWT; màn hình chưa đăng nhập dùng chế độ polling an toàn
+      return;
+    }
+
     this.isConnecting = true;
     const hubUrl = import.meta.env.VITE_SIGNALR_URL || (import.meta.env.PROD ? '/hubs/queue' : 'http://localhost:5000/hubs/queue');
 
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {
+        accessTokenFactory: () => localStorage.getItem('token') || '',
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
       })
@@ -169,14 +176,9 @@ class SignalRService {
     };
   }
 
-  public async broadcastUpdate(data: any) {
-    if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
-      try {
-        await this.connection.invoke('BroadcastQueueUpdate', 'GLOBAL', data);
-      } catch (err) {
-        console.warn('Failed to broadcast SignalR event:', err);
-      }
-    }
+  public async broadcastUpdate(_data: any) {
+    // Đã vô hiệu hóa broadcast từ phía client để ngăn giả mạo sự kiện hàng chờ SignalR;
+    // mọi tín hiệu cập nhật hàng chờ do Backend phát qua IHubContext<QueueHub>.
   }
 }
 

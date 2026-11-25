@@ -72,8 +72,18 @@ public class VNPayService : IPaymentService
 
     public bool ValidateSignature(IDictionary<string, string> collections)
     {
+        if (collections == null ||
+            !collections.TryGetValue("vnp_SecureHash", out var vnp_SecureHash) ||
+            string.IsNullOrWhiteSpace(vnp_SecureHash))
+        {
+            return false;
+        }
+
         var vnp_HashSecret = _configuration["Vnpay:HashSecret"];
-        var vnp_SecureHash = collections["vnp_SecureHash"];
+        if (string.IsNullOrWhiteSpace(vnp_HashSecret))
+        {
+            return false;
+        }
 
         var vnpayData = collections
             .Where(x => x.Key.StartsWith("vnp_") && x.Key != "vnp_SecureHash" && x.Key != "vnp_SecureHashType")
@@ -94,8 +104,11 @@ public class VNPayService : IPaymentService
             hashData.Remove(hashData.Length - 1, 1);
         }
 
-        var checkSignature = HmacSHA512(vnp_HashSecret!, hashData.ToString());
-        return checkSignature.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase);
+        var checkSignature = HmacSHA512(vnp_HashSecret, hashData.ToString());
+        var expectedBytes = Encoding.UTF8.GetBytes(checkSignature.ToUpperInvariant());
+        var providedBytes = Encoding.UTF8.GetBytes(vnp_SecureHash.Trim().ToUpperInvariant());
+        return expectedBytes.Length == providedBytes.Length &&
+               CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
     }
 
     private static string HmacSHA512(string key, string inputData)

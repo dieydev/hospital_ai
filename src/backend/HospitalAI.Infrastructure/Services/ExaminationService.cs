@@ -15,12 +15,33 @@ public class ExaminationService : IExaminationService
     private readonly HospitalDbContext _context;
     private readonly IFcmNotificationService? _fcmService;
     private readonly Microsoft.Extensions.Configuration.IConfiguration? _configuration;
+    private static readonly System.Threading.SemaphoreSlim _examCodeLock = new(1, 1);
+    private const string DevFallbackSigningKey = "DEV_LOCAL_SMARTCA_KEY_DO_NOT_USE_IN_PROD";
 
     public ExaminationService(HospitalDbContext context, IFcmNotificationService? fcmService = null, Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
     {
         _context = context;
         _fcmService = fcmService;
         _configuration = configuration;
+    }
+
+    private string ResolveSigningSecretKey()
+    {
+        var configured = _configuration?["DigitalSignature:SecretKey"]
+                         ?? Environment.GetEnvironmentVariable("DIGITAL_SIGNATURE_SECRET");
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        var isProduction = string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase);
+        if (isProduction)
+        {
+            throw new InvalidOperationException("Chưa cấu hình DigitalSignature:SecretKey trong môi trường Production.");
+        }
+
+        return DevFallbackSigningKey;
     }
 
     public async Task<List<ExaminationDto>> GetExaminationsAsync(string? search, Guid? patientId, DateTime? date)
@@ -88,127 +109,147 @@ public class ExaminationService : IExaminationService
 
         var doctor = await _context.Users.FindAsync(dto.DoctorId);
 
-        var datePrefix = $"LK{DateTime.UtcNow:yyyyMMdd}-";
-        var lastExam = await _context.Examinations
-            .Where(e => e.ExaminationCode.StartsWith(datePrefix))
-            .OrderByDescending(e => e.ExaminationCode)
-            .Select(e => e.ExaminationCode)
-            .FirstOrDefaultAsync();
-
-        var nextNum = 1;
-        if (!string.IsNullOrEmpty(lastExam) && lastExam.Length > datePrefix.Length)
+        await _examCodeLock.WaitAsync();
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+        try
         {
-            var suffix = lastExam.Substring(datePrefix.Length);
-            if (int.TryParse(suffix, out var parsed))
+            if (_context.Database.IsRelational())
             {
-                nextNum = parsed + 1;
+                tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
             }
-        }
 
-        var examCode = $"{datePrefix}{nextNum:D4}";
+            var datePrefix = $"LK{DateTime.UtcNow:yyyyMMdd}-";
+            var lastExam = await _context.Examinations
+                .Where(e => e.ExaminationCode.StartsWith(datePrefix))
+                .OrderByDescending(e => e.ExaminationCode)
+                .Select(e => e.ExaminationCode)
+                .FirstOrDefaultAsync();
 
-        var exam = new Examination
-        {
-            Id = Guid.NewGuid(),
-            ExaminationCode = examCode,
-            PatientId = dto.PatientId,
-            DoctorId = dto.DoctorId,
-            DepartmentName = string.IsNullOrWhiteSpace(dto.DepartmentName) ? "Khoa Nội Tổng Hợp" : dto.DepartmentName,
-            ExaminationDate = DateTime.UtcNow,
-            Subjective = dto.Subjective,
-            PulseRate = dto.PulseRate,
-            Temperature = dto.Temperature,
-            BloodPressure = dto.BloodPressure,
-            RespiratoryRate = dto.RespiratoryRate,
-            Weight = dto.Weight,
-            Height = dto.Height,
-            Assessment = dto.Assessment,
-            ICD10Code = dto.ICD10Code,
-            ICD10Name = dto.ICD10Name,
-            Plan = dto.Plan,
-            Status = string.IsNullOrWhiteSpace(dto.Status) ? "Hoàn thành" : dto.Status,
-            CreatedAt = DateTime.UtcNow,
-            ReasonForAdmission = dto.ReasonForAdmission,
-            PathologicalProcess = dto.PathologicalProcess,
-            GeneralExamination = dto.GeneralExamination,
-            InitialDiagnosis = dto.InitialDiagnosis,
-            PreliminaryDiagnosis = dto.PreliminaryDiagnosis,
-            DifferentialDiagnosis = dto.DifferentialDiagnosis,
-            DischargeStatus = dto.DischargeStatus,
-            NextTreatmentPlan = dto.NextTreatmentPlan,
-            DietaryAdvice = dto.DietaryAdvice,
-            FollowUpAppointment = dto.FollowUpAppointment,
-            FollowUpAppointmentCode = dto.FollowUpAppointmentCode,
-            PreviousRecordCode = dto.PreviousRecordCode,
-            TreatmentResponse = dto.TreatmentResponse,
-            SymptomProgress = dto.SymptomProgress,
-            DigitalSignature = dto.DigitalSignature
-        };
-
-        if (dto.PrescriptionDetails != null && dto.PrescriptionDetails.Any())
-        {
-            foreach (var p in dto.PrescriptionDetails)
+            var nextNum = 1;
+            if (!string.IsNullOrEmpty(lastExam) && lastExam.Length > datePrefix.Length)
             {
-                exam.PrescriptionDetails.Add(new PrescriptionDetail
+                var suffix = lastExam.Substring(datePrefix.Length);
+                if (int.TryParse(suffix, out var parsed))
                 {
-                    Id = Guid.NewGuid(),
-                    ExaminationId = exam.Id,
-                    MedicineName = p.MedicineName,
-                    Unit = string.IsNullOrWhiteSpace(p.Unit) ? "Viên" : p.Unit,
-                    Quantity = p.Quantity,
-                    DosageInstruction = p.DosageInstruction,
-                    UnitPrice = p.UnitPrice
-                });
+                    nextNum = parsed + 1;
+                }
             }
-        }
 
-        if (dto.ServiceOrderDetails != null && dto.ServiceOrderDetails.Any())
-        {
-            foreach (var s in dto.ServiceOrderDetails)
+            var examCode = $"{datePrefix}{nextNum:D4}";
+
+            var exam = new Examination
             {
-                exam.ServiceOrderDetails.Add(new ServiceOrderDetail
+                Id = Guid.NewGuid(),
+                ExaminationCode = examCode,
+                PatientId = dto.PatientId,
+                DoctorId = dto.DoctorId,
+                DepartmentName = string.IsNullOrWhiteSpace(dto.DepartmentName) ? "Khoa Nội Tổng Hợp" : dto.DepartmentName,
+                ExaminationDate = DateTime.UtcNow,
+                Subjective = dto.Subjective,
+                PulseRate = dto.PulseRate,
+                Temperature = dto.Temperature,
+                BloodPressure = dto.BloodPressure,
+                RespiratoryRate = dto.RespiratoryRate,
+                Weight = dto.Weight,
+                Height = dto.Height,
+                Assessment = dto.Assessment,
+                ICD10Code = dto.ICD10Code,
+                ICD10Name = dto.ICD10Name,
+                Plan = dto.Plan,
+                Status = string.IsNullOrWhiteSpace(dto.Status) ? "Hoàn thành" : dto.Status,
+                CreatedAt = DateTime.UtcNow,
+                ReasonForAdmission = dto.ReasonForAdmission,
+                PathologicalProcess = dto.PathologicalProcess,
+                GeneralExamination = dto.GeneralExamination,
+                InitialDiagnosis = dto.InitialDiagnosis,
+                PreliminaryDiagnosis = dto.PreliminaryDiagnosis,
+                DifferentialDiagnosis = dto.DifferentialDiagnosis,
+                DischargeStatus = dto.DischargeStatus,
+                NextTreatmentPlan = dto.NextTreatmentPlan,
+                DietaryAdvice = dto.DietaryAdvice,
+                FollowUpAppointment = dto.FollowUpAppointment,
+                FollowUpAppointmentCode = dto.FollowUpAppointmentCode,
+                PreviousRecordCode = dto.PreviousRecordCode,
+                TreatmentResponse = dto.TreatmentResponse,
+                SymptomProgress = dto.SymptomProgress,
+                DigitalSignature = dto.DigitalSignature
+            };
+
+            if (dto.PrescriptionDetails != null && dto.PrescriptionDetails.Any())
+            {
+                foreach (var p in dto.PrescriptionDetails)
                 {
-                    Id = Guid.NewGuid(),
-                    ExaminationId = exam.Id,
-                    ServiceName = s.ServiceName,
-                    ServiceCategory = string.IsNullOrWhiteSpace(s.ServiceCategory) ? "Xét nghiệm" : s.ServiceCategory,
-                    Price = s.Price,
-                    Result = s.Result,
-                    Status = string.IsNullOrWhiteSpace(s.Status) ? "Đã có kết quả" : s.Status
-                });
+                    exam.PrescriptionDetails.Add(new PrescriptionDetail
+                    {
+                        Id = Guid.NewGuid(),
+                        ExaminationId = exam.Id,
+                        MedicineName = p.MedicineName,
+                        Unit = string.IsNullOrWhiteSpace(p.Unit) ? "Viên" : p.Unit,
+                        Quantity = p.Quantity,
+                        DosageInstruction = p.DosageInstruction,
+                        UnitPrice = p.UnitPrice
+                    });
+                }
             }
+
+            if (dto.ServiceOrderDetails != null && dto.ServiceOrderDetails.Any())
+            {
+                foreach (var s in dto.ServiceOrderDetails)
+                {
+                    exam.ServiceOrderDetails.Add(new ServiceOrderDetail
+                    {
+                        Id = Guid.NewGuid(),
+                        ExaminationId = exam.Id,
+                        ServiceName = s.ServiceName,
+                        ServiceCategory = string.IsNullOrWhiteSpace(s.ServiceCategory) ? "Xét nghiệm" : s.ServiceCategory,
+                        Price = s.Price,
+                        Result = s.Result,
+                        Status = string.IsNullOrWhiteSpace(s.Status) ? "Đã có kết quả" : s.Status
+                    });
+                }
+            }
+
+            _context.Examinations.Add(exam);
+
+            // Lưu vết lịch sử Chỉ số sinh hiệu vào bảng ChiSoSinhHieu (Audit & Vital Signs History)
+            int? systolic = null, diastolic = null;
+            if (!string.IsNullOrWhiteSpace(dto.BloodPressure) && dto.BloodPressure.Contains('/'))
+            {
+                var parts = dto.BloodPressure.Split('/');
+                if (int.TryParse(parts[0].Trim(), out var s)) systolic = s;
+                if (int.TryParse(parts[1].Trim(), out var d)) diastolic = d;
+            }
+
+            _context.VitalSigns.Add(new VitalSign
+            {
+                Id = Guid.NewGuid(),
+                ExaminationId = exam.Id,
+                PulseRate = dto.PulseRate,
+                Temperature = dto.Temperature,
+                SystolicBloodPressure = systolic,
+                DiastolicBloodPressure = diastolic,
+                Weight = dto.Weight,
+                Height = dto.Height,
+                MeasurementTime = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+            if (tx != null) await tx.CommitAsync();
+
+            exam.Patient = patient;
+            exam.Doctor = doctor;
+
+            return MapToDto(exam);
         }
-
-        _context.Examinations.Add(exam);
-
-        // Lưu vết lịch sử Chỉ số sinh hiệu vào bảng ChiSoSinhHieu (Audit & Vital Signs History)
-        int? systolic = null, diastolic = null;
-        if (!string.IsNullOrWhiteSpace(dto.BloodPressure) && dto.BloodPressure.Contains('/'))
+        catch
         {
-            var parts = dto.BloodPressure.Split('/');
-            if (int.TryParse(parts[0].Trim(), out var s)) systolic = s;
-            if (int.TryParse(parts[1].Trim(), out var d)) diastolic = d;
+            if (tx != null) await tx.RollbackAsync();
+            throw;
         }
-
-        _context.VitalSigns.Add(new VitalSign
+        finally
         {
-            Id = Guid.NewGuid(),
-            ExaminationId = exam.Id,
-            PulseRate = dto.PulseRate,
-            Temperature = dto.Temperature,
-            SystolicBloodPressure = systolic,
-            DiastolicBloodPressure = diastolic,
-            Weight = dto.Weight,
-            Height = dto.Height,
-            MeasurementTime = DateTime.UtcNow
-        });
-
-        await _context.SaveChangesAsync();
-
-        exam.Patient = patient;
-        exam.Doctor = doctor;
-
-        return MapToDto(exam);
+            _examCodeLock.Release();
+        }
     }
 
     public async Task<ExaminationDto> UpdateExaminationAsync(Guid id, CreateExaminationDto dto)
@@ -470,7 +511,7 @@ public class ExaminationService : IExaminationService
         var certSerial = !string.IsNullOrWhiteSpace(dto.CertificateSerial) ? dto.CertificateSerial.Trim() : $"5404-B7A1-{(timestamp.Ticks % 100000000):D8}";
         
         var signaturePayload = $"{hashHex}:{licenseNumber}:{certSerial}:{timestamp:O}";
-        var secretKey = _configuration?["DigitalSignature:SecretKey"] ?? "HOSPITAL_AI_SMARTCA_ROOT_KEY_2026_MOH_VIETNAM";
+        var secretKey = ResolveSigningSecretKey();
         using var hmac = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(secretKey));
         var signatureBytes = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(signaturePayload));
         var digitalSignature = $"BYT.SMARTCA.{Convert.ToBase64String(signatureBytes)}";
@@ -568,7 +609,28 @@ public class ExaminationService : IExaminationService
         using var sha256 = System.Security.Cryptography.SHA256.Create();
         var currentHash = Convert.ToHexString(sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawDataToVerify))).ToLowerInvariant();
 
-        var isIntegrityValid = string.Equals(currentHash, exam.SignatureHash, StringComparison.OrdinalIgnoreCase);
+        var isHashMatch = string.Equals(currentHash, exam.SignatureHash, StringComparison.OrdinalIgnoreCase);
+
+        // Xác thực chữ ký HMAC-SHA256 bằng Secret Key nội bộ để chống giả mạo cả SignatureHash lẫn DigitalSignature
+        bool isSignatureAuthentic = false;
+        if (isHashMatch &&
+            exam.SignedAt.HasValue &&
+            !string.IsNullOrWhiteSpace(exam.DoctorLicenseNumber) &&
+            !string.IsNullOrWhiteSpace(exam.SignatureCertificateSerial))
+        {
+            var signaturePayload = $"{currentHash}:{exam.DoctorLicenseNumber.Trim()}:{exam.SignatureCertificateSerial.Trim()}:{exam.SignedAt.Value:O}";
+            var secretKey = ResolveSigningSecretKey();
+            using var hmac = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(secretKey));
+            var expectedBytes = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(signaturePayload));
+            var expectedSignature = $"BYT.SMARTCA.{Convert.ToBase64String(expectedBytes)}";
+
+            var expectedUtf8 = System.Text.Encoding.UTF8.GetBytes(expectedSignature);
+            var actualUtf8 = System.Text.Encoding.UTF8.GetBytes(exam.DigitalSignature);
+            isSignatureAuthentic = expectedUtf8.Length == actualUtf8.Length &&
+                                   System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(expectedUtf8, actualUtf8);
+        }
+
+        var isIntegrityValid = isHashMatch && isSignatureAuthentic;
 
         return new VerifySignatureResponseDto
         {
@@ -581,8 +643,8 @@ public class ExaminationService : IExaminationService
             SignedAt = exam.SignedAt,
             SignatureHash = maskedHash,
             IntegrityStatus = isIntegrityValid 
-                ? "Dữ liệu lâm sàng toàn vẹn (Hash SHA-256 khớp chuẩn xác với thời điểm ký số)."
-                : "CẢNH BÁO: Dữ liệu hồ sơ bệnh án có dấu hiệu bị chỉnh sửa sau khi ký số!",
+                ? "Dữ liệu lâm sàng toàn vẹn (Hash SHA-256 và chữ ký HMAC-SHA256 khớp chuẩn xác với thời điểm ký số)."
+                : "CẢNH BÁO: Dữ liệu hồ sơ bệnh án hoặc chữ ký điện tử có dấu hiệu bị chỉnh sửa/giả mạo sau khi ký số!",
             CertificateIssuer = "Mô phỏng Toàn vẹn Dữ liệu HMAC-SHA256 (Phục vụ Đồ án tốt nghiệp - Không thay thế chữ ký số pháp lý Root CA)"
         };
     }

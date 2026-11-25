@@ -251,31 +251,38 @@ export const PatientBookingPage: React.FC = () => {
     }
   }, [user, bookingForTarget, currentStep, form]);
 
-  // Tải danh sách các lần khám trước của Bệnh nhân cho chế độ Tái Khám
-  useEffect(() => {
-    const loadPast = async () => {
-      if (!user?.soDienThoai && !user?.maBenhNhan) return;
-      setPastAptLoading(true);
-      try {
-        const all = await appointmentService.getAppointments();
-        const userPhone = (user.soDienThoai || '').trim();
-        const userCode = (user.maBenhNhan || '').trim().toLowerCase();
-        const found = all.filter(
-          (a) =>
-            (userPhone && a.patientPhone.includes(userPhone)) ||
-            (userCode && a.patientCode.toLowerCase() === userCode)
-        );
-        setPatientPastAppointments(found);
-      } catch {
-        // ignore
-      } finally {
-        setPastAptLoading(false);
-      }
-    };
-    if (user) {
-      loadPast();
+  // Tải tự động toàn bộ lịch khám của tài khoản đang đăng nhập (không chờ nhập SĐT)
+  const refreshAccountAppointments = async (targetUser = user) => {
+    if (!targetUser) {
+      setPatientPastAppointments([]);
+      setLookupResults([]);
+      return [];
     }
-  }, [user, bookingMode]);
+    setPastAptLoading(true);
+    try {
+      const myAppointments = await appointmentService.getMyAppointments(targetUser);
+      setPatientPastAppointments(myAppointments);
+      setLookupResults(
+        lookupPhone.trim()
+          ? appointmentService.filterAppointmentsByQuery(myAppointments, lookupPhone)
+          : myAppointments
+      );
+      return myAppointments;
+    } catch {
+      return [];
+    } finally {
+      setPastAptLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      refreshAccountAppointments(user);
+    } else {
+      setPatientPastAppointments([]);
+      setLookupResults([]);
+    }
+  }, [user]);
 
   // Tra cứu lịch hẹn modal
   const [lookupModalOpen, setLookupModalOpen] = useState(false);
@@ -483,6 +490,8 @@ export const PatientBookingPage: React.FC = () => {
       });
 
       setCreatedAppointment(newApt);
+      setPatientPastAppointments((prev) => [newApt, ...prev.filter((p) => p.id !== newApt.id)]);
+      setLookupResults((prev) => [newApt, ...prev.filter((p) => p.id !== newApt.id)]);
       setIsVietQrPaid(false);
       setIsVietQrVerifying(false);
       setIsVnPayPaid(false);
@@ -533,25 +542,24 @@ export const PatientBookingPage: React.FC = () => {
     }
   };
 
-  // Handle lookup appointments
+  // Handle lookup / filter appointments
   const handleLookup = async () => {
-    if (!lookupPhone.trim()) {
-      showToast('Vui lòng nhập số điện thoại hoặc mã hẹn!', 'warning');
+    if (!user) {
+      ensureAuthenticated('xem lịch hẹn của tôi');
       return;
     }
+
     setLookupLoading(true);
     try {
-      const all = await appointmentService.getAppointments();
-      const query = lookupPhone.trim().toLowerCase();
-      const found = all.filter(
-        (a) =>
-          a.patientPhone.includes(query) ||
-          a.patientCode.toLowerCase().includes(query) ||
-          a.id.toLowerCase().includes(query)
+      const myAppointments = await appointmentService.getMyAppointments(user);
+      setPatientPastAppointments(myAppointments);
+      setLookupResults(
+        lookupPhone.trim()
+          ? appointmentService.filterAppointmentsByQuery(myAppointments, lookupPhone)
+          : myAppointments
       );
-      setLookupResults(found);
     } catch {
-      showToast('Lỗi tra cứu lịch hẹn.', 'error');
+      showToast('Lỗi tải danh sách lịch hẹn.', 'error');
     } finally {
       setLookupLoading(false);
     }
@@ -559,24 +567,20 @@ export const PatientBookingPage: React.FC = () => {
 
   const openPatientAppointments = async () => {
     if (!ensureAuthenticated('xem lịch hẹn của tôi')) return;
+    setLookupPhone('');
     setLookupModalOpen(true);
-    const targetPhone = user?.soDienThoai || '';
-    if (targetPhone) {
-      setLookupPhone(targetPhone);
-      setLookupLoading(true);
-      try {
-        const all = await appointmentService.getAppointments();
-        const found = all.filter(
-          (a) =>
-            a.patientPhone.includes(targetPhone) ||
-            a.patientCode.toLowerCase().includes(targetPhone.toLowerCase())
-        );
-        setLookupResults(found);
-      } catch {
-        showToast('Lỗi tải danh sách lịch hẹn', 'error');
-      } finally {
-        setLookupLoading(false);
-      }
+    if (patientPastAppointments.length > 0) {
+      setLookupResults(patientPastAppointments);
+    }
+    setLookupLoading(true);
+    try {
+      const myAppointments = await appointmentService.getMyAppointments(user);
+      setPatientPastAppointments(myAppointments);
+      setLookupResults(myAppointments);
+    } catch {
+      showToast('Lỗi tải danh sách lịch hẹn', 'error');
+    } finally {
+      setLookupLoading(false);
     }
   };
 
@@ -720,6 +724,9 @@ export const PatientBookingPage: React.FC = () => {
       setLookupResults((prev) =>
         prev.map((item) => (item.id === updated.id ? updated : item))
       );
+      setPatientPastAppointments((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
 
       if (createdAppointment && createdAppointment.id === updated.id) {
         setCreatedAppointment(updated);
@@ -766,6 +773,9 @@ export const PatientBookingPage: React.FC = () => {
       setCancelModalOpen(false);
 
       setLookupResults((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
+      setPatientPastAppointments((prev) =>
         prev.map((item) => (item.id === updated.id ? updated : item))
       );
 
@@ -955,14 +965,16 @@ export const PatientBookingPage: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', paddingTop: 6 }}>
               <Button
-                icon={<SearchOutlined />}
+                icon={user ? <CalendarOutlined /> : <SearchOutlined />}
                 style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 700, borderRadius: 8, height: 42, padding: '0 18px', backgroundColor: '#ffffff' }}
                 onClick={() => {
                   if (user) openPatientAppointments();
                   else setLookupModalOpen(true);
                 }}
               >
-                Tra cứu lịch hẹn
+                {user
+                  ? `Lịch khám của tôi${patientPastAppointments.length > 0 ? ` (${patientPastAppointments.length})` : ''}`
+                  : 'Tra cứu lịch hẹn'}
               </Button>
               <Button
                 icon={<ThunderboltOutlined />}
@@ -1016,6 +1028,175 @@ export const PatientBookingPage: React.FC = () => {
           {/* Booking Modes Switcher Tabs (Only visible on Step 0) */}
           {currentStep === 0 && (
             <>
+              {/* LỊCH KHÁM CỦA TÔI: Hiển thị tức thì lịch khám của tài khoản đang đăng nhập ngay tại trang đặt lịch */}
+              {user && (
+                <div
+                  style={{
+                    marginBottom: 20,
+                    padding: '16px 20px',
+                    borderRadius: 12,
+                    background: '#ffffff',
+                    border: '1px solid #bae6fd',
+                    boxShadow: '0 10px 30px rgba(2, 132, 199, 0.1)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 10,
+                      marginBottom: patientPastAppointments.length > 0 ? 14 : 6,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 8,
+                          backgroundColor: '#f0f9ff',
+                          border: '1px solid #bae6fd',
+                          color: '#0284c7',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 16,
+                        }}
+                      >
+                        <CalendarOutlined />
+                      </span>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: '#0369a1' }}>
+                          Lịch khám của tôi ({patientPastAppointments.length})
+                        </div>
+                        <div style={{ fontSize: 12.5, color: '#64748b' }}>
+                          Tài khoản: <strong style={{ color: '#0f172a' }}>{user.hoTen || user.tenDangNhap}</strong>
+                          {user.soDienThoai ? ` • ${user.soDienThoai}` : ''}
+                          {user.maBenhNhan ? ` • ${user.maBenhNhan}` : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Button
+                        size="small"
+                        icon={<ReloadOutlined />}
+                        loading={pastAptLoading}
+                        onClick={() => refreshAccountAppointments(user)}
+                        style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600, borderRadius: 8 }}
+                      >
+                        Làm mới
+                      </Button>
+                      <Button
+                        size="small"
+                        type="primary"
+                        icon={<QrcodeOutlined />}
+                        onClick={openPatientAppointments}
+                        style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 8 }}
+                      >
+                        Xem tất cả & QR
+                      </Button>
+                    </div>
+                  </div>
+
+                  {pastAptLoading && patientPastAppointments.length === 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', color: '#64748b', fontSize: 13 }}>
+                      <Spin size="small" />
+                      <span>Đang tải lịch khám của tài khoản...</span>
+                    </div>
+                  ) : patientPastAppointments.length === 0 ? (
+                    <div style={{ fontSize: 13, color: '#64748b', padding: '4px 0' }}>
+                      Tài khoản này chưa có lịch khám nào. Hãy chọn chuyên khoa, bác sĩ hoặc gói khám bên dưới để đặt lịch ngay.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 12 }}>
+                      {patientPastAppointments.slice(0, 3).map((apt) => {
+                        const isCancelled = apt.status === 'Cancelled';
+                        const isCompleted = apt.status === 'Completed' || apt.status === 'CheckedIn';
+                        const isFollowUp =
+                          apt.appointmentType === 'FollowUp' ||
+                          apt.symptomsReason?.toLowerCase().includes('tái khám');
+
+                        return (
+                          <div
+                            key={apt.id}
+                            style={{
+                              padding: '12px 14px',
+                              borderRadius: 10,
+                              backgroundColor: isCancelled ? '#f8fafc' : '#f0f9ff',
+                              border: isCancelled ? '1px dashed #cbd5e1' : '1px solid #bae6fd',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                                <Tag color={isFollowUp ? 'blue' : 'cyan'} style={{ margin: 0, fontWeight: 700, fontSize: 11 }}>
+                                  {isFollowUp ? 'Tái khám' : 'Khám mới'}
+                                </Tag>
+                                <Tag color={isCancelled ? 'error' : isCompleted ? 'cyan' : 'green'} style={{ margin: 0, fontWeight: 600, fontSize: 11 }}>
+                                  {isCancelled ? 'Đã hủy' : isCompleted ? 'Đã tiếp nhận' : apt.status === 'Confirmed' ? 'Đã xác nhận' : 'Chờ khám'}
+                                </Tag>
+                              </div>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
+                                {apt.departmentName}
+                              </div>
+                              <div style={{ fontSize: 12.5, color: '#334155', marginTop: 2 }}>
+                                {apt.doctorName}
+                              </div>
+                              <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                                <ClockCircleOutlined style={{ color: '#0284c7', marginRight: 4 }} />
+                                <strong style={{ color: '#0369a1' }}>{apt.appointmentTime}</strong> •{' '}
+                                {dayjs(apt.appointmentDate).format('DD/MM/YYYY')}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', borderTop: '1px solid #e0f2fe', paddingTop: 8 }}>
+                              {!isCancelled && (
+                                <Button
+                                  size="small"
+                                  icon={<QrcodeOutlined />}
+                                  style={{ borderColor: '#bae6fd', color: '#0369a1', fontWeight: 600 }}
+                                  onClick={() => {
+                                    setViewingTicketAppointment(apt);
+                                    setTicketDetailModalOpen(true);
+                                  }}
+                                >
+                                  Mã QR
+                                </Button>
+                              )}
+                              {!isCancelled && !isCompleted && (
+                                <>
+                                  <Button
+                                    size="small"
+                                    icon={<SwapOutlined />}
+                                    style={{ borderColor: '#bae6fd', color: '#0284c7', fontWeight: 600 }}
+                                    onClick={() => handleOpenReschedule(apt)}
+                                  >
+                                    Đổi giờ
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    danger
+                                    onClick={() => handleOpenCancel(apt)}
+                                  >
+                                    Hủy
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* SMART RE-BOOK BANNER: Gợi ý Đặt lại / Tái khám nhanh 1 chạm cho người bệnh cũ */}
               {user && patientPastAppointments.length > 0 && showQuickRebookBanner && (
                 <div
@@ -1635,11 +1816,11 @@ export const PatientBookingPage: React.FC = () => {
                       </Button>
                       <Button
                         size="large"
-                        icon={<SearchOutlined />}
+                        icon={user ? <CalendarOutlined /> : <SearchOutlined />}
                         style={{ borderColor: '#bae6fd', color: '#0369a1', borderRadius: 10, fontWeight: 600 }}
                         onClick={openPatientAppointments}
                       >
-                        Tra Cứu Lịch Hẹn Của Tôi
+                        Lịch Khám Của Tôi
                       </Button>
                     </div>
                   </div>
@@ -3002,10 +3183,12 @@ export const PatientBookingPage: React.FC = () => {
                         }}
                       >
                         <QRCodeSVG
-                          value={createdAppointment.qrCode || `MEDQR|${createdAppointment.id}|${createdAppointment.patientCode}`}
-                          size={160}
-                          level="H"
-                          fgColor="#0369a1"
+                          value={appointmentService.getScannableQrValue(createdAppointment)}
+                          size={200}
+                          level="M"
+                          marginSize={2}
+                          fgColor="#0f172a"
+                          bgColor="#ffffff"
                         />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
@@ -3530,12 +3713,12 @@ export const PatientBookingPage: React.FC = () => {
         </Card>
       </main>
 
-      {/* MODAL TRA CỨU LỊCH HẸN & XEM LẠI MÃ QR */}
+      {/* MODAL LỊCH KHÁM CỦA TÔI / TRA CỨU LỊCH HẸN & XEM LẠI MÃ QR */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0369a1', fontSize: 16 }}>
-            <SearchOutlined />
-            <span>Tra cứu lịch hẹn khám</span>
+            {user ? <CalendarOutlined /> : <SearchOutlined />}
+            <span>{user ? 'Lịch khám của tài khoản' : 'Tra cứu lịch hẹn khám'}</span>
           </div>
         }
         open={lookupModalOpen}
@@ -3547,16 +3730,63 @@ export const PatientBookingPage: React.FC = () => {
         centered
       >
         <div style={{ padding: '8px 0' }}>
-          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-            Nhập số điện thoại hoặc mã phiếu hẹn để kiểm tra lịch khám, lấy mã QR hoặc đổi/hủy lịch hẹn:
-          </p>
+          {user ? (
+            <p style={{ fontSize: 13, color: '#334155', marginBottom: 14 }}>
+              Đang hiển thị lịch khám thuộc tài khoản <strong>{user.hoTen || user.tenDangNhap}</strong>
+              {user.soDienThoai ? ` (${user.soDienThoai})` : ''}. Bạn có thể lọc nhanh bên dưới:
+            </p>
+          ) : (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 10,
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ fontSize: 13, color: '#334155' }}>
+                Vui lòng đăng nhập để hệ thống tự động hiển thị lịch khám của tài khoản bạn.
+              </span>
+              <Button
+                type="primary"
+                size="small"
+                icon={<LoginOutlined />}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
+                onClick={() => {
+                  setLookupModalOpen(false);
+                  navigate('/login');
+                }}
+              >
+                Đăng nhập
+              </Button>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
             <Input
               size="large"
-              placeholder="Nhập SĐT (0987...) hoặc Mã phiếu (apt-...)"
+              allowClear
+              placeholder={
+                user
+                  ? 'Lọc nhanh theo chuyên khoa, bác sĩ, mã phiếu hoặc SĐT...'
+                  : 'Nhập SĐT (0987...) hoặc Mã phiếu (apt-...)'
+              }
               value={lookupPhone}
-              onChange={(e) => setLookupPhone(e.target.value)}
+              onChange={(e) => {
+                const nextVal = e.target.value;
+                setLookupPhone(nextVal);
+                if (user) {
+                  setLookupResults(
+                    appointmentService.filterAppointmentsByQuery(patientPastAppointments, nextVal)
+                  );
+                }
+              }}
               onPressEnter={handleLookup}
               prefix={<SearchOutlined style={{ color: '#0284c7' }} />}
               style={{ borderRadius: 10 }}
@@ -3564,15 +3794,21 @@ export const PatientBookingPage: React.FC = () => {
             <Button
               type="primary"
               size="large"
+              icon={user ? <ReloadOutlined /> : undefined}
               onClick={handleLookup}
               loading={lookupLoading}
               style={{ backgroundColor: '#0284c7', fontWeight: 600, borderRadius: 10 }}
             >
-              Tìm kiếm
+              {user ? 'Làm mới' : 'Tìm kiếm'}
             </Button>
           </div>
 
-          {lookupResults.length > 0 ? (
+          {lookupLoading && lookupResults.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b' }}>
+              <Spin />
+              <div style={{ marginTop: 8, fontSize: 13 }}>Đang tải lịch khám của tài khoản...</div>
+            </div>
+          ) : lookupResults.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', gap: 8, paddingBottom: 6 }}>
                 <Button
@@ -3660,7 +3896,14 @@ export const PatientBookingPage: React.FC = () => {
                         {!isCancelled && (
                           <div style={{ textAlign: 'center', flexShrink: 0 }}>
                             <div style={{ padding: 4, background: '#fff', borderRadius: 8, border: '1px solid #bae6fd' }}>
-                              <QRCodeSVG value={item.qrCode || `MEDQR|${item.id}`} size={64} level="M" fgColor="#0369a1" />
+                              <QRCodeSVG
+                                value={appointmentService.getScannableQrValue(item)}
+                                size={72}
+                                level="M"
+                                marginSize={2}
+                                fgColor="#0f172a"
+                                bgColor="#ffffff"
+                              />
                             </div>
                           </div>
                         )}
@@ -3703,9 +3946,11 @@ export const PatientBookingPage: React.FC = () => {
                   );
                 })}
             </div>
-          ) : lookupPhone && !lookupLoading ? (
-            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
-              Không tìm thấy lịch hẹn phù hợp.
+          ) : !lookupLoading && (user || lookupPhone) ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b' }}>
+              {lookupPhone
+                ? 'Không tìm thấy lịch hẹn phù hợp với từ khóa vừa lọc.'
+                : 'Tài khoản này chưa có lịch hẹn khám nào.'}
             </div>
           ) : null}
         </div>
@@ -3725,10 +3970,12 @@ export const PatientBookingPage: React.FC = () => {
           <div style={{ textAlign: 'center', padding: '10px 0' }}>
             <div style={{ display: 'inline-block', padding: 14, background: '#fff', borderRadius: 16, border: '2px solid #bae6fd', marginBottom: 12 }}>
               <QRCodeSVG
-                value={viewingTicketAppointment.qrCode || `MEDQR|${viewingTicketAppointment.id}|${viewingTicketAppointment.patientCode}`}
-                size={180}
-                level="H"
-                fgColor="#0369a1"
+                value={appointmentService.getScannableQrValue(viewingTicketAppointment)}
+                size={220}
+                level="M"
+                marginSize={2}
+                fgColor="#0f172a"
+                bgColor="#ffffff"
               />
             </div>
             <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: '#0284c7' }}>

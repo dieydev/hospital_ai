@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/constants.dart';
 
@@ -32,15 +33,13 @@ class ApiService {
               e.type == DioExceptionType.connectionTimeout ||
               e.type == DioExceptionType.sendTimeout;
 
-          if (isNetworkIssue && e.requestOptions.extra['retried_fallback'] != true) {
-            String fallbackBaseUrl;
-            if (_dio.options.baseUrl.contains('dmedical.site')) {
-              fallbackBaseUrl = 'http://${AppConstants.serverHostIp}:${AppConstants.serverPort}/api';
-            } else if (_dio.options.baseUrl.contains('127.0.0.1')) {
-              fallbackBaseUrl = 'http://${AppConstants.serverHostIp}:${AppConstants.serverPort}/api';
-            } else {
-              fallbackBaseUrl = 'https://dmedical.site/api';
-            }
+          if (!kReleaseMode &&
+              !AppConstants.useProduction &&
+              isNetworkIssue &&
+              e.requestOptions.extra['retried_fallback'] != true) {
+            final fallbackBaseUrl = _dio.options.baseUrl.contains('127.0.0.1')
+                ? 'http://${AppConstants.serverHostIp}:${AppConstants.serverPort}/api'
+                : 'http://127.0.0.1:${AppConstants.serverPort}/api';
 
             try {
               final newOptions = e.requestOptions;

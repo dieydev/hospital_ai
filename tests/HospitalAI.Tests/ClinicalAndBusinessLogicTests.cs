@@ -514,7 +514,12 @@ public class ClinicalAndBusinessLogicTests
         var createdItem = Assert.IsType<OnlineAppointmentItem>(okResult.Value);
         Assert.False(string.IsNullOrWhiteSpace(createdItem.Id));
         Assert.False(string.IsNullOrWhiteSpace(createdItem.PatientCode));
-        Assert.Contains("D_MEDICAL_EXAM_PASS", createdItem.QrCode);
+        Assert.StartsWith("MEDQR|", createdItem.QrCode);
+        Assert.True(createdItem.QrCode.Length <= 80);
+        var parsedQr = HospitalAI.Infrastructure.Services.KioskQrParser.Parse(createdItem.QrCode);
+        Assert.Equal("MEDQR", parsedQr.Format);
+        Assert.Equal(createdItem.Id, parsedQr.AppointmentId);
+        Assert.Equal(createdItem.PatientCode, parsedQr.PatientCode);
 
         // Assert 2: Hồ sơ bệnh nhân thực tế ĐÃ ĐƯỢC TẠO LƯU trong Database SQL Server
         var dbPatient = await context.Patients.FirstOrDefaultAsync(p => p.EmergencyContactPhone == "0933888999");

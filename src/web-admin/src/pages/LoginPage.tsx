@@ -58,20 +58,6 @@ const GoogleIcon: React.FC = () => (
   </svg>
 );
 
-// Danh sách các Bác sĩ chuyên khoa chuẩn trong hệ thống
-const DOCTORS_PRESETS: Record<string, { name: string; dept: string; title: string }> = {
-  'dr.duc': { name: 'BS. CKI. Phạm Minh Đức', dept: 'Khoa Nhi', title: 'Trưởng Khoa Nhi' },
-  'dr.mai': { name: 'BS. CKI. Trần Ngọc Mai', dept: 'Khoa Mắt', title: 'Trưởng Khoa Mắt' },
-  'dr.tuan': { name: 'BS. CKII. Lê Văn Tuấn', dept: 'Khoa Tai Mũi Họng', title: 'Trưởng Khoa TMH' },
-  'dr.dung': { name: 'TS. BS. Huỳnh Quốc Dũng', dept: 'Khoa Tim Mạch', title: 'Trưởng Khoa Tim Mạch' },
-  'dr.vuong': { name: 'BS. CKII. Đinh Khắc Vương', dept: 'Khoa Tiêu Hóa', title: 'Trưởng Khoa Tiêu Hóa' },
-  'dr.giang': { name: 'BS. CKII. Đỗ Hoàng Giang', dept: 'Khoa Ngoại Tổng Quát', title: 'Trưởng Khoa Ngoại' },
-  'dr.nghia': { name: 'BS. CKI. Hoàng Trọng Nghĩa', dept: 'Khoa Răng Hàm Mặt', title: 'Trưởng Khoa Răng Hàm Mặt' },
-  'dr.phuonganh': { name: 'BS. CKI. Nguyễn Phương Anh', dept: 'Khoa Da Liễu', title: 'Trưởng Khoa Da Liễu' },
-  'dr.phuong': { name: 'BS. CKII. Lê Thị Kim Phượng', dept: 'Khoa Sản Phụ Khoa', title: 'Trưởng Khoa Sản' },
-  'dr.thanh': { name: 'BS. CKI. Trịnh Văn Thành', dept: 'Khoa Cấp Cứu & Hồi Sức', title: 'Trưởng Kíp Cấp Cứu' },
-};
-
 // Component hiển thị Checklist điều kiện mật khẩu trực quan (Live tick khi đạt yêu cầu)
 interface PasswordCriteriaProps {
   value?: string;
@@ -189,7 +175,7 @@ export const LoginPage: React.FC = () => {
   const [serverOtp, setServerOtp] = useState<string | null>(null);
   const [otpCountdown, setOtpCountdown] = useState<number>(0);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const isVerifyingOtp = false;
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Forgot Password Modal States:
@@ -416,7 +402,16 @@ export const LoginPage: React.FC = () => {
       } else if (hasRole('Pharmacy') || hasRole('Nhà thuốc')) {
         targetPath = '/pharmacy';
       }
-      navigate(redirectUrl && redirectUrl !== '/booking' && redirectUrl !== '/' ? redirectUrl : targetPath);
+      const safeStaffRedirect =
+        redirectUrl &&
+        redirectUrl.startsWith('/') &&
+        !redirectUrl.startsWith('//') &&
+        !redirectUrl.startsWith('/\\') &&
+        redirectUrl !== '/booking' &&
+        redirectUrl !== '/'
+          ? redirectUrl
+          : targetPath;
+      navigate(safeStaffRedirect);
     } else {
       // Bệnh nhân: CHỈ được phép vào các trang công khai dành cho bệnh nhân
       // Tuyệt đối KHÔNG được chuyển hướng vào bất kỳ trang quản trị nội bộ nào
@@ -425,7 +420,10 @@ export const LoginPage: React.FC = () => {
         'success'
       );
       const safeRedirect =
-        redirectUrl && PATIENT_SAFE_ROUTES.some((r) => redirectUrl.startsWith(r))
+        redirectUrl &&
+        redirectUrl.startsWith('/') &&
+        !redirectUrl.startsWith('//') &&
+        PATIENT_SAFE_ROUTES.some((r) => redirectUrl.startsWith(r))
           ? redirectUrl
           : '/booking';
       navigate(safeRedirect);
@@ -433,11 +431,7 @@ export const LoginPage: React.FC = () => {
   };
 
   /**
-   * 1. XỬ LÝ ĐĂNG NHẬP (Sign In):
-   * - Người dùng tự nhập tài khoản đã có.
-   * - Admin / Bác sĩ -> Vào trang Quản trị (/dashboard) với đúng Role.
-   * - Bệnh nhân cũ -> Vào /booking.
-   * - Nếu tài khoản không tồn tại -> Báo lỗi yêu cầu đăng ký (KHÔNG tự sinh tài khoản bừa bãi).
+   * 1. XỬ LÝ ĐĂNG NHẬP (Sign In - Chỉ xác thực qua API Backend thật, không chấp nhận đăng nhập offline/backdoor):
    */
   const onLoginFinish = async (values: { username: string; password: string }) => {
     setLoading(true);
@@ -445,314 +439,37 @@ export const LoginPage: React.FC = () => {
 
     const inputUser = values.username.trim();
     const inputPass = values.password;
-    const u = inputUser.toLowerCase();
 
-    // Bẫy lỗi mật khẩu: Tối thiểu 6 ký tự và có ký tự in hoa
-    if (!inputPass || inputPass.length < 6) {
-      const msg = 'Mật khẩu phải có độ dài tối thiểu 6 ký tự!';
-      setErrorMsg(msg);
-      showToast(msg, 'warning');
-      setLoading(false);
-      return;
-    }
-    if (!/[A-Z]/.test(inputPass)) {
-      const msg = 'Mật khẩu phải chứa ít nhất 1 ký tự in hoa (ví dụ: Admin@123)!';
+    if (!inputUser || !inputPass) {
+      const msg = 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!';
       setErrorMsg(msg);
       showToast(msg, 'warning');
       setLoading(false);
       return;
     }
 
-    // 1. Thử gọi API Backend nếu Server đang chạy
     try {
       const response = await api.post('/auth/login', {
         username: inputUser,
         password: inputPass,
       });
 
-      const { token, user } = response.data;
+      const { token, user } = response.data || {};
+      if (!token || !user) {
+        setErrorMsg('Phản hồi xác thực từ máy chủ không hợp lệ.');
+        setLoading(false);
+        return;
+      }
+
       handleAuthSuccess(user, token);
-      setLoading(false);
-      return;
     } catch (err: any) {
-      // Nếu Backend SQL Server trả về thông báo lỗi nghiệp vụ (sai mật khẩu, tài khoản bị khóa...)
-      if (err.response?.data?.message) {
-        setErrorMsg(err.response.data.message);
-        setLoading(false);
-        return;
-      }
-      // Nếu Backend hoàn toàn Offline -> Tiếp tục logic kiểm tra CSDL cục bộ
+      const serverMsg = err.response?.data?.message;
+      setErrorMsg(
+        serverMsg || 'Không thể kết nối đến máy chủ xác thực Bệnh viện. Vui lòng kiểm tra kết nối mạng!'
+      );
+    } finally {
+      setLoading(false);
     }
-
-    // Helper kiểm tra mật khẩu hợp lệ (chấp nhận cả mật khẩu seed cũ và mật khẩu chuẩn y tế chứa chữ in hoa)
-    const isPasswordValidMatch = (pass: string) =>
-      pass === '123456' || pass === 'Admin@123' || pass === 'Admin123' || pass === 'HospitalAI@2026';
-
-    // 2. KIỂM TRA TÀI KHOẢN ADMIN / CÁN BỘ Y TẾ TRONG CSDL:
-    if (u === 'admin') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'admin-001',
-            username: 'admin',
-            fullName: 'Quản trị viên Hệ thống',
-            roles: ['Admin'],
-            phoneNumber: '0900000001',
-            title: 'Quản trị viên Hệ thống',
-            isProfileComplete: true,
-          },
-          'mock_admin_token',
-          'Đăng nhập thành công với quyền Quản trị viên!'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu Quản trị viên không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (u === 'dr.duy') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'doc-001',
-            username: 'dr.duy',
-            fullName: 'BS. CKII. Nguyễn Thanh Duy',
-            roles: ['Doctor', 'Admin'],
-            phoneNumber: '0336022526',
-            specialty: 'Khoa Nội Tổng Hợp',
-            title: 'Trưởng Khoa Nội',
-            isProfileComplete: true,
-          },
-          'mock_doctor_token',
-          'Đăng nhập thành công với quyền Bác sĩ Trưởng Khoa!'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu Bác sĩ không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (u === 'receptionist') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'recep-001',
-            username: 'receptionist',
-            fullName: 'Lễ tân Trần Thị Hương',
-            roles: ['Receptionist'],
-            phoneNumber: '0912345678',
-            title: 'Nhân viên Lễ tân Tiếp nhận',
-            isProfileComplete: true,
-          },
-          'mock_receptionist_token',
-          'Đăng nhập thành công với quyền Nhân viên Tiếp nhận!'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu Lễ tân không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (u === 'triage01') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'triage-001',
-            username: 'triage01',
-            fullName: 'Lê Hoàng Nam',
-            roles: ['Triage'],
-            phoneNumber: '0923456789',
-            title: 'Nhân viên Sàng lọc & Phân luồng',
-            isProfileComplete: true,
-          },
-          'mock_triage_token',
-          'Đăng nhập thành công với quyền Nhân viên Sàng lọc!'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu Sàng lọc không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (u === 'cashier01') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'cashier-001',
-            username: 'cashier01',
-            fullName: 'Đặng Thu Trang',
-            roles: ['Cashier'],
-            phoneNumber: '0956789012',
-            title: 'Thu ngân Viện phí',
-            isProfileComplete: true,
-          },
-          'mock_cashier_token',
-          'Đăng nhập thành công với quyền Thu ngân Viện phí!'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu Thu ngân không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (u === 'pharmacy01') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'pharm-001',
-            username: 'pharmacy01',
-            fullName: 'Dược sĩ Vũ Minh Thảo',
-            roles: ['Pharmacy'],
-            phoneNumber: '0934567890',
-            title: 'Dược sĩ Quản lý Kho Dược',
-            isProfileComplete: true,
-          },
-          'mock_pharmacy_token',
-          'Đăng nhập thành công với quyền Nhà thuốc BV!'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu Nhà thuốc không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (u === 'nurse01') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'nurse-001',
-            username: 'nurse01',
-            fullName: 'Hoàng Thị Yến',
-            roles: ['Nurse'],
-            phoneNumber: '0945678901',
-            title: 'Cán bộ Y tế',
-            isProfileComplete: true,
-          },
-          'mock_nurse_token',
-          'Đăng nhập thành công với quyền Nhân viên Y tế!'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu Y tế không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Các Bác sĩ chuyên khoa khác trong CSDL
-    if (DOCTORS_PRESETS[u]) {
-      if (isPasswordValidMatch(inputPass)) {
-        const doc = DOCTORS_PRESETS[u];
-        handleAuthSuccess(
-          {
-            id: `doc-${u}`,
-            username: u,
-            fullName: doc.name,
-            roles: ['Doctor'],
-            phoneNumber: '0901234567',
-            specialty: doc.dept,
-            title: doc.title,
-            isProfileComplete: true,
-          },
-          `mock_${u}_token`,
-          `Đăng nhập thành công! Chào mừng ${doc.name}`
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    // 3. KIỂM TRA BỆNH NHÂN CŨ ĐÃ CÓ TRONG CSDL:
-    if (u === 'patient01') {
-      if (isPasswordValidMatch(inputPass)) {
-        handleAuthSuccess(
-          {
-            id: 'pat-001',
-            username: 'patient01',
-            fullName: 'Nguyễn Văn An',
-            roles: ['Patient'],
-            phoneNumber: '0987654321',
-            maBenhNhan: 'BN-2026-08899',
-            soCCCD: '079092008899',
-            ngaySinh: '1990-05-15',
-            namSinh: 1990,
-            gioiTinh: 'Nam',
-            diaChi: 'Số 123 Đường Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
-            maTheBHYT: 'GD4790123456789',
-            isProfileComplete: true,
-          },
-          'mock_patient_token',
-          'Đăng nhập thành công! Chào mừng Bệnh nhân Nguyễn Văn An'
-        );
-        setLoading(false);
-        return;
-      } else {
-        setErrorMsg('Mật khẩu không chính xác! (Mật khẩu mặc định: Admin@123)');
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Kiểm tra trong danh sách người dùng đã đăng ký trước đó (Local CSDL)
-    try {
-      const storedUsersStr = localStorage.getItem('hospital_registered_users');
-      if (storedUsersStr) {
-        const storedList = JSON.parse(storedUsersStr);
-        const existing = storedList.find(
-          (item: any) =>
-            item.tenDangNhap?.toLowerCase() === u ||
-            item.soDienThoai === inputUser ||
-            item.username?.toLowerCase() === u
-        );
-
-        if (existing) {
-          // Kiểm tra mật khẩu đã lưu
-          if (!existing.password || existing.password === inputPass || isPasswordValidMatch(inputPass)) {
-            handleAuthSuccess(
-              existing,
-              `token_${existing.id}`,
-              `Đăng nhập thành công! Chào mừng Bệnh nhân ${existing.hoTen || existing.fullName || existing.username}`
-            );
-            setLoading(false);
-            return;
-          } else {
-            setErrorMsg('Mật khẩu không chính xác! Vui lòng thử lại.');
-            setLoading(false);
-            return;
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    // 4. NẾU TÀI KHOẢN CHƯA CÓ TRONG CSDL:
-    // Không tự sinh tài khoản! Báo lỗi rõ ràng và hướng dẫn người dùng bấm Đăng ký ngay
-    setErrorMsg('Tài khoản chưa tồn tại trong hệ thống. Vui lòng bấm "Đăng ký ngay" bên dưới để tạo tài khoản Bệnh nhân mới.');
-    setLoading(false);
   };
 
   /**
@@ -762,7 +479,7 @@ export const LoginPage: React.FC = () => {
    * Bước 3: Thiết lập mật khẩu đăng nhập & Hoàn tất tạo tài khoản
    */
 
-  // BƯỚC 1: Kiểm tra tài khoản & Gửi mã OTP
+  // BƯỚC 1: Kiểm tra tài khoản & Gửi mã OTP qua Backend (Không tự sinh OTP giả ở client)
   const handleSendRegisterOtp = async (values: { fullName: string; phoneNumber: string }) => {
     setErrorMsg('');
     const inputName = values.fullName.trim();
@@ -780,101 +497,60 @@ export const LoginPage: React.FC = () => {
     }
 
     const normalizedPhone = inputPhone.startsWith('+84') ? '0' + inputPhone.slice(3) : inputPhone;
-
-    // Kiểm tra các tài khoản mẫu cố định
-    if (['admin', 'dr.duy', 'receptionist', 'patient01'].includes(normalizedPhone) || DOCTORS_PRESETS[normalizedPhone]) {
-      setErrorMsg(`Số điện thoại ${normalizedPhone} đã tồn tại trong hệ thống. Vui lòng chuyển sang Đăng nhập!`);
-      return;
-    }
-
-    // Kiểm tra trong LocalStorage
-    try {
-      const storedUsersStr = localStorage.getItem('hospital_registered_users');
-      if (storedUsersStr) {
-        const userList = JSON.parse(storedUsersStr);
-        const isExisted = userList.some(
-          (item: any) =>
-            item.soDienThoai === normalizedPhone ||
-            item.phoneNumber === normalizedPhone ||
-            item.username === normalizedPhone ||
-            item.tenDangNhap === normalizedPhone
-        );
-        if (isExisted) {
-          setErrorMsg(`Số điện thoại ${normalizedPhone} đã được đăng ký tài khoản. Vui lòng chuyển sang Đăng nhập!`);
-          return;
-        }
-      }
-    } catch {
-      // ignore
-    }
-
     setIsSendingOtp(true);
-    let otpCodeGenerated = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Gọi API Backend nếu có kết nối
     try {
-      const checkRes = await api.get(`/auth/check-phone?phoneNumber=${normalizedPhone}`);
+      const checkRes = await api.get(`/auth/check-phone?phoneNumber=${encodeURIComponent(normalizedPhone)}`);
       if (checkRes.data?.exists) {
         setErrorMsg(`Số điện thoại ${normalizedPhone} đã tồn tại trong hệ thống. Vui lòng chuyển sang Đăng nhập!`);
         setIsSendingOtp(false);
         return;
       }
-    } catch {
-      // Tiếp tục nếu check-phone offline
-    }
 
-    try {
       const sendRes = await api.post('/auth/send-otp', { phoneNumber: normalizedPhone });
-      if (sendRes.data?.otpCode) {
-        otpCodeGenerated = sendRes.data.otpCode.toString();
-      }
+      const returnedCode = sendRes.data?.otpCode ? sendRes.data.otpCode.toString() : null;
+
+      setRegFullName(inputName);
+      setRegPhoneNumber(normalizedPhone);
+      setServerOtp(returnedCode);
+      setOtpValues(['', '', '', '', '', '']);
+      setOtpCountdown(60);
+      setRegisterStep(2);
+      showToast(`Đã gửi mã xác thực OTP đến ${normalizedPhone}. Vui lòng kiểm tra tin nhắn!`, 'success');
+
+      setTimeout(() => {
+        otpRefs.current[0]?.focus();
+      }, 250);
     } catch (apiErr: any) {
-      console.warn('Backend send-otp fallback:', apiErr?.message);
-      if (apiErr.response?.data?.message?.includes('đã tồn tại')) {
-        setErrorMsg(apiErr.response.data.message);
-        setIsSendingOtp(false);
-        return;
-      }
+      const errMsg = apiErr.response?.data?.message;
+      setErrorMsg(errMsg || 'Không thể gửi mã OTP lúc này. Vui lòng kiểm tra kết nối máy chủ!');
+    } finally {
+      setIsSendingOtp(false);
     }
-
-    setRegFullName(inputName);
-    setRegPhoneNumber(normalizedPhone);
-    setServerOtp(otpCodeGenerated);
-    setOtpValues(['', '', '', '', '', '']);
-    setOtpCountdown(60);
-    setIsSendingOtp(false);
-    setRegisterStep(2);
-    showToast(`Đã gửi mã xác thực OTP đến ${normalizedPhone}! (Mã thử nghiệm: ${otpCodeGenerated})`, 'success');
-
-    setTimeout(() => {
-      otpRefs.current[0]?.focus();
-    }, 250);
   };
 
   // Gửi lại mã OTP trong Bước 2
   const handleResendRegisterOtp = async () => {
     if (otpCountdown > 0 || !regPhoneNumber) return;
     setIsSendingOtp(true);
-    let newCode = Math.floor(100000 + Math.random() * 900000).toString();
     try {
       const sendRes = await api.post('/auth/send-otp', { phoneNumber: regPhoneNumber });
-      if (sendRes.data?.otpCode) {
-        newCode = sendRes.data.otpCode.toString();
-      }
+      const returnedCode = sendRes.data?.otpCode ? sendRes.data.otpCode.toString() : null;
+      setServerOtp(returnedCode);
+      setOtpValues(['', '', '', '', '', '']);
+      setOtpCountdown(60);
+      showToast(`Mã OTP mới đã được gửi đến ${regPhoneNumber}!`, 'success');
+      setTimeout(() => {
+        otpRefs.current[0]?.focus();
+      }, 200);
     } catch (err: any) {
-      console.warn('Resend OTP fallback:', err?.message);
+      showToast(err.response?.data?.message || 'Không thể gửi lại mã OTP. Vui lòng thử lại!', 'error');
+    } finally {
+      setIsSendingOtp(false);
     }
-    setServerOtp(newCode);
-    setOtpValues(['', '', '', '', '', '']);
-    setOtpCountdown(60);
-    setIsSendingOtp(false);
-    showToast(`Mã OTP mới đã được gửi đến ${regPhoneNumber}! (Mã: ${newCode})`, 'success');
-    setTimeout(() => {
-      otpRefs.current[0]?.focus();
-    }, 200);
   };
 
-  // BƯỚC 2: Kiểm tra xác thực mã OTP
+  // BƯỚC 2: Kiểm tra định dạng OTP trước khi sang bước tạo mật khẩu (Server sẽ đối chiếu OTP thực ở Bước 3)
   const handleVerifyRegisterOtp = () => {
     setErrorMsg('');
     const entered = otpValues.join('').trim();
@@ -883,20 +559,16 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    setIsVerifyingOtp(true);
-    const isValid = (serverOtp && entered === serverOtp) || entered === '123456';
-    if (!isValid) {
+    if (serverOtp && entered !== serverOtp) {
       setErrorMsg('Mã OTP không chính xác hoặc đã hết hiệu lực. Vui lòng thử lại!');
-      setIsVerifyingOtp(false);
       return;
     }
 
-    setIsVerifyingOtp(false);
-    showToast('Xác thực số điện thoại thành công! Vui lòng thiết lập mật khẩu.', 'success');
+    showToast('Đã ghi nhận mã OTP! Vui lòng thiết lập mật khẩu để hoàn tất xác thực.', 'success');
     setRegisterStep(3);
   };
 
-  // BƯỚC 3: Thiết lập mật khẩu & Hoàn tất đăng ký
+  // BƯỚC 3: Thiết lập mật khẩu & Hoàn tất đăng ký trên Backend
   const onRegisterFinalFinish = async (values: { password: string; confirmPassword: string }) => {
     setLoading(true);
     setErrorMsg('');
@@ -904,9 +576,14 @@ export const LoginPage: React.FC = () => {
     const phone = regPhoneNumber;
     const fullName = regFullName;
     const pass = values.password;
-    const enteredOtp = otpValues.join('').trim() || '123456';
+    const enteredOtp = otpValues.join('').trim();
 
-    // Bẫy lỗi chặt chẽ: Mật khẩu bắt buộc tối thiểu 6 ký tự và có ký tự in hoa
+    if (enteredOtp.length !== 6) {
+      setErrorMsg('Mã OTP xác thực không hợp lệ.');
+      setLoading(false);
+      return;
+    }
+
     if (!pass || pass.length < 6) {
       const msg = 'Mật khẩu phải có độ dài tối thiểu 6 ký tự!';
       setErrorMsg(msg);
@@ -943,7 +620,6 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    // 1. Thử gọi API Backend đăng ký tài khoản
     try {
       const regRes = await api.post('/auth/register', {
         username: phone,
@@ -955,65 +631,32 @@ export const LoginPage: React.FC = () => {
       });
 
       const token = regRes.data?.token || regRes.data?.Token;
-      if (token) {
-        handleAuthSuccess(
-          {
-            id: regRes.data.id,
-            username: regRes.data.username || phone,
-            fullName: regRes.data.fullName || fullName,
-            phoneNumber: regRes.data.phoneNumber || phone,
-            roles: ['Patient'],
-            patientCode: regRes.data.patientCode,
-            identityCardNumber: regRes.data.identityCardNumber,
-            isProfileComplete: false,
-          },
-          token,
-          'Đăng ký tài khoản Bệnh nhân thành công qua xác thực OTP!'
-        );
+      if (!token) {
+        setErrorMsg('Đăng ký thất bại: máy chủ không cấp phiên đăng nhập.');
         setLoading(false);
         return;
       }
+
+      handleAuthSuccess(
+        {
+          id: regRes.data.id,
+          username: regRes.data.username || phone,
+          fullName: regRes.data.fullName || fullName,
+          phoneNumber: regRes.data.phoneNumber || phone,
+          roles: ['Patient'],
+          patientCode: regRes.data.patientCode,
+          identityCardNumber: regRes.data.identityCardNumber,
+          isProfileComplete: false,
+        },
+        token,
+        'Đăng ký tài khoản Bệnh nhân thành công qua xác thực OTP!'
+      );
     } catch (err: any) {
       const errMsg = err.response?.data?.message;
-      // Bất kỳ lỗi nghiệp vụ nào từ Backend (mật khẩu không đạt, SĐT trùng...) phải chặn ngay và hiển thị lỗi, KHÔNG ĐƯỢC fallback
-      if (errMsg) {
-        setErrorMsg(errMsg);
-        setLoading(false);
-        return;
-      }
-      console.warn('API Register warning, fallback to local registration store:', errMsg || err.message);
+      setErrorMsg(errMsg || 'Không thể kết nối đến máy chủ để hoàn tất đăng ký!');
+    } finally {
+      setLoading(false);
     }
-
-    // 2. Fallback lưu CSDL Local
-    const newUserId = `pat-${Date.now()}`;
-    const newPatient = {
-      id: newUserId,
-      username: phone,
-      password: pass,
-      fullName: fullName,
-      phoneNumber: phone,
-      roles: ['Patient'],
-      soCCCD: '',
-      ngaySinh: '',
-      diaChi: '',
-      isProfileComplete: false,
-    };
-
-    try {
-      const storedUsersStr = localStorage.getItem('hospital_registered_users');
-      const userList = storedUsersStr ? JSON.parse(storedUsersStr) : [];
-      userList.push(newPatient);
-      localStorage.setItem('hospital_registered_users', JSON.stringify(userList));
-    } catch {
-      // ignore
-    }
-
-    handleAuthSuccess(
-      newPatient,
-      `token_registered_patient_${newUserId}`,
-      'Đăng ký tài khoản Bệnh nhân thành công qua xác thực OTP! Vui lòng hoàn tất thông tin cá nhân.'
-    );
-    setLoading(false);
   };
 
   // Quản lý Ô nhập OTP 6 chữ số (Register)
@@ -1085,26 +728,24 @@ export const LoginPage: React.FC = () => {
 
     setForgotLoading(true);
     const normalized = inputPhone.startsWith('+84') ? '0' + inputPhone.slice(3) : inputPhone;
-    let code = Math.floor(100000 + Math.random() * 900000).toString();
 
     try {
       const res = await api.post('/auth/forgot-password-otp', { phoneNumber: normalized });
-      if (res.data?.otpCode) {
-        code = res.data.otpCode.toString();
-      }
-    } catch (err: any) {
-      console.warn('Backend forgot-password-otp fallback:', err?.message);
-    }
+      const returnedCode = res.data?.otpCode ? res.data.otpCode.toString() : null;
 
-    setForgotPhone(normalized);
-    setForgotServerOtp(code);
-    setForgotCountdown(60);
-    setForgotStep(2);
-    setForgotLoading(false);
-    showToast(`Mã OTP đặt lại mật khẩu đã gửi đến ${normalized}! (Mã thử nghiệm: ${code})`, 'success');
-    setTimeout(() => {
-      forgotOtpRefs.current[0]?.focus();
-    }, 250);
+      setForgotPhone(normalized);
+      setForgotServerOtp(returnedCode);
+      setForgotCountdown(60);
+      setForgotStep(2);
+      showToast(`Yêu cầu đặt lại mật khẩu đã được tiếp nhận cho ${normalized}. Vui lòng kiểm tra mã OTP!`, 'success');
+      setTimeout(() => {
+        forgotOtpRefs.current[0]?.focus();
+      }, 250);
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Không thể gửi mã OTP khôi phục mật khẩu!', 'error');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   const handleResetPasswordSubmit = async (values: { newPassword: string; confirmNewPassword: string }) => {
@@ -1113,8 +754,7 @@ export const LoginPage: React.FC = () => {
       showToast('Vui lòng nhập đủ 6 chữ số mã OTP!', 'warning');
       return;
     }
-    const isValidOtp = (forgotServerOtp && enteredOtp === forgotServerOtp) || enteredOtp === '123456';
-    if (!isValidOtp) {
+    if (forgotServerOtp && enteredOtp !== forgotServerOtp) {
       showToast('Mã OTP không chính xác hoặc đã hết hạn!', 'error');
       return;
     }
@@ -1151,44 +791,13 @@ export const LoginPage: React.FC = () => {
       loginForm.setFieldsValue({ username: normalized, password: values.newPassword });
     } catch (err: any) {
       const errMsg = err.response?.data?.message || err.message;
-      if (err.response?.status >= 400 && err.response?.status < 500) {
-        // Lỗi từ backend validation (ví dụ mật khẩu không đạt chuẩn, OTP sai, v.v.)
-        showToast(errMsg || 'Đặt lại mật khẩu thất bại. Vui lòng kiểm tra lại thông tin!', 'error');
-        return;
-      }
-
-      // Fallback lưu local CHỈ KHI máy chủ mất kết nối hoàn toàn (offline mode)
-      let fallbackSuccess = false;
-      try {
-        const stored = localStorage.getItem('hospital_registered_users');
-        if (stored) {
-          const list = JSON.parse(stored);
-          const idx = list.findIndex(
-            (u: any) => u.phoneNumber === normalized || u.soDienThoai === normalized || u.username === normalized
-          );
-          if (idx >= 0) {
-            list[idx].password = values.newPassword;
-            localStorage.setItem('hospital_registered_users', JSON.stringify(list));
-            fallbackSuccess = true;
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      if (fallbackSuccess) {
-        showToast('Đặt lại mật khẩu thành công (chế độ offline)! Vui lòng đăng nhập.', 'success');
-        setForgotModalVisible(false);
-        loginForm.setFieldsValue({ username: normalized, password: values.newPassword });
-      } else {
-        showToast(errMsg || 'Không thể kết nối đến máy chủ để đặt lại mật khẩu!', 'error');
-      }
+      showToast(errMsg || 'Đặt lại mật khẩu thất bại hoặc không kết nối được máy chủ!', 'error');
     } finally {
       setForgotLoading(false);
     }
   };
 
-  // Đăng nhập Google OAuth: Kết nối CSDL Backend & Giữ nguyên hồ sơ bệnh nhân đã lưu
+  // Đăng nhập Google OAuth: Bắt buộc xác thực & lấy JWT từ Backend SQL Server
   const googleLoginTrigger = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -1198,94 +807,70 @@ export const LoginPage: React.FC = () => {
         });
         const googleUser = await userInfoRes.json();
 
-        // 1. Thử gọi API Backend /auth/google-login để lấy JWT và hồ sơ bệnh nhân từ CSDL SQL Server
-        let backendUser: any = null;
-        let backendToken: string | null = null;
-        try {
-          const res = await api.post('/auth/google-login', {
-            idToken: tokenResponse.access_token,
-            email: googleUser.email,
-            fullName: googleUser.name || 'Bệnh nhân Google',
-            photoUrl: googleUser.picture,
-          });
-          if (res.data?.token && res.data?.user) {
-            backendToken = res.data.token;
-            backendUser = res.data.user;
-          }
-        } catch (apiErr: any) {
-          console.warn('Backend google-login fallback:', apiErr?.message);
+        const res = await api.post('/auth/google-login', {
+          idToken: tokenResponse.access_token,
+          email: googleUser.email,
+          fullName: googleUser.name || 'Bệnh nhân Google',
+          photoUrl: googleUser.picture,
+        });
+
+        const backendToken = res.data?.token;
+        const backendUser = res.data?.user;
+        if (!backendToken || !backendUser) {
+          showErrorAlert('Đăng nhập Google thất bại', 'Máy chủ không xác thực được tài khoản Google.');
+          setGoogleLoading(false);
+          return;
         }
 
-        // 2. Tìm kiếm hồ sơ đã lưu trước đó trong local storage theo email
-        let localExisting: any = null;
-        try {
-          const storedStr = localStorage.getItem('hospital_registered_users');
-          if (storedStr) {
-            const list = JSON.parse(storedStr);
-            localExisting = list.find(
-              (u: any) =>
-                (u.email && u.email.toLowerCase() === googleUser.email.toLowerCase()) ||
-                (u.username && u.username.toLowerCase() === googleUser.email.toLowerCase())
-            );
-          }
-        } catch {
-          // ignore
-        }
-
-        // 3. Hợp nhất thông tin hồ sơ: Ưu tiên dữ liệu đã điền đầy đủ từ CSDL backend hoặc local storage
-        const rawCccd = backendUser?.identityCardNumber || backendUser?.soCCCD;
+        const rawCccd = backendUser.identityCardNumber || backendUser.soCCCD;
         const isBackendCccdValid = Boolean(rawCccd && !rawCccd.startsWith('P') && !rawCccd.startsWith('CD') && rawCccd !== '0900000000');
-        const resolvedCccd = isBackendCccdValid ? rawCccd : (localExisting?.identityCardNumber || localExisting?.soCCCD || '');
+        const resolvedCccd = isBackendCccdValid ? rawCccd : '';
 
-        const isBackendPhoneValid = Boolean(backendUser?.phoneNumber && backendUser.phoneNumber !== '0900000000');
-        const resolvedPhone = isBackendPhoneValid ? backendUser.phoneNumber : (localExisting?.phoneNumber || localExisting?.soDienThoai || '');
+        const isBackendPhoneValid = Boolean(backendUser.phoneNumber && backendUser.phoneNumber !== '0900000000');
+        const resolvedPhone = isBackendPhoneValid ? backendUser.phoneNumber : '';
 
-        const isBackendNameValid = Boolean(backendUser?.fullName && backendUser.fullName !== 'Bệnh nhân' && backendUser.fullName !== 'Bệnh nhân Google' && !backendUser.fullName.startsWith('Bệnh nhân 09'));
-        const resolvedName = isBackendNameValid ? backendUser.fullName : (localExisting?.fullName || localExisting?.hoTen || googleUser.name || 'Bệnh nhân');
+        const isBackendNameValid = Boolean(backendUser.fullName && backendUser.fullName !== 'Bệnh nhân' && backendUser.fullName !== 'Bệnh nhân Google' && !backendUser.fullName.startsWith('Bệnh nhân 09'));
+        const resolvedName = isBackendNameValid ? backendUser.fullName : (googleUser.name || 'Bệnh nhân');
 
-        const isBackendAddressValid = Boolean(backendUser?.address && backendUser.address !== 'Chưa cập nhật');
-        const resolvedAddress = isBackendAddressValid ? backendUser.address : (localExisting?.address || localExisting?.diaChi || '');
+        const isBackendAddressValid = Boolean(backendUser.address && backendUser.address !== 'Chưa cập nhật');
+        const resolvedAddress = isBackendAddressValid ? backendUser.address : '';
 
-        const resolvedDob = backendUser?.dateOfBirth || backendUser?.ngaySinh || localExisting?.dateOfBirth || localExisting?.ngaySinh;
-        const resolvedBirthYear = backendUser?.namSinh || localExisting?.namSinh || (resolvedDob ? dayjs(resolvedDob).year() : undefined);
-
-        const isComplete = Boolean(
-          backendUser?.isProfileComplete === true ||
-          (resolvedCccd && resolvedCccd.length >= 9 && resolvedDob && resolvedAddress && resolvedAddress.length >= 5)
-        );
+        const resolvedDob = backendUser.dateOfBirth || backendUser.ngaySinh;
+        const resolvedBirthYear = backendUser.namSinh || (resolvedDob ? dayjs(resolvedDob).year() : undefined);
 
         const patientUser = {
-          id: backendUser?.id || localExisting?.id || `pat-google-${Date.now()}`,
-          username: googleUser.email,
+          id: backendUser.id,
+          username: backendUser.username || googleUser.email,
           fullName: resolvedName,
-          email: googleUser.email,
+          email: backendUser.email || googleUser.email,
           phoneNumber: resolvedPhone,
-          roles: ['Patient'],
-          avatarUrl: googleUser.picture || backendUser?.avatarUrl || localExisting?.avatarUrl,
-          patientCode: backendUser?.patientCode || localExisting?.patientCode || localExisting?.maBenhNhan,
-          maBenhNhan: backendUser?.patientCode || localExisting?.patientCode || localExisting?.maBenhNhan,
+          roles: backendUser.roles || ['Patient'],
+          avatarUrl: googleUser.picture || backendUser.avatarUrl,
+          patientCode: backendUser.patientCode,
+          maBenhNhan: backendUser.patientCode,
           identityCardNumber: resolvedCccd,
           soCCCD: resolvedCccd,
           dateOfBirth: resolvedDob,
           ngaySinh: resolvedDob,
           namSinh: resolvedBirthYear,
-          gender: backendUser?.gender || localExisting?.gender || localExisting?.gioiTinh || 'Nam',
-          gioiTinh: backendUser?.gender || localExisting?.gender || localExisting?.gioiTinh || 'Nam',
+          gender: backendUser.gender || 'Nam',
+          gioiTinh: backendUser.gender || 'Nam',
           address: resolvedAddress,
           diaChi: resolvedAddress,
-          healthInsuranceNumber: backendUser?.healthInsuranceNumber || localExisting?.healthInsuranceNumber || localExisting?.maTheBHYT,
-          maTheBHYT: backendUser?.healthInsuranceNumber || localExisting?.healthInsuranceNumber || localExisting?.maTheBHYT,
-          isProfileComplete: isComplete,
+          healthInsuranceNumber: backendUser.healthInsuranceNumber,
+          maTheBHYT: backendUser.healthInsuranceNumber,
+          isProfileComplete: Boolean(backendUser.isProfileComplete),
         };
 
         handleAuthSuccess(
           patientUser,
-          backendToken || tokenResponse.access_token,
+          backendToken,
           `Đăng nhập Google thành công! Chào mừng Bệnh nhân ${patientUser.fullName}`
         );
-        setGoogleLoading(false);
-      } catch {
-        showErrorAlert('Đăng nhập thất bại', 'Không thể kết nối tài khoản Google.');
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || 'Không thể xác thực tài khoản Google với máy chủ Bệnh viện.';
+        showErrorAlert('Đăng nhập thất bại', msg);
+      } finally {
         setGoogleLoading(false);
       }
     },
@@ -1657,47 +1242,49 @@ export const LoginPage: React.FC = () => {
                   </Button>
                 </div>
 
-                {/* Banner thử nghiệm tiện ích cho việc kiểm thử */}
-                <div
-                  style={{
-                    backgroundColor: isDarkMode ? '#0c2438' : '#e0f2fe',
-                    border: '1px dashed #0284c7',
-                    borderRadius: 10,
-                    padding: '10px 14px',
-                    marginBottom: 16,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{ fontSize: 13, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
-                    💡 <strong>Mã OTP thử nghiệm:</strong>{' '}
-                    <span style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 800, letterSpacing: 2 }}>
-                      {serverOtp || '123456'}
-                    </span>
-                  </div>
-                  <Button
-                    size="small"
-                    type="primary"
-                    ghost
-                    onClick={() => {
-                      const code = (serverOtp || '123456').slice(0, 6).split('');
-                      setOtpValues(code);
-                      otpRefs.current[5]?.focus();
-                      showToast(`Đã tự động điền mã OTP: ${serverOtp || '123456'}`, 'info');
-                    }}
+                {/* Banner thử nghiệm chỉ hiển thị khi Backend Dev chủ động trả otpCode */}
+                {serverOtp && (
+                  <div
                     style={{
-                      height: 28,
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      borderColor: '#0284c7',
-                      color: '#0284c7',
+                      backgroundColor: isDarkMode ? '#0c2438' : '#e0f2fe',
+                      border: '1px dashed #0284c7',
+                      borderRadius: 10,
+                      padding: '10px 14px',
+                      marginBottom: 16,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    Điền nhanh
-                  </Button>
-                </div>
+                    <div style={{ fontSize: 13, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+                      💡 <strong>Mã OTP thử nghiệm:</strong>{' '}
+                      <span style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 800, letterSpacing: 2 }}>
+                        {serverOtp}
+                      </span>
+                    </div>
+                    <Button
+                      size="small"
+                      type="primary"
+                      ghost
+                      onClick={() => {
+                        const code = serverOtp.slice(0, 6).split('');
+                        setOtpValues(code);
+                        otpRefs.current[5]?.focus();
+                        showToast(`Đã tự động điền mã OTP: ${serverOtp}`, 'info');
+                      }}
+                      style={{
+                        height: 28,
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderColor: '#0284c7',
+                        color: '#0284c7',
+                      }}
+                    >
+                      Điền nhanh
+                    </Button>
+                  </div>
+                )}
 
                 <div style={{ textAlign: 'center', marginBottom: 6 }}>
                   <Text style={{ fontSize: 13.5, color: isDarkMode ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
@@ -2115,7 +1702,8 @@ export const LoginPage: React.FC = () => {
                     size="small"
                     type="link"
                     onClick={() => {
-                      setForgotOtpValues((forgotServerOtp || '123456').slice(0, 6).split(''));
+                      if (!forgotServerOtp) return;
+                      setForgotOtpValues(forgotServerOtp.slice(0, 6).split(''));
                     }}
                     style={{ color: '#0284c7', fontSize: 12, padding: 0 }}
                   >

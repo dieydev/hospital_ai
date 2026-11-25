@@ -11,6 +11,7 @@ public interface IFcmNotificationService
     Task SendQueueApproachingAlertAsync(string phone, string patientName, int sequenceNumber, string departmentName, int remainingAhead);
     Task SendPrescriptionCompletedAlertAsync(string phone, string patientName, string doctorName, string examCode);
     Task<List<PushNotificationDto>> GetNotificationsByUserAsync(string userIdentifier);
-    Task<bool> MarkAsReadAsync(string notificationId);
+    Task<List<PushNotificationDto>> GetNotificationsForIdentifiersAsync(IEnumerable<string> userIdentifiers);
+    Task<bool> MarkAsReadAsync(string notificationId, IEnumerable<string>? allowedRecipients = null);
 }
 

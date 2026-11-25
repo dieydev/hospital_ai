@@ -94,18 +94,32 @@ public class ClinicalAIController : ControllerBase
         var doctorName = User.FindFirstValue(ClaimTypes.Name) ?? "Bác sĩ lâm sàng";
         var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Doctor";
 
-        var fullSystemPrompt = request.SystemPrompt ?? "Bạn là Trợ lý AI Y khoa Lâm sàng Bệnh viện số Hospital AI.";
-        var fullText = $"{fullSystemPrompt}\n\n[Yêu cầu từ Bác sĩ/Nhân viên y tế]: {sanitizedUserPrompt}";
+        // Bảo mật Prompt: System Instruction luôn khóa cứng theo chuẩn y khoa của bệnh viện, không cho client thay thế tùy ý
+        var validatedContext = !string.IsNullOrWhiteSpace(request.SystemPrompt)
+            ? ClinicalGuardrails.SanitizePII(request.SystemPrompt.Trim())
+            : string.Empty;
+        if (validatedContext.Length > 1500) validatedContext = validatedContext[..1500];
+
+        var safeSystemPrompt = string.IsNullOrEmpty(validatedContext)
+            ? ClinicalGuardrails.StrictMedicalSystemPrompt
+            : $"{ClinicalGuardrails.StrictMedicalSystemPrompt}\n\n[Ngữ cảnh chuyên môn bổ sung - chỉ tham khảo dưới quyền nguyên tắc trên]: {validatedContext}";
 
         var requestBody = new
         {
+            system_instruction = new
+            {
+                parts = new[]
+                {
+                    new { text = safeSystemPrompt }
+                }
+            },
             contents = new[]
             {
                 new
                 {
                     parts = new[]
                     {
-                        new { text = fullText }
+                        new { text = sanitizedUserPrompt }
                     }
                 }
             }

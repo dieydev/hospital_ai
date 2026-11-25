@@ -310,26 +310,27 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
     );
   }
 
+  Map<String, dynamic> _buildTicketQrDetails(QueueTicketModel ticket) => {
+        'type': 'D_MEDICAL_EXAM_PASS',
+        'version': '2.0',
+        'ticketId': ticket.id,
+        'patientCode': ticket.patientCode,
+        'patientName': ticket.patientName,
+        'patientGender': ticket.patientGender,
+        'patientAge': ticket.patientAge,
+        'identityCard': ticket.identityCardNumber,
+        if (ticket.healthInsuranceNumber != null) 'healthInsuranceNumber': ticket.healthInsuranceNumber,
+        'department': ticket.departmentName,
+        'location': ticket.location,
+        'status': ticket.status,
+        'priority': ticket.priority,
+        'createdAt': ticket.createdAt.toIso8601String(),
+        'checkInNotice': 'Xuat trinh ma QR de tiep nhan vao phong kham (He thong da bo STT)',
+      };
+
   // ── 3. Active Ticket Hero Card ──────────────────────────────────────
   Widget _buildActiveTicketHeroCard(QueueTicketModel ticket, QueueProvider queue) {
-    final Map<String, dynamic> ticketQrPayload = {
-      'type': 'D_MEDICAL_EXAM_PASS',
-      'version': '2.0',
-      'ticketId': ticket.id,
-      'patientCode': ticket.patientCode,
-      'patientName': ticket.patientName,
-      'patientGender': ticket.patientGender,
-      'patientAge': ticket.patientAge,
-      'identityCard': ticket.identityCardNumber,
-      if (ticket.healthInsuranceNumber != null) 'healthInsuranceNumber': ticket.healthInsuranceNumber,
-      'department': ticket.departmentName,
-      'location': ticket.location,
-      'status': ticket.status,
-      'priority': ticket.priority,
-      'createdAt': ticket.createdAt.toIso8601String(),
-      'checkInNotice': 'Xuat trinh ma QR de tiep nhan vao phong kham (He thong da bo STT)',
-    };
-    final String qrDataString = jsonEncode(ticketQrPayload);
+    final String qrDataString = 'MEDQR|${ticket.id}|${ticket.patientCode}|${ticket.sequenceNumber}';
 
     return Container(
       width: double.infinity,
@@ -449,10 +450,12 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
             child: QrImageView(
               data: qrDataString,
               version: QrVersions.auto,
-              size: 155,
+              errorCorrectionLevel: QrErrorCorrectLevel.M,
+              gapless: true,
+              size: 175,
               backgroundColor: Colors.white,
-              eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.primaryDark),
-              dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.primary),
+              eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF0F172A)),
+              dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF0F172A)),
             ),
           ),
           const SizedBox(height: 12),
@@ -501,7 +504,7 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
 
           // Button to inspect QR contents
           InkWell(
-            onTap: () => _showQrDataInspectionModal(ticketQrPayload),
+            onTap: () => _showQrDataInspectionModal(_buildTicketQrDetails(ticket)),
             borderRadius: BorderRadius.circular(20),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1490,24 +1493,7 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
 
   /// Hiển thị mã QR phiếu khám
   void _showTicketQrDialog(QueueTicketModel ticket) {
-    final Map<String, dynamic> ticketQrPayload = {
-      'type': 'D_MEDICAL_EXAM_PASS',
-      'version': '2.0',
-      'ticketId': ticket.id,
-      'patientCode': ticket.patientCode,
-      'patientName': ticket.patientName,
-      'patientGender': ticket.patientGender,
-      'patientAge': ticket.patientAge,
-      'identityCard': ticket.identityCardNumber,
-      if (ticket.healthInsuranceNumber != null) 'healthInsuranceNumber': ticket.healthInsuranceNumber,
-      'department': ticket.departmentName,
-      'location': ticket.location,
-      'status': ticket.status,
-      'priority': ticket.priority,
-      'createdAt': ticket.createdAt.toIso8601String(),
-      'checkInNotice': 'Xuat trinh ma QR de tiep nhan vao phong kham (He thong da bo STT)',
-    };
-    final String qrDataString = jsonEncode(ticketQrPayload);
+    final String qrDataString = 'MEDQR|${ticket.id}|${ticket.patientCode}|${ticket.sequenceNumber}';
 
     showDialog(
       context: context,
@@ -1532,10 +1518,12 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
               QrImageView(
                 data: qrDataString,
                 version: QrVersions.auto,
-                size: 175,
+                errorCorrectionLevel: QrErrorCorrectLevel.M,
+                gapless: true,
+                size: 190,
                 backgroundColor: Colors.white,
-                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.primaryDark),
-                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.primary),
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF0F172A)),
+                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleStyle.square, color: Color(0xFF0F172A)),
               ),
               const SizedBox(height: 12),
               Container(
@@ -1568,7 +1556,7 @@ class _QueueStatusViewState extends State<QueueStatusView> with SingleTickerProv
                 ),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  _showQrDataInspectionModal(ticketQrPayload);
+                  _showQrDataInspectionModal(_buildTicketQrDetails(ticket));
                 },
               ),
               const SizedBox(height: 10),

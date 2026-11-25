@@ -104,4 +104,27 @@ public class QrCodeParserAndValidationTests
         Assert.NotNull(parsed);
         Assert.NotEqual("D_MEDICAL_EXAM_PASS", parsed.type);
     }
+
+    [Fact]
+    public void KioskQrParser_CompactMedQrFormat_ShouldRemainSparseAndParseIds()
+    {
+        var aptId = Guid.NewGuid().ToString();
+        var patientCode = "BN2026123456";
+        var compactNew = $"MEDQR|{aptId}|{patientCode}";
+        var compactFollowUp = $"MEDQR|{aptId}|{patientCode}|FOLLOWUP";
+
+        Assert.True(compactNew.Length <= 65);
+        Assert.True(compactFollowUp.Length <= 75);
+
+        var parsedNew = HospitalAI.Infrastructure.Services.KioskQrParser.Parse(compactNew);
+        Assert.Equal("MEDQR", parsedNew.Format);
+        Assert.Equal(aptId, parsedNew.AppointmentId);
+        Assert.Equal(patientCode, parsedNew.PatientCode);
+
+        var parsedFollowUp = HospitalAI.Infrastructure.Services.KioskQrParser.Parse(compactFollowUp);
+        Assert.Equal("MEDQR", parsedFollowUp.Format);
+        Assert.Equal(aptId, parsedFollowUp.AppointmentId);
+        Assert.Equal(patientCode, parsedFollowUp.PatientCode);
+        Assert.Equal("FollowUp", parsedFollowUp.AppointmentType);
+    }
 }

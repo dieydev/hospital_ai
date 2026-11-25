@@ -167,8 +167,11 @@ export const VnPayCheckoutModal: React.FC<VnPayCheckoutModalProps> = ({
     }, 600);
   };
 
-  // Verify OTP -> Success
+  // Verify OTP -> Success (Chỉ khả dụng ở chế độ kiểm thử Dev; Production luôn thanh toán qua cổng chuyển hướng VNPay)
   const handleVerifyOtp = () => {
+    if (import.meta.env.PROD) {
+      return;
+    }
     if (!otpCode.trim() || otpCode.trim() !== '123456') {
       return;
     }
@@ -669,17 +672,19 @@ export const VnPayCheckoutModal: React.FC<VnPayCheckoutModalProps> = ({
                     />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
-                    <Button
-                      size="small"
-                      type="dashed"
-                      icon={<ThunderboltOutlined />}
-                      onClick={() => setOtpCode('123456')}
-                      style={{ color: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
-                    >
-                      ⚡ Điền OTP Test VNPAY (123456)
-                    </Button>
-                  </div>
+                  {!import.meta.env.PROD && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+                      <Button
+                        size="small"
+                        type="dashed"
+                        icon={<ThunderboltOutlined />}
+                        onClick={() => setOtpCode('123456')}
+                        style={{ color: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }}
+                      >
+                        ⚡ Điền OTP Test VNPAY Sandbox (Dev Only)
+                      </Button>
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <Button

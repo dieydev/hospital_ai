@@ -35,13 +35,18 @@ public static class DataSeeder
         var cashierRole = await context.Roles.FirstAsync(r => r.Name == "Cashier");
         var patientRole = await context.Roles.FirstAsync(r => r.Name == "Patient");
 
-        // 2. Seed Default Accounts
-        if (!await context.Users.AnyAsync(u => u.Username == "admin"))
+        // 2. Seed Default Accounts (Sử dụng mật khẩu cấu hình từ biến môi trường; trong môi trường Production không tạo tài khoản mật khẩu mặc định yếu)
+        var seedEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        var configuredSeedPwd = Environment.GetEnvironmentVariable("SEED_DEFAULT_PASSWORD");
+        var canSeedAccounts = !string.Equals(seedEnv, "Production", StringComparison.OrdinalIgnoreCase) || !string.IsNullOrWhiteSpace(configuredSeedPwd);
+        var initialSeedPassword = !string.IsNullOrWhiteSpace(configuredSeedPwd) ? configuredSeedPwd : "HospitalAI@2026!";
+
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "admin"))
         {
             var adminUser = new User
             {
                 Username = "admin",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "Quản trị viên Hệ thống",
                 Email = "admin@hospital-ai.vn",
                 PhoneNumber = "0900000001",
@@ -53,12 +58,12 @@ public static class DataSeeder
             context.Users.Add(adminUser);
         }
 
-        if (!await context.Users.AnyAsync(u => u.Username == "dr.duy"))
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "dr.duy"))
         {
             var doctorUser = new User
             {
                 Username = "dr.duy",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "BS. CKII. Nguyễn Thanh Duy",
                 Email = "thanhduy.md@hospital-ai.vn",
                 PhoneNumber = "0336022526",
@@ -68,16 +73,15 @@ public static class DataSeeder
                 AvatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=DuyDoctor"
             };
             doctorUser.UserRoles.Add(new UserRole { UserId = doctorUser.Id, RoleId = doctorRole.Id });
-            doctorUser.UserRoles.Add(new UserRole { UserId = doctorUser.Id, RoleId = adminRole.Id });
             context.Users.Add(doctorUser);
         }
 
-        if (!await context.Users.AnyAsync(u => u.Username == "receptionist"))
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "receptionist"))
         {
             var recepUser = new User
             {
                 Username = "receptionist",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "Lễ tân Trần Thị Hương",
                 Email = "huong.reception@hospital-ai.vn",
                 PhoneNumber = "0912345678",
@@ -89,12 +93,12 @@ public static class DataSeeder
             context.Users.Add(recepUser);
         }
 
-        if (!await context.Users.AnyAsync(u => u.Username == "triage01"))
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "triage01"))
         {
             var triageUser = new User
             {
                 Username = "triage01",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "Lê Hoàng Nam",
                 Email = "nam.triage@hospital-ai.vn",
                 PhoneNumber = "0923456789",
@@ -106,12 +110,12 @@ public static class DataSeeder
             context.Users.Add(triageUser);
         }
 
-        if (!await context.Users.AnyAsync(u => u.Username == "pharmacy01"))
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "pharmacy01"))
         {
             var pharmUser = new User
             {
                 Username = "pharmacy01",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "Dược sĩ Vũ Minh Thảo",
                 Email = "thao.pharmacy@hospital-ai.vn",
                 PhoneNumber = "0934567890",
@@ -123,12 +127,12 @@ public static class DataSeeder
             context.Users.Add(pharmUser);
         }
 
-        if (!await context.Users.AnyAsync(u => u.Username == "nurse01"))
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "nurse01"))
         {
             var nurseUser = new User
             {
                 Username = "nurse01",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "Hoàng Thị Yến",
                 Email = "yen.nurse@hospital-ai.vn",
                 PhoneNumber = "0945678901",
@@ -140,12 +144,12 @@ public static class DataSeeder
             context.Users.Add(nurseUser);
         }
 
-        if (!await context.Users.AnyAsync(u => u.Username == "cashier01"))
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "cashier01"))
         {
             var cashierUser = new User
             {
                 Username = "cashier01",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "Đặng Thu Trang",
                 Email = "trang.cashier@hospital-ai.vn",
                 PhoneNumber = "0956789012",
@@ -157,12 +161,12 @@ public static class DataSeeder
             context.Users.Add(cashierUser);
         }
 
-        if (!await context.Users.AnyAsync(u => u.Username == "patient01"))
+        if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == "patient01"))
         {
             var patientUser = new User
             {
                 Username = "patient01",
-                PasswordHash = passwordHasher.HashPassword("123456"),
+                PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                 FullName = "Nguyễn Văn An",
                 Email = "an.nguyen@gmail.com",
                 PhoneNumber = "0987654321",
@@ -191,12 +195,12 @@ public static class DataSeeder
 
         foreach (var doc in seedDoctors)
         {
-            if (!await context.Users.AnyAsync(u => u.Username == doc.username))
+            if (canSeedAccounts && !await context.Users.AnyAsync(u => u.Username == doc.username))
             {
                 var docUser = new User
                 {
                     Username = doc.username,
-                    PasswordHash = passwordHasher.HashPassword("123456"),
+                    PasswordHash = passwordHasher.HashPassword(initialSeedPassword),
                     FullName = doc.name,
                     Email = $"{doc.username}@hospital-ai.vn",
                     PhoneNumber = "0901234567",

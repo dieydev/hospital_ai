@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -1881,7 +1881,10 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
       if (_symptomsController.text.trim().isNotEmpty) 'symptoms': _symptomsController.text.trim(),
       'checkInNotice': 'Xuat trinh ma QR tai phong kham de vao kham (Khong can lay STT)',
     };
-    final qrData = jsonEncode(qrPayload);
+    final pCode = (user?.maBenhNhan ?? 'BN').trim();
+    final qrData = _isFollowUp
+        ? 'MEDQR|$aptId|$pCode|FOLLOWUP'
+        : 'MEDQR|$aptId|$pCode';
 
     showDialog(
       context: context,
@@ -1936,10 +1939,12 @@ class _BookAppointmentViewState extends State<BookAppointmentView> {
                 child: QrImageView(
                   data: qrData,
                   version: QrVersions.auto,
-                  size: 150,
+                  errorCorrectionLevel: QrErrorCorrectLevel.M,
+                  gapless: true,
+                  size: 190,
                   backgroundColor: Colors.white,
-                  eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.primaryDark),
-                  dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.primary),
+                  eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF0F172A)),
+                  dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF0F172A)),
                 ),
               ),
               const SizedBox(height: 10),

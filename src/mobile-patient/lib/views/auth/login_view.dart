@@ -295,10 +295,10 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
       if (!mounted) return;
       setState(() {
         _forgotStep = 2;
-        _forgotDemoOtp = res['otpCode']?.toString() ?? '123456';
+        _forgotDemoOtp = res['otpCode']?.toString();
       });
       _startOtpTimer();
-      _showSuccess('Mã OTP đã được gửi. Kiểm tra Console/SMS để xem mã.');
+      _showSuccess('Yêu cầu khôi phục mật khẩu đã được ghi nhận. Vui lòng kiểm tra SMS để lấy mã OTP.');
     } catch (e) {
       if (!mounted) return;
       _showError(e.toString().replaceAll('Exception: ', ''));
@@ -313,16 +313,15 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
       _showError('Vui lòng nhập đủ 6 chữ số mã OTP');
       return;
     }
-    // Local check demo OTP
-    if (_forgotDemoOtp != null && otp != _forgotDemoOtp && otp != '123456') {
-      _showError('Mã OTP không chính xác. Mã demo: $_forgotDemoOtp');
+    if (_forgotDemoOtp != null && otp != _forgotDemoOtp) {
+      _showError('Mã OTP không chính xác.');
       return;
     }
     setState(() {
       _forgotStep = 3;
       _countdownTimer?.cancel();
     });
-    _showSuccess('Xác thực OTP thành công! Vui lòng đặt mật khẩu mới.');
+    _showSuccess('Đã ghi nhận mã OTP! Vui lòng đặt mật khẩu mới để máy chủ xác thực.');
   }
 
   Future<void> _handleForgotResetPassword() async {
@@ -349,9 +348,13 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
     try {
       final auth = context.read<AuthProvider>();
+      if (otp.length != 6) {
+        _showError('Mã OTP không hợp lệ.');
+        return;
+      }
       await auth.resetPasswordOtp(
         phoneNumber: phone,
-        otpCode: otp.isNotEmpty ? otp : '123456',
+        otpCode: otp,
         newPassword: newPwd,
       );
       if (!mounted) return;
@@ -562,38 +565,7 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
             Text('Chào mừng bạn trở lại 👋',
                 style: GoogleFonts.inter(
                     fontSize: 13, color: AppTheme.textSecondary)),
-            const SizedBox(height: 28),
-
-            InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                setState(() {
-                  _usernameController.text = '0987654321';
-                  _passwordController.text = 'Admin@123';
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F9FF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFBAE6FD)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline_rounded, color: AppTheme.primary, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Tài khoản mẫu: 0987654321 • MK: 123456 (Chạm để điền nhanh)',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryDark),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             _buildLabel('Số điện thoại / Tên đăng nhập'),
             const SizedBox(height: 8),

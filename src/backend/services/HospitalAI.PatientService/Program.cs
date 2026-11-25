@@ -60,7 +60,15 @@ builder.Services.AddDbContext<HospitalDbContext>(options =>
 
 builder.Services.AddScoped<IPatientService, PatientService>();
 
-var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "SUPER_SECRET_HOSPITAL_AI_KEY_2026_DATN_THU_DAU_MOT";
+var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
+{
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("Thiếu cấu hình JwtSettings:SecretKey hợp lệ (>= 32 ký tự) trong môi trường Production.");
+    }
+    secretKey = "DEV_LOCAL_ONLY_JWT_SIGNING_KEY_DO_NOT_USE_PROD_2026";
+}
 var issuer = builder.Configuration["JwtSettings:Issuer"] ?? "HospitalAI.Backend";
 var audience = builder.Configuration["JwtSettings:Audience"] ?? "HospitalAI.Clients";
 

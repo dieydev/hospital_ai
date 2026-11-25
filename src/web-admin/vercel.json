@@ -1,4 +1,19 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), camera=(self), microphone=()" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://img.vietqr.io https://api.dicebear.com https://images.unsplash.com https://lh3.googleusercontent.com; connect-src 'self' ws: wss: https://dmedical.site https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-ancestors 'none'; base-uri 'self';"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

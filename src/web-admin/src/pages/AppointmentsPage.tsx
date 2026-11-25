@@ -930,10 +930,12 @@ export const AppointmentsPage: React.FC = () => {
               }}
             >
               <QRCodeSVG
-                value={selectedAptForQr.qrCode || `MEDQR|${selectedAptForQr.id}|${selectedAptForQr.patientCode}`}
-                size={180}
-                level="H"
-                fgColor="#0369a1"
+                value={appointmentService.getScannableQrValue(selectedAptForQr)}
+                size={220}
+                level="M"
+                marginSize={2}
+                fgColor="#0f172a"
+                bgColor="#ffffff"
               />
             </div>
 

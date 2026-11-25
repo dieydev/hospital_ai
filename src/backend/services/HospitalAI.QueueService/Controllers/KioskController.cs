@@ -815,6 +815,14 @@ public class KioskController : ControllerBase
     private async Task<QueueTicketDto?> FindTodayTicketInSqlAsync(KioskQrParseResultDto parsed)
     {
         var todayTickets = await _queueService.GetTodayQueueTicketsAsync(null, null);
+
+        if (Guid.TryParse(parsed.AppointmentId, out var parsedAptOrTicketGuid))
+        {
+            var directMatch = todayTickets.FirstOrDefault(t =>
+                t.Id == parsedAptOrTicketGuid || t.AppointmentId == parsedAptOrTicketGuid);
+            if (directMatch != null) return directMatch;
+        }
+
         var key = (parsed.PatientCode ?? parsed.LookupKey ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(key)) return null;
 

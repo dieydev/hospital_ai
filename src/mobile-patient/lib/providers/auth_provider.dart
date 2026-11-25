@@ -89,48 +89,20 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> login(String username, String password) async {
-    try {
-      final response = await _apiService.login(username, password);
-      final token = response['token'];
-      final userJson = response['user'];
+    final response = await _apiService.login(username, password);
+    final token = response['token'];
+    final userJson = response['user'];
 
-      if (token != null) {
-        _isAuthenticated = true;
-        _token = token;
-        _user = PatientModel.fromJson(userJson ?? {});
+    if (token != null) {
+      _isAuthenticated = true;
+      _token = token;
+      _user = PatientModel.fromJson(userJson ?? {});
 
-        await _storage.write(key: 'auth_token', value: token);
-        await _persistUser(_user!);
-        notifyListeners();
-      } else {
-        throw Exception('Không nhận được token từ server.');
-      }
-    } catch (e) {
-      // Khi mất kết nối hoặc máy chủ EC2/Backend chưa khởi động:
-      // Tự động kích hoạt tài khoản trải nghiệm ngoại tuyến nếu nhập đúng tài khoản mẫu
-      final cleanUser = username.trim().toLowerCase();
-      final isDemoAccount = (cleanUser == '0987654321' || cleanUser == 'patient01' || cleanUser == '0912345678') && password.trim() == '123456';
-      if (isDemoAccount) {
-        _isAuthenticated = true;
-        _token = 'offline_demo_token_patient01';
-        _user = PatientModel(
-          id: 'pat-demo-001',
-          maBenhNhan: 'BN2026000001',
-          hoTen: 'Nguyễn Văn An',
-          gioiTinh: 'Nam',
-          ngaySinh: '1990-05-15',
-          soCCCD: '038090001234',
-          soDienThoai: '0987654321',
-          diaChi: '123 Đường Bác Bác, TP. Thủ Dầu Một, Bình Dương',
-          maTheBHYT: 'DN40101234567',
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-          isProfileComplete: true,
-        );
-        await _persistUser(_user!);
-        notifyListeners();
-        return;
-      }
-      rethrow;
+      await _storage.write(key: 'auth_token', value: token);
+      await _persistUser(_user!);
+      notifyListeners();
+    } else {
+      throw Exception('Không nhận được token từ server.');
     }
   }
 
@@ -200,7 +172,6 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (_) {}
 
-    try {
       final regRes = await _apiService.register({
         'username': phoneNumber,
         'phoneNumber': phoneNumber,
@@ -220,29 +191,6 @@ class AuthProvider extends ChangeNotifier {
       }
       await login(phoneNumber, password);
     } catch (e) {
-      final errMsg = e.toString().toLowerCase();
-      final isNetwork = errMsg.contains('kết nối') || errMsg.contains('timeout') || errMsg.contains('quá hạn') || errMsg.contains('mạng');
-      if (isNetwork) {
-        // Tự động tạo tài khoản bệnh nhân cục bộ khi máy chủ offline
-        final now = DateTime.now();
-        final pCode = 'BN${now.year}${(now.millisecondsSinceEpoch % 1000000).toString().padLeft(6, '0')}';
-        _isAuthenticated = true;
-        _token = 'offline_token_$phoneNumber';
-        _user = PatientModel(
-          id: 'pat-$phoneNumber',
-          maBenhNhan: pCode,
-          hoTen: fullName.trim(),
-          gioiTinh: gender,
-          ngaySinh: dateOfBirth,
-          soCCCD: identityCardNumber.trim(),
-          soDienThoai: phoneNumber,
-          diaChi: address.trim(),
-          isProfileComplete: true,
-        );
-        await _persistUser(_user!);
-        notifyListeners();
-        return;
-      }
       rethrow;
     }
   }
