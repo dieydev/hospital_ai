@@ -56,6 +56,7 @@ import {
   KioskPreviousExamSummary,
   KioskWalkInRequest,
   clearPairedTerminalSecret,
+  getKioskHeaders,
   getPairedTerminalSecret,
   kioskService,
   parseKioskQrClient,
@@ -65,6 +66,7 @@ import { DepartmentItem, QueueTicketItem, queueService } from '../services/queue
 import { signalrService } from '../services/signalrService';
 import { useAuthStore } from '../store/useAuthStore';
 import { showToast } from '../utils/sweetAlert';
+import { speakVietnamese, stopVietnameseSpeech } from '../utils/vietnameseSpeaker';
 
 const { Title, Text } = Typography;
 
@@ -130,6 +132,7 @@ export const KioskPage: React.FC = () => {
   const [walkInForm] = Form.useForm();
   const [walkInLoading, setWalkInLoading] = useState<boolean>(false);
   const [walkInPaymentMode, setWalkInPaymentMode] = useState<'BHYT' | 'ServiceCounter'>('BHYT');
+  const [walkInWaitForTriage, setWalkInWaitForTriage] = useState<boolean>(true);
   const [activeNumpadTarget, setActiveNumpadTarget] = useState<'scan' | 'cccd' | 'phone' | 'cls'>('scan');
 
   // Trạng thái Tab 3: Quay lại đọc KQ CLS
@@ -147,22 +150,17 @@ export const KioskPage: React.FC = () => {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
   const [resetCountdown, setResetCountdown] = useState<number>(0);
 
-  // Phát âm giọng nói Tiếng Việt
+  // Phát âm giọng nói Tiếng Việt (Chuông + MP3 /api/queue/tts + dự phòng Web Speech API)
   const speakAnnouncement = useCallback(
     (text: string) => {
-      if (!isSoundEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-      try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'vi-VN';
-        utterance.rate = 0.96;
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
-      } catch {
-        // ignore speech errors
-      }
+      if (!isSoundEnabled) return;
+      void speakVietnamese(text, {
+        chime: true,
+        rate: 0.96,
+        headers: getKioskHeaders(selectedTerminalId),
+      });
     },
-    [isSoundEnabled]
+    [isSoundEnabled, selectedTerminalId]
   );
 
   // Đồng hồ giây
@@ -172,9 +170,7 @@ export const KioskPage: React.FC = () => {
     }, 1000);
     return () => {
       clearInterval(timer);
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      stopVietnameseSpeech();
     };
   }, []);
 
@@ -451,8 +447,9 @@ export const KioskPage: React.FC = () => {
       gender: values.gender || 'Nam',
       address: values.address,
       healthInsuranceNumber: walkInPaymentMode === 'BHYT' ? values.healthInsuranceNumber : undefined,
-      departmentId: values.departmentId,
+      departmentId: values.departmentId || departments[0]?.id || '',
       requirePrepayment: false,
+      waitForTriage: walkInWaitForTriage,
       isPregnant: Boolean(values.isPregnant),
       isDisabled: Boolean(values.isDisabled),
       hasRevolutionaryMerit: Boolean(values.hasRevolutionaryMerit),
@@ -691,17 +688,21 @@ export const KioskPage: React.FC = () => {
             color={
               ticket.paymentStatus === 'InsuranceWaived'
                 ? 'cyan'
-                : ticket.paymentStatus === 'Unpaid'
-                  ? 'orange'
-                  : 'green'
+                : ticket.paymentStatus === 'PendingTriage'
+                  ? 'geekblue'
+                  : ticket.paymentStatus === 'Unpaid'
+                    ? 'orange'
+                    : 'green'
             }
             style={{ fontWeight: 700 }}
           >
             {ticket.paymentStatus === 'InsuranceWaived'
               ? 'BHYT Chi Trả'
-              : ticket.paymentStatus === 'Unpaid'
-                ? 'Chưa thanh toán • Quầy Thu Ngân'
-                : 'Đã Hoàn Tất Phí'}
+              : ticket.paymentStatus === 'PendingTriage'
+                ? 'Chờ Sàng lọc phân khoa -> Thu ngân'
+                : ticket.paymentStatus === 'Unpaid'
+                  ? 'Chưa thanh toán • Quầy Thu Ngân'
+                  : 'Đã Hoàn Tất Phí'}
           </Tag>
           {ticket.priority === 'Priority' && (
             <Tag color="gold" style={{ fontWeight: 700 }}>⭐ Đối Tượng Ưu Tiên</Tag>
@@ -710,6 +711,16 @@ export const KioskPage: React.FC = () => {
             <Tag color="red" style={{ fontWeight: 800 }}>🚨 Cấp Cứu</Tag>
           )}
         </div>
+
+        {ticket.paymentStatus === 'PendingTriage' && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginTop: 10, textAlign: 'left', borderRadius: 10 }}
+            message="Chờ Nhân viên Sàng lọc (Triage) phân chuyên khoa chính thức"
+            description="Sau khi Sàng lọc đo sinh hiệu & chỉ định đúng khoa, hóa đơn sẽ được chốt chính xác gửi sang Quầy Thu ngân (Tiền mặt / VietQR SePay)."
+          />
+        )}
 
         {trackedBilling && trackedBilling.status === 'Unpaid' && (
           <Alert
@@ -1319,11 +1330,41 @@ export const KioskPage: React.FC = () => {
                           </Col>
                         </Row>
 
+                        <div
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: 10,
+                            backgroundColor: '#f0f9ff',
+                            border: '1px solid #bae6fd',
+                            marginBottom: 12,
+                          }}
+                        >
+                          <Checkbox
+                            checked={walkInWaitForTriage}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setWalkInWaitForTriage(checked);
+                              if (checked && !walkInForm.getFieldValue('departmentId') && departments[0]?.id) {
+                                walkInForm.setFieldValue('departmentId', departments[0].id);
+                              }
+                            }}
+                          >
+                            <Text strong style={{ color: '#0369a1' }}>
+                              Khám mới — Cần Nhân viên Sàng lọc (Triage) phân khoa trước khi Thu ngân chốt tiền (Cách 1)
+                            </Text>
+                          </Checkbox>
+                        </div>
+
                         <Row gutter={12}>
                           <Col xs={24} sm={12}>
                             <Form.Item
                               name="departmentId"
-                              label={<Text strong>Chọn Chuyên Khoa Khám *</Text>}
+                              initialValue={departments[0]?.id}
+                              label={
+                                <Text strong>
+                                  {walkInWaitForTriage ? 'Khoa Tiếp nhận / Dự kiến *' : 'Chọn Chuyên Khoa Khám *'}
+                                </Text>
+                              }
                               rules={[{ required: true, message: 'Vui lòng chọn chuyên khoa!' }]}
                             >
                               <Select

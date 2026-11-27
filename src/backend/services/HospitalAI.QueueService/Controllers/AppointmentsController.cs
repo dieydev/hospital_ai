@@ -49,6 +49,7 @@ namespace HospitalAI.QueueService.Controllers
         public string AppointmentType { get; set; } = "New";
         public string? PreviousRecordCode { get; set; } // Mã bệnh án EMR / Mã phiếu khám trước
         public string? FollowUpNotes { get; set; } // Lời dặn hoặc chỉ định tái khám của Bác sĩ
+        public string? PackageName { get; set; } // Tên gói khám cố định (nếu đặt theo gói)
 
         // Thông tin Hóa đơn Viện phí đồng bộ với Thu ngân / SePay / VNPay
         public Guid? BillingId { get; set; }
@@ -210,7 +211,7 @@ namespace HospitalAI.QueueService.Controllers
             {
                 return decimal.Round(model.RequestedFeeAmount.Value, 2, MidpointRounding.AwayFromZero);
             }
-            return 150000m;
+            return DepartmentFeeCatalog.ResolveDepartmentFee(model.DepartmentName);
         }
 
         private void ApplyBillingToAppointmentDto(OnlineAppointmentItem dto, Billing bill, SepayPaymentOptions options)
@@ -265,6 +266,14 @@ namespace HospitalAI.QueueService.Controllers
                 if (Guid.TryParse(item.Id, out var g) && billByApt.TryGetValue(g, out var bill))
                 {
                     ApplyBillingToAppointmentDto(item, bill, options);
+                }
+                else if (!DepartmentFeeCatalog.IsPreBilledOnlineVisit(item.AppointmentType, item.PackageName, item.SymptomsReason))
+                {
+                    item.BillingId = null;
+                    item.PaymentCode = null;
+                    item.PaymentStatus = "PendingTriage";
+                    item.BillingAmount = 0m;
+                    item.PaymentQrUrl = null;
                 }
             }
         }
@@ -624,6 +633,7 @@ namespace HospitalAI.QueueService.Controllers
                             AppointmentDate = a.AppointmentDate.ToString("yyyy-MM-dd"),
                             AppointmentTime = a.AppointmentDate.ToString("HH:mm"),
                             SymptomsReason = a.Symptoms ?? "",
+                            AppointmentType = (a.Symptoms ?? "").Contains("tái khám", StringComparison.OrdinalIgnoreCase) ? "FollowUp" : "New",
                             Status = a.Status,
                             CreatedAt = a.AppointmentDate.ToString("o"),
                             QrCode = BuildCompactQrCode(a.Id.ToString(), a.Patient?.PatientCode, null, a.Symptoms),
@@ -1100,6 +1110,7 @@ namespace HospitalAI.QueueService.Controllers
                     }
 
                     var sepayOptions = PaymentQrHelper.ResolveOptions(_configuration);
+                    var isPreBilledOnline = DepartmentFeeCatalog.IsPreBilledOnlineVisit(model.AppointmentType, model.PackageName, model.SymptomsReason);
                     var resolvedFee = ResolveAppointmentFee(model);
 
                     // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó
@@ -1110,18 +1121,38 @@ namespace HospitalAI.QueueService.Controllers
 
                     if (existingDbDuplicate != null)
                     {
-                        var existingBill = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
-                            _dbContext,
-                            patient.Id,
-                            existingDbDuplicate.Id,
-                            resolvedFee,
-                            $"Phí khám đặt lịch - {model.DepartmentName}",
-                            sepayOptions);
+                        var existingBill = await _dbContext.Billings
+                            .Include(b => b.Items)
+                            .FirstOrDefaultAsync(b => b.AppointmentId == existingDbDuplicate.Id
+                                && b.BillingType == "Registration"
+                                && b.Status != "Cancelled");
+
+                        if (existingBill == null && isPreBilledOnline)
+                        {
+                            existingBill = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                                _dbContext,
+                                patient.Id,
+                                existingDbDuplicate.Id,
+                                resolvedFee,
+                                $"Phí khám đặt lịch - {model.DepartmentName}",
+                                sepayOptions);
+                        }
 
                         if (slotTx != null) await slotTx.CommitAsync();
                         model.Id = existingDbDuplicate.Id.ToString();
                         model.Status = existingDbDuplicate.Status;
-                        ApplyBillingToAppointmentDto(model, existingBill, sepayOptions);
+                        if (existingBill != null)
+                        {
+                            ApplyBillingToAppointmentDto(model, existingBill, sepayOptions);
+                        }
+                        else
+                        {
+                            model.BillingId = null;
+                            model.PaymentCode = null;
+                            model.PaymentStatus = "PendingTriage";
+                            model.BillingAmount = 0m;
+                            model.PaymentQrUrl = null;
+                        }
                         return Ok(model);
                     }
 
@@ -1149,16 +1180,28 @@ namespace HospitalAI.QueueService.Controllers
                     _dbContext.Appointments.Add(appointmentEntity);
                     await _dbContext.SaveChangesAsync();
 
-                    // Khởi tạo duy nhất 1 hóa đơn Registration cho lịch hẹn (SePay / VNPay / Thu ngân dùng chung)
-                    var aptBilling = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
-                        _dbContext,
-                        patient.Id,
-                        appointmentEntity.Id,
-                        resolvedFee,
-                        $"Phí khám đặt lịch - {model.DepartmentName}",
-                        sepayOptions);
+                    if (isPreBilledOnline)
+                    {
+                        // Gói khám định giá sẵn / Tái khám đúng chuyên khoa: khởi tạo 1 hóa đơn Registration dùng chung Online & Thu ngân
+                        var aptBilling = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                            _dbContext,
+                            patient.Id,
+                            appointmentEntity.Id,
+                            resolvedFee,
+                            $"Phí khám đặt lịch - {model.DepartmentName}",
+                            sepayOptions);
 
-                    ApplyBillingToAppointmentDto(model, aptBilling, sepayOptions);
+                        ApplyBillingToAppointmentDto(model, aptBilling, sepayOptions);
+                    }
+                    else
+                    {
+                        // Cách 1: Khám mới lần đầu hoãn thu phí tới sau khi Nhân viên Sàng lọc (Triage) phân đúng chuyên khoa
+                        model.BillingId = null;
+                        model.PaymentCode = null;
+                        model.PaymentStatus = "PendingTriage";
+                        model.BillingAmount = 0m;
+                        model.PaymentQrUrl = null;
+                    }
 
                     if (slotTx != null)
                     {

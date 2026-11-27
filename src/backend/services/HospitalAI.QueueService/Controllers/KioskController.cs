@@ -247,15 +247,18 @@ public class KioskController : ControllerBase
         var visitType = isReturningPatient ? "FollowUp" : "New";
         var sepayOptions = PaymentQrHelper.ResolveOptions(_configuration);
 
-        // Phương án A: Kiosk chỉ cấp STT và tạo tối đa 1 hóa đơn Registration (nếu khám dịch vụ chưa có BHYT) đẩy sang Quầy Thu ngân, KHÔNG thu tiền tại Kiosk
+        // Cách 1 + Phương án A:
+        // - Nếu chưa qua Sàng lọc (WaitForTriage = true): Kiosk cấp STT tiếp đón chờ Sàng lọc phân khoa, chưa sinh hóa đơn trước.
+        // - Nếu đã xác định chuyên khoa thu ngân (WaitForTriage = false): Kiosk tạo tối đa 1 hóa đơn Registration theo đúng giá khoa đẩy sang Thu ngân.
         KioskBillingSummaryDto? billingSummary = null;
-        if (string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber))
+        if (string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber) && !dto.WaitForTriage)
         {
+            var deptFee = DepartmentFeeCatalog.ResolveDepartmentFee(dept.DepartmentName);
             var regBill = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
                 _dbContext,
                 patient.Id,
                 null,
-                DefaultExamFee,
+                deptFee,
                 $"Phí khám chuyên khoa - {dept.DepartmentName}",
                 sepayOptions);
 
@@ -280,7 +283,9 @@ public class KioskController : ControllerBase
 
         var successMsg = billingSummary != null
             ? $"Cấp số thứ tự #{issuedTicket.SequenceNumber} thành công cho {issuedTicket.PatientName} tại {issuedTicket.DepartmentName}. Vui lòng thanh toán hóa đơn {billingSummary.BillingCode} ({billingSummary.Amount:N0} VNĐ) tại Quầy Thu ngân."
-            : $"Cấp số thứ tự thành công #{issuedTicket.SequenceNumber} cho bệnh nhân {issuedTicket.PatientName} tại {issuedTicket.DepartmentName}.";
+            : (dto.WaitForTriage && string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber))
+                ? $"Cấp số thứ tự #{issuedTicket.SequenceNumber} thành công cho {issuedTicket.PatientName}. Mời quý khách qua Bàn Sàng Lọc (Triage) để phân chuyên khoa và chốt hóa đơn tại Quầy Thu ngân."
+                : $"Cấp số thứ tự thành công #{issuedTicket.SequenceNumber} cho bệnh nhân {issuedTicket.PatientName} tại {issuedTicket.DepartmentName}.";
 
         return Ok(new KioskCheckInResponseDto
         {
@@ -521,15 +526,34 @@ public class KioskController : ControllerBase
         var dept = dbApt.Schedule?.Department
                    ?? await ResolveDepartmentByNameAsync(prevExam?.DepartmentName);
 
+        var isPreBilledVisit = DepartmentFeeCatalog.IsPreBilledOnlineVisit(visitType, null, dbApt.Symptoms);
         var options = PaymentQrHelper.ResolveOptions(_configuration);
         KioskBillingSummaryDto? billingSummary = null;
-        if (string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber))
+
+        var existingRegBill = await _dbContext.Billings
+            .Include(b => b.Patient)
+            .AsNoTracking()
+            .Where(b => b.BillingType == "Registration"
+                && b.Status != "Cancelled"
+                && (b.AppointmentId == dbApt.Id || (!b.AppointmentId.HasValue && b.PatientId == patient.Id && b.CreatedAt >= DateTime.UtcNow.Date.AddDays(-1))))
+            .OrderByDescending(b => b.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (existingRegBill != null)
         {
+            if (existingRegBill.Status == "Unpaid")
+            {
+                billingSummary = BuildBillingSummary(existingRegBill, patient, _configuration);
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber) && isPreBilledVisit)
+        {
+            var deptFee = DepartmentFeeCatalog.ResolveDepartmentFee(dept.DepartmentName);
             var regBill = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
                 _dbContext,
                 patient.Id,
                 dbApt.Id,
-                DefaultExamFee,
+                deptFee,
                 $"Phí khám đặt lịch - {dept.DepartmentName}",
                 options);
             if (regBill.Status == "Unpaid")
@@ -567,6 +591,10 @@ public class KioskController : ControllerBase
         if (billingSummary != null)
         {
             checkInMsg += $" Quý khách còn hóa đơn {billingSummary.BillingCode} ({billingSummary.Amount:N0} VNĐ), vui lòng thanh toán tại Quầy Thu ngân.";
+        }
+        else if (existingRegBill == null && string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber) && !isPreBilledVisit)
+        {
+            checkInMsg += " Vui lòng qua Bàn Sàng Lọc (Triage) để đo sinh hiệu, phân đúng chuyên khoa và chốt hóa đơn tại Quầy Thu ngân.";
         }
 
         return Ok(new KioskCheckInResponseDto

@@ -127,6 +127,7 @@ export interface KioskWalkInRequest {
   healthInsuranceNumber?: string;
   departmentId: string;
   requirePrepayment: boolean;
+  waitForTriage?: boolean;
   isPregnant: boolean;
   isDisabled: boolean;
   hasRevolutionaryMerit: boolean;

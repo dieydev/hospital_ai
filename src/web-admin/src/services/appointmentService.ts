@@ -22,7 +22,8 @@ export interface OnlineAppointmentItem {
   checkedInAt?: string;
   cancelReason?: string;
   rescheduledAt?: string;
-  appointmentType?: 'New' | 'FollowUp';
+  appointmentType?: 'New' | 'FollowUp' | 'Package';
+  packageName?: string;
   previousRecordCode?: string;
   followUpNotes?: string;
   roomNumber?: string;

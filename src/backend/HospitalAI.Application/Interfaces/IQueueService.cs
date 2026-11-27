@@ -13,4 +13,5 @@ public interface IQueueService
     Task<QueueTicketDto> UpdateQueueTicketStatusAsync(Guid ticketId, string status);
     Task<QueueTicketDto?> CallNextPatientAsync(Guid departmentId);
     Task<QueueTicketDto> MarkTicketAsParaclinicalReturnAsync(Guid ticketId, string? previousRecordCode = null);
+    Task<QueueTicketDto> RouteTicketAfterTriageAsync(Guid ticketId, TriageRouteTicketDto dto, string? confirmedByStaff, bool canConfirmEmergency);
 }

@@ -377,7 +377,7 @@ public class KioskWorkflowTests
         Assert.NotNull(payload1.UnpaidBilling);
         Assert.Matches("^HAI[A-F0-9]{8}$", payload1.UnpaidBilling.BillingCode);
         Assert.Equal(string.Empty, payload1.UnpaidBilling.VietQrPayload);
-        Assert.Equal(150000m, payload1.UnpaidBilling.Amount);
+        Assert.Equal(200000m, payload1.UnpaidBilling.Amount);
         Assert.Equal(1, await context.Billings.CountAsync());
 
         // Act 2: Gọi lại walk-in cùng bệnh nhân -> Không tạo trùng bệnh nhân, STT hoặc hóa đơn

@@ -26,7 +26,7 @@ public class QueueTicketDto
     public string? EmergencyReason { get; set; }
     public Guid? AppointmentId { get; set; }
     public string? VisitType { get; set; } // "New" / "FollowUp"
-    public string PaymentStatus { get; set; } = "Paid"; // "Paid", "Unpaid", "InsuranceWaived"
+    public string PaymentStatus { get; set; } = "PendingTriage"; // "Paid", "Unpaid", "InsuranceWaived", "PendingTriage"
     public string QueueType { get; set; } = "Exam"; // "Exam", "ParaclinicalResult"
     public Guid? UnpaidBillingId { get; set; }
     public decimal UnpaidAmount { get; set; }
@@ -89,4 +89,37 @@ public class DepartmentDto
     public string DepartmentName { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
     public string RoomType { get; set; } = "Clinical";
+}
+
+public class TriageRouteTicketDto
+{
+    [Required(ErrorMessage = "Chuyên khoa chỉ định sau sàng lọc không được để trống")]
+    public Guid TargetDepartmentId { get; set; }
+
+    [StringLength(50)]
+    public string TriageLevel { get; set; } = "Normal"; // Normal | Priority | Emergency
+
+    [StringLength(50)]
+    public string? VisitType { get; set; } // New | FollowUp
+
+    [StringLength(500)]
+    public string? InitialSymptoms { get; set; }
+
+    [StringLength(500)]
+    public string? VitalSignsSummary { get; set; }
+
+    public bool? IsEmergencyConfirmed { get; set; }
+    public string? EmergencyReason { get; set; }
+}
+
+public class TriageRouteResultDto
+{
+    public QueueTicketDto Ticket { get; set; } = null!;
+    public Guid? BillingId { get; set; }
+    public string? PaymentCode { get; set; }
+    public decimal BillingAmount { get; set; }
+    public string PaymentStatus { get; set; } = "PendingTriage";
+    public string BillingAction { get; set; } = string.Empty; // Created | UpdatedUnpaid | KeptExistingPaid | WaivedBhytOrEmergency
+    public string? DiscrepancyWarning { get; set; }
+    public string Message { get; set; } = string.Empty;
 }

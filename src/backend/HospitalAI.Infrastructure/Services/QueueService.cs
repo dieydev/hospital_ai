@@ -369,6 +369,132 @@ public class QueueService : IQueueService
         return dto;
     }
 
+    public async Task<QueueTicketDto> RouteTicketAfterTriageAsync(
+        Guid ticketId,
+        TriageRouteTicketDto dto,
+        string? confirmedByStaff,
+        bool canConfirmEmergency)
+    {
+        var ticket = await _context.QueueTickets
+            .Include(q => q.Patient)
+            .Include(q => q.Department)
+            .FirstOrDefaultAsync(q => q.Id == ticketId);
+
+        if (ticket == null)
+            throw new KeyNotFoundException($"Không tìm thấy phiếu hàng chờ với ID {ticketId}");
+
+        var targetDept = await _context.Departments.FindAsync(dto.TargetDepartmentId);
+        if (targetDept == null)
+            throw new KeyNotFoundException($"Không tìm thấy chuyên khoa chỉ định với ID {dto.TargetDepartmentId}");
+
+        var today = DateTime.UtcNow.Date;
+        var priority = ticket.Priority;
+        string? priorityReason = null;
+        string? confirmedBy = null;
+        DateTime? confirmedAt = null;
+        string? emergencyReason = null;
+
+        if (_auditRecords.TryGetValue(ticket.Id, out var existingAudit))
+        {
+            priorityReason = existingAudit.PriorityReason;
+            confirmedBy = existingAudit.ConfirmedBy;
+            confirmedAt = existingAudit.ConfirmedAt;
+            emergencyReason = existingAudit.Reason;
+        }
+
+        if (string.Equals(dto.TriageLevel, "Emergency", StringComparison.OrdinalIgnoreCase))
+        {
+            if (canConfirmEmergency || dto.IsEmergencyConfirmed == true)
+            {
+                priority = "Emergency";
+                confirmedBy = string.IsNullOrWhiteSpace(confirmedByStaff) ? "Nhân viên Sàng lọc" : confirmedByStaff.Trim();
+                confirmedAt = DateTime.UtcNow;
+                emergencyReason = string.IsNullOrWhiteSpace(dto.EmergencyReason)
+                    ? (string.IsNullOrWhiteSpace(dto.InitialSymptoms) ? "Xác nhận ưu tiên khẩn tại Bàn Sàng lọc" : dto.InitialSymptoms.Trim())
+                    : dto.EmergencyReason.Trim();
+                priorityReason = $"Phân luồng Cấp cứu tại Sàng lọc ({confirmedBy})";
+            }
+        }
+        else if (string.Equals(dto.TriageLevel, "Priority", StringComparison.OrdinalIgnoreCase))
+        {
+            if (priority != "Emergency")
+            {
+                priority = "Priority";
+                priorityReason = priorityReason ?? "Ưu tiên phân luồng từ Bàn Sàng lọc";
+            }
+        }
+        else if (string.Equals(dto.TriageLevel, "Normal", StringComparison.OrdinalIgnoreCase))
+        {
+            priority = "Normal";
+        }
+
+        await _ticketLock.WaitAsync();
+        try
+        {
+            var isRelational = _context.Database.IsRelational();
+            using var tx = isRelational ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
+            try
+            {
+                if (ticket.DepartmentId != targetDept.Id)
+                {
+                    var lastSeq = await _context.QueueTickets
+                        .Where(q => q.DepartmentId == targetDept.Id && q.CreatedAt.Date == today)
+                        .MaxAsync(q => (int?)q.SequenceNumber) ?? 100;
+
+                    ticket.DepartmentId = targetDept.Id;
+                    ticket.SequenceNumber = lastSeq + 1;
+                    ticket.Department = targetDept;
+                }
+
+                ticket.Priority = priority;
+
+                if (ticket.AppointmentId.HasValue && ticket.AppointmentId.Value != Guid.Empty)
+                {
+                    var apt = await _context.Appointments.FirstOrDefaultAsync(a => a.Id == ticket.AppointmentId.Value);
+                    if (apt != null && !string.IsNullOrWhiteSpace(dto.InitialSymptoms))
+                    {
+                        var triageNote = $"[Sàng lọc -> {targetDept.DepartmentName}: {dto.InitialSymptoms.Trim()}]";
+                        if (string.IsNullOrWhiteSpace(apt.Symptoms))
+                            apt.Symptoms = triageNote;
+                        else if (!apt.Symptoms.Contains(triageNote, StringComparison.OrdinalIgnoreCase))
+                            apt.Symptoms = $"{apt.Symptoms} | {triageNote}";
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                if (tx != null) await tx.CommitAsync();
+            }
+            catch
+            {
+                if (tx != null) await tx.RollbackAsync();
+                throw;
+            }
+        }
+        finally
+        {
+            _ticketLock.Release();
+        }
+
+        var visitType = string.Equals(dto.VisitType, "FollowUp", StringComparison.OrdinalIgnoreCase)
+            ? "FollowUp"
+            : (string.Equals(dto.VisitType, "New", StringComparison.OrdinalIgnoreCase) ? "New" : existingAudit?.VisitType);
+
+        _auditRecords[ticket.Id] = new PriorityAuditRecord(
+            priorityReason,
+            confirmedBy,
+            confirmedAt,
+            emergencyReason ?? dto.InitialSymptoms,
+            existingAudit?.QueueType ?? "Exam",
+            existingAudit?.PreviousRecordCode,
+            visitType);
+        SaveAuditRecordsToFile();
+
+        var resultDto = MapToDto(ticket);
+        if (!string.IsNullOrEmpty(visitType)) resultDto.VisitType = visitType;
+        await HydrateBillingStatusAsync(new List<QueueTicketDto> { resultDto });
+        return resultDto;
+    }
+
     public async Task<QueueTicketDto?> CallNextPatientAsync(Guid departmentId)
     {
         var today = DateTime.UtcNow.Date;
@@ -439,26 +565,60 @@ public class QueueService : IQueueService
         if (patientIds.Count == 0) return;
 
         var cutoff = DateTime.UtcNow.Date.AddDays(-1);
-        var unpaidBills = await _context.Billings
+        var activeBills = await _context.Billings
             .AsNoTracking()
             .Where(b => patientIds.Contains(b.PatientId)
                 && b.BillingType == "Registration"
-                && b.Status == "Unpaid"
+                && (b.Status == "Unpaid" || b.Status == "Paid")
                 && b.CreatedAt >= cutoff)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
-        var billMap = unpaidBills
+        var unpaidByApt = activeBills
+            .Where(b => b.AppointmentId.HasValue && b.Status == "Unpaid")
+            .GroupBy(b => b.AppointmentId!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var paidByApt = activeBills
+            .Where(b => b.AppointmentId.HasValue && b.Status == "Paid")
+            .GroupBy(b => b.AppointmentId!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var unpaidByPatient = activeBills
+            .Where(b => b.Status == "Unpaid")
+            .GroupBy(b => b.PatientId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var paidByPatient = activeBills
+            .Where(b => b.Status == "Paid")
             .GroupBy(b => b.PatientId)
             .ToDictionary(g => g.Key, g => g.First());
 
         foreach (var dto in dtos)
         {
-            if (billMap.TryGetValue(dto.PatientId, out var bill))
+            Billing? matchedUnpaid = null;
+            if (dto.AppointmentId.HasValue && unpaidByApt.TryGetValue(dto.AppointmentId.Value, out var aptUnpaid))
+            {
+                matchedUnpaid = aptUnpaid;
+            }
+            else if (unpaidByPatient.TryGetValue(dto.PatientId, out var patUnpaid))
+            {
+                matchedUnpaid = patUnpaid;
+            }
+
+            if (matchedUnpaid != null)
             {
                 dto.PaymentStatus = "Unpaid";
-                dto.UnpaidBillingId = bill.Id;
-                dto.UnpaidAmount = bill.TotalAmount;
+                dto.UnpaidBillingId = matchedUnpaid.Id;
+                dto.UnpaidAmount = matchedUnpaid.TotalAmount;
+                continue;
+            }
+
+            var hasPaidBill = (dto.AppointmentId.HasValue && paidByApt.ContainsKey(dto.AppointmentId.Value))
+                || paidByPatient.ContainsKey(dto.PatientId);
+            if (hasPaidBill)
+            {
+                dto.PaymentStatus = "Paid";
             }
             else if (!string.IsNullOrWhiteSpace(dto.HealthInsuranceNumber))
             {
@@ -466,7 +626,8 @@ public class QueueService : IQueueService
             }
             else
             {
-                dto.PaymentStatus = "Paid";
+                // Cách 1: Lượt khám mới chưa phân khoa/chưa phát hành hóa đơn từ Sàng lọc -> PendingTriage
+                dto.PaymentStatus = "PendingTriage";
             }
         }
     }

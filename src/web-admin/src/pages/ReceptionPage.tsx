@@ -40,6 +40,7 @@ import { patientService, Patient } from '../services/patientService';
 import { appointmentService } from '../services/appointmentService';
 import { signalrService } from '../services/signalrService';
 import { showSuccessAlert, showToast, showErrorAlert, showWarningAlert } from '../utils/sweetAlert';
+import { speakVietnamese } from '../utils/vietnameseSpeaker';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -115,6 +116,8 @@ export const ReceptionPage: React.FC = () => {
         weight: existing.weight || 65,
         initialSymptoms: existing.initialSymptoms || '',
         triageLevel: existing.triageLevel || (ticket.priority === 'Emergency' ? 'Emergency' : 'Normal'),
+        targetDepartmentId: ticket.departmentId,
+        visitType: ticket.visitType === 'FollowUp' ? 'followup' : 'new',
       });
       setTriageHeight(existing.height || 168);
       setTriageWeight(existing.weight || 65);
@@ -129,6 +132,8 @@ export const ReceptionPage: React.FC = () => {
         weight: 65,
         initialSymptoms: '',
         triageLevel: ticket.priority === 'Emergency' ? 'Emergency' : 'Normal',
+        targetDepartmentId: ticket.departmentId,
+        visitType: ticket.visitType === 'FollowUp' ? 'followup' : 'new',
       });
       setTriageHeight(168);
       setTriageWeight(65);
@@ -141,14 +146,27 @@ export const ReceptionPage: React.FC = () => {
     setTriageSubmitting(true);
     try {
       const bmiResult = calculateBmi(values.height, values.weight);
+      const targetDeptId = values.targetDepartmentId || selectedTicketForTriage.departmentId;
+      const vitalSummary = `HA ${values.bloodPressure} mmHg | Mạch ${values.pulse} bpm | SpO2 ${values.spO2}% | T ${values.temperature}°C | BMI ${bmiResult.bmi}`;
+
+      const routeResult = await queueService.routeTicketAfterTriage(selectedTicketForTriage.id, {
+        targetDepartmentId: targetDeptId,
+        triageLevel: values.triageLevel || 'Normal',
+        visitType: values.visitType === 'followup' ? 'FollowUp' : 'New',
+        initialSymptoms: values.initialSymptoms || '',
+        vitalSignsSummary: vitalSummary,
+        isEmergencyConfirmed: values.triageLevel === 'Emergency',
+        emergencyReason: values.initialSymptoms || 'Xác nhận phân luồng cấp cứu tại Bàn Sàng lọc',
+      });
+
       const triageRecord = {
-        ticketId: selectedTicketForTriage.id,
-        patientCode: selectedTicketForTriage.patientCode,
-        patientName: selectedTicketForTriage.patientName,
-        patientAge: selectedTicketForTriage.patientAge,
-        patientGender: selectedTicketForTriage.patientGender,
-        departmentName: selectedTicketForTriage.departmentName,
-        sequenceNumber: selectedTicketForTriage.sequenceNumber,
+        ticketId: routeResult.ticket.id,
+        patientCode: routeResult.ticket.patientCode,
+        patientName: routeResult.ticket.patientName,
+        patientAge: routeResult.ticket.patientAge,
+        patientGender: routeResult.ticket.patientGender,
+        departmentName: routeResult.ticket.departmentName,
+        sequenceNumber: routeResult.ticket.sequenceNumber,
         bloodPressure: values.bloodPressure,
         pulse: values.pulse,
         temperature: values.temperature,
@@ -166,29 +184,34 @@ export const ReceptionPage: React.FC = () => {
       const updatedMap = {
         ...triagedMap,
         [selectedTicketForTriage.id]: triageRecord,
+        [routeResult.ticket.id]: triageRecord,
       };
 
       setTriagedMap(updatedMap);
       localStorage.setItem('hospital_triage_vital_signs', JSON.stringify(updatedMap));
 
-      // Lưu thêm theo patientCode để Bác sĩ có thể tự động đọc khi chọn Bệnh nhân
       try {
-        localStorage.setItem(`vitals_${selectedTicketForTriage.patientCode}`, JSON.stringify(triageRecord));
+        localStorage.setItem(`vitals_${routeResult.ticket.patientCode}`, JSON.stringify(triageRecord));
       } catch (e) {
         console.warn('Cache vital signs by patient code error', e);
       }
 
       setIsTriageModalOpen(false);
+      await fetchData();
+
+      const billingSummaryLine = routeResult.paymentCode
+        ? `• Hóa đơn chốt phí (${routeResult.ticket.departmentName}): ${routeResult.paymentCode} — ${routeResult.billingAmount.toLocaleString('vi-VN')} VNĐ (${routeResult.paymentStatus === 'Paid' ? 'Đã thanh toán' : 'Chờ Quầy Thu ngân / VietQR SePay'})`
+        : `• Viện phí: ${routeResult.paymentStatus === 'InsuranceWaived' ? 'BHYT / Cấp cứu (Miễn thu trước)' : routeResult.message}`;
+
       showSuccessAlert(
-        'Đã Lưu Sinh Hiệu & Hoàn Tất Sàng Lọc!',
-        `Bệnh nhân: ${selectedTicketForTriage.patientName} (STT #${selectedTicketForTriage.sequenceNumber})\n` +
-        `• Huyết áp: ${values.bloodPressure} mmHg • Mạch: ${values.pulse} bpm\n` +
-        `• SpO2: ${values.spO2}% • Thân nhiệt: ${values.temperature}°C\n` +
-        `• BMI: ${bmiResult.bmi} (${bmiResult.text})\n\n` +
-        `Hồ sơ sinh hiệu đã được liên thông sang buồng khám Bác sĩ!`
+        'Đã Lưu Sinh Hiệu, Phân Khoa & Chốt Viện Phí!',
+        `Bệnh nhân: ${routeResult.ticket.patientName} (STT #${routeResult.ticket.sequenceNumber} — ${routeResult.ticket.departmentName})\n` +
+        `• ${vitalSummary} (${bmiResult.text})\n` +
+        `${billingSummaryLine}\n` +
+        `${routeResult.discrepancyWarning ? `\n⚠️ Lưu ý Thu ngân: ${routeResult.discrepancyWarning}` : ''}`
       );
-    } catch {
-      showErrorAlert('Lỗi lưu sàng lọc', 'Không thể lưu chỉ số sinh hiệu. Vui lòng thử lại.');
+    } catch (err: any) {
+      showErrorAlert('Lỗi lưu sàng lọc', err?.response?.data?.message || err?.message || 'Không thể lưu chỉ số sinh hiệu và phân khoa.');
     } finally {
       setTriageSubmitting(false);
     }
@@ -393,7 +416,7 @@ export const ReceptionPage: React.FC = () => {
       const patientObj = patients.find((p) => p.id === targetPatientId);
       const hasBhyt = Boolean(patientObj?.maTheBHYT);
       const isEmergency = priorityVal === 'Emergency';
-      const paymentStatus = values.paymentStatus || (hasBhyt ? 'InsuranceWaived' : 'Paid');
+      const paymentStatus = values.paymentStatus || (hasBhyt ? 'InsuranceWaived' : 'PendingTriage');
 
       const ticket = await queueService.issueQueueTicket({
         patientId: targetPatientId,
@@ -442,18 +465,12 @@ export const ReceptionPage: React.FC = () => {
     }
   };
 
-  // Speaker Call Audio Simulation
+  // Phát loa gọi số Tiếng Việt (Chuông báo + MP3 Tiếng Việt + dự phòng Web Speech API)
   const handleCallSpeaker = async (ticket: QueueTicketItem) => {
-    const speechMsg = `Xin mời bệnh nhân ${ticket.patientName}, số thứ tự ${ticket.sequenceNumber}, vào ${ticket.departmentName}, ${ticket.location}.`;
+    const locationPart = ticket.location ? `, ${ticket.location}` : '';
+    const speechMsg = `Xin mời bệnh nhân ${ticket.patientName}, số thứ tự ${ticket.sequenceNumber}, vào ${ticket.departmentName}${locationPart}.`;
 
-    // Web Speech API browser simulation
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(speechMsg);
-      utterance.lang = 'vi-VN';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    void speakVietnamese(speechMsg, { chime: true, rate: 0.95 });
 
     try {
       await queueService.updateQueueTicketStatus(ticket.id, 'Calling');
@@ -573,7 +590,9 @@ export const ReceptionPage: React.FC = () => {
       width: 170,
       render: (_: any, record: QueueTicketItem) => {
         const isFollowUp = record.visitType === 'FollowUp' || triagedMap[record.id]?.visitType === 'followup';
-        const isPaid = record.paymentStatus === 'Paid' || record.healthInsuranceNumber || record.paymentStatus === 'InsuranceWaived';
+        const isBhyt = Boolean(record.healthInsuranceNumber) || record.paymentStatus === 'InsuranceWaived';
+        const isPaid = record.paymentStatus === 'Paid';
+        const isPendingTriage = record.paymentStatus === 'PendingTriage';
         return (
           <Space direction="vertical" size={2}>
             {isFollowUp ? (
@@ -585,14 +604,24 @@ export const ReceptionPage: React.FC = () => {
                 🆕 Khám lần đầu
               </Tag>
             )}
-            {isPaid ? (
+            {isBhyt ? (
               <Tag color="blue" style={{ fontSize: 10, borderRadius: 4 }}>
-                {record.healthInsuranceNumber ? '✔ BHYT Bảo lãnh' : '✔ Đã nộp tiền khám'}
+                ✔ BHYT Bảo lãnh
               </Tag>
+            ) : isPaid ? (
+              <Tag color="green" style={{ fontSize: 10, borderRadius: 4 }}>
+                ✔ Đã nộp tiền khám
+              </Tag>
+            ) : isPendingTriage ? (
+              <Tooltip title="Bệnh nhân khám mới chưa qua Sàng lọc phân khoa. Cần đo sinh hiệu & chỉ định khoa để chốt hóa đơn!">
+                <Tag color="geekblue" style={{ fontSize: 10, borderRadius: 4 }}>
+                  ⏳ Chờ Sàng lọc phân khoa
+                </Tag>
+              </Tooltip>
             ) : (
-              <Tooltip title="Chưa thu phí khám dịch vụ. Vui lòng qua quầy Thu Ngân!">
+              <Tooltip title="Đã chốt hóa đơn theo khoa. Vui lòng qua quầy Thu Ngân (Tiền mặt / VietQR SePay)!">
                 <Tag color="volcano" style={{ fontSize: 10, borderRadius: 4 }}>
-                  ⚠️ Chưa nộp phí khám
+                  ⚠️ Chờ Thu ngân{record.unpaidAmount ? ` (${record.unpaidAmount.toLocaleString('vi-VN')} đ)` : ''}
                 </Tag>
               </Tooltip>
             )}
@@ -1052,7 +1081,7 @@ export const ReceptionPage: React.FC = () => {
                             }}
                             onClick={() => handleOpenTriageModal(r)}
                           >
-                            {triagedMap[r.id] ? 'Cập nhật sinh hiệu' : 'Đo sinh hiệu'}
+                            {triagedMap[r.id] ? 'Cập nhật & Phân khoa' : 'Sàng lọc & Phân khoa'}
                           </Button>
                         ),
                       },
@@ -1583,9 +1612,31 @@ export const ReceptionPage: React.FC = () => {
 
               <Divider style={{ margin: '14px 0 14px' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#0284c7' }}>
-                  III. HÌNH THỨC LƯỢT KHÁM & ĐIỀU KIỆN VIỆN PHÍ (MẮT XÍCH 2 & 3)
+                  III. PHÂN KHOA CHUYÊN MÔN & CHỐT VIỆN PHÍ (CÁCH 1)
                 </span>
               </Divider>
+
+              <Form.Item
+                label="Chuyên khoa chỉ định sau sàng lọc (Hệ thống tự động tính phí & xuất hóa đơn sang Thu ngân theo đúng khoa)"
+                name="targetDepartmentId"
+                rules={[{ required: true, message: 'Vui lòng chọn chuyên khoa sau sàng lọc' }]}
+              >
+                <Select size="large" placeholder="Chọn đúng chuyên khoa cho bệnh nhân...">
+                  {departments.map((d) => {
+                    const lower = d.departmentName.toLowerCase();
+                    const fee = lower.includes('tim mạch') ? 200000
+                      : (lower.includes('tiêu hóa') || lower.includes('ngoại')) ? 180000
+                      : lower.includes('tai mũi họng') ? 170000
+                      : (lower.includes('nhi') || lower.includes('răng') || lower.includes('da liễu')) ? 160000
+                      : 150000;
+                    return (
+                      <Option key={d.id} value={d.id}>
+                        {d.departmentName} ({d.location}) — Phí khám: {fee.toLocaleString('vi-VN')} đ
+                      </Option>
+                    );
+                  })}
+                </Select>
+              </Form.Item>
 
               <Row gutter={12}>
                 <Col span={12}>
@@ -1614,15 +1665,14 @@ export const ReceptionPage: React.FC = () => {
 
                 <Col span={12}>
                   <Form.Item
-                    label="Kiểm tra Viện phí (Cần thu phí khám trước?)"
+                    label="Ghi chú Trạng thái Viện phí Hiện tại"
                     name="paymentStatus"
-                    initialValue="Paid"
-                    rules={[{ required: true }]}
+                    initialValue="Unpaid"
                   >
-                    <Select>
-                      <Option value="Paid">✔ Đã nộp tiền khám (Thu ngân xác nhận)</Option>
-                      <Option value="InsuranceWaived">✔ BHYT Đúng Tuyến / Bảo Lãnh (Miễn thu trước)</Option>
-                      <Option value="Unpaid">⚠️ Khám Dịch Vụ - CHƯA NỘP TIỀN</Option>
+                    <Select disabled>
+                      <Option value="Unpaid">Chốt hóa đơn theo khoa &rarr; Thu ngân (Tiền mặt / SePay)</Option>
+                      <Option value="Paid">Đã thu phí khám</Option>
+                      <Option value="InsuranceWaived">BHYT / Cấp cứu</Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -1641,7 +1691,7 @@ export const ReceptionPage: React.FC = () => {
                     fontWeight: 600,
                   }}
                 >
-                  Lưu Sinh Hiệu & Xác Nhận Phân Luồng
+                  Lưu Sinh Hiệu, Phân Khoa & Chốt Hóa Đơn
                 </Button>
               </div>
             </Form>

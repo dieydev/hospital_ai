@@ -103,6 +103,10 @@ export const PatientBookingPage: React.FC = () => {
   const [hasBhyt, setHasBhyt] = useState(true);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
+  // Cách 1: Chỉ Gói khám định giá sẵn & Tái khám đúng chuyên khoa mới thanh toán trước Online;
+  // Khám lần đầu (theo chuyên khoa dự kiến / bác sĩ / triệu chứng) hoãn thu phí tới sau khi Nhân viên Sàng lọc phân khoa.
+  const isPreBilledVisit = bookingMode === 'byPackage' || bookingMode === 'byFollowUp';
+
   // VNPay & SePay VietQR Online Payment States (100% đồng bộ trạng thái thật từ Backend)
   const [qrConfig, setQrConfig] = useState<PaymentQrPublicConfig | null>(null);
   const [liveBillingStatus, setLiveBillingStatus] = useState<BillingStatusSummary | null>(null);
@@ -481,7 +485,11 @@ export const PatientBookingPage: React.FC = () => {
       if (!selectedDoctor) {
         reason += ' • [Bác sĩ: Bệnh viện tự động sắp xếp khi tiếp nhận]';
       }
-      reason += ` • [Thanh toán: ${paymentMethod === 'vnpay' ? 'VNPAY Online (Thẻ ATM/OTP)' : paymentMethod === 'vietqr' ? 'VietQR Online' : 'Kiosk tại viện'} | ${hasBhyt ? `BHYT giảm ${pricing.effectiveBhyt.toLocaleString('vi-VN')}đ` : 'Tự túc'} | Tạm tính: ${pricing.finalTotal.toLocaleString('vi-VN')}đ]`;
+      if (isPreBilledVisit) {
+        reason += ` • [Thanh toán: ${paymentMethod === 'vnpay' ? 'VNPAY Online (Thẻ ATM/OTP)' : paymentMethod === 'vietqr' ? 'VietQR Online' : 'Kiosk tại viện'} | ${hasBhyt ? `BHYT giảm ${pricing.effectiveBhyt.toLocaleString('vi-VN')}đ` : 'Tự túc'} | Tạm tính: ${pricing.finalTotal.toLocaleString('vi-VN')}đ]`;
+      } else {
+        reason += ' • [Cách 1: Chờ Sàng lọc (Triage) phân chuyên khoa chính thức trước khi Thu ngân chốt hóa đơn]';
+      }
 
       const newApt = await appointmentService.createAppointment({
         patientCode: patientCode,
@@ -495,10 +503,11 @@ export const PatientBookingPage: React.FC = () => {
         appointmentTime: appointmentTime,
         symptomsReason: reason,
         sourceApp: 'Web Booking Portal',
-        appointmentType: values.appointmentType || (bookingMode === 'byFollowUp' ? 'FollowUp' : 'New'),
+        appointmentType: selectedPackage ? 'Package' : (values.appointmentType || (bookingMode === 'byFollowUp' ? 'FollowUp' : 'New')),
+        packageName: selectedPackage?.name,
         previousRecordCode: values.previousRecordCode,
         followUpNotes: values.followUpNotes,
-        requestedFeeAmount: pricing.finalTotal,
+        requestedFeeAmount: isPreBilledVisit ? pricing.finalTotal : undefined,
       });
 
       setCreatedAppointment(newApt);
@@ -512,7 +521,7 @@ export const PatientBookingPage: React.FC = () => {
       setVnPayTransactionInfo(null);
       setCurrentStep(completionStepIndex); // Màn hình thành công
 
-      if (paymentMethod === 'vnpay' && !alreadyPaid) {
+      if (isPreBilledVisit && paymentMethod === 'vnpay' && !alreadyPaid) {
         showToast('Đang kết nối Cổng thanh toán VNPAY Sandbox chính thức...', 'info');
 
         try {
@@ -537,7 +546,9 @@ export const PatientBookingPage: React.FC = () => {
       } else {
         showSuccessAlert(
           'Đặt Lịch Khám Thành Công!',
-          `Phiếu khám điện tử và Mã QR của bạn đã được khởi tạo.${newApt.paymentCode ? ` Mã thanh toán hóa đơn: ${newApt.paymentCode}.` : ''}`
+          isPreBilledVisit
+            ? `Phiếu khám điện tử và Mã QR của bạn đã được khởi tạo.${newApt.paymentCode ? ` Mã thanh toán hóa đơn: ${newApt.paymentCode}.` : ''}`
+            : 'Phiếu hẹn QR check-in đã được khởi tạo. Với lượt khám mới, quý khách sẽ được Nhân viên Sàng lọc phân đúng chuyên khoa tại viện trước khi Quầy Thu ngân xuất hóa đơn.'
         );
       }
     } catch (err: any) {
@@ -1446,12 +1457,39 @@ export const PatientBookingPage: React.FC = () => {
               {/* CHẾ ĐỘ 1: THEO CHUYÊN KHOA */}
               {bookingMode === 'byDept' && (
                 <div>
+                  <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16, borderRadius: 12, borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }}
+                    message="Quy trình Khám mới: Sàng lọc phân khoa trước — Chốt tiền thanh toán sau (Cách 1)"
+                    description={
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                        <span>
+                          Khoa bạn chọn bên dưới chỉ mang tính <strong>dự kiến ban đầu</strong>. Khi đến viện Check-in QR, Nhân viên Sàng lọc sẽ đánh giá triệu chứng để phân đúng chuyên khoa và Quầy Thu ngân mới xuất hóa đơn chính xác (tiền mặt / VietQR SePay).
+                        </span>
+                        <Button
+                          type="primary"
+                          size="small"
+                          style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 8 }}
+                          onClick={() => {
+                            if (!ensureAuthenticated('đặt lịch khám chờ sàng lọc')) return;
+                            setSelectedDept(DEPARTMENTS_CATALOG[0]);
+                            setSelectedPackage(null);
+                            setSelectedDoctor(null);
+                            setCurrentStep(2);
+                          }}
+                        >
+                          Chưa rõ khoa? Đặt lịch chờ Sàng lọc ➔
+                        </Button>
+                      </div>
+                    }
+                  />
                   <div style={{ marginBottom: 18 }}>
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
-                      Chọn chuyên khoa khám bệnh
+                      Chọn chuyên khoa dự kiến (hoặc bỏ qua để Sàng lọc tại viện)
                     </div>
                     <div style={{ fontSize: 13, color: '#64748b' }}>
-                      Bác sĩ và khung giờ sẽ được hiển thị tương ứng theo chuyên khoa bạn chọn
+                      Mức phí niêm yết dưới đây chỉ là tham khảo; giá chính thức sẽ chốt theo chuyên khoa sau khi qua Bàn Sàng lọc (Triage)
                     </div>
                   </div>
 
@@ -2956,6 +2994,15 @@ export const PatientBookingPage: React.FC = () => {
                       <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a', marginBottom: 8 }}>
                         Hình thức thanh toán viện phí:
                       </div>
+                      {!isPreBilledVisit ? (
+                        <Alert
+                          type="info"
+                          showIcon
+                          style={{ borderRadius: 12, borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }}
+                          message="Chốt phí sau Sàng lọc & Thanh toán tại Quầy Thu ngân (Tiền mặt / VietQR SePay)"
+                          description="Đối với lượt khám mới lần đầu, hệ thống KHÔNG thu tiền trực tuyến theo khoa tự đoán. Sau khi bạn quét QR check-in tại viện và qua Nhân viên Sàng lọc (Triage) phân đúng chuyên khoa, hóa đơn chính xác sẽ được gửi sang Quầy Thu ngân."
+                        />
+                      ) : (
                       <Row gutter={[10, 10]}>
                         <Col xs={24} sm={8}>
                           <div
@@ -3050,6 +3097,7 @@ export const PatientBookingPage: React.FC = () => {
                           </div>
                         </Col>
                       </Row>
+                      )}
                     </div>
 
                     <Form.Item name="symptoms" label="Triệu chứng hoặc lý do khám">
@@ -3148,10 +3196,16 @@ export const PatientBookingPage: React.FC = () => {
                           <div className="summary-item-row">
                             <span className="summary-item-label">Phương thức:</span>
                             <Tag
-                              color={paymentMethod === 'vnpay' ? 'blue' : paymentMethod === 'vietqr' ? 'cyan' : 'default'}
+                              color={!isPreBilledVisit ? 'cyan' : paymentMethod === 'vnpay' ? 'blue' : paymentMethod === 'vietqr' ? 'cyan' : 'default'}
                               style={{ margin: 0, fontWeight: 700 }}
                             >
-                              {paymentMethod === 'vnpay' ? 'Cổng VNPAY (ATM/OTP)' : paymentMethod === 'vietqr' ? 'VietQR Napas 247' : 'Kiosk tại viện'}
+                              {!isPreBilledVisit
+                                ? 'Chốt sau Sàng lọc (Thu ngân / SePay)'
+                                : paymentMethod === 'vnpay'
+                                  ? 'Cổng VNPAY (ATM/OTP)'
+                                  : paymentMethod === 'vietqr'
+                                    ? 'VietQR SePay'
+                                    : 'Thu ngân tại viện'}
                             </Tag>
                           </div>
                         </div>
@@ -3159,19 +3213,31 @@ export const PatientBookingPage: React.FC = () => {
                         <div className="summary-divider-dashed" />
 
                         <div className="summary-total-box">
-                          <div className="summary-total-label">TỔNG TIỀN TẠM TÍNH:</div>
+                          <div className="summary-total-label">
+                            {isPreBilledVisit ? 'TỔNG TIỀN THANH TOÁN:' : 'PHÍ KHÁM THAM KHẢO (CHƯA THU):'}
+                          </div>
                           <div className="summary-total-amount">
-                            {pricing.finalTotal.toLocaleString('vi-VN')} <span style={{ fontSize: 14 }}>VNĐ</span>
+                            {isPreBilledVisit ? (
+                              <>
+                                {pricing.finalTotal.toLocaleString('vi-VN')} <span style={{ fontSize: 14 }}>VNĐ</span>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: 15, color: '#0369a1' }}>
+                                ~{pricing.finalTotal.toLocaleString('vi-VN')} đ (Chốt sau Triage)
+                              </span>
+                            )}
                           </div>
                         </div>
 
                         <div className="summary-guarantee-note">
-                          {paymentMethod === 'vnpay' ? (
+                          {!isPreBilledVisit ? (
+                            <span>Đặt lịch cấp ngay <strong>Mã QR Check-in</strong>. Đến viện quét QR &rarr; <strong>Sàng lọc phân đúng khoa</strong> &rarr; <strong>Quầy Thu ngân</strong> (Tiền mặt / VietQR SePay).</span>
+                          ) : paymentMethod === 'vnpay' ? (
                             <span>Thanh toán bảo mật qua <strong>Cổng VNPAY</strong> (Hỗ trợ 40+ Ngân hàng, thẻ ATM, OTP). Được cấp <strong>Thẻ Khám Ưu Tiên</strong> vào thẳng buồng khám!</span>
                           ) : paymentMethod === 'vietqr' ? (
-                            <span>Thanh toán trực tuyến qua VietQR được cấp <strong>Thẻ Khám Ưu Tiên</strong>. Đến viện vào thẳng buồng khám theo giờ hẹn!</span>
+                            <span>Thanh toán trực tuyến qua <strong>VietQR SePay</strong> được tự động xác nhận qua Webhook. Đến viện vào thẳng buồng khám!</span>
                           ) : (
-                            <span>Sau khi đặt thành công, hệ thống cấp <strong>Mã QR Tiếp Nhận</strong>. Quý khách quét QR tại Kiosk sảnh A để thanh toán và nhận số phòng.</span>
+                            <span>Sau khi đặt thành công, hệ thống cấp <strong>Mã QR Tiếp Nhận</strong> và tạo hóa đơn chờ tại Quầy Thu ngân.</span>
                           )}
                         </div>
 
@@ -3230,12 +3296,16 @@ export const PatientBookingPage: React.FC = () => {
                 Đặt khám thành công
               </Title>
               <Paragraph style={{ color: '#64748b', fontSize: 14, maxWidth: 620, margin: '0 auto 24px' }}>
-                Lịch hẹn đã được xác nhận. Vui lòng <strong>lưu mã QR</strong> hoặc thanh toán trực tuyến qua <strong>VNPAY / VietQR</strong> bên dưới để nhận Thẻ Khám Ưu Tiên.
+                {isPreBilledVisit && createdAppointment.billingId ? (
+                  <>Lịch hẹn đã được xác nhận. Vui lòng <strong>lưu mã QR</strong> hoặc thanh toán trực tuyến qua <strong>VNPAY / VietQR SePay</strong> bên dưới.</>
+                ) : (
+                  <>Phiếu hẹn đã được tạo. Khi tới viện, quý khách quét mã QR bên dưới để qua <strong>Bàn Sàng Lọc phân đúng khoa</strong> rồi mới chốt hóa đơn tại Quầy Thu ngân.</>
+                )}
               </Paragraph>
 
               <Row gutter={[24, 24]} style={{ maxWidth: 1000, margin: '0 auto 24px', textAlign: 'left' }}>
                 {/* Thẻ 1: Phiếu Khám Tiếp Nhận Điện Tử */}
-                <Col xs={24} md={paymentMethod === 'kiosk' ? 24 : 12}>
+                <Col xs={24} md={(isPreBilledVisit && paymentMethod === 'kiosk') ? 24 : 12}>
                   <div id="qr-ticket-card" className="qr-ticket-wrapper" style={{ height: '100%' }}>
                     <div style={{ marginBottom: 10, textAlign: 'center' }}>
                       <img
@@ -3368,8 +3438,56 @@ export const PatientBookingPage: React.FC = () => {
                   </div>
                 </Col>
 
-                {/* Thẻ 2A: Thanh Toán Viện Phí Qua Cổng VNPAY (Chỉ hiển thị nếu chọn VNPAY) */}
-                {paymentMethod === 'vnpay' && (
+                {/* Thẻ 2C: Quy trình Cách 1 cho Khám Mới (Chốt khoa & hóa đơn sau khi qua Nhân viên Sàng lọc) */}
+                {(!isPreBilledVisit || !createdAppointment.billingId || createdAppointment.paymentStatus === 'PendingTriage') && (
+                  <Col xs={24} md={12}>
+                    <div className="vietqr-wrapper-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontWeight: 800, fontSize: 14.5, color: '#0369a1' }}>
+                          THANH TOÁN SAU SÀNG LỌC (CÁCH 1)
+                        </span>
+                        <Tag color="geekblue" style={{ margin: 0, fontWeight: 800, borderRadius: 12 }}>
+                          CHỜ SÀNG LỌC PHÂN KHOA
+                        </Tag>
+                      </div>
+
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="Chưa thu tiền trước khi gặp Nhân viên Sàng lọc"
+                        description="Vì đơn giá công khám phụ thuộc chuyên khoa thực tế được Nhân viên Sàng lọc (Triage) chỉ định, hóa đơn sẽ chỉ được phát hành sau khi bạn đo sinh hiệu & phân khoa tại viện."
+                        style={{ marginBottom: 14, borderRadius: 10 }}
+                      />
+
+                      <div
+                        style={{
+                          backgroundColor: '#f8fafc',
+                          padding: '14px 16px',
+                          borderRadius: 12,
+                          border: '1px solid #bae6fd',
+                          fontSize: 13,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <div>
+                          <strong style={{ color: '#0284c7' }}>Bước 1 • Check-in tại Kiosk Sảnh:</strong> Quét mã QR bên trái để nhận số tiếp đón mà không bị đòi đóng tiền trước.
+                        </div>
+                        <div>
+                          <strong style={{ color: '#0284c7' }}>Bước 2 • Bàn Sàng Lọc (Triage):</strong> Nhân viên y tế đo sinh hiệu, đánh giá triệu chứng và chốt đúng Chuyên khoa khám.
+                        </div>
+                        <div>
+                          <strong style={{ color: '#0284c7' }}>Bước 3 • Quầy Thu ngân:</strong> Hóa đơn đúng giá chuyên khoa (kèm mã VietQR SePay <code>HAI...</code>) được mở để bạn đóng bằng Tiền mặt hoặc quét VietQR SePay tự động.
+                        </div>
+                      </div>
+                    </div>
+                  </Col>
+                )}
+
+                {/* Thẻ 2A: Thanh Toán Viện Phí Qua Cổng VNPAY (Chỉ hiển thị cho Gói khám / Tái khám đã định giá) */}
+                {isPreBilledVisit && createdAppointment.billingId && paymentMethod === 'vnpay' && (
                   <Col xs={24} md={12}>
                     <div
                       className={`vietqr-wrapper-card ${isVnPayPaid ? 'paid' : ''}`}
@@ -3527,8 +3645,8 @@ export const PatientBookingPage: React.FC = () => {
                   </Col>
                 )}
 
-                {/* Thẻ 2B: Thanh Toán Viện Phí Qua SePay VietQR (Lấy từ Backend, Auto-Poll 3s) */}
-                {paymentMethod === 'vietqr' && (
+                {/* Thẻ 2B: Thanh Toán Viện Phí Qua SePay VietQR (Chỉ hiển thị cho Gói khám / Tái khám đã định giá, Auto-Poll 3s) */}
+                {isPreBilledVisit && createdAppointment.billingId && paymentMethod === 'vietqr' && (
                   <Col xs={24} md={12}>
                     <div className={`vietqr-wrapper-card ${isVietQrPaid ? 'paid' : ''}`}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

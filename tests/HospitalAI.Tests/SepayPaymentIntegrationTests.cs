@@ -535,7 +535,7 @@ public class SepayPaymentIntegrationTests
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = BuildPrincipal("Patient", "0909111222", userId.ToString()) } }
         };
 
-        // 1. Bệnh nhân đặt lịch Online -> tự tạo duy nhất 1 hóa đơn Registration (HAI...)
+        // 1. Bệnh nhân đặt Gói khám / Tái khám Online (đã định giá trước) -> tự tạo duy nhất 1 hóa đơn Registration (HAI...)
         var aptRes = Assert.IsType<OkObjectResult>(await aptController.CreateAppointment(new OnlineAppointmentItem
         {
             PatientCode = patient.PatientCode,
@@ -546,6 +546,8 @@ public class SepayPaymentIntegrationTests
             DoctorName = staff.FullName,
             AppointmentDate = vnNow.Date.ToString("yyyy-MM-dd"),
             AppointmentTime = "09:00",
+            AppointmentType = "Package",
+            PackageName = "Gói Khám Tổng Quát",
             RequestedFeeAmount = 150000m
         }));
         var aptDto = Assert.IsType<OnlineAppointmentItem>(aptRes.Value);
@@ -658,5 +660,177 @@ public class SepayPaymentIntegrationTests
         // Chỉ đúng 1 bản ghi SePay log (hoặc Processed hoặc Late_AfterPaid), không trùng lặp
         var logs = await verifyDb.SepayWebhookTransactions.Where(l => l.SepayTransactionId == 8001).ToListAsync();
         Assert.Single(logs);
+    }
+
+    [Fact]
+    public async Task Way1_NewVisit_Booking_Kiosk_TriageRoute_CashierSepay_EndToEnd()
+    {
+        var dbName = $"Way1TriageFirst_{Guid.NewGuid()}";
+        using var db = CreateInMemoryDb(dbName);
+        var config = BuildSepayConfig();
+        var vnNow = AppointmentsController.GetVietnamNow();
+
+        var noiDept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Nội Tổng Hợp", Location = "P102" };
+        var cardioDept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Tim Mạch Can Thiệp", Location = "P301" };
+        var gastroDept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Tiêu Hóa & Gan Mật", Location = "P201" };
+        var staff = new StaffProfile { Id = Guid.NewGuid(), FullName = "BS Sàng Lọc", DepartmentId = noiDept.Id };
+        var schedule = new DoctorSchedule
+        {
+            Id = Guid.NewGuid(),
+            StaffId = staff.Id,
+            DepartmentId = noiDept.Id,
+            WorkDate = vnNow.Date,
+            TimeSlot = "10:00",
+            MaxPatients = 10
+        };
+        var userId = Guid.NewGuid();
+        var patient = new Patient
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PatientCode = "BN-WAY1-01",
+            FullName = "Nguyễn Văn Khám Mới",
+            IdentityCardNumber = "079097001122",
+            EmergencyContactPhone = "0908333444"
+        };
+
+        db.Departments.AddRange(noiDept, cardioDept, gastroDept);
+        db.StaffProfiles.Add(staff);
+        db.DoctorSchedules.Add(schedule);
+        db.Patients.Add(patient);
+        await db.SaveChangesAsync();
+
+        // 1. Đặt khám mới (New) Online -> Hoãn tạo hóa đơn tới sau Sàng lọc phân khoa
+        var aptController = new AppointmentsController(CreateMockHub(), db, config)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = BuildPrincipal("Patient", "0908333444", userId.ToString()) } }
+        };
+        var aptRes = Assert.IsType<OkObjectResult>(await aptController.CreateAppointment(new OnlineAppointmentItem
+        {
+            PatientCode = patient.PatientCode,
+            PatientName = patient.FullName,
+            PatientPhone = "0908333444",
+            IdentityCardNumber = patient.IdentityCardNumber,
+            DepartmentName = noiDept.DepartmentName,
+            AppointmentDate = vnNow.Date.ToString("yyyy-MM-dd"),
+            AppointmentTime = "10:00",
+            AppointmentType = "New",
+            SymptomsReason = "Đau tức thượng vị kèm hồi hộp"
+        }));
+        var aptDto = Assert.IsType<OnlineAppointmentItem>(aptRes.Value);
+        Assert.Null(aptDto.BillingId);
+        Assert.Equal("PendingTriage", aptDto.PaymentStatus);
+        Assert.Equal(0m, aptDto.BillingAmount);
+        Assert.Equal(0, await db.Billings.CountAsync());
+
+        // 2. Check-in QR ở Kiosk -> Cấp STT chờ Sàng lọc, không tự sinh hóa đơn trước
+        var queueEngine = new HospitalAI.Infrastructure.Services.QueueService(db);
+        var kioskController = new KioskController(db, queueEngine, CreateMockHub(), config)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = BuildPrincipal("Receptionist", "tieptan01") } }
+        };
+        var checkInRes = Assert.IsType<OkObjectResult>(await kioskController.CheckIn(new KioskCheckInRequestDto { QrCodeOrCode = aptDto.Id }));
+        var checkInPayload = Assert.IsType<KioskCheckInResponseDto>(checkInRes.Value);
+        Assert.Equal("SUCCESS", checkInPayload.Outcome);
+        Assert.NotNull(checkInPayload.Ticket);
+        Assert.Null(checkInPayload.UnpaidBilling);
+        Assert.Equal("PendingTriage", checkInPayload.Ticket!.PaymentStatus);
+        Assert.Equal(0, await db.Billings.CountAsync());
+
+        // 3. Nhân viên Sàng lọc (Triage) phân sang Khoa Tim Mạch (200.000đ) -> Sinh đúng 1 hóa đơn Unpaid 200.000đ
+        var queueCtrl = new QueueController(queueEngine, CreateMockHub(), db, config)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = BuildPrincipal("Triage", "triage01") } }
+        };
+        var route1Res = Assert.IsType<OkObjectResult>(await queueCtrl.TriageRoute(checkInPayload.Ticket.Id, new TriageRouteTicketDto
+        {
+            TargetDepartmentId = cardioDept.Id,
+            TriageLevel = "Normal",
+            InitialSymptoms = "Đau ngực nghi tim mạch"
+        }));
+        var route1Dto = Assert.IsType<TriageRouteResultDto>(route1Res.Value);
+        Assert.Equal("Created", route1Dto.BillingAction);
+        Assert.Equal(200000m, route1Dto.BillingAmount);
+        Assert.Equal("Unpaid", route1Dto.PaymentStatus);
+        Assert.Matches("^HAI[A-F0-9]{8}$", route1Dto.PaymentCode!);
+        Assert.Equal(1, await db.Billings.CountAsync());
+
+        // 4. Sàng lọc điều chỉnh sang Khoa Tiêu Hóa (180.000đ) khi chưa thanh toán -> Cập nhật cùng hóa đơn đó, giữ nguyên mã thanh toán
+        var route2Res = Assert.IsType<OkObjectResult>(await queueCtrl.TriageRoute(checkInPayload.Ticket.Id, new TriageRouteTicketDto
+        {
+            TargetDepartmentId = gastroDept.Id,
+            TriageLevel = "Priority",
+            InitialSymptoms = "Trào ngược dạ dày thực quản"
+        }));
+        var route2Dto = Assert.IsType<TriageRouteResultDto>(route2Res.Value);
+        Assert.Equal("UpdatedUnpaid", route2Dto.BillingAction);
+        Assert.Equal(180000m, route2Dto.BillingAmount);
+        Assert.Equal(route1Dto.PaymentCode, route2Dto.PaymentCode);
+        Assert.Equal(route1Dto.BillingId, route2Dto.BillingId);
+        Assert.Equal(1, await db.Billings.CountAsync());
+
+        // 5. Gửi SePay webhook 200.000đ (lệch so với giá khoa đã chốt 180.000đ) -> Ghi nhận thừa tiền, giữ Unpaid
+        var fixedNow = new DateTimeOffset(2026, 11, 27, 13, 0, 0, TimeSpan.Zero);
+        var payCtrl = new PaymentController(new VNPayService(config), db, config, utcNowProvider: () => fixedNow);
+        AttachSignedWebhookRequest(payCtrl, BuildSepayJson(9101, 200000m, route2Dto.PaymentCode!), fixedNow.ToUnixTimeSeconds());
+        var overRes = Assert.IsType<OkObjectResult>(await payCtrl.ReceiveSepayWebhook());
+        Assert.Contains("Discrepancy_Overpaid", JsonSerializer.Serialize(overRes.Value));
+        Assert.Equal("Unpaid", (await db.Billings.FindAsync(route2Dto.BillingId))!.Status);
+
+        // 6. Gửi đúng 180.000đ -> Chốt Paid tự động
+        AttachSignedWebhookRequest(payCtrl, BuildSepayJson(9102, 180000m, route2Dto.PaymentCode!), fixedNow.ToUnixTimeSeconds());
+        var exactRes = Assert.IsType<OkObjectResult>(await payCtrl.ReceiveSepayWebhook());
+        Assert.Contains("Processed", JsonSerializer.Serialize(exactRes.Value));
+        Assert.Equal("Paid", (await db.Billings.FindAsync(route2Dto.BillingId))!.Status);
+    }
+
+    [Fact]
+    public async Task Way1_KioskWalkIn_WaitForTriage_ShouldDeferBillingUntilTriageRoutes()
+    {
+        var dbName = $"Way1WalkInTriage_{Guid.NewGuid()}";
+        using var db = CreateInMemoryDb(dbName);
+        var config = BuildSepayConfig();
+
+        var receptionDept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Nội Tổng Hợp", Location = "P102" };
+        var entDept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Tai Mũi Họng", Location = "P208" };
+        db.Departments.AddRange(receptionDept, entDept);
+        await db.SaveChangesAsync();
+
+        var queueEngine = new HospitalAI.Infrastructure.Services.QueueService(db);
+        var kioskCtrl = new KioskController(db, queueEngine, CreateMockHub(), config)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = BuildPrincipal("Receptionist", "tieptan01") } }
+        };
+
+        var walkInRes = Assert.IsType<OkObjectResult>(await kioskCtrl.IssueWalkIn(new KioskWalkInRequestDto
+        {
+            FullName = "Trần Thị Đi Bộ",
+            IdentityCardNumber = "079098004455",
+            Gender = "Nữ",
+            DepartmentId = receptionDept.Id,
+            WaitForTriage = true
+        }));
+        var walkInPayload = Assert.IsType<KioskCheckInResponseDto>(walkInRes.Value);
+        Assert.Equal("SUCCESS", walkInPayload.Outcome);
+        Assert.Null(walkInPayload.UnpaidBilling);
+        Assert.Equal("PendingTriage", walkInPayload.Ticket!.PaymentStatus);
+        Assert.Equal(0, await db.Billings.CountAsync());
+
+        // Triage phân vào Tai Mũi Họng -> sinh hóa đơn 170.000đ
+        var queueCtrl = new QueueController(queueEngine, CreateMockHub(), db, config)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = BuildPrincipal("Triage", "triage01") } }
+        };
+        var routeRes = Assert.IsType<OkObjectResult>(await queueCtrl.TriageRoute(walkInPayload.Ticket.Id, new TriageRouteTicketDto
+        {
+            TargetDepartmentId = entDept.Id,
+            TriageLevel = "Normal",
+            InitialSymptoms = "Đau họng, nghẹt mũi"
+        }));
+        var routeDto = Assert.IsType<TriageRouteResultDto>(routeRes.Value);
+        Assert.Equal("Created", routeDto.BillingAction);
+        Assert.Equal(170000m, routeDto.BillingAmount);
+        Assert.Equal("Unpaid", routeDto.PaymentStatus);
+        Assert.Equal(1, await db.Billings.CountAsync());
     }
 }

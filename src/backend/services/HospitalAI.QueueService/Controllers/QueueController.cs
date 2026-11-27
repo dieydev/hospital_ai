@@ -20,15 +20,18 @@ public class QueueController : ControllerBase
     private readonly IQueueService _queueService;
     private readonly IHubContext<QueueHub> _hubContext;
     private readonly HospitalDbContext? _dbContext;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration? _configuration;
 
     public QueueController(
         IQueueService queueService,
         IHubContext<QueueHub> hubContext,
-        HospitalDbContext? dbContext = null)
+        HospitalDbContext? dbContext = null,
+        Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
     {
         _queueService = queueService;
         _hubContext = hubContext;
         _dbContext = dbContext;
+        _configuration = configuration;
     }
 
     private bool IsStaff()
@@ -141,12 +144,14 @@ public class QueueController : ControllerBase
                 if (patientEntity != null && string.IsNullOrWhiteSpace(patientEntity.HealthInsuranceNumber))
                 {
                     var deptEntity = await _dbContext.Departments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == dto.DepartmentId);
+                    var deptFee = DepartmentFeeCatalog.ResolveDepartmentFee(deptEntity?.DepartmentName);
                     await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
                         _dbContext,
                         dto.PatientId,
                         dto.AppointmentId,
-                        150000m,
-                        $"Phí khám chuyên khoa - {deptEntity?.DepartmentName ?? "Khám bệnh"}");
+                        deptFee,
+                        $"Phí khám chuyên khoa - {deptEntity?.DepartmentName ?? "Khám bệnh"}",
+                        PaymentQrHelper.ResolveOptions(_configuration));
                 }
             }
 
@@ -229,5 +234,113 @@ public class QueueController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Nhân viên Sàng lọc (Triage) phân chuyên khoa chính thức & tự động chốt hóa đơn công khám theo đúng chuyên khoa (Cách 1).
+    /// </summary>
+    [HttpPut("{ticketId:guid}/triage-route")]
+    [Authorize(Roles = "Triage,Receptionist,Doctor,Nurse,Admin")]
+    public async Task<IActionResult> TriageRoute(Guid ticketId, [FromBody] TriageRouteTicketDto dto)
+    {
+        if (ticketId == Guid.Empty)
+            return BadRequest(new { message = "Mã phiếu hàng chờ không hợp lệ." });
+
+        try
+        {
+            var canConfirmEmergency = User.IsInRole("Triage") || User.IsInRole("Doctor");
+            var confirmedByStaff = User.FindFirst("name")?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value
+                ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? "Nhân viên Sàng lọc";
+
+            var updatedTicket = await _queueService.RouteTicketAfterTriageAsync(
+                ticketId,
+                dto,
+                confirmedByStaff,
+                canConfirmEmergency);
+
+            Guid? billingId = updatedTicket.UnpaidBillingId;
+            string? paymentCode = null;
+            decimal billingAmount = updatedTicket.UnpaidAmount;
+            string paymentStatus = updatedTicket.PaymentStatus;
+            string billingAction = "WaivedBhytOrEmergency";
+            string? warning = null;
+
+            if (_dbContext != null)
+            {
+                var patientEntity = await _dbContext.Patients
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == updatedTicket.PatientId);
+
+                var hasBhyt = patientEntity != null && !string.IsNullOrWhiteSpace(patientEntity.HealthInsuranceNumber);
+                var isEmergency = string.Equals(updatedTicket.Priority, "Emergency", StringComparison.OrdinalIgnoreCase);
+                var deptFee = DepartmentFeeCatalog.ResolveDepartmentFee(updatedTicket.DepartmentName);
+                var options = PaymentQrHelper.ResolveOptions(_configuration);
+
+                var assignment = await BillingSettlementService.TriageAssignOrUpdateRegistrationBillingAsync(
+                    _dbContext,
+                    updatedTicket.PatientId,
+                    updatedTicket.AppointmentId,
+                    deptFee,
+                    updatedTicket.DepartmentName,
+                    hasBhyt || isEmergency,
+                    options);
+
+                billingAction = assignment.Action;
+                warning = assignment.DiscrepancyWarning;
+
+                if (assignment.Billing != null)
+                {
+                    billingId = assignment.Billing.Id;
+                    paymentCode = PaymentQrHelper.ResolveFallbackDisplayCode(assignment.Billing, options.PaymentPrefix);
+                    billingAmount = assignment.Billing.TotalAmount;
+                    paymentStatus = assignment.Billing.Status == "Cancelled"
+                        ? (hasBhyt ? "InsuranceWaived" : "PendingTriage")
+                        : assignment.Billing.Status;
+                    updatedTicket.PaymentStatus = paymentStatus;
+                    updatedTicket.UnpaidBillingId = assignment.Billing.Status == "Unpaid" ? assignment.Billing.Id : null;
+                    updatedTicket.UnpaidAmount = assignment.Billing.Status == "Unpaid" ? assignment.Billing.TotalAmount : 0m;
+                }
+            }
+
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("ReceiveQueueUpdate", updatedTicket);
+                await _hubContext.Clients.All.SendAsync("ReceiveGlobalQueueUpdate", updatedTicket);
+            }
+            catch (Exception hubEx)
+            {
+                Console.WriteLine($"[SignalR Warning] TriageRoute broadcast failed: {hubEx.Message}");
+            }
+
+            var message = billingAction switch
+            {
+                "Created" => $"Đã phân chuyên khoa {updatedTicket.DepartmentName} (STT #{updatedTicket.SequenceNumber}) và chốt hóa đơn {paymentCode} ({billingAmount:N0} VNĐ) sang Quầy Thu ngân.",
+                "UpdatedUnpaid" => $"Đã cập nhật chuyên khoa {updatedTicket.DepartmentName} (STT #{updatedTicket.SequenceNumber}) và điều chỉnh hóa đơn {paymentCode} thành {billingAmount:N0} VNĐ.",
+                "KeptExistingPaid" => warning ?? $"Đã phân chuyên khoa {updatedTicket.DepartmentName} (STT #{updatedTicket.SequenceNumber}). Hóa đơn đã thanh toán trước đó được giữ nguyên.",
+                _ => $"Đã phân chuyên khoa {updatedTicket.DepartmentName} (STT #{updatedTicket.SequenceNumber}). Miễn thu tạm ứng trước (BHYT/Cấp cứu)."
+            };
+
+            return Ok(new TriageRouteResultDto
+            {
+                Ticket = updatedTicket,
+                BillingId = billingId,
+                PaymentCode = paymentCode,
+                BillingAmount = billingAmount,
+                PaymentStatus = paymentStatus,
+                BillingAction = billingAction,
+                DiscrepancyWarning = warning,
+                Message = message
+            });
+        }
+        catch (KeyNotFoundException notFoundEx)
+        {
+            return NotFound(new { message = notFoundEx.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

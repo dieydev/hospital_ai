@@ -161,6 +161,11 @@ public static class BillingSettlementService
         return new HmacVerificationResult(true, 200, "OK", timestampSeconds);
     }
 
+    public sealed record TriageBillingAssignmentResult(
+        Billing? Billing,
+        string Action,
+        string? DiscrepancyWarning = null);
+
     public static async Task<Billing> GetOrCreateRegistrationBillingAsync(
         HospitalDbContext dbContext,
         Guid patientId,
@@ -175,119 +180,271 @@ public static class BillingSettlementService
         await gate.WaitAsync(ct);
         try
         {
-            if (appointmentId.HasValue && appointmentId.Value != Guid.Empty)
+            var existing = await FindActiveRegistrationBillingAsync(dbContext, patientId, appointmentId, resolvedOptions, ct);
+            if (existing != null)
             {
-                var existingForApt = await dbContext.Billings
-                    .Include(b => b.Items)
-                    .Where(b => b.AppointmentId == appointmentId.Value
-                        && b.BillingType == "Registration"
-                        && b.Status != "Cancelled")
-                    .OrderByDescending(b => b.CreatedAt)
-                    .FirstOrDefaultAsync(ct);
-
-                if (existingForApt != null)
-                {
-                    if (string.IsNullOrWhiteSpace(existingForApt.PaymentCode))
-                    {
-                        await PaymentQrHelper.EnsureUniquePaymentCodeAsync(dbContext, existingForApt, resolvedOptions.PaymentPrefix, ct);
-                        await dbContext.SaveChangesAsync(ct);
-                    }
-                    return existingForApt;
-                }
+                return existing;
             }
 
-            var cutoff = DateTime.UtcNow.Date.AddDays(-1);
-            var existingRecent = await dbContext.Billings
-                .Include(b => b.Items)
-                .Where(b => b.PatientId == patientId
-                    && b.BillingType == "Registration"
-                    && b.Status != "Cancelled"
-                    && b.CreatedAt >= cutoff)
-                .OrderByDescending(b => b.CreatedAt)
-                .FirstOrDefaultAsync(ct);
-
-            if (existingRecent != null)
-            {
-                var updated = false;
-                if (appointmentId.HasValue && appointmentId.Value != Guid.Empty && !existingRecent.AppointmentId.HasValue)
-                {
-                    existingRecent.AppointmentId = appointmentId.Value;
-                    updated = true;
-                }
-                if (string.IsNullOrWhiteSpace(existingRecent.PaymentCode))
-                {
-                    await PaymentQrHelper.EnsureUniquePaymentCodeAsync(dbContext, existingRecent, resolvedOptions.PaymentPrefix, ct);
-                    updated = true;
-                }
-                if (updated)
-                {
-                    await dbContext.SaveChangesAsync(ct);
-                }
-                return existingRecent;
-            }
-
-            var cleanAmount = Math.Max(0m, decimal.Round(amount, 2, MidpointRounding.AwayFromZero));
-            var initialStatus = cleanAmount == 0m ? "Paid" : "Unpaid";
-
-            for (var attempt = 0; attempt < 5; attempt++)
-            {
-                var bill = new Billing
-                {
-                    Id = Guid.NewGuid(),
-                    PatientId = patientId,
-                    AppointmentId = (appointmentId.HasValue && appointmentId.Value != Guid.Empty) ? appointmentId.Value : null,
-                    BillingType = "Registration",
-                    TotalAmount = cleanAmount,
-                    Status = initialStatus,
-                    PaidAt = cleanAmount == 0m ? DateTime.UtcNow : null,
-                    PaymentMethod = cleanAmount == 0m ? "Miễn phí / BHYT chi trả 100%" : null,
-                    CreatedAt = DateTime.UtcNow,
-                    Items = new List<BillingItem>
-                    {
-                        new BillingItem
-                        {
-                            Id = Guid.NewGuid(),
-                            ItemName = itemName,
-                            UnitPrice = cleanAmount,
-                            Quantity = 1,
-                            TotalPrice = cleanAmount
-                        }
-                    }
-                };
-
-                await PaymentQrHelper.EnsureUniquePaymentCodeAsync(dbContext, bill, resolvedOptions.PaymentPrefix, ct);
-                dbContext.Billings.Add(bill);
-
-                try
-                {
-                    await dbContext.SaveChangesAsync(ct);
-                    return bill;
-                }
-                catch (DbUpdateException)
-                {
-                    dbContext.ChangeTracker.Clear();
-
-                    if (appointmentId.HasValue && appointmentId.Value != Guid.Empty)
-                    {
-                        var racedBill = await dbContext.Billings
-                            .Include(b => b.Items)
-                            .FirstOrDefaultAsync(b => b.AppointmentId == appointmentId.Value
-                                && b.BillingType == "Registration"
-                                && b.Status != "Cancelled", ct);
-                        if (racedBill != null)
-                        {
-                            return racedBill;
-                        }
-                    }
-                }
-            }
-
-            throw new InvalidOperationException("Không thể khởi tạo hóa đơn công khám duy nhất sau nhiều lần thử.");
+            return await CreateRegistrationBillingCoreAsync(dbContext, patientId, appointmentId, amount, itemName, resolvedOptions, ct);
         }
         finally
         {
             gate.Release();
         }
+    }
+
+    /// <summary>
+    /// Chốt hoặc cập nhật duy nhất 1 hóa đơn Registration theo đúng chuyên khoa được Nhân viên Sàng lọc chỉ định (Cách 1).
+    /// Tuyệt đối không tạo trùng hóa đơn và không ghi đè hóa đơn đã thanh toán (Paid).
+    /// </summary>
+    public static async Task<TriageBillingAssignmentResult> TriageAssignOrUpdateRegistrationBillingAsync(
+        HospitalDbContext dbContext,
+        Guid patientId,
+        Guid? appointmentId,
+        decimal departmentFee,
+        string departmentName,
+        bool isWaivedByBhytOrEmergency,
+        SepayPaymentOptions? options = null,
+        CancellationToken ct = default)
+    {
+        var resolvedOptions = options ?? PaymentQrHelper.ResolveOptions(null);
+        var cleanFee = Math.Max(0m, decimal.Round(departmentFee, 2, MidpointRounding.AwayFromZero));
+        var itemTitle = $"Phí khám chuyên khoa - {departmentName}";
+
+        Billing? existing;
+        var gate = GetCreationLock(patientId, appointmentId);
+        await gate.WaitAsync(ct);
+        try
+        {
+            existing = await FindActiveRegistrationBillingAsync(dbContext, patientId, appointmentId, resolvedOptions, ct);
+            if (existing == null)
+            {
+                if (isWaivedByBhytOrEmergency)
+                {
+                    return new TriageBillingAssignmentResult(null, "WaivedBhytOrEmergency");
+                }
+
+                var created = await CreateRegistrationBillingCoreAsync(
+                    dbContext, patientId, appointmentId, cleanFee, itemTitle, resolvedOptions, ct);
+                return new TriageBillingAssignmentResult(created, "Created");
+            }
+        }
+        finally
+        {
+            gate.Release();
+        }
+
+        string action = "Unchanged";
+        string? warning = null;
+        Billing? latestBilling = existing;
+
+        var lockOutcome = await ExecuteLockedBillingTransactionAsync(dbContext, existing.Id, async () =>
+        {
+            var lockedBill = await dbContext.Billings
+                .Include(b => b.Items)
+                .FirstOrDefaultAsync(b => b.Id == existing.Id, ct);
+
+            if (lockedBill == null)
+                return new BillingSettlementResult(SettlementOutcomeCode.NotFound, "Không tìm thấy hóa đơn.");
+
+            latestBilling = lockedBill;
+
+            if (lockedBill.Status == "Cancelled")
+                return new BillingSettlementResult(SettlementOutcomeCode.Cancelled, "Hóa đơn đã hủy.", lockedBill);
+
+            if (lockedBill.Status == "Paid")
+            {
+                action = "KeptExistingPaid";
+                if (!isWaivedByBhytOrEmergency && lockedBill.TotalAmount != cleanFee)
+                {
+                    var diff = cleanFee - lockedBill.TotalAmount;
+                    var diffText = diff > 0 ? $"thiếu {diff:0.##}đ" : $"dư {Math.Abs(diff):0.##}đ";
+                    warning = $"Hóa đơn đã thanh toán {lockedBill.TotalAmount:0.##}đ trước khi Sàng lọc chuyển sang {departmentName} ({cleanFee:0.##}đ, {diffText}). Cần Thu ngân đối soát.";
+                    AppendBillingDiscrepancyNote(lockedBill, warning);
+                    await dbContext.SaveChangesAsync(ct);
+                }
+                return new BillingSettlementResult(SettlementOutcomeCode.Success, "OK", lockedBill);
+            }
+
+            if (isWaivedByBhytOrEmergency)
+            {
+                lockedBill.Status = "Cancelled";
+                AppendBillingDiscrepancyNote(lockedBill, $"Miễn tạm ứng tại Sàng lọc (BHYT/Cấp cứu) khi phân vào {departmentName}.");
+                await dbContext.SaveChangesAsync(ct);
+                action = "WaivedBhytOrEmergency";
+                return new BillingSettlementResult(SettlementOutcomeCode.Success, "OK", lockedBill);
+            }
+
+            lockedBill.TotalAmount = cleanFee;
+            var primaryItem = lockedBill.Items.FirstOrDefault();
+            if (primaryItem != null)
+            {
+                primaryItem.ItemName = itemTitle;
+                primaryItem.UnitPrice = cleanFee;
+                primaryItem.Quantity = 1;
+                primaryItem.TotalPrice = cleanFee;
+            }
+            else
+            {
+                dbContext.BillingItems.Add(new BillingItem
+                {
+                    Id = Guid.NewGuid(),
+                    BillingId = lockedBill.Id,
+                    ItemName = itemTitle,
+                    UnitPrice = cleanFee,
+                    Quantity = 1,
+                    TotalPrice = cleanFee
+                });
+            }
+
+            if (cleanFee == 0m)
+            {
+                lockedBill.Status = "Paid";
+                lockedBill.PaidAt = DateTime.UtcNow;
+                lockedBill.PaymentMethod = "Miễn phí / BHYT chi trả 100%";
+            }
+
+            await dbContext.SaveChangesAsync(ct);
+            action = "UpdatedUnpaid";
+            return new BillingSettlementResult(SettlementOutcomeCode.Success, "OK", lockedBill);
+        }, ct);
+
+        if (lockOutcome.Code != SettlementOutcomeCode.Success && warning == null)
+        {
+            warning = lockOutcome.Message;
+        }
+
+        return new TriageBillingAssignmentResult(latestBilling, action, warning);
+    }
+
+    private static async Task<Billing?> FindActiveRegistrationBillingAsync(
+        HospitalDbContext dbContext,
+        Guid patientId,
+        Guid? appointmentId,
+        SepayPaymentOptions resolvedOptions,
+        CancellationToken ct)
+    {
+        if (appointmentId.HasValue && appointmentId.Value != Guid.Empty)
+        {
+            var existingForApt = await dbContext.Billings
+                .Include(b => b.Items)
+                .Where(b => b.AppointmentId == appointmentId.Value
+                    && b.BillingType == "Registration"
+                    && b.Status != "Cancelled")
+                .OrderByDescending(b => b.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+
+            if (existingForApt != null)
+            {
+                if (string.IsNullOrWhiteSpace(existingForApt.PaymentCode))
+                {
+                    await PaymentQrHelper.EnsureUniquePaymentCodeAsync(dbContext, existingForApt, resolvedOptions.PaymentPrefix, ct);
+                    await dbContext.SaveChangesAsync(ct);
+                }
+                return existingForApt;
+            }
+        }
+
+        var cutoff = DateTime.UtcNow.Date.AddDays(-1);
+        var existingRecent = await dbContext.Billings
+            .Include(b => b.Items)
+            .Where(b => b.PatientId == patientId
+                && b.BillingType == "Registration"
+                && b.Status != "Cancelled"
+                && b.CreatedAt >= cutoff)
+            .OrderByDescending(b => b.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        if (existingRecent != null)
+        {
+            var updated = false;
+            if (appointmentId.HasValue && appointmentId.Value != Guid.Empty && !existingRecent.AppointmentId.HasValue)
+            {
+                existingRecent.AppointmentId = appointmentId.Value;
+                updated = true;
+            }
+            if (string.IsNullOrWhiteSpace(existingRecent.PaymentCode))
+            {
+                await PaymentQrHelper.EnsureUniquePaymentCodeAsync(dbContext, existingRecent, resolvedOptions.PaymentPrefix, ct);
+                updated = true;
+            }
+            if (updated)
+            {
+                await dbContext.SaveChangesAsync(ct);
+            }
+            return existingRecent;
+        }
+
+        return null;
+    }
+
+    private static async Task<Billing> CreateRegistrationBillingCoreAsync(
+        HospitalDbContext dbContext,
+        Guid patientId,
+        Guid? appointmentId,
+        decimal amount,
+        string itemName,
+        SepayPaymentOptions resolvedOptions,
+        CancellationToken ct)
+    {
+        var cleanAmount = Math.Max(0m, decimal.Round(amount, 2, MidpointRounding.AwayFromZero));
+        var initialStatus = cleanAmount == 0m ? "Paid" : "Unpaid";
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var bill = new Billing
+            {
+                Id = Guid.NewGuid(),
+                PatientId = patientId,
+                AppointmentId = (appointmentId.HasValue && appointmentId.Value != Guid.Empty) ? appointmentId.Value : null,
+                BillingType = "Registration",
+                TotalAmount = cleanAmount,
+                Status = initialStatus,
+                PaidAt = cleanAmount == 0m ? DateTime.UtcNow : null,
+                PaymentMethod = cleanAmount == 0m ? "Miễn phí / BHYT chi trả 100%" : null,
+                CreatedAt = DateTime.UtcNow,
+                Items = new List<BillingItem>
+                {
+                    new BillingItem
+                    {
+                        Id = Guid.NewGuid(),
+                        ItemName = itemName,
+                        UnitPrice = cleanAmount,
+                        Quantity = 1,
+                        TotalPrice = cleanAmount
+                    }
+                }
+            };
+
+            await PaymentQrHelper.EnsureUniquePaymentCodeAsync(dbContext, bill, resolvedOptions.PaymentPrefix, ct);
+            dbContext.Billings.Add(bill);
+
+            try
+            {
+                await dbContext.SaveChangesAsync(ct);
+                return bill;
+            }
+            catch (DbUpdateException)
+            {
+                dbContext.ChangeTracker.Clear();
+
+                if (appointmentId.HasValue && appointmentId.Value != Guid.Empty)
+                {
+                    var racedBill = await dbContext.Billings
+                        .Include(b => b.Items)
+                        .FirstOrDefaultAsync(b => b.AppointmentId == appointmentId.Value
+                            && b.BillingType == "Registration"
+                            && b.Status != "Cancelled", ct);
+                    if (racedBill != null)
+                    {
+                        return racedBill;
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Không thể khởi tạo hóa đơn công khám duy nhất sau nhiều lần thử.");
     }
 
     public static async Task<BillingSettlementResult> SettleManualCashAsync(

@@ -106,6 +106,7 @@ public class KioskWalkInRequestDto
     public Guid DepartmentId { get; set; }
 
     public bool RequirePrepayment { get; set; } = false;
+    public bool WaitForTriage { get; set; } = false;
     public bool IsPregnant { get; set; } = false;
     public bool IsDisabled { get; set; } = false;
     public bool HasRevolutionaryMerit { get; set; } = false;

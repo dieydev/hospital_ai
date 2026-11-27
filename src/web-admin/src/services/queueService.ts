@@ -24,13 +24,34 @@ export interface QueueTicketItem {
   priority: 'Normal' | 'Priority' | 'Emergency';
   priorityReason?: string;
   visitType?: 'New' | 'FollowUp';
-  paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived';
+  paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived' | 'PendingTriage';
   queueType?: 'Exam' | 'ParaclinicalResult';
   unpaidBillingId?: string;
   unpaidAmount?: number;
   previousRecordCode?: string;
   appointmentId?: string;
   createdAt: string;
+}
+
+export interface TriageRoutePayload {
+  targetDepartmentId: string;
+  triageLevel: 'Normal' | 'Priority' | 'Emergency';
+  visitType?: 'New' | 'FollowUp';
+  initialSymptoms?: string;
+  vitalSignsSummary?: string;
+  isEmergencyConfirmed?: boolean;
+  emergencyReason?: string;
+}
+
+export interface TriageRouteResult {
+  ticket: QueueTicketItem;
+  billingId?: string;
+  paymentCode?: string;
+  billingAmount: number;
+  paymentStatus: string;
+  billingAction: string;
+  discrepancyWarning?: string;
+  message: string;
 }
 
 export interface IssueTicketParams {
@@ -44,7 +65,7 @@ export interface IssueTicketParams {
   identityCardNumber?: string;
   healthInsuranceNumber?: string;
   visitType?: 'New' | 'FollowUp';
-  paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived';
+  paymentStatus?: 'Paid' | 'Unpaid' | 'InsuranceWaived' | 'PendingTriage';
   appointmentId?: string;
 }
 
@@ -271,6 +292,14 @@ export const queueService = {
       }
       throw err;
     }
+  },
+
+  async routeTicketAfterTriage(ticketId: string, payload: TriageRoutePayload): Promise<TriageRouteResult> {
+    const response = await api.put<TriageRouteResult>(`/queue/${ticketId}/triage-route`, payload);
+    if (response.data?.ticket) {
+      this.saveTicket(response.data.ticket);
+    }
+    return response.data;
   },
 
   async callNextPatient(departmentId: string): Promise<QueueTicketItem | null> {

@@ -60,6 +60,7 @@ import { patientService, Patient } from '../services/patientService';
 import { queueService } from '../services/queueService';
 import { signalrService } from '../services/signalrService';
 import { showSuccessAlert, showToast, showErrorAlert } from '../utils/sweetAlert';
+import { speakVietnamese } from '../utils/vietnameseSpeaker';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -353,15 +354,7 @@ export const ExaminationsPage: React.FC = () => {
     const textToSpeak = `Mời bệnh nhân ${record.patientName}, mã bệnh nhân ${record.patientCode}, vào phòng khám ${record.departmentName || 'Khoa Nội'}.`;
 
     showToast(`🔊 Đang phát thông báo loa: "${textToSpeak}"`, 'success');
-
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = 'vi-VN';
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      window.speechSynthesis.speak(utterance);
-    }
+    void speakVietnamese(textToSpeak, { chime: true, rate: 0.95 });
   };
 
   // Run AI Drug Safety & Allergy Audit with comprehensive clinical data

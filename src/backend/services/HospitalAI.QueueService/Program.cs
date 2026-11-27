@@ -60,7 +60,14 @@ builder.Services.AddDbContext<HospitalDbContext>(options =>
     ));
 
 builder.Services.AddScoped<IQueueService, QueueService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(VietnameseTtsService.HttpClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(8);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+});
+builder.Services.AddSingleton<VietnameseTtsService>();
 builder.Services.AddSingleton<IFcmNotificationService, FcmNotificationService>();
 
 var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
