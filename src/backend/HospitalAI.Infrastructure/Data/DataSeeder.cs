@@ -431,6 +431,7 @@ public static class DataSeeder
                         BillingType = "Registration",
                         TotalAmount = 150000,
                         Status = "Unpaid",
+                        PaymentCode = "HAI00000001",
                         CreatedAt = DateTime.UtcNow.AddHours(-3),
                         Items = new List<BillingItem>
                         {
@@ -444,6 +445,7 @@ public static class DataSeeder
                         BillingType = "ServiceOrder",
                         TotalAmount = 235000,
                         Status = "Unpaid",
+                        PaymentCode = "HAI00000002",
                         CreatedAt = DateTime.UtcNow.AddHours(-2),
                         Items = new List<BillingItem>
                         {
@@ -458,6 +460,7 @@ public static class DataSeeder
                         BillingType = "Prescription",
                         TotalAmount = 283000,
                         Status = "Paid",
+                        PaymentCode = "HAI00000003",
                         PaymentMethod = "Tiền mặt",
                         PaidAt = DateTime.UtcNow.AddHours(-1),
                         CreatedAt = DateTime.UtcNow.AddHours(-2),
@@ -474,6 +477,7 @@ public static class DataSeeder
                         BillingType = "ServiceOrder",
                         TotalAmount = 450000,
                         Status = "Paid",
+                        PaymentCode = "HAI00000004",
                         PaymentMethod = "Chuyển khoản VietQR",
                         PaidAt = DateTime.UtcNow.AddMinutes(-40),
                         CreatedAt = DateTime.UtcNow.AddHours(-1),
@@ -490,6 +494,7 @@ public static class DataSeeder
                         BillingType = "Registration",
                         TotalAmount = 120000,
                         Status = "Unpaid",
+                        PaymentCode = "HAI00000005",
                         CreatedAt = DateTime.UtcNow.AddMinutes(-30),
                         Items = new List<BillingItem>
                         {
@@ -503,6 +508,7 @@ public static class DataSeeder
                         BillingType = "Prescription",
                         TotalAmount = 320000,
                         Status = "Unpaid",
+                        PaymentCode = "HAI00000006",
                         CreatedAt = DateTime.UtcNow.AddMinutes(-15),
                         Items = new List<BillingItem>
                         {
@@ -649,23 +655,96 @@ public static class DataSeeder
                         ThoiDiemDo DATETIME2 NOT NULL DEFAULT GETUTCDATE()
                     );
                 END;
-                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'NguoiThuTienId')
+                IF OBJECT_ID('dbo.HoaDon', 'U') IS NOT NULL
                 BEGIN
-                    ALTER TABLE dbo.HoaDon ADD NguoiThuTienId UNIQUEIDENTIFIER NULL;
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'NguoiThuTienId')
+                    BEGIN
+                        ALTER TABLE dbo.HoaDon ADD NguoiThuTienId UNIQUEIDENTIFIER NULL;
+                    END;
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'MaGiaoDich')
+                    BEGIN
+                        ALTER TABLE dbo.HoaDon ADD MaGiaoDich NVARCHAR(100) NULL;
+                    END;
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'LichHenId')
+                    BEGIN
+                        ALTER TABLE dbo.HoaDon ADD LichHenId UNIQUEIDENTIFIER NULL;
+                    END;
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'MaThanhToan')
+                    BEGIN
+                        ALTER TABLE dbo.HoaDon ADD MaThanhToan NVARCHAR(20) NULL;
+                    END;
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'GhiChuDoiSoat')
+                    BEGIN
+                        ALTER TABLE dbo.HoaDon ADD GhiChuDoiSoat NVARCHAR(500) NULL;
+                    END;
                 END;
-                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.HoaDon') AND name = 'MaGiaoDich')
+                IF OBJECT_ID('dbo.NhatKyGiaoDichSePay', 'U') IS NULL
                 BEGIN
-                    ALTER TABLE dbo.HoaDon ADD MaGiaoDich NVARCHAR(100) NULL;
+                    CREATE TABLE dbo.NhatKyGiaoDichSePay (
+                        Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+                        SepayTransactionId BIGINT NOT NULL,
+                        ReferenceCode NVARCHAR(100) NULL,
+                        Gateway NVARCHAR(50) NULL,
+                        TransactionDate NVARCHAR(40) NULL,
+                        AccountNumber NVARCHAR(50) NULL,
+                        SubAccount NVARCHAR(50) NULL,
+                        TransferType NVARCHAR(20) NULL,
+                        TransferAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        ExpectedAmount DECIMAL(18,2) NULL,
+                        DiscrepancyAmount DECIMAL(18,2) NULL,
+                        PaymentCode NVARCHAR(30) NULL,
+                        BillingId UNIQUEIDENTIFIER NULL,
+                        ProcessingStatus NVARCHAR(50) NOT NULL,
+                        Note NVARCHAR(500) NULL,
+                        WebhookTimestamp BIGINT NOT NULL DEFAULT 0,
+                        ReceivedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        CONSTRAINT FK_NhatKyGiaoDichSePay_HoaDon FOREIGN KEY (BillingId) REFERENCES dbo.HoaDon(Id)
+                    );
+                END;";
+
+            var ensureBillingBackfillAndIndexes = @"
+                IF OBJECT_ID('dbo.HoaDon', 'U') IS NOT NULL
+                BEGIN
+                    UPDATE h
+                    SET MaThanhToan = 'HAI' + UPPER(LEFT(REPLACE(CAST(h.Id AS NVARCHAR(36)), '-', ''), 8))
+                    FROM dbo.HoaDon h
+                    WHERE h.MaThanhToan IS NULL
+                      AND NOT EXISTS (
+                          SELECT 1 FROM dbo.HoaDon x
+                          WHERE x.MaThanhToan = 'HAI' + UPPER(LEFT(REPLACE(CAST(h.Id AS NVARCHAR(36)), '-', ''), 8))
+                      );
+
+                    IF EXISTS (SELECT 1 FROM dbo.HoaDon WHERE MaThanhToan IS NULL)
+                    BEGIN
+                        UPDATE dbo.HoaDon
+                        SET MaThanhToan = 'HAI' + UPPER(LEFT(REPLACE(CAST(NEWID() AS NVARCHAR(36)), '-', ''), 8))
+                        WHERE MaThanhToan IS NULL;
+                    END;
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_HoaDon_MaGiaoDich' AND object_id = OBJECT_ID('dbo.HoaDon'))
+                    BEGIN
+                        CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_MaGiaoDich ON dbo.HoaDon(MaGiaoDich) WHERE MaGiaoDich IS NOT NULL;
+                    END;
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_HoaDon_MaThanhToan' AND object_id = OBJECT_ID('dbo.HoaDon'))
+                    BEGIN
+                        CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_MaThanhToan ON dbo.HoaDon(MaThanhToan) WHERE MaThanhToan IS NOT NULL;
+                    END;
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_HoaDon_LichHenId_Registration' AND object_id = OBJECT_ID('dbo.HoaDon'))
+                    BEGIN
+                        CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_LichHenId_Registration ON dbo.HoaDon(LichHenId, LoaiHoaDon) WHERE LichHenId IS NOT NULL AND LoaiHoaDon = 'Registration' AND TrangThai <> 'Cancelled';
+                    END;
                 END;
-                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_HoaDon_MaGiaoDich' AND object_id = OBJECT_ID('dbo.HoaDon'))
+                IF OBJECT_ID('dbo.NhatKyGiaoDichSePay', 'U') IS NOT NULL
+                AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_NhatKyGiaoDichSePay_SepayTransactionId' AND object_id = OBJECT_ID('dbo.NhatKyGiaoDichSePay'))
                 BEGIN
-                    CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_MaGiaoDich ON dbo.HoaDon(MaGiaoDich) WHERE MaGiaoDich IS NOT NULL;
+                    CREATE UNIQUE NONCLUSTERED INDEX IX_NhatKyGiaoDichSePay_SepayTransactionId ON dbo.NhatKyGiaoDichSePay(SepayTransactionId);
                 END;";
 
             await context.Database.ExecuteSqlRawAsync(alterHoSoNhanVien);
             await context.Database.ExecuteSqlRawAsync(alterLuotKhamBenh);
             await context.Database.ExecuteSqlRawAsync(alterChiTietDonThuoc);
             await context.Database.ExecuteSqlRawAsync(ensureVitalSignsAndBilling);
+            await context.Database.ExecuteSqlRawAsync(ensureBillingBackfillAndIndexes);
 
             // Gán dữ liệu mẫu CCHN TT 32/2023 cho nhân sự nếu chưa có
             var updateDefaultLicense = @"

@@ -1,6 +1,10 @@
+using HospitalAI.Application.DTOs;
 using HospitalAI.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
@@ -10,6 +14,7 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace HospitalAI.ExaminationService.Controllers
 {
@@ -20,13 +25,44 @@ namespace HospitalAI.ExaminationService.Controllers
         private readonly IPaymentService _paymentService;
         private readonly HospitalDbContext _dbContext;
         private readonly IConfiguration? _configuration;
-        private static readonly SemaphoreSlim _vnpaySettleLock = new(1, 1);
+        private readonly ILogger<PaymentController>? _logger;
+        private readonly Func<DateTimeOffset>? _utcNowProvider;
 
-        public PaymentController(IPaymentService paymentService, HospitalDbContext dbContext, IConfiguration? configuration = null)
+        private static readonly JsonSerializerOptions WebhookJsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        public PaymentController(
+            IPaymentService paymentService,
+            HospitalDbContext dbContext,
+            IConfiguration? configuration = null,
+            ILogger<PaymentController>? logger = null,
+            Func<DateTimeOffset>? utcNowProvider = null)
         {
             _paymentService = paymentService;
             _dbContext = dbContext;
             _configuration = configuration;
+            _logger = logger;
+            _utcNowProvider = utcNowProvider;
+        }
+
+        [HttpGet("qr-config")]
+        [AllowAnonymous]
+        public IActionResult GetPublicQrConfig()
+        {
+            var options = PaymentQrHelper.ResolveOptions(_configuration);
+            return Ok(new PaymentQrPublicConfigDto
+            {
+                Environment = options.Environment,
+                IsSandbox = options.IsSandbox,
+                BankCode = options.BankCode,
+                BankBin = options.BankBin,
+                AccountNumber = options.AccountNumber,
+                AccountName = options.AccountName,
+                PaymentPrefix = options.PaymentPrefix,
+                IsConfigured = options.HasValidQrConfig
+            });
         }
 
         private bool IsStaffUser()
@@ -107,6 +143,11 @@ namespace HospitalAI.ExaminationService.Controllers
 
             if (billing != null)
             {
+                if (billing.Status == "Cancelled")
+                {
+                    return BadRequest(new { message = "Hóa đơn viện phí này đã bị hủy, không thể thanh toán." });
+                }
+
                 if (billing.Status == "Paid")
                 {
                     return BadRequest(new { message = "Hóa đơn viện phí này đã được thanh toán trước đó." });
@@ -124,14 +165,15 @@ namespace HospitalAI.ExaminationService.Controllers
 
                 // Ghi đè số tiền và nội dung bằng dữ liệu thực tế từ CSDL (Chống Price Tampering)
                 model.Amount = (double)billing.TotalAmount;
-                model.OrderDescription = $"Thanh toan vien phi {billing.Id.ToString()[..8].ToUpper()}";
+                var displayCode = PaymentQrHelper.ResolveFallbackDisplayCode(billing);
+                model.OrderDescription = $"Thanh toan vien phi {displayCode}";
 
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
                 var url = _paymentService.CreatePaymentUrl(model, ipAddress);
-                return Ok(new { Url = url, Amount = billing.TotalAmount });
+                return Ok(new { Url = url, Amount = billing.TotalAmount, BillingId = billing.Id, PaymentCode = displayCode });
             }
 
-            // Nếu OrderId là Guid của Appointment đặt khám trực tuyến (chưa xuất Billing riêng)
+            // Nếu OrderId là Guid của Appointment đặt khám trực tuyến -> tìm hoặc tạo 1 hóa đơn Registration duy nhất
             var appointment = await _dbContext.Appointments
                 .Include(a => a.Patient)
                 .FirstOrDefaultAsync(a => a.Id == orderGuid);
@@ -154,13 +196,34 @@ namespace HospitalAI.ExaminationService.Controllers
                 }
             }
 
-            var boundedFee = (model.Amount >= 10000 && model.Amount <= 50000000) ? model.Amount : 150000;
-            model.Amount = boundedFee;
-            model.OrderDescription = $"Thanh toan phi dat kham {appointment.Id.ToString()[..8].ToUpper()}";
+            if (string.Equals(appointment.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = "Lịch hẹn đã bị hủy, không thể khởi tạo thanh toán." });
+            }
+
+            var sepayOpts = PaymentQrHelper.ResolveOptions(_configuration);
+            var boundedFee = (model.Amount >= 10000 && model.Amount <= 50000000) ? (decimal)Math.Round(model.Amount, 2) : 150000m;
+            var aptBilling = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                _dbContext,
+                appointment.PatientId,
+                appointment.Id,
+                boundedFee,
+                $"Phí khám theo lịch hẹn #{appointment.Id.ToString()[..8].ToUpperInvariant()}",
+                sepayOpts);
+
+            if (aptBilling.Status == "Paid")
+            {
+                return BadRequest(new { message = "Hóa đơn cho lịch hẹn này đã được thanh toán trước đó." });
+            }
+
+            model.OrderId = aptBilling.Id.ToString();
+            model.Amount = (double)aptBilling.TotalAmount;
+            var aptPayCode = PaymentQrHelper.ResolveFallbackDisplayCode(aptBilling, sepayOpts.PaymentPrefix);
+            model.OrderDescription = $"Thanh toan vien phi {aptPayCode}";
 
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
             var aptPayUrl = _paymentService.CreatePaymentUrl(model, clientIp);
-            return Ok(new { Url = aptPayUrl, Amount = boundedFee });
+            return Ok(new { Url = aptPayUrl, Amount = aptBilling.TotalAmount, BillingId = aptBilling.Id, PaymentCode = aptPayCode });
         }
 
         [HttpGet("vnpay-return")]
@@ -180,7 +243,7 @@ namespace HospitalAI.ExaminationService.Controllers
                 return BadRequest(new { Message = "Số tiền thanh toán phản hồi không hợp lệ" });
             }
 
-            var actualPaidAmount = rawPaidAmount / 100;
+            decimal actualPaidAmount = rawPaidAmount / 100m;
 
             if (vnp_ResponseCode != "00")
             {
@@ -189,18 +252,23 @@ namespace HospitalAI.ExaminationService.Controllers
 
             if (Guid.TryParse(vnp_TxnRef, out Guid billingId))
             {
-                var settle = await SettleBillingTransactionAsync(
+                var settle = await BillingSettlementService.SettleVnPayAsync(
+                    _dbContext,
                     billingId,
                     actualPaidAmount,
                     vnp_TxnRef,
                     Request.Query["vnp_TransactionNo"].ToString());
 
-                if (settle.Code == "01")
+                if (settle.Code == SettlementOutcomeCode.NotFound)
                     return NotFound(new { Message = "Không tìm thấy hóa đơn tương ứng với giao dịch" });
-                if (settle.Code == "04")
-                    return BadRequest(new { Message = "Cảnh báo gian lận: Số tiền thực trả thấp hơn tổng tiền hóa đơn!", PaidAmount = actualPaidAmount });
-                if (settle.Code == "REPLAY")
+                if (settle.Code == SettlementOutcomeCode.Cancelled)
+                    return BadRequest(new { Message = "Hóa đơn đã bị hủy trước đó, không thể ghi nhận thanh toán." });
+                if (settle.Code == SettlementOutcomeCode.InvalidAmount)
+                    return BadRequest(new { Message = "Cảnh báo gian lận: Số tiền thực trả không khớp tổng tiền hóa đơn!", PaidAmount = actualPaidAmount });
+                if (settle.Code == SettlementOutcomeCode.Replay)
                     return BadRequest(new { Message = "Cảnh báo gian lận: Mã giao dịch VNPay đã được sử dụng trước đó (Replay Attack)." });
+                if (settle.Code == SettlementOutcomeCode.AlreadyPaid)
+                    return Ok(new { Message = "Hóa đơn đã được xác nhận thanh toán trước đó.", OrderId = vnp_TxnRef, Success = true, BillingId = billingId });
             }
 
             return Ok(new { Message = "Thanh toán thành công", OrderId = vnp_TxnRef, Success = true });
@@ -227,7 +295,7 @@ namespace HospitalAI.ExaminationService.Controllers
                 return Ok(new { RspCode = "04", Message = "Invalid Amount" });
             }
 
-            var actualPaidAmount = rawPaidAmount / 100;
+            decimal actualPaidAmount = rawPaidAmount / 100m;
 
             if (Guid.TryParse(vnp_TxnRef, out Guid billingId))
             {
@@ -238,7 +306,8 @@ namespace HospitalAI.ExaminationService.Controllers
                     return Ok(new { RspCode = "00", Message = "Confirm Success (Payment Failed at Gate)" });
                 }
 
-                var settle = await SettleBillingTransactionAsync(
+                var settle = await BillingSettlementService.SettleVnPayAsync(
+                    _dbContext,
                     billingId,
                     actualPaidAmount,
                     vnp_TxnRef,
@@ -246,9 +315,9 @@ namespace HospitalAI.ExaminationService.Controllers
 
                 return settle.Code switch
                 {
-                    "01" => Ok(new { RspCode = "01", Message = "Order not found" }),
-                    "02" or "REPLAY" => Ok(new { RspCode = "02", Message = "Order already confirmed" }),
-                    "04" => Ok(new { RspCode = "04", Message = "Invalid amount" }),
+                    SettlementOutcomeCode.NotFound => Ok(new { RspCode = "01", Message = "Order not found" }),
+                    SettlementOutcomeCode.AlreadyPaid or SettlementOutcomeCode.Replay or SettlementOutcomeCode.Cancelled => Ok(new { RspCode = "02", Message = "Order already confirmed" }),
+                    SettlementOutcomeCode.InvalidAmount => Ok(new { RspCode = "04", Message = "Invalid amount" }),
                     _ => Ok(new { RspCode = "00", Message = "Confirm Success" })
                 };
             }
@@ -256,82 +325,89 @@ namespace HospitalAI.ExaminationService.Controllers
             return Ok(new { RspCode = "00", Message = "Confirm Success" });
         }
 
-        private async Task<(string Code, string Message)> SettleBillingTransactionAsync(
-            Guid billingId,
-            long actualPaidAmount,
-            string vnpTxnRef,
-            string vnpTransactionNo)
+        /// <summary>
+        /// SePay Webhook tự động xác nhận thanh toán chuyển khoản VietQR (hỗ trợ cả SePay CLI Sandbox và HTTPS Production).
+        /// Xác thực HMAC-SHA256 trên raw body gốc theo X-SePay-Signature và X-SePay-Timestamp.
+        /// </summary>
+        [HttpPost("sepay-webhook")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ReceiveSepayWebhook()
         {
-            await _vnpaySettleLock.WaitAsync();
-            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+            var options = PaymentQrHelper.ResolveOptions(_configuration);
+
+            Request.EnableBuffering();
+            byte[] rawBytes;
+            using (var ms = new MemoryStream())
+            {
+                await Request.Body.CopyToAsync(ms);
+                rawBytes = ms.ToArray();
+            }
+
+            if (Request.Body.CanSeek)
+            {
+                Request.Body.Position = 0;
+            }
+
+            var signatureHeader = Request.Headers["X-SePay-Signature"].FirstOrDefault();
+            var timestampHeader = Request.Headers["X-SePay-Timestamp"].FirstOrDefault();
+
+            var authCheck = BillingSettlementService.VerifySepayHmacSignature(
+                signatureHeader,
+                timestampHeader,
+                rawBytes,
+                options,
+                _utcNowProvider?.Invoke());
+
+            if (!authCheck.IsValid)
+            {
+                _logger?.LogWarning("SePay webhook rejected with status {StatusCode}: {Reason}", authCheck.HttpStatusCode, authCheck.ErrorMessage);
+                return StatusCode(authCheck.HttpStatusCode, new { success = false, message = authCheck.ErrorMessage });
+            }
+
+            SepayWebhookPayloadDto? payload;
             try
             {
-                if (_dbContext.Database.IsRelational())
-                {
-                    tx = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-                }
-
-                var billing = await _dbContext.Billings
-                    .Include(b => b.Items)
-                    .FirstOrDefaultAsync(b => b.Id == billingId);
-
-                if (billing == null)
-                {
-                    if (tx != null) await tx.RollbackAsync();
-                    return ("01", "Order not found");
-                }
-
-                if (actualPaidAmount < (long)billing.TotalAmount)
-                {
-                    if (tx != null) await tx.RollbackAsync();
-                    return ("04", "Invalid amount");
-                }
-
-                if (billing.Status == "Paid")
-                {
-                    if (tx != null) await tx.RollbackAsync();
-                    return ("02", "Order already confirmed");
-                }
-
-                var finalRef = !string.IsNullOrEmpty(vnpTransactionNo) && vnpTransactionNo != "0"
-                    ? $"VNPAY-{vnpTransactionNo}"
-                    : vnpTxnRef;
-
-                var isReplay = await _dbContext.Billings.AnyAsync(b => b.TransactionRef == finalRef && b.Id != billing.Id);
-                if (isReplay)
-                {
-                    if (tx != null) await tx.RollbackAsync();
-                    return ("REPLAY", "Duplicate transaction reference");
-                }
-
-                billing.Status = "Paid";
-                billing.PaidAt = DateTime.UtcNow;
-                billing.PaymentMethod = "VNPay";
-                billing.TransactionRef = finalRef;
-
-                if (billing.BillingType == "ServiceOrder")
-                {
-                    var item = billing.Items.FirstOrDefault();
-                    if (item != null && item.ReferenceId.HasValue)
-                    {
-                        var serviceOrder = await _dbContext.ServiceOrders.FirstOrDefaultAsync(s => s.Id == item.ReferenceId.Value);
-                        if (serviceOrder != null) serviceOrder.Status = "Paid";
-                    }
-                }
-
-                await _dbContext.SaveChangesAsync();
-                if (tx != null) await tx.CommitAsync();
-                return ("00", "Confirm Success");
+                payload = JsonSerializer.Deserialize<SepayWebhookPayloadDto>(rawBytes, WebhookJsonOptions);
             }
-            catch (DbUpdateException)
+            catch (JsonException)
             {
-                if (tx != null) await tx.RollbackAsync();
-                return ("02", "Order already confirmed");
+                return BadRequest(new { success = false, message = "Payload JSON không hợp lệ." });
             }
-            finally
+
+            if (payload == null || payload.Id <= 0)
             {
-                _vnpaySettleLock.Release();
+                return BadRequest(new { success = false, message = "Thiếu thông tin định danh giao dịch SePay." });
             }
+
+            var result = await BillingSettlementService.ProcessSepayWebhookAsync(
+                _dbContext,
+                payload,
+                authCheck.TimestampSeconds,
+                options);
+
+            if (result.Code == SettlementOutcomeCode.DatabaseFailure)
+            {
+                _logger?.LogError("SePay webhook persistence failed for txn {SepayTxnId}: {Message}", payload.Id, result.Message);
+                return StatusCode(500, new { success = false, message = result.Message });
+            }
+
+            if (result.Code == SettlementOutcomeCode.InvalidReference)
+            {
+                return BadRequest(new { success = false, message = result.Message });
+            }
+
+            _logger?.LogInformation(
+                "SePay webhook handled for txn {SepayTxnId} with status {ProcessingStatus}",
+                payload.Id,
+                result.ProcessingStatus ?? result.Code.ToString());
+
+            return Ok(new
+            {
+                success = true,
+                status = result.ProcessingStatus ?? result.Code.ToString(),
+                billingId = result.Billing?.Id,
+                paymentCode = result.Billing?.PaymentCode
+            });
         }
     }
 }

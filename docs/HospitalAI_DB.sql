@@ -454,19 +454,58 @@ CREATE TABLE dbo.HoaDon (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     BenhNhanId UNIQUEIDENTIFIER NOT NULL,
     LuotKhamId UNIQUEIDENTIFIER NULL,
+    LichHenId UNIQUEIDENTIFIER NULL,
     LoaiHoaDon VARCHAR(50) NOT NULL, -- Registration, ServiceOrder, Prescription
     TongTien DECIMAL(18,2) NOT NULL DEFAULT 0,
     TrangThai VARCHAR(20) NOT NULL DEFAULT 'Unpaid', -- Unpaid, Paid, Cancelled
     NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
     NgayThanhToan DATETIME NULL,
-    PhuongThucThanhToan VARCHAR(50) NULL, -- VNPay, Cash, Transfer
-    MaGiaoDich VARCHAR(100) NULL, -- vnp_TxnRef or VNPay transaction no
+    MaThanhToan NVARCHAR(20) NULL, -- Mã thanh toán SePay / VietQR (HAI + 8 hex)
+    PhuongThucThanhToan NVARCHAR(50) NULL, -- VNPay, Tiền mặt, Chuyển khoản VietQR (SePay)
+    MaGiaoDich NVARCHAR(100) NULL, -- vnp_TxnRef, SEPAY-<id> hoặc mã chuẩn chi đối soát
+    GhiChuDoiSoat NVARCHAR(500) NULL, -- Ghi chú chênh lệch tiền hoặc giao dịch đến muộn
     NguoiThuTienId UNIQUEIDENTIFIER NULL,
     CONSTRAINT PK_HoaDon PRIMARY KEY (Id),
     CONSTRAINT FK_HoaDon_BenhNhan FOREIGN KEY (BenhNhanId) REFERENCES dbo.BenhNhan(Id),
     CONSTRAINT FK_HoaDon_LuotKham FOREIGN KEY (LuotKhamId) REFERENCES dbo.LuotKhamBenh(Id),
+    CONSTRAINT FK_HoaDon_LichHen FOREIGN KEY (LichHenId) REFERENCES dbo.LichHenKham(Id),
     CONSTRAINT FK_HoaDon_NguoiThuTien FOREIGN KEY (NguoiThuTienId) REFERENCES dbo.HoSoNhanVien(Id)
 );
+
+CREATE TABLE dbo.NhatKyGiaoDichSePay (
+    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    SepayTransactionId BIGINT NOT NULL,
+    ReferenceCode NVARCHAR(100) NULL,
+    Gateway NVARCHAR(50) NULL,
+    TransactionDate NVARCHAR(40) NULL,
+    AccountNumber NVARCHAR(50) NULL,
+    SubAccount NVARCHAR(50) NULL,
+    TransferType NVARCHAR(20) NULL,
+    TransferAmount DECIMAL(18,2) NOT NULL DEFAULT 0,
+    ExpectedAmount DECIMAL(18,2) NULL,
+    DiscrepancyAmount DECIMAL(18,2) NULL,
+    PaymentCode NVARCHAR(30) NULL,
+    BillingId UNIQUEIDENTIFIER NULL,
+    ProcessingStatus NVARCHAR(50) NOT NULL,
+    Note NVARCHAR(500) NULL,
+    WebhookTimestamp BIGINT NOT NULL DEFAULT 0,
+    ReceivedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    CONSTRAINT PK_NhatKyGiaoDichSePay PRIMARY KEY (Id),
+    CONSTRAINT FK_NhatKyGiaoDichSePay_HoaDon FOREIGN KEY (BillingId) REFERENCES dbo.HoaDon(Id)
+);
+
+CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_MaGiaoDich
+ON dbo.HoaDon(MaGiaoDich) WHERE MaGiaoDich IS NOT NULL;
+
+CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_MaThanhToan
+ON dbo.HoaDon(MaThanhToan) WHERE MaThanhToan IS NOT NULL;
+
+CREATE UNIQUE NONCLUSTERED INDEX IX_HoaDon_LichHenId_Registration
+ON dbo.HoaDon(LichHenId, LoaiHoaDon)
+WHERE LichHenId IS NOT NULL AND LoaiHoaDon = 'Registration' AND TrangThai <> 'Cancelled';
+
+CREATE UNIQUE NONCLUSTERED INDEX IX_NhatKyGiaoDichSePay_SepayTransactionId
+ON dbo.NhatKyGiaoDichSePay(SepayTransactionId);
 
 CREATE TABLE dbo.ChiTietHoaDon (
     Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),

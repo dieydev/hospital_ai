@@ -101,6 +101,12 @@ services:
       - Kiosk__Terminals__2__Location=Khu Cận Lâm Sàng - Tầng 2
       - Kiosk__Terminals__2__ZoneType=Paraclinical
       - Kiosk__Terminals__2__Secret=${KIOSK_SECRET_C03:?Configure KIOSK_SECRET_C03 in .env}
+      - PaymentQr__Environment=${SEPAY_ENVIRONMENT:-Sandbox}
+      - PaymentQr__BankCode=${SEPAY_BANK_CODE:-MB}
+      - PaymentQr__BankBin=${SEPAY_BANK_BIN:-970422}
+      - PaymentQr__AccountNumber=${SEPAY_ACCOUNT_NUMBER:-0000000001}
+      - PaymentQr__AccountName=${SEPAY_ACCOUNT_NAME:-HOSPITAL AI DEMO}
+      - PaymentQr__PaymentPrefix=${SEPAY_PAYMENT_PREFIX:-HAI}
       - DATA_DIR=/app/data
     volumes:
       - queue_data:/app/data
@@ -140,6 +146,20 @@ services:
       - Vnpay__Version=2.1.0
       - Vnpay__Locale=vn
       - Vnpay__ReturnUrl=${VNPAY_RETURN_URL:-https://dmedical.site/api/payment/vnpay-return}
+      - Sepay__Environment=${SEPAY_ENVIRONMENT:-Sandbox}
+      - Sepay__BankCode=${SEPAY_BANK_CODE:-MB}
+      - Sepay__BankBin=${SEPAY_BANK_BIN:-970422}
+      - Sepay__AccountNumber=${SEPAY_ACCOUNT_NUMBER:-0000000001}
+      - Sepay__AccountName=${SEPAY_ACCOUNT_NAME:-HOSPITAL AI DEMO}
+      - Sepay__PaymentPrefix=${SEPAY_PAYMENT_PREFIX:-HAI}
+      - Sepay__WebhookSecret=${SEPAY_WEBHOOK_SECRET:-}
+      - Sepay__TimestampToleranceSeconds=${SEPAY_TIMESTAMP_TOLERANCE_SECONDS:-3600}
+      - PaymentQr__Environment=${SEPAY_ENVIRONMENT:-Sandbox}
+      - PaymentQr__BankCode=${SEPAY_BANK_CODE:-MB}
+      - PaymentQr__BankBin=${SEPAY_BANK_BIN:-970422}
+      - PaymentQr__AccountNumber=${SEPAY_ACCOUNT_NUMBER:-0000000001}
+      - PaymentQr__AccountName=${SEPAY_ACCOUNT_NAME:-HOSPITAL AI DEMO}
+      - PaymentQr__PaymentPrefix=${SEPAY_PAYMENT_PREFIX:-HAI}
     volumes:
       - queue_data:/app/data
     deploy:

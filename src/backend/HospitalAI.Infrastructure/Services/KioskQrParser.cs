@@ -154,10 +154,7 @@ public static class KioskQrParser
     /// </summary>
     public static string BuildVietQrImageUrl(string bankBin, string accountNo, string accountName, decimal amount, string transferContent)
     {
-        var encodedName = Uri.EscapeDataString(accountName);
-        var encodedInfo = Uri.EscapeDataString(transferContent);
-        var intAmount = Math.Max(0, (long)Math.Round(amount));
-        return $"https://img.vietqr.io/image/{bankBin}-{accountNo}-compact2.png?amount={intAmount}&addInfo={encodedInfo}&accountName={encodedName}";
+        return PaymentQrHelper.BuildVietQrImageUrl(bankBin, accountNo, accountName, amount, transferContent);
     }
 
     private static string NormalizeGender(string? raw)

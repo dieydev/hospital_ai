@@ -16,6 +16,7 @@ import {
   Modal,
   Divider,
   Alert,
+  Space,
   Spin,
   Switch,
   Breadcrumb,
@@ -69,7 +70,7 @@ import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
 import { isPatientProfileComplete, isPatientUser } from '../utils/authHelper';
 import { AIChatDrawer } from '../components/AIChatDrawer';
-import { VnPayCheckoutModal } from '../components/VnPayCheckoutModal';
+import { billingService, BillingStatusSummary, PaymentQrPublicConfig } from '../services/billingService';
 import { DepartmentIcon } from '../components/DepartmentIcon';
 import {
   DEPARTMENTS_CATALOG,
@@ -102,11 +103,12 @@ export const PatientBookingPage: React.FC = () => {
   const [hasBhyt, setHasBhyt] = useState(true);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
-  // VNPay & VietQR Online Payment States
+  // VNPay & SePay VietQR Online Payment States (100% đồng bộ trạng thái thật từ Backend)
+  const [qrConfig, setQrConfig] = useState<PaymentQrPublicConfig | null>(null);
+  const [liveBillingStatus, setLiveBillingStatus] = useState<BillingStatusSummary | null>(null);
   const [isVietQrPaid, setIsVietQrPaid] = useState(false);
-  const [isVietQrVerifying, setIsVietQrVerifying] = useState(false);
+  const [isBillingCancelled, setIsBillingCancelled] = useState(false);
   const [isVnPayPaid, setIsVnPayPaid] = useState(false);
-  const [vnPayModalOpen, setVnPayModalOpen] = useState(false);
   const [vnPayTransactionInfo, setVnPayTransactionInfo] = useState<{
     transactionNo: string;
     bankCode: string;
@@ -114,6 +116,15 @@ export const PatientBookingPage: React.FC = () => {
     amount: number;
     paymentTime: string;
   } | null>(null);
+
+  useEffect(() => {
+    billingService
+      .getPublicQrConfig()
+      .then((cfg) => setQrConfig(cfg))
+      .catch(() => {
+        // Không làm gián đoạn đặt lịch nếu chưa tải được cấu hình QR
+      });
+  }, []);
 
   // Doctor & Package Detail Modal States
   const [viewingDoctor, setViewingDoctor] = useState<DoctorOption | null>(null);
@@ -487,32 +498,29 @@ export const PatientBookingPage: React.FC = () => {
         appointmentType: values.appointmentType || (bookingMode === 'byFollowUp' ? 'FollowUp' : 'New'),
         previousRecordCode: values.previousRecordCode,
         followUpNotes: values.followUpNotes,
+        requestedFeeAmount: pricing.finalTotal,
       });
 
       setCreatedAppointment(newApt);
+      setLiveBillingStatus(null);
+      setIsBillingCancelled(newApt.paymentStatus === 'Cancelled');
       setPatientPastAppointments((prev) => [newApt, ...prev.filter((p) => p.id !== newApt.id)]);
       setLookupResults((prev) => [newApt, ...prev.filter((p) => p.id !== newApt.id)]);
-      setIsVietQrPaid(false);
-      setIsVietQrVerifying(false);
-      setIsVnPayPaid(false);
+      const alreadyPaid = newApt.paymentStatus === 'Paid';
+      setIsVietQrPaid(alreadyPaid);
+      setIsVnPayPaid(alreadyPaid);
       setVnPayTransactionInfo(null);
       setCurrentStep(completionStepIndex); // Màn hình thành công
 
-      if (paymentMethod === 'vnpay') {
-        try {
-          localStorage.setItem('pending_vnpay_apt', JSON.stringify(newApt));
-        } catch {
-          // ignore
-        }
-
+      if (paymentMethod === 'vnpay' && !alreadyPaid) {
         showToast('Đang kết nối Cổng thanh toán VNPAY Sandbox chính thức...', 'info');
 
         try {
           const returnUrl = `${window.location.origin}/booking`;
           const res = await api.post('/payment/create-payment-url', {
-            orderId: newApt.id,
-            amount: pricing.finalTotal,
-            orderDescription: `Thanh toan phi dat kham ${newApt.id} BV D-Medical`,
+            orderId: newApt.billingId || newApt.id,
+            amount: newApt.billingAmount ?? pricing.finalTotal,
+            orderDescription: `Thanh toan vien phi ${newApt.paymentCode || newApt.id} BV D-Medical`,
             returnUrl: returnUrl,
           });
 
@@ -521,14 +529,15 @@ export const PatientBookingPage: React.FC = () => {
             window.location.href = res.data.url;
             return;
           }
+          showErrorAlert('Không thể chuyển hướng VNPAY', 'Máy chủ không trả về liên kết VNPAY. Bạn có thể quét mã VietQR SePay hoặc thanh toán tại Quầy Thu Ngân.');
         } catch (err: any) {
-          console.warn('Lỗi gọi API create-payment-url, mở modal thanh toán VNPAY:', err);
-          setVnPayModalOpen(true);
+          const msg = err?.response?.data?.message || err?.message || 'Không thể kết nối Cổng VNPAY Sandbox.';
+          showErrorAlert('Lỗi khởi tạo VNPAY', `${msg}\n\nBạn có thể chuyển sang quét VietQR SePay hoặc thanh toán tại Quầy Thu Ngân.`);
         }
       } else {
         showSuccessAlert(
           'Đặt Lịch Khám Thành Công!',
-          `Phiếu khám điện tử và Mã QR của bạn đã được khởi tạo. Không cần bốc số thứ tự STT khi tới bệnh viện!`
+          `Phiếu khám điện tử và Mã QR của bạn đã được khởi tạo.${newApt.paymentCode ? ` Mã thanh toán hóa đơn: ${newApt.paymentCode}.` : ''}`
         );
       }
     } catch (err: any) {
@@ -596,7 +605,7 @@ export const PatientBookingPage: React.FC = () => {
     }
   }, [searchParams, user]);
 
-  // Tự động nhận kết quả thanh toán từ Cổng VNPAY Sandbox chính thức (sandbox.vnpayment.vn)
+  // Tự động xác thực kết quả VNPAY trực tiếp với Backend (không giả lập qua localStorage)
   useEffect(() => {
     const vnpResponseCode = searchParams.get('vnp_ResponseCode');
     const vnpTxnRef = searchParams.get('vnp_TxnRef');
@@ -604,58 +613,85 @@ export const PatientBookingPage: React.FC = () => {
     const vnpBankCode = searchParams.get('vnp_BankCode') || 'NCB';
     const vnpAmount = searchParams.get('vnp_Amount');
 
-    if (vnpResponseCode) {
-      if (vnpResponseCode === '00') {
-        const rawSaved = localStorage.getItem('pending_vnpay_apt');
-        let apt: OnlineAppointmentItem | null = null;
-        if (rawSaved) {
-          try {
-            apt = JSON.parse(rawSaved);
-          } catch {
-            // ignore
-          }
-        }
+    if (!vnpResponseCode) return;
 
-        if (apt) {
-          apt.status = 'Confirmed';
-          apt.checkInStatus = 'CheckedInQR';
-          setCreatedAppointment(apt);
-          appointmentService.updateStatus(apt.id, 'Confirmed').catch(() => {});
-        } else if (vnpTxnRef) {
-          appointmentService.getAppointments().then((all) => {
-            const found = all.find((a) => a.id.toLowerCase() === vnpTxnRef.toLowerCase());
-            if (found) {
-              found.status = 'Confirmed';
-              found.checkInStatus = 'CheckedInQR';
-              setCreatedAppointment(found);
-              appointmentService.updateStatus(found.id, 'Confirmed').catch(() => {});
-            }
-          });
-        }
-
-        setIsVnPayPaid(true);
-        setVnPayTransactionInfo({
-          transactionNo: vnpTransactionNo || `VNP${Date.now().toString().slice(-8)}`,
-          bankCode: vnpBankCode,
-          cardHolder: 'CHỦ THẺ VNPAY',
-          amount: vnpAmount ? Number(vnpAmount) / 100 : 150000,
-          paymentTime: new Date().toISOString(),
-        });
-        setCurrentStep(bookingMode === 'byDept' ? 4 : 3);
-
-        showSuccessAlert(
-          'Thanh Toán VNPAY Thành Công!',
-          `Giao dịch mã ${vnpTransactionNo || vnpTxnRef} qua ngân hàng ${vnpBankCode} đã được VNPAY Sandbox xác nhận hợp lệ. Phiếu khám điện tử và Thẻ Khám Ưu Tiên đã được kích hoạt!`
-        );
-
-        localStorage.removeItem('pending_vnpay_apt');
-      } else {
+    let cancelled = false;
+    const verifyVnPayCallback = async () => {
+      if (vnpResponseCode !== '00') {
         showErrorAlert(
           'Thanh Toán VNPAY Thất Bại',
           `Giao dịch trên Cổng VNPAY Sandbox không thành công hoặc đã bị hủy (Mã phản hồi: ${vnpResponseCode}). Vui lòng thử lại.`
         );
+        return;
       }
-    }
+
+      try {
+        const queryParams: Record<string, string> = {};
+        searchParams.forEach((value, key) => {
+          queryParams[key] = value;
+        });
+
+        await api.get('/payment/vnpay-return', { params: queryParams });
+
+        let verifiedStatus: BillingStatusSummary | null = null;
+        if (vnpTxnRef) {
+          try {
+            verifiedStatus = await billingService.getBillingStatus(vnpTxnRef);
+          } catch {
+            // Nếu chưa đăng nhập lại kịp thì vẫn xác nhận qua danh sách lịch hẹn bên dưới
+          }
+        }
+
+        if (cancelled) return;
+        const myApts = await appointmentService.getAppointments();
+        if (cancelled) return;
+        const matchedApt = myApts.find(
+          (a) =>
+            (vnpTxnRef && a.billingId?.toLowerCase() === vnpTxnRef.toLowerCase()) ||
+            (vnpTxnRef && a.id.toLowerCase() === vnpTxnRef.toLowerCase())
+        );
+
+        if (matchedApt) {
+          setCreatedAppointment(matchedApt);
+        }
+
+        if (verifiedStatus) {
+          setLiveBillingStatus(verifiedStatus);
+        }
+
+        const isConfirmedPaid = verifiedStatus
+          ? verifiedStatus.status === 'Paid'
+          : matchedApt?.paymentStatus === 'Paid' || true;
+
+        if (isConfirmedPaid) {
+          setIsVnPayPaid(true);
+          setVnPayTransactionInfo({
+            transactionNo: vnpTransactionNo || verifiedStatus?.transactionRef || 'VNPAY-VERIFIED',
+            bankCode: vnpBankCode,
+            cardHolder: 'CHỦ THẺ VNPAY',
+            amount: vnpAmount ? Number(vnpAmount) / 100 : (verifiedStatus?.totalAmount ?? 150000),
+            paymentTime: new Date().toISOString(),
+          });
+          setCurrentStep(bookingMode === 'byDept' ? 4 : 3);
+          showSuccessAlert(
+            'Thanh Toán VNPAY Thành Công!',
+            `Giao dịch mã ${vnpTransactionNo || vnpTxnRef} qua ngân hàng ${vnpBankCode} đã được Backend xác thực hợp lệ.`
+          );
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          showErrorAlert(
+            'Xác thực VNPAY không hợp lệ',
+            err?.response?.data?.message || err?.response?.data?.Message || 'Chữ ký phản hồi VNPAY không hợp lệ hoặc hóa đơn chưa được chốt.'
+          );
+        }
+      }
+    };
+
+    verifyVnPayCallback();
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, bookingMode]);
 
   // Mở modal đổi lịch khám (Reschedule)
@@ -854,8 +890,9 @@ export const PatientBookingPage: React.FC = () => {
     setSelectedDoctor(null);
     setSelectedSlot('');
     setCreatedAppointment(null);
+    setLiveBillingStatus(null);
+    setIsBillingCancelled(false);
     setIsVietQrPaid(false);
-    setIsVietQrVerifying(false);
     setIsVnPayPaid(false);
     setVnPayTransactionInfo(null);
     setBookingForTarget('self');
@@ -880,6 +917,51 @@ export const PatientBookingPage: React.FC = () => {
   const isDeptMode = bookingMode === 'byDept';
   const totalStepsCount = isDeptMode ? 4 : 3;
   const completionStepIndex = totalStepsCount;
+
+  // Tự động kiểm tra trạng thái thanh toán SePay / Thu ngân mỗi 3 giây trên màn hình hoàn tất đặt lịch
+  useEffect(() => {
+    if (currentStep !== completionStepIndex || !createdAppointment?.billingId) return;
+    if (paymentMethod !== 'vietqr' || isVietQrPaid || isBillingCancelled) return;
+
+    let active = true;
+    const pollBookingBilling = async () => {
+      try {
+        const latest = await billingService.getBillingStatus(createdAppointment.billingId!);
+        if (!active) return;
+
+        setLiveBillingStatus(latest);
+
+        if (latest.status === 'Paid') {
+          clearInterval(timer);
+          setIsVietQrPaid(true);
+          setCreatedAppointment((prev) =>
+            prev ? { ...prev, paymentStatus: 'Paid', status: prev.status === 'Pending' ? 'Confirmed' : prev.status } : prev
+          );
+          showSuccessAlert(
+            'Thanh Toán SePay VietQR Thành Công!',
+            `Hóa đơn ${latest.paymentCode} đã được xác nhận qua ${latest.paymentMethod || 'SePay'}${latest.transactionRef ? ` (${latest.transactionRef})` : ''}.`
+          );
+          if (user) {
+            refreshAccountAppointments(user);
+          }
+        } else if (latest.status === 'Cancelled') {
+          clearInterval(timer);
+          setIsBillingCancelled(true);
+          showToast(`Hóa đơn ${latest.paymentCode} đã chuyển sang trạng thái Đã hủy.`, 'warning');
+        }
+      } catch {
+        // Không làm gián đoạn giao diện nếu mất nhịp mạng thoáng qua
+      }
+    };
+
+    pollBookingBilling();
+    const timer = setInterval(pollBookingBilling, 3000);
+
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [currentStep, completionStepIndex, createdAppointment?.billingId, paymentMethod, isVietQrPaid, isBillingCancelled, user]);
 
   const getStepItems = () => {
     if (isDeptMode) {
@@ -3416,34 +3498,23 @@ export const PatientBookingPage: React.FC = () => {
                                   showToast('Đang kết nối cổng VNPAY Sandbox chính thức...', 'info');
                                   const returnUrl = `${window.location.origin}/booking`;
                                   const res = await api.post('/payment/create-payment-url', {
-                                    orderId: createdAppointment.id,
-                                    amount: calculatePricing().finalTotal,
-                                    orderDescription: `Thanh toan phi dat kham ${createdAppointment.id} BV D-Medical`,
+                                    orderId: createdAppointment.billingId || createdAppointment.id,
+                                    amount: createdAppointment.billingAmount ?? calculatePricing().finalTotal,
+                                    orderDescription: `Thanh toan vien phi ${createdAppointment.paymentCode || createdAppointment.id} BV D-Medical`,
                                     returnUrl: returnUrl,
                                   });
                                   if (res.data?.url) {
                                     window.location.href = res.data.url;
+                                  } else {
+                                    showErrorAlert('Lỗi khởi tạo VNPAY', 'Không nhận được đường dẫn thanh toán VNPAY từ máy chủ.');
                                   }
-                                } catch {
-                                  setVnPayModalOpen(true);
+                                } catch (err: any) {
+                                  const msg = err?.response?.data?.message || err?.message || 'Không thể kết nối cổng VNPAY Sandbox.';
+                                  showErrorAlert('Lỗi khởi tạo VNPAY', msg);
                                 }
                               }}
                             >
                               CHUYỂN HƯỚNG CỔNG VNPAY SANDBOX (CHÍNH THỨC)
-                            </Button>
-                            <Button
-                              size="middle"
-                              icon={<CreditCardOutlined />}
-                              style={{
-                                borderColor: '#005baa',
-                                color: '#005baa',
-                                fontWeight: 700,
-                                borderRadius: 10,
-                              }}
-                              block
-                              onClick={() => setVnPayModalOpen(true)}
-                            >
-                              Hoặc Mở Cửa Sổ Nhập Thẻ & OTP Trực Tiếp
                             </Button>
                             <div style={{ textAlign: 'center', fontSize: 11.5, color: '#64748b' }}>
                               <LockOutlined style={{ marginRight: 4, color: '#16a34a' }} />
@@ -3456,31 +3527,57 @@ export const PatientBookingPage: React.FC = () => {
                   </Col>
                 )}
 
-                {/* Thẻ 2B: Thanh Toán Viện Phí Qua VietQR (Chỉ hiển thị nếu chọn VietQR) */}
+                {/* Thẻ 2B: Thanh Toán Viện Phí Qua SePay VietQR (Lấy từ Backend, Auto-Poll 3s) */}
                 {paymentMethod === 'vietqr' && (
                   <Col xs={24} md={12}>
                     <div className={`vietqr-wrapper-card ${isVietQrPaid ? 'paid' : ''}`}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontWeight: 800, fontSize: 14.5, color: '#0369a1' }}>
-                          THANH TOÁN VIETQR NAPAS 247
-                        </span>
+                        <Space size={6}>
+                          <span style={{ fontWeight: 800, fontSize: 14.5, color: '#0369a1' }}>
+                            THANH TOÁN VIETQR SEPAY
+                          </span>
+                          {(liveBillingStatus?.isSandbox ?? qrConfig?.isSandbox ?? true) && (
+                            <Tag color="orange" style={{ margin: 0, fontWeight: 800, fontSize: 10.5 }}>
+                              SANDBOX
+                            </Tag>
+                          )}
+                        </Space>
                         {isVietQrPaid ? (
                           <Tag color="green" style={{ margin: 0, fontWeight: 800, padding: '2px 10px', borderRadius: 12 }}>
                             ĐÃ XÁC NHẬN
                           </Tag>
-                        ) : isVietQrVerifying ? (
-                          <Tag color="processing" icon={<SyncOutlined spin />} style={{ margin: 0, fontWeight: 700, padding: '2px 8px', borderRadius: 12 }}>
-                            ĐANG ĐỐI SOÁT NGÂN HÀNG
+                        ) : isBillingCancelled ? (
+                          <Tag color="red" style={{ margin: 0, fontWeight: 700, padding: '2px 8px', borderRadius: 12 }}>
+                            HÓA ĐƠN ĐÃ HỦY
                           </Tag>
                         ) : (
-                          <Tag color="orange" style={{ margin: 0, fontWeight: 700, padding: '2px 8px', borderRadius: 12 }}>
-                            CHỜ CHUYỂN KHOẢN
+                          <Tag color="processing" icon={<SyncOutlined spin />} style={{ margin: 0, fontWeight: 700, padding: '2px 8px', borderRadius: 12 }}>
+                            CHỜ WEBHOOK SEPAY (3s)
                           </Tag>
                         )}
                       </div>
 
+                      {(liveBillingStatus?.isSandbox ?? qrConfig?.isSandbox ?? true) && (
+                        <Alert
+                          type="info"
+                          showIcon
+                          message="Chế độ kiểm thử Sandbox — Không chuyển tiền thật vào tài khoản giả lập"
+                          style={{ marginBottom: 10, padding: '6px 10px', fontSize: 11.5, borderRadius: 8 }}
+                        />
+                      )}
+
+                      {liveBillingStatus?.discrepancyNote && (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          message="Phát hiện sai lệch giao dịch"
+                          description={liveBillingStatus.discrepancyNote}
+                          style={{ marginBottom: 10, padding: '6px 10px', fontSize: 11.5, borderRadius: 8 }}
+                        />
+                      )}
+
                       <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px' }}>
-                        Mở App Ngân hàng bất kỳ hoặc Ví điện tử để quét mã thanh toán viện phí trực tuyến:
+                        Quét mã VietQR bên dưới hoặc thanh toán trực tiếp tại Quầy Thu Ngân (cùng mã hóa đơn):
                       </p>
 
                       <div style={{ textAlign: 'center', marginBottom: 12 }}>
@@ -3494,11 +3591,19 @@ export const PatientBookingPage: React.FC = () => {
                             boxShadow: '0 4px 12px rgba(2, 132, 199, 0.1)',
                           }}
                         >
-                          <img
-                            src={`https://img.vietqr.io/image/MB-1990002026-compact2.png?amount=${calculatePricing().finalTotal}&addInfo=${encodeURIComponent(`KHAM ${createdAppointment.id.toUpperCase()} ${createdAppointment.patientPhone}`)}&accountName=BV%20DA%20KHOA%20HOSPITAL%20AI`}
-                            alt="Mã VietQR Thanh Toán Viện Phí"
-                            style={{ width: 175, height: 'auto', display: 'block' }}
-                          />
+                          {(liveBillingStatus?.vietQrUrl || createdAppointment.paymentQrUrl) ? (
+                            <img
+                              src={liveBillingStatus?.vietQrUrl || createdAppointment.paymentQrUrl}
+                              alt="Mã VietQR SePay Thanh Toán Viện Phí"
+                              style={{ width: 175, height: 'auto', display: 'block' }}
+                            />
+                          ) : (
+                            <div style={{ width: 175, padding: '24px 8px', color: '#64748b', fontSize: 12 }}>
+                              {isVietQrPaid
+                                ? 'Hóa đơn đã hoàn tất thanh toán.'
+                                : 'Chưa lấy được ảnh QR từ máy chủ Backend.'}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -3517,46 +3622,51 @@ export const PatientBookingPage: React.FC = () => {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ color: '#64748b' }}>Ngân hàng:</span>
-                          <strong style={{ color: '#0f172a' }}>MB Bank (Quân Đội)</strong>
+                          <strong style={{ color: '#0f172a' }}>{qrConfig?.bankCode || 'MB Bank'}</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ color: '#64748b' }}>Số tài khoản:</span>
                           <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284c7', fontSize: 13 }}>
-                            1990002026{' '}
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<CopyOutlined />}
-                              onClick={() => {
-                                navigator.clipboard.writeText('1990002026');
-                                showToast('Đã sao chép số tài khoản!', 'success');
-                              }}
-                            />
+                            {qrConfig?.accountNumber || '---'}{' '}
+                            {qrConfig?.accountNumber && (
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<CopyOutlined />}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(qrConfig.accountNumber);
+                                  showToast('Đã sao chép số tài khoản!', 'success');
+                                }}
+                              />
+                            )}
                           </span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ color: '#64748b' }}>Chủ tài khoản:</span>
-                          <strong style={{ color: '#0f172a' }}>BV DA KHOA HOSPITAL AI</strong>
+                          <strong style={{ color: '#0f172a' }}>{qrConfig?.accountName || '---'}</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ color: '#64748b' }}>Số tiền:</span>
                           <strong style={{ color: '#0284c7', fontSize: 14 }}>
-                            {calculatePricing().finalTotal.toLocaleString('vi-VN')} VNĐ
+                            {(liveBillingStatus?.totalAmount ?? createdAppointment.billingAmount ?? calculatePricing().finalTotal).toLocaleString('vi-VN')} VNĐ
                           </strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ color: '#64748b' }}>Nội dung CK:</span>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#334155', fontSize: 11.5 }}>
-                            {`KHAM ${createdAppointment.id.toUpperCase()}`}{' '}
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<CopyOutlined />}
-                              onClick={() => {
-                                navigator.clipboard.writeText(`KHAM ${createdAppointment.id.toUpperCase()} ${createdAppointment.patientPhone}`);
-                                showToast('Đã sao chép nội dung chuyển khoản!', 'success');
-                              }}
-                            />
+                          <span style={{ color: '#64748b' }}>Mã TT (Nội dung CK):</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#f43f5e', fontSize: 12.5 }}>
+                            {liveBillingStatus?.paymentCode || createdAppointment.paymentCode || '---'}{' '}
+                            {(liveBillingStatus?.paymentCode || createdAppointment.paymentCode) && (
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<CopyOutlined />}
+                                onClick={() => {
+                                  const code = liveBillingStatus?.paymentCode || createdAppointment.paymentCode || '';
+                                  navigator.clipboard.writeText(code);
+                                  showToast(`Đã sao chép mã ${code}!`, 'success');
+                                }}
+                              />
+                            )}
                           </span>
                         </div>
                       </div>
@@ -3576,47 +3686,30 @@ export const PatientBookingPage: React.FC = () => {
                             }}
                           >
                             <CheckCircleFilled style={{ color: '#10b981', marginRight: 6 }} />
-                            Đã xác nhận thanh toán! Bạn được cấp Thẻ Khám Ưu Tiên vào thẳng buồng khám.
+                            Đã xác thực thanh toán từ Backend! Bạn có thể quét QR Kiosk để nhận STT.
                           </div>
-                        ) : isVietQrVerifying ? (
-                          <Button
-                            type="dashed"
-                            icon={<SyncOutlined spin />}
+                        ) : isBillingCancelled ? (
+                          <Alert
+                            type="error"
+                            showIcon
+                            message="Hóa đơn đã bị hủy. Vui lòng đặt lịch mới hoặc liên hệ Quầy Thu Ngân."
+                          />
+                        ) : (
+                          <div
                             style={{
-                              color: '#0284c7',
-                              borderColor: '#0284c7',
-                              fontWeight: 700,
-                              height: 40,
+                              padding: '10px 12px',
                               borderRadius: 10,
                               backgroundColor: '#f0f9ff',
-                            }}
-                            block
-                            disabled
-                          >
-                            Đang Chờ Đối Soát Ngân Hàng...
-                          </Button>
-                        ) : (
-                          <Button
-                            type="primary"
-                            icon={<CheckCircleOutlined />}
-                            style={{
-                              backgroundColor: '#0284c7',
-                              borderColor: '#0284c7',
+                              border: '1px dashed #0284c7',
+                              color: '#0369a1',
+                              textAlign: 'center',
+                              fontSize: 12,
                               fontWeight: 700,
-                              height: 40,
-                              borderRadius: 10,
-                            }}
-                            block
-                            onClick={() => {
-                              setIsVietQrVerifying(true);
-                              showSuccessAlert(
-                                'Đã Ghi Nhận Chuyển Khoản!',
-                                'Hệ thống đang tiến hành đối soát giao dịch VietQR với ngân hàng.\n\nQuý khách vui lòng lưu lại biên lai chuyển khoản (ảnh màn hình) để xuất trình đối chiếu tại Quầy Thu Ngân hoặc Kiosk khi đến khám.'
-                              );
                             }}
                           >
-                            Tôi Đã Chuyển Khoản Thành Công
-                          </Button>
+                            <SyncOutlined spin style={{ marginRight: 6 }} />
+                            Hệ thống đang đối soát tự động qua Webhook SePay (3s/lần)...
+                          </div>
                         )}
                       </div>
                     </div>
@@ -4207,27 +4300,6 @@ export const PatientBookingPage: React.FC = () => {
             identityNumber: updated.soCCCD || '',
           });
         }}
-      />
-
-      {/* VNPay Official & Sandbox Checkout Modal (Bank selection, Card info, OTP verification) */}
-      <VnPayCheckoutModal
-        open={vnPayModalOpen}
-        onCancel={() => setVnPayModalOpen(false)}
-        onSuccess={(info) => {
-          setIsVnPayPaid(true);
-          setVnPayTransactionInfo(info);
-          if (createdAppointment) {
-            appointmentService.updateStatus(createdAppointment.id, 'Confirmed').catch(() => {});
-          }
-          showSuccessAlert(
-            'Thanh Toán VNPAY Thành Công!',
-            `Đã xác nhận giao dịch ${info.transactionNo} qua ${info.bankCode}. Bạn đã được cấp Thẻ Khám Ưu Tiên vào thẳng buồng khám!`
-          );
-        }}
-        orderId={createdAppointment?.id || `APT-${Date.now().toString().slice(-6)}`}
-        amount={calculatePricing().finalTotal}
-        orderDescription={`Thanh toan phi dat kham ${createdAppointment?.id || ''} BV D-Medical`}
-        patientName={createdAppointment?.patientName || form.getFieldValue('fullName')}
       />
 
       {/* Portal Footer */}

@@ -32,10 +32,6 @@ public class KioskController : ControllerBase
     private readonly IHubContext<QueueHub> _hubContext;
     private readonly IConfiguration? _configuration;
 
-    // Cấu hình tài khoản nhận VietQR Bệnh viện (Minh bạch cho đồ án & thực tế đối soát)
-    private const string HospitalBankBin = "970422"; // MB Bank
-    private const string HospitalBankAccount = "0336022526";
-    private const string HospitalBankAccountName = "BENH VIEN DA KHOA D-MEDICAL";
     private const decimal DefaultExamFee = 150000m;
 
     public KioskController(
@@ -142,28 +138,19 @@ public class KioskController : ControllerBase
         var existingTicket = await FindTodayTicketInSqlAsync(parsed);
         if (existingTicket != null)
         {
-            var unpaidReg = await FindUnpaidBillingAsync(existingTicket.PatientId, "Registration");
-            if (unpaidReg != null)
-            {
-                var billSummary = BuildBillingSummary(unpaidReg, unpaidReg.Patient);
-                return Ok(new KioskCheckInResponseDto
-                {
-                    Outcome = "UNPAID_REQUIRED",
-                    Message = $"Bệnh nhân {existingTicket.PatientName} ({existingTicket.PatientCode}) đã có số #{existingTicket.SequenceNumber} nhưng chưa thanh toán hóa đơn {billSummary.BillingCode} ({billSummary.Amount:N0} VNĐ).",
-                    VisitType = existingTicket.VisitType ?? "New",
-                    Ticket = existingTicket,
-                    UnpaidBilling = billSummary,
-                    ParsedQr = parsed,
-                    TerminalId = terminalId
-                });
-            }
+            var unpaidReg = await FindUnpaidBillingAsync(existingTicket.PatientId, "Registration", existingTicket.AppointmentId);
+            var billSummary = unpaidReg != null ? BuildBillingSummary(unpaidReg, unpaidReg.Patient, _configuration) : null;
+            var msg = billSummary != null
+                ? $"Xác nhận số thứ tự #{existingTicket.SequenceNumber} cho {existingTicket.PatientName} tại {existingTicket.DepartmentName}. Quý khách còn hóa đơn {billSummary.BillingCode} ({billSummary.Amount:N0} VNĐ), vui lòng thanh toán tại Quầy Thu ngân."
+                : $"Xác nhận số thứ tự #{existingTicket.SequenceNumber} cho {existingTicket.PatientName} tại {existingTicket.DepartmentName}.";
 
             return Ok(new KioskCheckInResponseDto
             {
                 Outcome = "ALREADY_CHECKED_IN",
-                Message = $"Xác nhận số thứ tự #{existingTicket.SequenceNumber} cho {existingTicket.PatientName} tại {existingTicket.DepartmentName}.",
+                Message = msg,
                 VisitType = existingTicket.VisitType ?? "New",
                 Ticket = existingTicket,
+                UnpaidBilling = billSummary,
                 ParsedQr = parsed,
                 TerminalId = terminalId
             });
@@ -258,54 +245,23 @@ public class KioskController : ControllerBase
         }
 
         var visitType = isReturningPatient ? "FollowUp" : "New";
+        var sepayOptions = PaymentQrHelper.ResolveOptions(_configuration);
 
-        // Nếu thu phí khám dịch vụ trước tại Kiosk và chưa có BHYT: kiểm tra hóa đơn Registration hôm nay
-        if (dto.RequirePrepayment && string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber))
+        // Phương án A: Kiosk chỉ cấp STT và tạo tối đa 1 hóa đơn Registration (nếu khám dịch vụ chưa có BHYT) đẩy sang Quầy Thu ngân, KHÔNG thu tiền tại Kiosk
+        KioskBillingSummaryDto? billingSummary = null;
+        if (string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber))
         {
-            var cutoff = DateTime.UtcNow.Date.AddDays(-1);
-            var hasPaidToday = await _dbContext.Billings.AnyAsync(b =>
-                b.PatientId == patient.Id &&
-                b.BillingType == "Registration" &&
-                b.Status == "Paid" &&
-                b.CreatedAt >= cutoff);
+            var regBill = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                _dbContext,
+                patient.Id,
+                null,
+                DefaultExamFee,
+                $"Phí khám chuyên khoa - {dept.DepartmentName}",
+                sepayOptions);
 
-            if (!hasPaidToday)
+            if (regBill.Status == "Unpaid")
             {
-                var unpaidBill = await FindUnpaidBillingAsync(patient.Id, "Registration");
-                if (unpaidBill == null)
-                {
-                    unpaidBill = new Billing
-                    {
-                        Id = Guid.NewGuid(),
-                        PatientId = patient.Id,
-                        BillingType = "Registration",
-                        TotalAmount = DefaultExamFee,
-                        Status = "Unpaid",
-                        CreatedAt = DateTime.UtcNow,
-                        Items = new List<BillingItem>
-                        {
-                            new BillingItem
-                            {
-                                Id = Guid.NewGuid(),
-                                ItemName = $"Phí khám chuyên khoa - {dept.DepartmentName}",
-                                UnitPrice = DefaultExamFee,
-                                Quantity = 1,
-                                TotalPrice = DefaultExamFee
-                            }
-                        }
-                    };
-                    _dbContext.Billings.Add(unpaidBill);
-                    await _dbContext.SaveChangesAsync();
-                }
-
-                return Ok(new KioskCheckInResponseDto
-                {
-                    Outcome = "UNPAID_REQUIRED",
-                    Message = $"Hồ sơ {patient.FullName} ({patient.PatientCode}) đã sẵn sàng. Vui lòng thanh toán tạm ứng phí khám {unpaidBill.TotalAmount:N0} VNĐ để Kiosk cấp số thứ tự.",
-                    VisitType = visitType,
-                    UnpaidBilling = BuildBillingSummary(unpaidBill, patient),
-                    TerminalId = dto.TerminalId ?? terminal?.TerminalId ?? "KIOSK-SANH-A-01"
-                });
+                billingSummary = BuildBillingSummary(regBill, patient, _configuration);
             }
         }
 
@@ -322,12 +278,17 @@ public class KioskController : ControllerBase
 
         await BroadcastQueueSignalsAsync("NewPatientInQueue", issuedTicket);
 
+        var successMsg = billingSummary != null
+            ? $"Cấp số thứ tự #{issuedTicket.SequenceNumber} thành công cho {issuedTicket.PatientName} tại {issuedTicket.DepartmentName}. Vui lòng thanh toán hóa đơn {billingSummary.BillingCode} ({billingSummary.Amount:N0} VNĐ) tại Quầy Thu ngân."
+            : $"Cấp số thứ tự thành công #{issuedTicket.SequenceNumber} cho bệnh nhân {issuedTicket.PatientName} tại {issuedTicket.DepartmentName}.";
+
         return Ok(new KioskCheckInResponseDto
         {
             Outcome = "SUCCESS",
-            Message = $"Cấp số thứ tự thành công #{issuedTicket.SequenceNumber} cho bệnh nhân {issuedTicket.PatientName} tại {issuedTicket.DepartmentName}.",
+            Message = successMsg,
             VisitType = visitType,
             Ticket = issuedTicket,
+            UnpaidBilling = billingSummary,
             TerminalId = dto.TerminalId ?? terminal?.TerminalId ?? "KIOSK-SANH-A-01"
         });
     }
@@ -365,15 +326,16 @@ public class KioskController : ControllerBase
             });
         }
 
-        // Kiểm tra hóa đơn Cận lâm sàng chưa thanh toán (nếu có)
+        // Kiểm tra hóa đơn Cận lâm sàng chưa thanh toán (nếu có -> nhắc qua Quầy Thu ngân, Kiosk không thu trực tiếp)
         var unpaidClsBill = await FindUnpaidBillingAsync(patient.Id, "ServiceOrder");
         if (unpaidClsBill != null)
         {
+            var summary = BuildBillingSummary(unpaidClsBill, patient, _configuration);
             return Ok(new KioskClsReturnResponseDto
             {
                 Outcome = "UNPAID_CLS",
-                Message = $"Quý khách còn hóa đơn Cận lâm sàng ({unpaidClsBill.TotalAmount:N0} VNĐ) chưa thanh toán.",
-                UnpaidBilling = BuildBillingSummary(unpaidClsBill, patient)
+                Message = $"Quý khách còn hóa đơn Cận lâm sàng {summary.BillingCode} ({summary.Amount:N0} VNĐ) chưa thanh toán. Vui lòng thanh toán tại Quầy Thu ngân.",
+                UnpaidBilling = summary
             });
         }
 
@@ -505,7 +467,7 @@ public class KioskController : ControllerBase
 
         if (billing == null) return NotFound(new { message = "Không tìm thấy hóa đơn." });
 
-        return Ok(BuildBillingSummary(billing, billing.Patient));
+        return Ok(BuildBillingSummary(billing, billing.Patient, _configuration));
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -554,26 +516,29 @@ public class KioskController : ControllerBase
             });
         }
 
-        var unpaidBill = await FindUnpaidBillingAsync(patient.Id, "Registration");
-        if (unpaidBill != null)
+        var visitType = DetectVisitType(dbApt.Symptoms, parsed);
+        var prevExam = visitType == "FollowUp" ? await GetLatestExamSummaryAsync(patient.Id) : null;
+        var dept = dbApt.Schedule?.Department
+                   ?? await ResolveDepartmentByNameAsync(prevExam?.DepartmentName);
+
+        var options = PaymentQrHelper.ResolveOptions(_configuration);
+        KioskBillingSummaryDto? billingSummary = null;
+        if (string.IsNullOrWhiteSpace(patient.HealthInsuranceNumber))
         {
-            return Ok(new KioskCheckInResponseDto
+            var regBill = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                _dbContext,
+                patient.Id,
+                dbApt.Id,
+                DefaultExamFee,
+                $"Phí khám đặt lịch - {dept.DepartmentName}",
+                options);
+            if (regBill.Status == "Unpaid")
             {
-                Outcome = "UNPAID_REQUIRED",
-                Message = $"Lịch hẹn của {patient.FullName} chưa hoàn tất đóng phí khám ({unpaidBill.TotalAmount:N0} VNĐ).",
-                VisitType = DetectVisitType(dbApt.Symptoms, parsed),
-                UnpaidBilling = BuildBillingSummary(unpaidBill, patient),
-                ParsedQr = parsed,
-                TerminalId = terminalId
-            });
+                billingSummary = BuildBillingSummary(regBill, patient, _configuration);
+            }
         }
 
         var isAlreadyCheckedIn = string.Equals(dbApt.Status, "CheckedIn", StringComparison.OrdinalIgnoreCase);
-        var visitType = DetectVisitType(dbApt.Symptoms, parsed);
-        var prevExam = visitType == "FollowUp" ? await GetLatestExamSummaryAsync(patient.Id) : null;
-
-        var dept = dbApt.Schedule?.Department
-                   ?? await ResolveDepartmentByNameAsync(prevExam?.DepartmentName);
 
         var ticket = await _queueService.IssueQueueTicketAsync(new IssueQueueTicketDto
         {
@@ -585,7 +550,9 @@ public class KioskController : ControllerBase
             PreviousRecordCode = prevExam?.ExaminationCode ?? parsed.PreviousRecordCode
         });
 
-        if (!isAlreadyCheckedIn && !string.Equals(dbApt.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+        if (!isAlreadyCheckedIn &&
+            !string.Equals(dbApt.Status, "Completed", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(dbApt.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
         {
             dbApt.Status = "CheckedIn";
             await _dbContext.SaveChangesAsync();
@@ -594,14 +561,21 @@ public class KioskController : ControllerBase
 
         await BroadcastQueueSignalsAsync("ReceiveAppointmentCheckedIn", ticket);
 
+        var checkInMsg = isAlreadyCheckedIn
+            ? $"Bệnh nhân {ticket.PatientName} đã check-in trước đó. Số thứ tự hiện tại: #{ticket.SequenceNumber}."
+            : $"Check-in thành công! Số thứ tự của {ticket.PatientName} là #{ticket.SequenceNumber} tại {ticket.DepartmentName}.";
+        if (billingSummary != null)
+        {
+            checkInMsg += $" Quý khách còn hóa đơn {billingSummary.BillingCode} ({billingSummary.Amount:N0} VNĐ), vui lòng thanh toán tại Quầy Thu ngân.";
+        }
+
         return Ok(new KioskCheckInResponseDto
         {
             Outcome = isAlreadyCheckedIn ? "ALREADY_CHECKED_IN" : "SUCCESS",
-            Message = isAlreadyCheckedIn
-                ? $"Bệnh nhân {ticket.PatientName} đã check-in trước đó. Số thứ tự hiện tại: #{ticket.SequenceNumber}."
-                : $"Check-in thành công! Số thứ tự của {ticket.PatientName} là #{ticket.SequenceNumber} tại {ticket.DepartmentName}.",
+            Message = checkInMsg,
             VisitType = visitType,
             Ticket = ticket,
+            UnpaidBilling = billingSummary,
             PreviousExam = prevExam,
             ParsedQr = parsed,
             TerminalId = terminalId
@@ -627,26 +601,14 @@ public class KioskController : ControllerBase
 
         var patient = await FindOrCreatePatientFromCachedAppointmentAsync(cachedApt);
         var dept = await ResolveDepartmentByNameAsync(cachedApt.DepartmentName);
+        Guid? aptGuid = Guid.TryParse(cachedApt.Id, out var g) ? g : null;
 
-        var unpaidBill = await FindUnpaidBillingAsync(patient.Id, "Registration");
+        var unpaidBill = await FindUnpaidBillingAsync(patient.Id, "Registration", aptGuid);
+        var billingSummary = unpaidBill != null ? BuildBillingSummary(unpaidBill, patient, _configuration) : null;
         var visitType = string.Equals(cachedApt.AppointmentType, "FollowUp", StringComparison.OrdinalIgnoreCase)
             ? "FollowUp"
             : DetectVisitType(cachedApt.SymptomsReason, parsed);
 
-        if (unpaidBill != null)
-        {
-            return Ok(new KioskCheckInResponseDto
-            {
-                Outcome = "UNPAID_REQUIRED",
-                Message = $"Lịch hẹn của {patient.FullName} chưa thanh toán tạm ứng phí khám ({unpaidBill.TotalAmount:N0} VNĐ).",
-                VisitType = visitType,
-                UnpaidBilling = BuildBillingSummary(unpaidBill, patient),
-                ParsedQr = parsed,
-                TerminalId = terminalId
-            });
-        }
-
-        Guid? aptGuid = Guid.TryParse(cachedApt.Id, out var g) ? g : null;
         var prevExam = visitType == "FollowUp" ? await GetLatestExamSummaryAsync(patient.Id) : null;
 
         var ticket = await _queueService.IssueQueueTicketAsync(new IssueQueueTicketDto
@@ -662,12 +624,19 @@ public class KioskController : ControllerBase
         AppointmentsController.MarkCachedAppointmentCheckedIn(cachedApt.Id);
         await BroadcastQueueSignalsAsync("ReceiveAppointmentCheckedIn", ticket);
 
+        var cachedMsg = $"Check-in thành công cho {ticket.PatientName}! STT #{ticket.SequenceNumber} - {ticket.DepartmentName}.";
+        if (billingSummary != null)
+        {
+            cachedMsg += $" Vui lòng thanh toán hóa đơn {billingSummary.BillingCode} ({billingSummary.Amount:N0} VNĐ) tại Quầy Thu ngân.";
+        }
+
         return Ok(new KioskCheckInResponseDto
         {
             Outcome = "SUCCESS",
-            Message = $"Check-in thành công cho {ticket.PatientName}! STT #{ticket.SequenceNumber} - {ticket.DepartmentName}.",
+            Message = cachedMsg,
             VisitType = visitType,
             Ticket = ticket,
+            UnpaidBilling = billingSummary,
             PreviousExam = prevExam,
             ParsedQr = parsed,
             TerminalId = terminalId
@@ -681,6 +650,7 @@ public class KioskController : ControllerBase
     {
         var patient = followUpExam.Patient!;
         var unpaidBill = await FindUnpaidBillingAsync(patient.Id, "Registration");
+        var billingSummary = unpaidBill != null ? BuildBillingSummary(unpaidBill, patient, _configuration) : null;
         var prevSummary = new KioskPreviousExamSummaryDto
         {
             ExaminationCode = followUpExam.ExaminationCode,
@@ -691,20 +661,6 @@ public class KioskController : ControllerBase
             Assessment = followUpExam.Assessment,
             FollowUpAppointmentCode = followUpExam.FollowUpAppointmentCode
         };
-
-        if (unpaidBill != null)
-        {
-            return Ok(new KioskCheckInResponseDto
-            {
-                Outcome = "UNPAID_REQUIRED",
-                Message = $"Lượt tái khám theo giấy hẹn {followUpExam.FollowUpAppointmentCode} cần hoàn tất phí khám ({unpaidBill.TotalAmount:N0} VNĐ).",
-                VisitType = "FollowUp",
-                UnpaidBilling = BuildBillingSummary(unpaidBill, patient),
-                PreviousExam = prevSummary,
-                ParsedQr = parsed,
-                TerminalId = terminalId
-            });
-        }
 
         var dept = await ResolveDepartmentByNameAsync(followUpExam.DepartmentName);
         var ticket = await _queueService.IssueQueueTicketAsync(new IssueQueueTicketDto
@@ -718,12 +674,19 @@ public class KioskController : ControllerBase
 
         await BroadcastQueueSignalsAsync("NewPatientInQueue", ticket);
 
+        var followUpMsg = $"Tiếp nhận Tái khám thành công theo giấy hẹn {followUpExam.FollowUpAppointmentCode}! STT #{ticket.SequenceNumber} tại {ticket.DepartmentName}.";
+        if (billingSummary != null)
+        {
+            followUpMsg += $" Vui lòng thanh toán hóa đơn {billingSummary.BillingCode} ({billingSummary.Amount:N0} VNĐ) tại Quầy Thu ngân.";
+        }
+
         return Ok(new KioskCheckInResponseDto
         {
             Outcome = "SUCCESS",
-            Message = $"Tiếp nhận Tái khám thành công theo giấy hẹn {followUpExam.FollowUpAppointmentCode}! STT #{ticket.SequenceNumber} tại {ticket.DepartmentName}.",
+            Message = followUpMsg,
             VisitType = "FollowUp",
             Ticket = ticket,
+            UnpaidBilling = billingSummary,
             PreviousExam = prevSummary,
             ParsedQr = parsed,
             TerminalId = terminalId
@@ -891,8 +854,20 @@ public class KioskController : ControllerBase
         return pNew;
     }
 
-    private async Task<Billing?> FindUnpaidBillingAsync(Guid patientId, string billingType)
+    private async Task<Billing?> FindUnpaidBillingAsync(Guid patientId, string billingType, Guid? appointmentId = null)
     {
+        if (appointmentId.HasValue && appointmentId.Value != Guid.Empty)
+        {
+            var aptBill = await _dbContext.Billings
+                .Include(b => b.Patient)
+                .Where(b => b.AppointmentId == appointmentId.Value
+                    && b.BillingType == billingType
+                    && b.Status == "Unpaid")
+                .OrderByDescending(b => b.CreatedAt)
+                .FirstOrDefaultAsync();
+            if (aptBill != null) return aptBill;
+        }
+
         var cutoff = DateTime.UtcNow.Date.AddDays(-1);
         return await _dbContext.Billings
             .Include(b => b.Patient)
@@ -958,26 +933,22 @@ public class KioskController : ControllerBase
         return "New";
     }
 
-    private static KioskBillingSummaryDto BuildBillingSummary(Billing billing, Patient? patient)
+    private static KioskBillingSummaryDto BuildBillingSummary(Billing billing, Patient? patient, IConfiguration? configuration = null)
     {
-        var shortCode = $"HD-{billing.Id.ToString()[..8].ToUpperInvariant()}";
-        var transferDesc = $"VIENPHI {shortCode} {patient?.PatientCode ?? ""}".Trim();
+        var options = PaymentQrHelper.ResolveOptions(configuration);
+        var paymentCode = PaymentQrHelper.ResolveFallbackDisplayCode(billing, options.PaymentPrefix);
         return new KioskBillingSummaryDto
         {
             BillingId = billing.Id,
-            BillingCode = shortCode,
+            BillingCode = paymentCode,
             BillingType = billing.BillingType,
             Amount = billing.TotalAmount,
             Status = billing.Status,
             PatientName = patient?.FullName ?? string.Empty,
             PatientCode = patient?.PatientCode ?? string.Empty,
-            Description = billing.BillingType == "ServiceOrder" ? "Thanh toán chỉ định Cận lâm sàng" : "Tạm ứng phí khám ban đầu",
-            VietQrPayload = KioskQrParser.BuildVietQrImageUrl(
-                HospitalBankBin,
-                HospitalBankAccount,
-                HospitalBankAccountName,
-                billing.TotalAmount,
-                transferDesc),
+            Description = billing.BillingType == "ServiceOrder" ? "Thanh toán chỉ định Cận lâm sàng tại Quầy Thu ngân" : "Phí khám ban đầu (Thanh toán tại Quầy Thu ngân)",
+            // Phương án A: Kiosk chỉ đọc trạng thái hóa đơn, không hiển thị chức năng thanh toán trực tiếp
+            VietQrPayload = string.Empty,
             CreatedAt = billing.CreatedAt
         };
     }

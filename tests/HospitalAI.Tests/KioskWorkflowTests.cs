@@ -180,35 +180,44 @@ public class KioskWorkflowTests
             ControllerContext = CreateKioskTerminalContext(user: staffUser)
         };
 
-        // Act 1: Quét QR khi hóa đơn còn Unpaid -> Phải chặn cấp STT và trả về UnpaidBilling thật
-        var blockedRes = Assert.IsType<OkObjectResult>(await controller.CheckIn(new KioskCheckInRequestDto
+        // Act 1: Phương án A - Quét QR khi hóa đơn còn Unpaid -> Vẫn cấp STT, đọc trạng thái UnpaidBilling (không thu trực tiếp tại Kiosk, không tạo hóa đơn trùng)
+        var checkInRes = Assert.IsType<OkObjectResult>(await controller.CheckIn(new KioskCheckInRequestDto
         {
             QrCodeOrCode = apt.Id.ToString()
         }));
-        var blockedPayload = Assert.IsType<KioskCheckInResponseDto>(blockedRes.Value);
-        Assert.Equal("UNPAID_REQUIRED", blockedPayload.Outcome);
-        Assert.NotNull(blockedPayload.UnpaidBilling);
-        Assert.Equal(unpaidBill.Id, blockedPayload.UnpaidBilling.BillingId);
-        Assert.Equal(150000m, blockedPayload.UnpaidBilling.Amount);
-        Assert.Null(blockedPayload.Ticket);
-        Assert.Equal(0, await context.QueueTickets.CountAsync());
+        var checkInPayload = Assert.IsType<KioskCheckInResponseDto>(checkInRes.Value);
+        Assert.Equal("SUCCESS", checkInPayload.Outcome);
+        Assert.NotNull(checkInPayload.Ticket);
+        Assert.Equal(101, checkInPayload.Ticket.SequenceNumber);
+        Assert.Equal("Unpaid", checkInPayload.Ticket.PaymentStatus);
+        Assert.NotNull(checkInPayload.UnpaidBilling);
+        Assert.Equal(unpaidBill.Id, checkInPayload.UnpaidBilling.BillingId);
+        Assert.Equal(150000m, checkInPayload.UnpaidBilling.Amount);
+        Assert.Equal(string.Empty, checkInPayload.UnpaidBilling.VietQrPayload);
+        Assert.Equal(1, await context.Billings.CountAsync());
+        Assert.Equal(1, await context.QueueTickets.CountAsync());
 
-        // Act 2: Thu ngân / VNPay thanh toán xong -> cập nhật Paid trong DB
+        // Act 2: Thu ngân / SePay thanh toán xong -> cập nhật Paid trong DB
         var dbBill = await context.Billings.FindAsync(unpaidBill.Id);
         dbBill!.Status = "Paid";
         dbBill.PaidAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
 
-        // Act 3: Quét lại -> Kiosk tự mở khóa cấp STT và chuyển Appointment sang CheckedIn
-        var unlockedRes = Assert.IsType<OkObjectResult>(await controller.CheckIn(new KioskCheckInRequestDto
+        // Act 3: Kiosk đọc trạng thái hóa đơn và quét lại -> Nhận biết Paid tự động
+        var statusRes = Assert.IsType<OkObjectResult>(await controller.GetBillingStatus(unpaidBill.Id));
+        var statusPayload = Assert.IsType<KioskBillingSummaryDto>(statusRes.Value);
+        Assert.Equal("Paid", statusPayload.Status);
+
+        var rescanRes = Assert.IsType<OkObjectResult>(await controller.CheckIn(new KioskCheckInRequestDto
         {
             QrCodeOrCode = apt.Id.ToString()
         }));
-        var unlockedPayload = Assert.IsType<KioskCheckInResponseDto>(unlockedRes.Value);
-        Assert.Equal("SUCCESS", unlockedPayload.Outcome);
-        Assert.NotNull(unlockedPayload.Ticket);
-        Assert.Equal(101, unlockedPayload.Ticket.SequenceNumber);
-        Assert.Equal("Paid", unlockedPayload.Ticket.PaymentStatus);
+        var rescanPayload = Assert.IsType<KioskCheckInResponseDto>(rescanRes.Value);
+        Assert.Equal("ALREADY_CHECKED_IN", rescanPayload.Outcome);
+        Assert.NotNull(rescanPayload.Ticket);
+        Assert.Equal(101, rescanPayload.Ticket.SequenceNumber);
+        Assert.Equal("Paid", rescanPayload.Ticket.PaymentStatus);
+        Assert.Null(rescanPayload.UnpaidBilling);
 
         var updatedApt = await context.Appointments.FindAsync(apt.Id);
         Assert.Equal("CheckedIn", updatedApt!.Status);
@@ -335,9 +344,9 @@ public class KioskWorkflowTests
     }
 
     [Fact]
-    public async Task Kiosk_WalkIn_WithPrepayment_ShouldCreateUnpaidBilling_AndIssueSttAfterPaid()
+    public async Task Kiosk_WalkIn_ServicePatient_ShouldIssueSttCreateSingleBillForCashier_AndReadPaidStatus()
     {
-        var dbName = "Kiosk_WalkInPrepay_" + Guid.NewGuid();
+        var dbName = "Kiosk_WalkInMethodA_" + Guid.NewGuid();
         using var context = CreateDbContext(dbName);
         var dept = new Department { Id = Guid.NewGuid(), DepartmentName = "Khoa Tim Mạch", Location = "P301" };
         context.Departments.Add(dept);
@@ -355,30 +364,40 @@ public class KioskWorkflowTests
             DateOfBirth = DateTime.UtcNow.AddYears(-30),
             Gender = "Nam",
             DepartmentId = dept.Id,
-            RequirePrepayment = true
+            RequirePrepayment = false
         };
 
-        // Act 1: Thu phí khám trước -> Sinh hóa đơn Unpaid trong SQL Server và chưa cấp STT
+        // Act 1: Phương án A - Kiosk cấp STT ngay và tạo duy nhất 1 hóa đơn Registration (HAI...) đẩy sang Thu ngân
         var res1 = Assert.IsType<OkObjectResult>(await controller.IssueWalkIn(req));
         var payload1 = Assert.IsType<KioskCheckInResponseDto>(res1.Value);
-        Assert.Equal("UNPAID_REQUIRED", payload1.Outcome);
+        Assert.Equal("SUCCESS", payload1.Outcome);
+        Assert.NotNull(payload1.Ticket);
+        Assert.Equal(101, payload1.Ticket.SequenceNumber);
+        Assert.Equal("Unpaid", payload1.Ticket.PaymentStatus);
         Assert.NotNull(payload1.UnpaidBilling);
+        Assert.Matches("^HAI[A-F0-9]{8}$", payload1.UnpaidBilling.BillingCode);
+        Assert.Equal(string.Empty, payload1.UnpaidBilling.VietQrPayload);
         Assert.Equal(150000m, payload1.UnpaidBilling.Amount);
-        Assert.Null(payload1.Ticket);
+        Assert.Equal(1, await context.Billings.CountAsync());
 
-        // Act 2: Thanh toán hóa đơn xong
+        // Act 2: Gọi lại walk-in cùng bệnh nhân -> Không tạo trùng bệnh nhân, STT hoặc hóa đơn
+        var res2 = Assert.IsType<OkObjectResult>(await controller.IssueWalkIn(req));
+        var payload2 = Assert.IsType<KioskCheckInResponseDto>(res2.Value);
+        Assert.Equal("SUCCESS", payload2.Outcome);
+        Assert.Equal(101, payload2.Ticket!.SequenceNumber);
+        Assert.Equal(1, await context.Patients.CountAsync());
+        Assert.Equal(1, await context.QueueTickets.CountAsync());
+        Assert.Equal(1, await context.Billings.CountAsync());
+
+        // Act 3: Thu ngân / SePay thanh toán hóa đơn xong -> Kiosk GetBillingStatus đọc đúng trạng thái Paid
         var bill = await context.Billings.FindAsync(payload1.UnpaidBilling.BillingId);
         Assert.NotNull(bill);
         bill!.Status = "Paid";
         bill.PaidAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
 
-        // Act 3: Kiosk auto-polling gọi lại IssueWalkIn -> Tự động cấp STT thật
-        var res2 = Assert.IsType<OkObjectResult>(await controller.IssueWalkIn(req));
-        var payload2 = Assert.IsType<KioskCheckInResponseDto>(res2.Value);
-        Assert.Equal("SUCCESS", payload2.Outcome);
-        Assert.NotNull(payload2.Ticket);
-        Assert.Equal(101, payload2.Ticket.SequenceNumber);
-        Assert.Equal("Paid", payload2.Ticket.PaymentStatus);
+        var statusRes = Assert.IsType<OkObjectResult>(await controller.GetBillingStatus(bill.Id));
+        var statusDto = Assert.IsType<KioskBillingSummaryDto>(statusRes.Value);
+        Assert.Equal("Paid", statusDto.Status);
     }
 }

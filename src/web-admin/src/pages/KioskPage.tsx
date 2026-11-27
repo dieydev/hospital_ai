@@ -25,7 +25,6 @@ import {
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
-  CreditCardOutlined,
   ExperimentOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
@@ -127,10 +126,10 @@ export const KioskPage: React.FC = () => {
   const [checkInResult, setCheckInResult] = useState<KioskCheckInResponse | null>(null);
   const scanInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Trạng thái Tab 2: Walk-in CCCD
+  // Trạng thái Tab 2: Walk-in CCCD (Phương án A: Kiosk chỉ cấp STT, không thu tiền tại Kiosk)
   const [walkInForm] = Form.useForm();
   const [walkInLoading, setWalkInLoading] = useState<boolean>(false);
-  const [walkInPaymentMode, setWalkInPaymentMode] = useState<'BHYT' | 'PrepayService' | 'PostpayCounter'>('BHYT');
+  const [walkInPaymentMode, setWalkInPaymentMode] = useState<'BHYT' | 'ServiceCounter'>('BHYT');
   const [activeNumpadTarget, setActiveNumpadTarget] = useState<'scan' | 'cccd' | 'phone' | 'cls'>('scan');
 
   // Trạng thái Tab 3: Quay lại đọc KQ CLS
@@ -139,12 +138,9 @@ export const KioskPage: React.FC = () => {
   const [clsResult, setClsResult] = useState<KioskClsReturnResponse | null>(null);
   const clsInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Trạng thái Thanh toán VietQR / VNPay & Auto-Polling
-  const [activeUnpaidBilling, setActiveUnpaidBilling] = useState<KioskBillingSummary | null>(null);
-  const [pendingRecoveryCode, setPendingRecoveryCode] = useState<string | null>(null);
-  const [pendingWalkInPayload, setPendingWalkInPayload] = useState<KioskWalkInRequest | null>(null);
-  const [vnpayLoading, setVnpayLoading] = useState<boolean>(false);
-  const [vietQrImgError, setVietQrImgError] = useState<boolean>(false);
+  // Theo dõi trạng thái thanh toán hóa đơn từ Quầy Thu ngân / SePay / VNPay (Chỉ đọc, không thu trực tiếp tại Kiosk)
+  const [trackedBilling, setTrackedBilling] = useState<KioskBillingSummary | null>(null);
+  const [pendingClsCode, setPendingClsCode] = useState<string | null>(null);
 
   // Trạng thái In phiếu nhiệt & Auto-reset bảo mật PII
   const [ticketToPrint, setTicketToPrint] = useState<QueueTicketItem | null>(null);
@@ -265,10 +261,8 @@ export const KioskPage: React.FC = () => {
     setCheckInResult(null);
     setClsScanCode('');
     setClsResult(null);
-    setActiveUnpaidBilling(null);
-    setPendingRecoveryCode(null);
-    setPendingWalkInPayload(null);
-    setVietQrImgError(false);
+    setTrackedBilling(null);
+    setPendingClsCode(null);
     setResetCountdown(0);
     setTicketToPrint(null);
     setIsPrintModalOpen(false);
@@ -292,11 +286,10 @@ export const KioskPage: React.FC = () => {
   }, [resetCountdown, handleResetScreen]);
 
   const startSuccessLifecycle = useCallback(
-    (ticket: QueueTicketItem, speech: string) => {
+    (ticket: QueueTicketItem, speech: string, unpaidBilling?: KioskBillingSummary) => {
       setTicketToPrint(ticket);
-      setActiveUnpaidBilling(null);
-      setPendingRecoveryCode(null);
-      setPendingWalkInPayload(null);
+      setTrackedBilling(unpaidBilling ?? null);
+      setPendingClsCode(null);
       setResetCountdown(AUTO_RESET_SECONDS);
       if (isSoundEnabled) {
         playScannerBeep();
@@ -320,7 +313,6 @@ export const KioskPage: React.FC = () => {
 
       const parsed = parseKioskQrClient(code);
       setIsProcessing(true);
-      setVietQrImgError(false);
       setResetCountdown(0);
 
       try {
@@ -330,14 +322,11 @@ export const KioskPage: React.FC = () => {
 
         if ((res.outcome === 'SUCCESS' || res.outcome === 'ALREADY_CHECKED_IN') && res.ticket) {
           const isFollowUp = res.visitType === 'FollowUp';
-          const speech = `${isFollowUp ? 'Tiếp nhận tái khám thành công' : 'Check-in thành công'} cho ${res.ticket.patientName}. Số thứ tự của bạn là ${res.ticket.sequenceNumber}. Xin mời đến ${res.ticket.departmentName}, ${res.ticket.location}.`;
-          startSuccessLifecycle(res.ticket, speech);
-        } else if (res.outcome === 'UNPAID_REQUIRED' && res.unpaidBilling) {
-          setActiveUnpaidBilling(res.unpaidBilling);
-          setPendingRecoveryCode(code);
-          speakAnnouncement(
-            `Lượt khám của quý khách chưa hoàn tất thanh toán phí khám ${res.unpaidBilling.amount} đồng. Vui lòng quét mã VietQR hoặc đến quầy thu ngân để tiếp tục.`
-          );
+          let speech = `${isFollowUp ? 'Tiếp nhận tái khám thành công' : 'Check-in thành công'} cho ${res.ticket.patientName}. Số thứ tự của bạn là ${res.ticket.sequenceNumber}. Xin mời đến ${res.ticket.departmentName}, ${res.ticket.location}.`;
+          if (res.unpaidBilling) {
+            speech += ` Vui lòng thanh toán viện phí tại Quầy Thu ngân.`;
+          }
+          startSuccessLifecycle(res.ticket, speech, res.unpaidBilling);
         } else if (res.outcome === 'NOT_FOUND' && parsed.format === 'CCCD_CHIP') {
           // Nếu quét CCCD mà chưa có lịch hẹn -> Gợi ý chuyển sang Tab Walk-in tự động điền sẵn toàn bộ thông tin CCCD!
           walkInForm.setFieldsValue({
@@ -367,83 +356,54 @@ export const KioskPage: React.FC = () => {
   );
 
   // ───────────────────────────────────────────────────────────────────────────
-  // AUTO-POLLING THANH TOÁN HÓA ĐƠN VIETQR / VNPAY (3 GIÂY / LẦN)
-  // Ngay khi Thu ngân hoặc VNPay cập nhật Paid -> Tự động mở khóa & cấp STT!
+  // ĐỌC TRẠNG THÁI THANH TOÁN TỰ ĐỘNG (3 GIÂY / LẦN) — CHỈ HIỂN THỊ TRẠNG THÁI, KHÔNG THU TẠI KIOSK
   // ───────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!activeUnpaidBilling || activeUnpaidBilling.billingId.startsWith('offline-')) return;
+    if (!trackedBilling || trackedBilling.billingId.startsWith('offline-')) return;
+    if (trackedBilling.status === 'Paid' || trackedBilling.status === 'Cancelled') return;
 
+    let active = true;
     const timer = setInterval(async () => {
       try {
-        const latest = await kioskService.getBillingStatus(activeUnpaidBilling.billingId, selectedTerminalId);
+        const latest = await kioskService.getBillingStatus(trackedBilling.billingId, selectedTerminalId);
+        if (!active) return;
+
+        setTrackedBilling(latest);
+
         if (latest.status === 'Paid') {
           clearInterval(timer);
-          showToast('Đã nhận xác nhận thanh toán! Đang tự động cấp Số thứ tự...', 'success');
-          const codeToRetry = pendingRecoveryCode || latest.patientCode;
-          const walkInRetry = pendingWalkInPayload;
-          setActiveUnpaidBilling(null);
+          showToast(`Hóa đơn ${latest.billingCode} đã được xác nhận thanh toán!`, 'success');
+          setCheckInResult((prev) =>
+            prev?.ticket ? { ...prev, ticket: { ...prev.ticket, paymentStatus: 'Paid' }, unpaidBilling: latest } : prev
+          );
+          setTicketToPrint((prev) => (prev ? { ...prev, paymentStatus: 'Paid' } : prev));
 
-          if (walkInRetry) {
-            const walkInRes = await kioskService.issueWalkIn(walkInRetry, selectedTerminalId);
-            setCheckInResult(walkInRes);
-            if (walkInRes.outcome === 'SUCCESS' && walkInRes.ticket) {
-              walkInForm.resetFields();
-              startSuccessLifecycle(
-                walkInRes.ticket,
-                `Thanh toán thành công. Số thứ tự của ${walkInRes.ticket.patientName} là ${walkInRes.ticket.sequenceNumber}. Xin mời đến ${walkInRes.ticket.departmentName}.`
-              );
-            }
-          } else if (activeTab === 'cls_return' && codeToRetry) {
-            const clsRes = await kioskService.processClsReturn(codeToRetry, selectedTerminalId);
+          if (activeTab === 'cls_return' && pendingClsCode) {
+            const clsRes = await kioskService.processClsReturn(pendingClsCode, selectedTerminalId);
+            if (!active) return;
             setClsResult(clsRes);
             if (clsRes.outcome === 'SUCCESS' && clsRes.ticket) {
               startSuccessLifecycle(
                 clsRes.ticket,
-                `Thanh toán thành công. Mời bệnh nhân ${clsRes.ticket.patientName} quay lại ${clsRes.ticket.departmentName} đọc kết quả.`
+                `Đã xác nhận thanh toán. Mời bệnh nhân ${clsRes.ticket.patientName} quay lại ${clsRes.ticket.departmentName} đọc kết quả.`
               );
             }
-          } else if (codeToRetry) {
-            await handleCheckInSubmit(codeToRetry);
+          } else {
+            fetchKioskData();
           }
+        } else if (latest.status === 'Cancelled') {
+          clearInterval(timer);
         }
       } catch {
-        // ignore transient polling failure
+        // Bỏ qua lỗi mạng thoáng qua khi đang poll trạng thái
       }
     }, 3000);
 
-    return () => clearInterval(timer);
-  }, [
-    activeUnpaidBilling,
-    pendingRecoveryCode,
-    pendingWalkInPayload,
-    selectedTerminalId,
-    activeTab,
-    walkInForm,
-    handleCheckInSubmit,
-    startSuccessLifecycle,
-  ]);
-
-  const handleOpenVnpayCheckout = async () => {
-    if (!activeUnpaidBilling) return;
-    setVnpayLoading(true);
-    try {
-      const url = await kioskService.createVnpayUrl(
-        activeUnpaidBilling.billingId,
-        activeUnpaidBilling.amount,
-        activeUnpaidBilling.description,
-        selectedTerminalId
-      );
-      if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-        showToast('Đã mở cổng VNPAY Sandbox ở tab mới. Kiosk sẽ tự cấp STT ngay sau khi thanh toán xong!', 'info');
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể khởi tạo cổng thanh toán VNPAY.';
-      showToast(msg, 'error');
-    } finally {
-      setVnpayLoading(false);
-    }
-  };
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [trackedBilling, selectedTerminalId, activeTab, pendingClsCode, startSuccessLifecycle, fetchKioskData]);
 
   // ───────────────────────────────────────────────────────────────────────────
   // XỬ LÝ TAB 2: WALK-IN ĐĂNG KÝ TRỰC TIẾP BẰNG CCCD / BHYT
@@ -481,7 +441,7 @@ export const KioskPage: React.FC = () => {
   }) => {
     setWalkInLoading(true);
     setCheckInResult(null);
-    setActiveUnpaidBilling(null);
+    setTrackedBilling(null);
 
     const payload: KioskWalkInRequest = {
       fullName: values.fullName,
@@ -492,7 +452,7 @@ export const KioskPage: React.FC = () => {
       address: values.address,
       healthInsuranceNumber: walkInPaymentMode === 'BHYT' ? values.healthInsuranceNumber : undefined,
       departmentId: values.departmentId,
-      requirePrepayment: walkInPaymentMode === 'PrepayService',
+      requirePrepayment: false,
       isPregnant: Boolean(values.isPregnant),
       isDisabled: Boolean(values.isDisabled),
       hasRevolutionaryMerit: Boolean(values.hasRevolutionaryMerit),
@@ -503,16 +463,12 @@ export const KioskPage: React.FC = () => {
       const res = await kioskService.issueWalkIn(payload, selectedTerminalId);
 
       setCheckInResult(res);
-      if (res.outcome === 'UNPAID_REQUIRED' && res.unpaidBilling) {
-        setActiveUnpaidBilling(res.unpaidBilling);
-        setPendingRecoveryCode(res.unpaidBilling.patientCode);
-        setPendingWalkInPayload(payload);
-        speakAnnouncement(`Vui lòng thanh toán tạm ứng ${res.unpaidBilling.amount} đồng để nhận số thứ tự.`);
-      } else if (res.ticket) {
-        startSuccessLifecycle(
-          res.ticket,
-          `Đăng ký khám thành công cho ${res.ticket.patientName}. Số thứ tự của bạn là ${res.ticket.sequenceNumber}. Xin mời đến ${res.ticket.departmentName}, ${res.ticket.location}.`
-        );
+      if (res.ticket) {
+        let speech = `Đăng ký khám thành công cho ${res.ticket.patientName}. Số thứ tự của bạn là ${res.ticket.sequenceNumber}. Xin mời đến ${res.ticket.departmentName}, ${res.ticket.location}.`;
+        if (res.unpaidBilling) {
+          speech += ` Vui lòng thanh toán viện phí tại Quầy Thu ngân.`;
+        }
+        startSuccessLifecycle(res.ticket, speech, res.unpaidBilling);
         walkInForm.resetFields();
       }
     } catch (err: unknown) {
@@ -536,7 +492,7 @@ export const KioskPage: React.FC = () => {
 
       setClsLoading(true);
       setClsResult(null);
-      setActiveUnpaidBilling(null);
+      setTrackedBilling(null);
 
       try {
         const res = await kioskService.processClsReturn(code, selectedTerminalId);
@@ -548,9 +504,9 @@ export const KioskPage: React.FC = () => {
             `Đã có kết quả cận lâm sàng cho ${res.ticket.patientName}. Đã xếp hàng chờ ưu tiên quay lại ${res.ticket.departmentName}.`
           );
         } else if (res.outcome === 'UNPAID_CLS' && res.unpaidBilling) {
-          setActiveUnpaidBilling(res.unpaidBilling);
-          setPendingRecoveryCode(code);
-          speakAnnouncement('Quý khách có khoản viện phí cận lâm sàng chưa thanh toán. Vui lòng quét mã VietQR để hoàn tất.');
+          setTrackedBilling(res.unpaidBilling);
+          setPendingClsCode(code);
+          speakAnnouncement('Quý khách có khoản viện phí cận lâm sàng chưa thanh toán. Vui lòng thanh toán tại Quầy Thu ngân.');
         } else {
           speakAnnouncement(res.message);
         }
@@ -637,19 +593,19 @@ export const KioskPage: React.FC = () => {
     );
   };
 
-  // Helper render Thẻ Thanh toán VietQR & VNPay thật
-  const renderPaymentGateBox = (billing: KioskBillingSummary) => (
+  // Helper render Thông báo qua Quầy Thu ngân (Phương án A: Kiosk chỉ đọc trạng thái, không thu tiền trực tiếp)
+  const renderCounterBillingNoticeBox = (billing: KioskBillingSummary) => (
     <div style={{ textAlign: 'center' }}>
-      <CloseCircleOutlined style={{ fontSize: 50, color: '#dc2626', marginBottom: 8 }} />
-      <Title level={3} style={{ color: '#dc2626', margin: '0 0 6px', fontWeight: 800 }}>
-        CẦN THANH TOÁN VIỆN PHÍ ĐỂ CẤP SỐ
+      <WarningOutlined style={{ fontSize: 50, color: '#f59e0b', marginBottom: 8 }} />
+      <Title level={3} style={{ color: '#0369a1', margin: '0 0 6px', fontWeight: 800 }}>
+        VUI LÒNG THANH TOÁN TẠI QUẦY THU NGÂN
       </Title>
       <Alert
         type="warning"
         showIcon
         icon={<WarningOutlined />}
-        message={`Hóa đơn ${billing.billingCode} • ${billing.amount.toLocaleString('vi-VN')} VNĐ`}
-        description={billing.description}
+        message={`Mã Thanh Toán: ${billing.billingCode} • ${billing.amount.toLocaleString('vi-VN')} VNĐ`}
+        description={billing.description || 'Vui lòng di chuyển tới Quầy Thu ngân để thanh toán bằng Tiền mặt hoặc VietQR SePay.'}
         style={{ textAlign: 'left', marginBottom: 14, borderRadius: 12 }}
       />
 
@@ -662,53 +618,14 @@ export const KioskPage: React.FC = () => {
           marginBottom: 14,
         }}
       >
-        <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: 10, fontSize: 13.5 }}>
-          QUÉT MÃ VIETQR NGÂN HÀNG HOẶC CHỌN VNPAY
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-          {!vietQrImgError && billing.vietQrPayload.startsWith('http') ? (
-            <img
-              src={billing.vietQrPayload}
-              alt="VietQR Payment"
-              onError={() => setVietQrImgError(true)}
-              style={{
-                width: 170,
-                height: 170,
-                objectFit: 'contain',
-                borderRadius: 10,
-                border: '1px solid #bae6fd',
-                backgroundColor: '#ffffff',
-                padding: 4,
-              }}
-            />
-          ) : (
-            <div style={{ padding: 10, backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #bae6fd' }}>
-              <QRCodeSVG value={billing.vietQrPayload} size={150} />
-            </div>
-          )}
-        </div>
-
-        <div style={{ fontSize: 12, color: '#334155', marginBottom: 10 }}>
+        <div style={{ fontSize: 13, color: '#334155', marginBottom: 10 }}>
           Bệnh nhân: <strong>{billing.patientName}</strong> ({billing.patientCode}) • Số tiền:{' '}
           <strong style={{ color: '#dc2626' }}>{billing.amount.toLocaleString('vi-VN')} VNĐ</strong>
         </div>
 
-        <Space wrap style={{ justifyContent: 'center', width: '100%' }}>
-          <Button
-            type="primary"
-            icon={<CreditCardOutlined />}
-            loading={vnpayLoading}
-            disabled={billing.billingId.startsWith('offline-')}
-            onClick={handleOpenVnpayCheckout}
-            style={{ backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 700, borderRadius: 8 }}
-          >
-            Thanh Toán VNPAY Sandbox
-          </Button>
-          <Tag color="processing" icon={<SyncOutlined spin />} style={{ fontSize: 12, padding: '4px 10px' }}>
-            Đang chờ đối soát tự động (3s)...
-          </Tag>
-        </Space>
+        <Tag color="processing" icon={<SyncOutlined spin />} style={{ fontSize: 12, padding: '4px 12px' }}>
+          Kiosk đang tự động theo dõi trạng thái thanh toán từ Thu ngân (3s/lần)...
+        </Tag>
       </div>
 
       <Button size="large" onClick={handleResetScreen} block style={{ borderRadius: 10, fontWeight: 700 }}>
@@ -770,8 +687,21 @@ export const KioskPage: React.FC = () => {
           {ticket.queueType === 'ParaclinicalResult' && (
             <Tag color="orange" style={{ fontWeight: 700 }}>⚡ Ưu Tiên Đọc KQ CLS</Tag>
           )}
-          <Tag color={ticket.paymentStatus === 'InsuranceWaived' ? 'cyan' : 'green'} style={{ fontWeight: 700 }}>
-            {ticket.paymentStatus === 'InsuranceWaived' ? 'BHYT Chi Trả' : 'Đã Hoàn Tất Phí'}
+          <Tag
+            color={
+              ticket.paymentStatus === 'InsuranceWaived'
+                ? 'cyan'
+                : ticket.paymentStatus === 'Unpaid'
+                  ? 'orange'
+                  : 'green'
+            }
+            style={{ fontWeight: 700 }}
+          >
+            {ticket.paymentStatus === 'InsuranceWaived'
+              ? 'BHYT Chi Trả'
+              : ticket.paymentStatus === 'Unpaid'
+                ? 'Chưa thanh toán • Quầy Thu Ngân'
+                : 'Đã Hoàn Tất Phí'}
           </Tag>
           {ticket.priority === 'Priority' && (
             <Tag color="gold" style={{ fontWeight: 700 }}>⭐ Đối Tượng Ưu Tiên</Tag>
@@ -780,6 +710,16 @@ export const KioskPage: React.FC = () => {
             <Tag color="red" style={{ fontWeight: 800 }}>🚨 Cấp Cứu</Tag>
           )}
         </div>
+
+        {trackedBilling && trackedBilling.status === 'Unpaid' && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginTop: 10, textAlign: 'left', borderRadius: 10 }}
+            message={`Vui lòng thanh toán hóa đơn ${trackedBilling.billingCode} (${trackedBilling.amount.toLocaleString('vi-VN')} VNĐ) tại Quầy Thu ngân`}
+            description="Kiosk không trực tiếp thu tiền. Sau khi Thu ngân xác nhận hoặc SePay gạch nợ, trạng thái trên phiếu sẽ tự cập nhật."
+          />
+        )}
 
         {ticket.priorityReason && (
           <div style={{ marginTop: 8, fontSize: 12, color: '#0369a1', fontWeight: 600 }}>
@@ -1207,7 +1147,7 @@ export const KioskPage: React.FC = () => {
                         </Text>
                       </div>
 
-                      {!checkInResult && !activeUnpaidBilling && (
+                      {!checkInResult && (
                         <div style={{ textAlign: 'center', padding: '40px 16px' }}>
                           <div
                             style={{
@@ -1234,10 +1174,7 @@ export const KioskPage: React.FC = () => {
                         </div>
                       )}
 
-                      {activeUnpaidBilling && renderPaymentGateBox(activeUnpaidBilling)}
-
                       {checkInResult &&
-                        !activeUnpaidBilling &&
                         (checkInResult.outcome === 'SUCCESS' || checkInResult.outcome === 'ALREADY_CHECKED_IN') &&
                         checkInResult.ticket &&
                         renderTicketResultBox(
@@ -1249,7 +1186,6 @@ export const KioskPage: React.FC = () => {
                         )}
 
                       {checkInResult &&
-                        !activeUnpaidBilling &&
                         (checkInResult.outcome === 'NOT_FOUND' || checkInResult.outcome === 'REJECTED') && (
                           <div style={{ textAlign: 'center', padding: '12px 0' }}>
                             <CloseCircleOutlined style={{ fontSize: 54, color: '#dc2626', marginBottom: 10 }} />
@@ -1401,7 +1337,7 @@ export const KioskPage: React.FC = () => {
                             </Form.Item>
                           </Col>
                           <Col xs={24} sm={12}>
-                            <Form.Item label={<Text strong>Hình Thức Thanh Toán</Text>}>
+                            <Form.Item label={<Text strong>Đối Tượng Khám Bệnh</Text>}>
                               <Radio.Group
                                 value={walkInPaymentMode}
                                 onChange={(e) => setWalkInPaymentMode(e.target.value)}
@@ -1410,9 +1346,8 @@ export const KioskPage: React.FC = () => {
                                 size="middle"
                                 style={{ width: '100%' }}
                               >
-                                <Radio.Button value="BHYT">BHYT</Radio.Button>
-                                <Radio.Button value="PrepayService">Thu QR Ngay</Radio.Button>
-                                <Radio.Button value="PostpayCounter">Tại Quầy</Radio.Button>
+                                <Radio.Button value="BHYT">Có BHYT</Radio.Button>
+                                <Radio.Button value="ServiceCounter">Khám Dịch Vụ (Thu ngân)</Radio.Button>
                               </Radio.Group>
                             </Form.Item>
                           </Col>
@@ -1495,12 +1430,9 @@ export const KioskPage: React.FC = () => {
                       />
                     </Card>
 
-                    {(activeUnpaidBilling || (checkInResult?.ticket && activeTab === 'walkin')) && (
+                    {checkInResult?.ticket && activeTab === 'walkin' && (
                       <Card style={{ borderRadius: 18, border: '1px solid #bae6fd', boxShadow: CARD_SHADOW }}>
-                        {activeUnpaidBilling
-                          ? renderPaymentGateBox(activeUnpaidBilling)
-                          : checkInResult?.ticket &&
-                          renderTicketResultBox(checkInResult.ticket, 'ĐÃ CẤP SỐ THỨ TỰ KHÁM MỚI')}
+                        {renderTicketResultBox(checkInResult.ticket, 'ĐÃ CẤP SỐ THỨ TỰ KHÁM MỚI')}
                       </Card>
                     )}
                   </Col>
@@ -1569,7 +1501,7 @@ export const KioskPage: React.FC = () => {
                         Trạng Thái Kết Quả Cận Lâm Sàng
                       </Title>
 
-                      {!clsResult && !activeUnpaidBilling && (
+                      {!clsResult && !trackedBilling && (
                         <div style={{ textAlign: 'center', padding: '50px 16px', color: '#64748b' }}>
                           <ExperimentOutlined style={{ fontSize: 52, color: '#0284c7', marginBottom: 12 }} />
                           <div>
@@ -1578,9 +1510,9 @@ export const KioskPage: React.FC = () => {
                         </div>
                       )}
 
-                      {activeUnpaidBilling && renderPaymentGateBox(activeUnpaidBilling)}
+                      {trackedBilling && clsResult?.outcome === 'UNPAID_CLS' && renderCounterBillingNoticeBox(trackedBilling)}
 
-                      {clsResult && !activeUnpaidBilling && (
+                      {clsResult && clsResult.outcome !== 'UNPAID_CLS' && (
                         <div>
                           <Alert
                             type={

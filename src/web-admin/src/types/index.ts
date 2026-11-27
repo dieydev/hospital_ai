@@ -186,14 +186,22 @@ export interface InvoiceItem {
 export interface Invoice {
   id: string;
   maHoaDon: string;
+  maThanhToan?: string;
   maBenhNhan: string;
   tenBenhNhan: string;
   maLuotKham: string;
+  appointmentId?: string;
   ngayLap: string;
   tongTien: number;
   loaiHoaDon: string;
   phuongThucThanhToan: string;
+  status?: string;
   trangThai: string;
+  transactionRef?: string;
+  ghiChuDoiSoat?: string;
+  vietQrUrl?: string;
+  environment?: string;
+  isSandbox?: boolean;
   items: InvoiceItem[];
 }
 

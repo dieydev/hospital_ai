@@ -132,6 +132,24 @@ public class QueueController : ControllerBase
                 dto.EmergencyConfirmedAt = null;
             }
 
+            // Tạo sẵn 1 hóa đơn Registration Unpaid (không tạo trùng) nếu Tiếp nhận đánh dấu Unpaid cho bệnh nhân dịch vụ
+            if (_dbContext != null &&
+                string.Equals(dto.PaymentStatus, "Unpaid", StringComparison.OrdinalIgnoreCase) &&
+                dto.IsEmergencyConfirmed != true)
+            {
+                var patientEntity = await _dbContext.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.Id == dto.PatientId);
+                if (patientEntity != null && string.IsNullOrWhiteSpace(patientEntity.HealthInsuranceNumber))
+                {
+                    var deptEntity = await _dbContext.Departments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == dto.DepartmentId);
+                    await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                        _dbContext,
+                        dto.PatientId,
+                        dto.AppointmentId,
+                        150000m,
+                        $"Phí khám chuyên khoa - {deptEntity?.DepartmentName ?? "Khám bệnh"}");
+                }
+            }
+
             var result = await _queueService.IssueQueueTicketAsync(dto);
 
             // Bắn tín hiệu SignalR thời gian thực đến Web Bác sĩ, Tiếp tân và Mobile App

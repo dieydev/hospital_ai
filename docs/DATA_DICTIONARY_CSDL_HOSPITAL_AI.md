@@ -380,13 +380,16 @@
 | <ins>Id</ins> | uniqueidentifier | Mã hóa đơn viện phí (PK, mặc định `NEWID()`) |
 | BenhNhanId | uniqueidentifier | Mã bệnh nhân thanh toán (FK tham chiếu `BenhNhan.Id`) |
 | LuotKhamId | uniqueidentifier | Mã lượt khám bệnh (FK tham chiếu `LuotKhamBenh.Id`, cho phép NULL) |
-| LoaiHoaDon | varchar(50) | Phân loại hóa đơn (TienKham, ChiDinhCanLamSang, TienThuoc) |
+| LichHenId | uniqueidentifier | Mã lịch hẹn đặt khám liên kết (FK tham chiếu `LichHenKham.Id`, Unique Filtered cho `Registration` chưa hủy) |
+| LoaiHoaDon | varchar(50) | Phân loại hóa đơn (`Registration`, `ServiceOrder`, `Prescription`) |
 | TongTien | decimal(18,2) | Tổng số tiền viện phí phải thanh toán (VNĐ) |
-| TrangThai | varchar(20) | Trạng thái thanh toán (Unpaid: Chưa trả, Paid: Đã thu, Cancelled: Hủy) |
+| TrangThai | varchar(20) | Trạng thái thanh toán (`Unpaid`: Chưa trả, `Paid`: Đã thu, `Cancelled`: Hủy) |
 | NgayTao | datetime | Thời điểm phát sinh hóa đơn (Mặc định `GETDATE()`) |
 | NgayThanhToan | datetime | Thời điểm người bệnh đóng tiền (cho phép NULL) |
-| PhuongThucThanhToan | varchar(50) | Phương thức thanh toán (VNPay, VietQR, TienMat, ChuyenKhoan) |
-| MaGiaoDich | varchar(100) | Mã giao dịch tham chiếu từ cổng VNPAY / VietQR (`vnp_TxnRef`) |
+| MaThanhToan | nvarchar(20) | Mã thanh toán chuẩn duy nhất dùng cho VietQR / SePay (`HAI` + 8 ký tự hex in hoa, Unique Filtered Index `IX_HoaDon_MaThanhToan`) |
+| PhuongThucThanhToan | nvarchar(50) | Phương thức thanh toán (`VNPay`, `Tiền mặt`, `Chuyển khoản VietQR (SePay)`, đối soát thu ngân) |
+| MaGiaoDich | nvarchar(100) | Mã giao dịch tham chiếu duy nhất (`SEPAY-<id>`, `VNPAY-<no>` hoặc mã chuẩn chi đối soát, Unique Filtered Index `IX_HoaDon_MaGiaoDich`) |
+| GhiChuDoiSoat | nvarchar(500) | Ghi chú đối soát ngoại lệ khi chuyển thiếu/thừa tiền hoặc webhook đến sau khi hóa đơn đã đóng/hủy |
 | NguoiThuTienId | uniqueidentifier | Thu ngân tiếp nhận thu tiền (FK tham chiếu `HoSoNhanVien.Id`) |
 
 ---
@@ -401,6 +404,29 @@
 | SoLuong | int | Số lượng sử dụng (Mặc định 1) |
 | ThanhTien | decimal(18,2) | Thành tiền = Đơn giá × Số lượng (VNĐ) |
 | ThamChieuId | uniqueidentifier | ID liên kết đến bảng nguồn (`ChiDinhCanLamSang.Id`, `DonThuoc.Id`) |
+
+---
+
+#### Bảng 3.25b: Bảng NhatKyGiaoDichSePay (Nhật ký Giao dịch & Chống trùng SePay Webhook) [Mô hình CSDL SQL Server 2022 / EF Core]
+| Tên cột | Kiểu dữ liệu | Mô tả |
+| :--- | :--- | :--- |
+| <ins>Id</ins> | uniqueidentifier | Khóa chính bản ghi nhật ký (`NEWID()`) |
+| SepayTransactionId | bigint | Mã giao dịch duy nhất từ SePay (Unique Index `IX_NhatKyGiaoDichSePay_SepayTransactionId`) |
+| ReferenceCode | nvarchar(100) | Mã tham chiếu ngân hàng (`referenceCode`) |
+| Gateway | nvarchar(50) | Ngân hàng phát sinh giao dịch (VD: `MBBank`) |
+| TransactionDate | nvarchar(40) | Thời gian giao dịch phía ngân hàng |
+| AccountNumber | nvarchar(50) | Số tài khoản nhận đối chiếu |
+| SubAccount | nvarchar(50) | Tài khoản ảo phụ (nếu có) |
+| TransferType | nvarchar(20) | Loại giao dịch (`in` / `out`) |
+| TransferAmount | decimal(18,2) | Số tiền giao dịch thực nhận (VNĐ) |
+| ExpectedAmount | decimal(18,2) | Số tiền phải thu của hóa đơn tại thời điểm đối soát |
+| DiscrepancyAmount | decimal(18,2) | Chênh lệch (`TransferAmount - ExpectedAmount`) khi thiếu hoặc thừa tiền |
+| PaymentCode | nvarchar(30) | Mã thanh toán trích xuất được từ `code` / `content` (`HAI...`) |
+| BillingId | uniqueidentifier | Hóa đơn được liên kết (FK tham chiếu `HoaDon.Id`, cho phép NULL nếu không khớp hóa đơn) |
+| ProcessingStatus | nvarchar(50) | Kết quả xử lý (`Processed`, `Ignored_OutTransfer`, `Ignored_WrongAccount`, `Ignored_InvalidCode`, `Ignored_NotFound`, `Discrepancy_Underpaid`, `Discrepancy_Overpaid`, `Late_AfterPaid`, `Late_AfterCancelled`) |
+| Note | nvarchar(500) | Ghi chú kỹ thuật/đối soát (không chứa secret hay PII) |
+| WebhookTimestamp | bigint | Giá trị header `X-SePay-Timestamp` |
+| ReceivedAt | datetime2 | Thời điểm hệ thống tiếp nhận và xử lý webhook (UTC) |
 
 ---
 

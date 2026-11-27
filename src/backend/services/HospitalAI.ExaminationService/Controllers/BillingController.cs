@@ -1,7 +1,10 @@
+using HospitalAI.Application.DTOs;
 using HospitalAI.Infrastructure.Data;
+using HospitalAI.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -15,10 +18,12 @@ namespace HospitalAI.ExaminationService.Controllers;
 public class BillingController : ControllerBase
 {
     private readonly HospitalDbContext _dbContext;
+    private readonly IConfiguration? _configuration;
 
-    public BillingController(HospitalDbContext dbContext)
+    public BillingController(HospitalDbContext dbContext, IConfiguration? configuration = null)
     {
         _dbContext = dbContext;
+        _configuration = configuration;
     }
 
     private bool IsStaff()
@@ -33,9 +38,12 @@ public class BillingController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetBillings([FromQuery] string? status = null, [FromQuery] string? type = null)
     {
+        var options = PaymentQrHelper.ResolveOptions(_configuration);
+
         var query = _dbContext.Billings
             .Include(b => b.Patient)
             .Include(b => b.Items)
+            .AsNoTracking()
             .AsQueryable();
 
         // IDOR Protection: Nếu là Bệnh nhân, chỉ lấy hóa đơn gắn với tài khoản của họ
@@ -62,19 +70,36 @@ public class BillingController : ControllerBase
             query = query.Where(b => b.BillingType == type);
         }
 
-        var billings = await query
+        var rawBillings = await query
             .OrderByDescending(b => b.CreatedAt)
-            .Select(b => new
+            .ToListAsync();
+
+        var billings = rawBillings.Select(b =>
+        {
+            var paymentCode = PaymentQrHelper.ResolveFallbackDisplayCode(b, options.PaymentPrefix);
+            var vietQrUrl = b.Status == "Unpaid"
+                ? PaymentQrHelper.BuildVietQrImageUrl(options, b.TotalAmount, paymentCode)
+                : null;
+
+            return new
             {
                 Id = b.Id,
-                MaHoaDon = b.Id.ToString().Substring(0, 8).ToUpper(),
-                MaBenhNhan = b.Patient != null ? b.Patient.Id.ToString().Substring(0, 8).ToUpper() : "",
+                MaHoaDon = paymentCode,
+                MaThanhToan = paymentCode,
+                MaBenhNhan = b.Patient != null ? (!string.IsNullOrWhiteSpace(b.Patient.PatientCode) ? b.Patient.PatientCode : b.Patient.Id.ToString().Substring(0, 8).ToUpper()) : "",
                 TenBenhNhan = b.Patient != null ? b.Patient.FullName : "Khách vãng lai",
                 MaLuotKham = b.ExaminationId != null ? b.ExaminationId.ToString()!.Substring(0, 8).ToUpper() : "",
+                AppointmentId = b.AppointmentId,
                 NgayLap = b.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
                 TongTien = b.TotalAmount,
-                TrangThai = b.Status == "Paid" ? "Đã thanh toán" : "Chưa thanh toán",
+                Status = b.Status,
+                TrangThai = b.Status == "Paid" ? "Đã thanh toán" : (b.Status == "Cancelled" ? "Đã hủy" : "Chưa thanh toán"),
                 PhuongThucThanhToan = b.PaymentMethod ?? "",
+                TransactionRef = b.TransactionRef,
+                GhiChuDoiSoat = b.DiscrepancyNote,
+                VietQrUrl = vietQrUrl,
+                Environment = options.Environment,
+                IsSandbox = options.IsSandbox,
                 LoaiHoaDon = b.BillingType,
                 Items = b.Items.Select(i => new
                 {
@@ -83,10 +108,83 @@ public class BillingController : ControllerBase
                     SoLuong = i.Quantity,
                     ThanhTien = i.TotalPrice
                 }).ToList()
+            };
+        }).ToList();
+
+        return Ok(billings);
+    }
+
+    /// <summary>
+    /// Lấy trạng thái thanh toán thời gian thực của một hóa đơn (hỗ trợ auto-polling ở Thu ngân và Đặt lịch Online)
+    /// </summary>
+    [HttpGet("{id:guid}/status")]
+    public async Task<IActionResult> GetBillingStatus(Guid id)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { Message = "Mã hóa đơn không hợp lệ" });
+
+        var billing = await _dbContext.Billings
+            .Include(b => b.Patient)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (billing == null)
+            return NotFound(new { Message = "Không tìm thấy hóa đơn" });
+
+        if (!IsStaff())
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isOwner = billing.Patient != null &&
+                          billing.Patient.UserId.HasValue &&
+                          Guid.TryParse(currentUserId, out var parsedUid) &&
+                          billing.Patient.UserId.Value == parsedUid;
+            if (!isOwner)
+            {
+                return Forbid();
+            }
+        }
+
+        var options = PaymentQrHelper.ResolveOptions(_configuration);
+        var paymentCode = PaymentQrHelper.ResolveFallbackDisplayCode(billing, options.PaymentPrefix);
+        var vietQrUrl = billing.Status == "Unpaid"
+            ? PaymentQrHelper.BuildVietQrImageUrl(options, billing.TotalAmount, paymentCode)
+            : null;
+
+        var recentLogs = await _dbContext.SepayWebhookTransactions
+            .AsNoTracking()
+            .Where(l => l.BillingId == billing.Id)
+            .OrderByDescending(l => l.ReceivedAt)
+            .Take(5)
+            .Select(l => new SepayDiscrepancyLogDto
+            {
+                SepayTransactionId = l.SepayTransactionId,
+                TransferAmount = l.TransferAmount,
+                ExpectedAmount = l.ExpectedAmount,
+                DiscrepancyAmount = l.DiscrepancyAmount,
+                ProcessingStatus = l.ProcessingStatus,
+                Note = l.Note,
+                ReceivedAt = l.ReceivedAt
             })
             .ToListAsync();
 
-        return Ok(billings);
+        return Ok(new BillingStatusSummaryDto
+        {
+            BillingId = billing.Id,
+            PaymentCode = paymentCode,
+            BillingType = billing.BillingType,
+            TotalAmount = billing.TotalAmount,
+            Status = billing.Status,
+            TrangThai = billing.Status == "Paid" ? "Đã thanh toán" : (billing.Status == "Cancelled" ? "Đã hủy" : "Chưa thanh toán"),
+            PaymentMethod = billing.PaymentMethod,
+            TransactionRef = billing.TransactionRef,
+            DiscrepancyNote = billing.DiscrepancyNote,
+            PaidAt = billing.PaidAt,
+            AppointmentId = billing.AppointmentId,
+            VietQrUrl = vietQrUrl,
+            Environment = options.Environment,
+            IsSandbox = options.IsSandbox,
+            RecentWebhookEvents = recentLogs
+        });
     }
 
     /// <summary>
@@ -99,61 +197,25 @@ public class BillingController : ControllerBase
         if (id == Guid.Empty)
             return BadRequest(new { Message = "Mã hóa đơn không hợp lệ" });
 
-        var billing = await _dbContext.Billings
-            .Include(b => b.Items)
-            .FirstOrDefaultAsync(b => b.Id == id);
+        Guid? cashierUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUid)
+            ? parsedUid
+            : null;
 
-        if (billing == null)
-            return NotFound(new { Message = "Không tìm thấy hóa đơn" });
+        var result = await BillingSettlementService.SettleManualCashAsync(
+            _dbContext,
+            id,
+            cashierUserId,
+            User.IsInRole("Cashier") || User.IsInRole("Admin"),
+            User.IsInRole("Receptionist"));
 
-        if (billing.Status == "Paid")
-            return BadRequest(new { Message = "Hóa đơn đã được thanh toán trước đó" });
-
-        // Phân định trách nhiệm: Nhân viên tiếp nhận chỉ được thu phí khám ban đầu (Registration)
-        if (User.IsInRole("Receptionist") && !User.IsInRole("Cashier") && !User.IsInRole("Admin"))
+        return result.Code switch
         {
-            if (billing.BillingType != "Registration")
-            {
-                return BadRequest(new { Message = "Nhân viên tiếp nhận chỉ có thẩm quyền thu phí khám ban đầu (Registration). Vui lòng chuyển bệnh nhân sang quầy Thu ngân để thanh toán viện phí cận lâm sàng hoặc thuốc." });
-            }
-        }
-
-        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (Guid.TryParse(currentUserId, out var cashierGuid))
-        {
-            var staff = await _dbContext.StaffProfiles.FirstOrDefaultAsync(s => s.UserId == cashierGuid || s.Id == cashierGuid);
-            if (staff != null)
-            {
-                billing.CashierId = staff.Id;
-            }
-        }
-
-        billing.Status = "Paid";
-        billing.PaidAt = DateTime.UtcNow;
-        billing.PaymentMethod = "Tiền mặt";
-
-        // Cập nhật trạng thái liên quan (VD: Lượt khám, Phiếu chỉ định)
-        if (billing.BillingType == "Registration" && billing.ExaminationId.HasValue)
-        {
-            var exam = await _dbContext.Examinations.FirstOrDefaultAsync(e => e.Id == billing.ExaminationId.Value);
-            if (exam != null)
-            {
-                exam.Status = "Paid";
-            }
-        }
-        else if (billing.BillingType == "ServiceOrder")
-        {
-            var item = billing.Items.FirstOrDefault();
-            if (item != null && item.ReferenceId.HasValue)
-            {
-                var serviceOrder = await _dbContext.ServiceOrders.FirstOrDefaultAsync(s => s.Id == item.ReferenceId.Value);
-                if (serviceOrder != null) serviceOrder.Status = "Paid";
-            }
-        }
-
-        await _dbContext.SaveChangesAsync();
-
-        return Ok(new { Message = "Thanh toán tiền mặt thành công", Success = true, BillingId = billing.Id });
+            SettlementOutcomeCode.NotFound => NotFound(new { Message = result.Message }),
+            SettlementOutcomeCode.AlreadyPaid or SettlementOutcomeCode.Cancelled or SettlementOutcomeCode.ForbiddenRole => BadRequest(new { Message = result.Message }),
+            SettlementOutcomeCode.Replay => Conflict(new { Message = result.Message }),
+            SettlementOutcomeCode.Success => Ok(new { Message = result.Message, Success = true, BillingId = result.Billing!.Id, PaymentCode = result.Billing.PaymentCode }),
+            _ => StatusCode(500, new { Message = result.Message })
+        };
     }
 
     /// <summary>
@@ -166,90 +228,26 @@ public class BillingController : ControllerBase
         if (id == Guid.Empty)
             return BadRequest(new { Message = "Mã hóa đơn không hợp lệ" });
 
-        var billing = await _dbContext.Billings
-            .Include(b => b.Items)
-            .FirstOrDefaultAsync(b => b.Id == id);
+        Guid? cashierUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUid)
+            ? parsedUid
+            : null;
 
-        if (billing == null)
-            return NotFound(new { Message = "Không tìm thấy hóa đơn" });
+        var result = await BillingSettlementService.SettleManualTransferAsync(
+            _dbContext,
+            id,
+            transactionRef,
+            cashierUserId,
+            User.IsInRole("Cashier") || User.IsInRole("Admin"),
+            User.IsInRole("Receptionist"),
+            User.IsInRole("Cashier"));
 
-        if (billing.Status == "Paid")
-            return BadRequest(new { Message = "Hóa đơn đã được thanh toán trước đó" });
-
-        // Phân định trách nhiệm thu phí
-        if (User.IsInRole("Receptionist") && !User.IsInRole("Cashier") && !User.IsInRole("Admin"))
+        return result.Code switch
         {
-            if (billing.BillingType != "Registration")
-            {
-                return BadRequest(new { Message = "Nhân viên tiếp nhận chỉ có thẩm quyền xác nhận thu phí khám ban đầu. Vui lòng chuyển bệnh nhân sang quầy Thu ngân." });
-            }
-        }
-
-        // Chống giả mạo xác nhận thanh toán: Bắt buộc phải có mã giao dịch/đối soát hợp lệ từ ngân hàng
-        if (string.IsNullOrWhiteSpace(transactionRef) || transactionRef.Trim().Length < 6)
-        {
-            return BadRequest(new { Message = "Vui lòng cung cấp mã tham chiếu giao dịch (TransactionRef) hoặc mã chuẩn chi ngân hàng tối thiểu 6 ký tự để đối soát thanh toán hợp lệ." });
-        }
-
-        var cleanRef = transactionRef.Trim();
-        var lowerRef = cleanRef.ToLower();
-        if (lowerRef == "123456" || lowerRef == "string" || lowerRef == "transactionref" || lowerRef == "test" || lowerRef == "null")
-        {
-            return BadRequest(new { Message = "Mã giao dịch không hợp lệ hoặc là giá trị giữ chỗ (Placeholder). Vui lòng nhập mã chuẩn chi thực tế." });
-        }
-
-        // Chống Replay / Giao dịch trùng lặp: Kiểm tra mã tham chiếu giao dịch đã từng được dùng cho hóa đơn nào khác chưa
-        var isDuplicateTxn = await _dbContext.Billings.AnyAsync(b => b.TransactionRef == cleanRef && b.Id != id);
-        if (isDuplicateTxn)
-        {
-            return Conflict(new { Message = "Mã giao dịch đối soát này đã được ghi nhận cho một hóa đơn khác trong hệ thống. Cảnh báo giao dịch trùng lặp hoặc giả mạo!" });
-        }
-
-        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (Guid.TryParse(currentUserId, out var cashierGuid))
-        {
-            var staff = await _dbContext.StaffProfiles.FirstOrDefaultAsync(s => s.UserId == cashierGuid || s.Id == cashierGuid);
-            if (staff != null)
-            {
-                billing.CashierId = staff.Id;
-            }
-        }
-
-        billing.Status = "Paid";
-        billing.PaidAt = DateTime.UtcNow;
-        billing.PaymentMethod = User.IsInRole("Cashier") 
-            ? "Chuyển khoản VietQR (Thu ngân đối soát)" 
-            : "Chuyển khoản VietQR (Tiếp nhận đối soát)";
-        billing.TransactionRef = cleanRef;
-
-        // Cập nhật trạng thái liên quan
-        if (billing.BillingType == "Registration" && billing.ExaminationId.HasValue)
-        {
-            var exam = await _dbContext.Examinations.FirstOrDefaultAsync(e => e.Id == billing.ExaminationId.Value);
-            if (exam != null)
-            {
-                exam.Status = "Paid";
-            }
-        }
-        else if (billing.BillingType == "ServiceOrder")
-        {
-            var item = billing.Items.FirstOrDefault();
-            if (item != null && item.ReferenceId.HasValue)
-            {
-                var serviceOrder = await _dbContext.ServiceOrders.FirstOrDefaultAsync(s => s.Id == item.ReferenceId.Value);
-                if (serviceOrder != null) serviceOrder.Status = "Paid";
-            }
-        }
-
-        try
-        {
-            await _dbContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            return Conflict(new { Message = "Mã giao dịch đối soát này đã được ghi nhận cho một hóa đơn khác trong hệ thống (Ràng buộc duy nhất Database). Cảnh báo giao dịch trùng lặp hoặc giả mạo!" });
-        }
-
-        return Ok(new { Message = "Xác nhận chuyển khoản VietQR thành công", Success = true, BillingId = billing.Id, TransactionRef = billing.TransactionRef });
+            SettlementOutcomeCode.NotFound => NotFound(new { Message = result.Message }),
+            SettlementOutcomeCode.Replay => Conflict(new { Message = result.Message }),
+            SettlementOutcomeCode.AlreadyPaid or SettlementOutcomeCode.Cancelled or SettlementOutcomeCode.ForbiddenRole or SettlementOutcomeCode.InvalidReference => BadRequest(new { Message = result.Message }),
+            SettlementOutcomeCode.Success => Ok(new { Message = result.Message, Success = true, BillingId = result.Billing!.Id, TransactionRef = result.Billing.TransactionRef, PaymentCode = result.Billing.PaymentCode }),
+            _ => StatusCode(500, new { Message = result.Message })
+        };
     }
 }

@@ -316,19 +316,19 @@ export const kioskService = {
 
       if (key.includes('unpaid') || key.includes('chuatt') || qrCodeOrCode.trim() === 'BN2026_UNPAID') {
         return {
-          outcome: 'UNPAID_REQUIRED',
-          message: 'Lượt khám Dịch vụ chưa thanh toán tạm ứng phí khám (150.000 VNĐ) [Chế độ Ngoại tuyến].',
+          outcome: 'SUCCESS',
+          message: 'Lượt khám Dịch vụ chưa thanh toán phí khám (150.000 VNĐ) — vui lòng thanh toán tại Quầy Thu ngân [Ngoại tuyến].',
           visitType: 'New',
           unpaidBilling: {
             billingId: 'offline-bill-001',
-            billingCode: 'HD-OFFLINE-001',
+            billingCode: 'HAIOFFLINE01',
             billingType: 'Registration',
             amount: 150000,
             status: 'Unpaid',
             patientName: 'Khách hàng Dịch vụ',
             patientCode: qrCodeOrCode.trim(),
-            description: 'Tạm ứng phí khám ban đầu',
-            vietQrPayload: `https://img.vietqr.io/image/970422-0336022526-compact2.png?amount=150000&addInfo=VIENPHI%20HD-OFFLINE-001`,
+            description: 'Phí khám ban đầu (Thanh toán tại Quầy Thu ngân)',
+            vietQrPayload: '',
             createdAt: new Date().toISOString(),
           },
           parsedQr: parsed,
@@ -345,35 +345,27 @@ export const kioskService = {
       );
 
       if (foundTicket) {
-        if (foundTicket.paymentStatus === 'Unpaid') {
-          return {
-            outcome: 'UNPAID_REQUIRED',
-            message: `Bệnh nhân ${foundTicket.patientName} chưa thanh toán tạm ứng viện phí.`,
-            visitType: foundTicket.visitType || 'New',
-            ticket: foundTicket,
-            unpaidBilling: {
-              billingId: foundTicket.unpaidBillingId || foundTicket.id,
-              billingCode: `HD-${foundTicket.sequenceNumber}`,
-              billingType: 'Registration',
-              amount: foundTicket.unpaidAmount || 150000,
-              status: 'Unpaid',
-              patientName: foundTicket.patientName,
-              patientCode: foundTicket.patientCode,
-              description: 'Tạm ứng phí khám ban đầu',
-              vietQrPayload: `https://img.vietqr.io/image/970422-0336022526-compact2.png?amount=${foundTicket.unpaidAmount || 150000}&addInfo=VIENPHI%20${foundTicket.patientCode}`,
-              createdAt: new Date().toISOString(),
-            },
-            parsedQr: parsed,
-            terminalId,
-            isOfflineFallback: true,
-          };
-        }
-
         return {
           outcome: 'ALREADY_CHECKED_IN',
-          message: `Xác nhận số thứ tự #${foundTicket.sequenceNumber} (Ngoại tuyến).`,
+          message: foundTicket.paymentStatus === 'Unpaid'
+            ? `Xác nhận số thứ tự #${foundTicket.sequenceNumber} (Ngoại tuyến). Vui lòng hoàn tất viện phí tại Quầy Thu ngân.`
+            : `Xác nhận số thứ tự #${foundTicket.sequenceNumber} (Ngoại tuyến).`,
           visitType: foundTicket.visitType || 'New',
           ticket: foundTicket,
+          unpaidBilling: foundTicket.paymentStatus === 'Unpaid'
+            ? {
+                billingId: foundTicket.unpaidBillingId || foundTicket.id,
+                billingCode: `HAI${String(foundTicket.sequenceNumber).padStart(8, '0')}`,
+                billingType: 'Registration',
+                amount: foundTicket.unpaidAmount || 150000,
+                status: 'Unpaid',
+                patientName: foundTicket.patientName,
+                patientCode: foundTicket.patientCode,
+                description: 'Phí khám ban đầu (Thanh toán tại Quầy Thu ngân)',
+                vietQrPayload: '',
+                createdAt: new Date().toISOString(),
+              }
+            : undefined,
           parsedQr: parsed,
           terminalId,
           isOfflineFallback: true,
@@ -399,7 +391,7 @@ export const kioskService = {
           patientAge: foundApt.patientAge,
           patientGender: foundApt.patientGender,
           visitType: foundApt.appointmentType === 'FollowUp' ? 'FollowUp' : 'New',
-          paymentStatus: 'Paid',
+          paymentStatus: foundApt.paymentStatus === 'Paid' ? 'Paid' : 'Unpaid',
         });
         return {
           outcome: 'SUCCESS',

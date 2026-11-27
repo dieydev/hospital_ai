@@ -26,6 +26,13 @@ export interface OnlineAppointmentItem {
   previousRecordCode?: string;
   followUpNotes?: string;
   roomNumber?: string;
+  billingId?: string;
+  paymentCode?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  billingAmount?: number;
+  paymentQrUrl?: string;
+  requestedFeeAmount?: number;
 }
 
 export interface TimeSlotQuotaItem {
@@ -172,24 +179,9 @@ export const appointmentService = {
     try {
       const response = await api.post('/appointments', params);
       return response.data;
-    } catch {
-      const generatedId = `apt-${Date.now()}`;
-      const newApt: OnlineAppointmentItem = {
-        ...params,
-        id: generatedId,
-        status: 'Pending',
-        createdAt: new Date().toISOString(),
-        sourceApp: params.sourceApp || 'Web Booking Portal',
-        qrCode: appointmentService.getScannableQrValue({
-          id: generatedId,
-          patientCode: params.patientCode,
-          appointmentType: params.appointmentType,
-          symptomsReason: params.symptomsReason,
-        }),
-        checkInStatus: 'PendingQR',
-      };
-      localAppointments.unshift(newApt);
-      return newApt;
+    } catch (err: any) {
+      const serverMsg = err?.response?.data?.message || err?.message || 'Không thể tạo lịch hẹn trên máy chủ.';
+      throw new Error(serverMsg);
     }
   },
 

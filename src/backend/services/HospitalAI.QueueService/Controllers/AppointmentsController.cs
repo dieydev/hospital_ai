@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -48,6 +49,15 @@ namespace HospitalAI.QueueService.Controllers
         public string AppointmentType { get; set; } = "New";
         public string? PreviousRecordCode { get; set; } // Mã bệnh án EMR / Mã phiếu khám trước
         public string? FollowUpNotes { get; set; } // Lời dặn hoặc chỉ định tái khám của Bác sĩ
+
+        // Thông tin Hóa đơn Viện phí đồng bộ với Thu ngân / SePay / VNPay
+        public Guid? BillingId { get; set; }
+        public string? PaymentCode { get; set; }
+        public string? PaymentStatus { get; set; } // Unpaid | Paid | Cancelled
+        public string? PaymentMethod { get; set; }
+        public decimal BillingAmount { get; set; }
+        public string? PaymentQrUrl { get; set; }
+        public decimal? RequestedFeeAmount { get; set; }
     }
 
     public class TimeSlotQuotaItem
@@ -98,6 +108,7 @@ namespace HospitalAI.QueueService.Controllers
     {
         private readonly IHubContext<QueueHub> _hubContext;
         private readonly HospitalDbContext _dbContext;
+        private readonly IConfiguration? _configuration;
         private static readonly object _lock = new();
         private static readonly SemaphoreSlim _bookingLock = new(1, 1);
         private static readonly TimeZoneInfo _vietnamTimeZone = GetVietnamTimeZone();
@@ -184,12 +195,78 @@ namespace HospitalAI.QueueService.Controllers
             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _vietnamTimeZone);
         }
 
-        public AppointmentsController(IHubContext<QueueHub> hubContext, HospitalDbContext dbContext)
+        public AppointmentsController(IHubContext<QueueHub> hubContext, HospitalDbContext dbContext, IConfiguration? configuration = null)
         {
             _hubContext = hubContext;
             _dbContext = dbContext;
+            _configuration = configuration;
             EnsureDataLoaded();
             EnsureSlotsLoaded();
+        }
+
+        private static decimal ResolveAppointmentFee(OnlineAppointmentItem model)
+        {
+            if (model.RequestedFeeAmount.HasValue && model.RequestedFeeAmount.Value >= 0m && model.RequestedFeeAmount.Value <= 5_000_000m)
+            {
+                return decimal.Round(model.RequestedFeeAmount.Value, 2, MidpointRounding.AwayFromZero);
+            }
+            return 150000m;
+        }
+
+        private void ApplyBillingToAppointmentDto(OnlineAppointmentItem dto, Billing bill, SepayPaymentOptions options)
+        {
+            var code = PaymentQrHelper.ResolveFallbackDisplayCode(bill, options.PaymentPrefix);
+            dto.BillingId = bill.Id;
+            dto.PaymentCode = code;
+            dto.PaymentStatus = bill.Status;
+            dto.PaymentMethod = bill.PaymentMethod;
+            dto.BillingAmount = bill.TotalAmount;
+            dto.PaymentQrUrl = bill.Status == "Unpaid"
+                ? PaymentQrHelper.BuildVietQrImageUrl(options, bill.TotalAmount, code)
+                : null;
+        }
+
+        private async Task HydrateAppointmentsBillingAsync(List<OnlineAppointmentItem> items, Dictionary<Guid, string>? dbStatusMap = null)
+        {
+            if (items.Count == 0) return;
+            var aptGuids = new List<Guid>();
+            foreach (var item in items)
+            {
+                if (Guid.TryParse(item.Id, out var g))
+                {
+                    aptGuids.Add(g);
+                    if (dbStatusMap != null && dbStatusMap.TryGetValue(g, out var realStatus))
+                    {
+                        item.Status = realStatus;
+                        if (string.Equals(realStatus, "CheckedIn", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(realStatus, "Completed", StringComparison.OrdinalIgnoreCase))
+                        {
+                            item.CheckInStatus = "CheckedInQR";
+                        }
+                    }
+                }
+            }
+
+            if (aptGuids.Count == 0) return;
+
+            var billList = await _dbContext.Billings
+                .AsNoTracking()
+                .Where(b => b.AppointmentId.HasValue && aptGuids.Contains(b.AppointmentId.Value) && b.BillingType == "Registration")
+                .OrderByDescending(b => b.CreatedAt)
+                .ToListAsync();
+
+            var billByApt = billList
+                .GroupBy(b => b.AppointmentId!.Value)
+                .ToDictionary(g => g.Key, g => g.FirstOrDefault(x => x.Status != "Cancelled") ?? g.First());
+
+            var options = PaymentQrHelper.ResolveOptions(_configuration);
+            foreach (var item in items)
+            {
+                if (Guid.TryParse(item.Id, out var g) && billByApt.TryGetValue(g, out var bill))
+                {
+                    ApplyBillingToAppointmentDto(item, bill, options);
+                }
+            }
         }
 
         private static void EnsureDataLoaded()
@@ -521,6 +598,7 @@ namespace HospitalAI.QueueService.Controllers
                 var dbList = await query.OrderByDescending(a => a.AppointmentDate).ToListAsync();
                 if (dbList.Count > 0)
                 {
+                    var dbStatusMap = dbList.ToDictionary(a => a.Id, a => a.Status);
                     var items = dbList.Select(a =>
                     {
                         var idStr = a.Id.ToString();
@@ -549,10 +627,11 @@ namespace HospitalAI.QueueService.Controllers
                             Status = a.Status,
                             CreatedAt = a.AppointmentDate.ToString("o"),
                             QrCode = BuildCompactQrCode(a.Id.ToString(), a.Patient?.PatientCode, null, a.Symptoms),
-                            CheckInStatus = a.Status == "Completed" ? "CheckedInQR" : "PendingQR"
+                            CheckInStatus = (a.Status == "CheckedIn" || a.Status == "Completed") ? "CheckedInQR" : "PendingQR"
                         };
                     }).ToList();
 
+                    await HydrateAppointmentsBillingAsync(items, dbStatusMap);
                     return Ok(items);
                 }
             }
@@ -1020,6 +1099,9 @@ namespace HospitalAI.QueueService.Controllers
                         }
                     }
 
+                    var sepayOptions = PaymentQrHelper.ResolveOptions(_configuration);
+                    var resolvedFee = ResolveAppointmentFee(model);
+
                     // Idempotency: Kiểm tra nếu bệnh nhân đã đặt lịch cùng ngày và giờ trước đó
                     var existingDbDuplicate = await _dbContext.Appointments.FirstOrDefaultAsync(a =>
                         a.PatientId == patient.Id &&
@@ -1028,8 +1110,18 @@ namespace HospitalAI.QueueService.Controllers
 
                     if (existingDbDuplicate != null)
                     {
+                        var existingBill = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                            _dbContext,
+                            patient.Id,
+                            existingDbDuplicate.Id,
+                            resolvedFee,
+                            $"Phí khám đặt lịch - {model.DepartmentName}",
+                            sepayOptions);
+
                         if (slotTx != null) await slotTx.CommitAsync();
                         model.Id = existingDbDuplicate.Id.ToString();
+                        model.Status = existingDbDuplicate.Status;
+                        ApplyBillingToAppointmentDto(model, existingBill, sepayOptions);
                         return Ok(model);
                     }
 
@@ -1056,6 +1148,17 @@ namespace HospitalAI.QueueService.Controllers
                     };
                     _dbContext.Appointments.Add(appointmentEntity);
                     await _dbContext.SaveChangesAsync();
+
+                    // Khởi tạo duy nhất 1 hóa đơn Registration cho lịch hẹn (SePay / VNPay / Thu ngân dùng chung)
+                    var aptBilling = await BillingSettlementService.GetOrCreateRegistrationBillingAsync(
+                        _dbContext,
+                        patient.Id,
+                        appointmentEntity.Id,
+                        resolvedFee,
+                        $"Phí khám đặt lịch - {model.DepartmentName}",
+                        sepayOptions);
+
+                    ApplyBillingToAppointmentDto(model, aptBilling, sepayOptions);
 
                     if (slotTx != null)
                     {
@@ -1459,6 +1562,14 @@ namespace HospitalAI.QueueService.Controllers
                     if (dbApt != null)
                     {
                         dbApt.Status = "Cancelled";
+                        var unpaidBills = await _dbContext.Billings
+                            .Where(b => b.AppointmentId == aptGuid && b.BillingType == "Registration" && b.Status == "Unpaid")
+                            .ToListAsync();
+                        foreach (var unpaidBill in unpaidBills)
+                        {
+                            unpaidBill.Status = "Cancelled";
+                            unpaidBill.DiscrepancyNote = "Hủy tự động do lịch hẹn đã bị hủy.";
+                        }
                         await _dbContext.SaveChangesAsync();
                     }
                 }

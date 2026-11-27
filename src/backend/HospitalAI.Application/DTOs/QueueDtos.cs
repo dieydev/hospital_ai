@@ -71,6 +71,9 @@ public class IssueQueueTicketDto
 
     [StringLength(50)]
     public string? PreviousRecordCode { get; set; }
+
+    [StringLength(50)]
+    public string? PaymentStatus { get; set; }
 }
 
 public class UpdateQueueStatusDto

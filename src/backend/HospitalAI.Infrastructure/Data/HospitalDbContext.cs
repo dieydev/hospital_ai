@@ -36,6 +36,7 @@ public class HospitalDbContext : DbContext
     public DbSet<AILog> AILogs => Set<AILog>();
     public DbSet<Billing> Billings => Set<Billing>();
     public DbSet<BillingItem> BillingItems => Set<BillingItem>();
+    public DbSet<SepayWebhookTransaction> SepayWebhookTransactions => Set<SepayWebhookTransaction>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -393,18 +394,33 @@ public class HospitalDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.PatientId).HasColumnName("BenhNhanId");
             entity.Property(e => e.ExaminationId).HasColumnName("LuotKhamId");
+            entity.Property(e => e.AppointmentId).HasColumnName("LichHenId");
             entity.Property(e => e.BillingType).HasColumnName("LoaiHoaDon").HasMaxLength(50);
             entity.Property(e => e.TotalAmount).HasColumnName("TongTien").HasColumnType("decimal(18,2)");
             entity.Property(e => e.Status).HasColumnName("TrangThai").HasMaxLength(20);
             entity.Property(e => e.CreatedAt).HasColumnName("NgayTao");
             entity.Property(e => e.PaidAt).HasColumnName("NgayThanhToan");
+            entity.Property(e => e.PaymentCode).HasColumnName("MaThanhToan").HasMaxLength(20);
             entity.Property(e => e.PaymentMethod).HasColumnName("PhuongThucThanhToan").HasMaxLength(50);
             entity.Property(e => e.TransactionRef).HasColumnName("MaGiaoDich").HasMaxLength(100);
+            entity.Property(e => e.DiscrepancyNote).HasColumnName("GhiChuDoiSoat").HasMaxLength(500);
             entity.Property(e => e.CashierId).HasColumnName("NguoiThuTienId");
+
+            entity.HasOne(e => e.Appointment)
+                  .WithMany()
+                  .HasForeignKey(e => e.AppointmentId);
 
             entity.HasIndex(e => e.TransactionRef)
                   .IsUnique()
                   .HasFilter("[MaGiaoDich] IS NOT NULL");
+
+            entity.HasIndex(e => e.PaymentCode)
+                  .IsUnique()
+                  .HasFilter("[MaThanhToan] IS NOT NULL");
+
+            entity.HasIndex(e => new { e.AppointmentId, e.BillingType })
+                  .IsUnique()
+                  .HasFilter("[LichHenId] IS NOT NULL AND [LoaiHoaDon] = 'Registration' AND [TrangThai] <> 'Cancelled'");
 
             entity.HasMany(e => e.Items)
                   .WithOne(e => e.Billing)
@@ -422,6 +438,32 @@ public class HospitalDbContext : DbContext
             entity.Property(e => e.Quantity).HasColumnName("SoLuong");
             entity.Property(e => e.TotalPrice).HasColumnName("ThanhTien").HasColumnType("decimal(18,2)");
             entity.Property(e => e.ReferenceId).HasColumnName("ThamChieuId");
+        });
+
+        modelBuilder.Entity<SepayWebhookTransaction>(entity =>
+        {
+            entity.ToTable("NhatKyGiaoDichSePay", "dbo");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SepayTransactionId).IsRequired();
+            entity.Property(e => e.ReferenceCode).HasMaxLength(100);
+            entity.Property(e => e.Gateway).HasMaxLength(50);
+            entity.Property(e => e.TransactionDate).HasMaxLength(40);
+            entity.Property(e => e.AccountNumber).HasMaxLength(50);
+            entity.Property(e => e.SubAccount).HasMaxLength(50);
+            entity.Property(e => e.TransferType).HasMaxLength(20);
+            entity.Property(e => e.TransferAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.ExpectedAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.DiscrepancyAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.PaymentCode).HasMaxLength(30);
+            entity.Property(e => e.ProcessingStatus).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Note).HasMaxLength(500);
+
+            entity.HasIndex(e => e.SepayTransactionId).IsUnique();
+            entity.HasIndex(e => e.BillingId);
+
+            entity.HasOne(e => e.Billing)
+                  .WithMany()
+                  .HasForeignKey(e => e.BillingId);
         });
 
         foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
