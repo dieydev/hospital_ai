@@ -3,7 +3,6 @@ import { QRCodeSVG } from 'qrcode.react';
 import '../styles/prescriptionPrint.css';
 import {
   Card,
-  Typography,
   Tag,
   Button,
   Space,
@@ -15,9 +14,9 @@ import {
   Select,
   Tabs,
   Avatar,
-  Descriptions,
   Timeline,
   Drawer,
+  Empty,
 } from 'antd';
 import {
   FilePdfOutlined,
@@ -37,6 +36,7 @@ import {
   AlertOutlined,
   SolutionOutlined,
   TeamOutlined,
+  HeartOutlined,
 } from '@ant-design/icons';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useThemeStore } from '../store/useThemeStore';
@@ -45,26 +45,121 @@ import { examinationService, ExaminationItem } from '../services/examinationServ
 import { patientService, Patient } from '../services/patientService';
 import { buildPatientComprehensiveEMR } from '../utils/emrDataBuilder';
 
-const { Text, Paragraph } = Typography;
+interface InfoFieldItem {
+  label: string;
+  value: React.ReactNode;
+  span?: 1 | 2;
+}
+
+const SectionTitle: React.FC<{ icon?: React.ReactNode; title: string; rightExtra?: React.ReactNode; isDarkMode?: boolean }> = ({
+  icon,
+  title,
+  rightExtra,
+  isDarkMode = false,
+}) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 12,
+    }}
+  >
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span
+        style={{
+          width: 4,
+          height: 18,
+          borderRadius: 999,
+          backgroundColor: '#0284c7',
+          display: 'inline-block',
+        }}
+      />
+      {icon && <span style={{ color: '#0284c7', fontSize: 16, display: 'inline-flex' }}>{icon}</span>}
+      <h3
+        style={{
+          margin: 0,
+          fontSize: 15,
+          fontWeight: 800,
+          color: isDarkMode ? '#38bdf8' : '#0369a1',
+          letterSpacing: '0.01em',
+        }}
+      >
+        {title}
+      </h3>
+    </div>
+    {rightExtra}
+  </div>
+);
+
+const CleanInfoGrid: React.FC<{ items: InfoFieldItem[]; isDarkMode?: boolean }> = ({ items, isDarkMode = false }) => (
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+      gap: 12,
+    }}
+  >
+    {items.map((item, idx) => (
+      <div
+        key={idx}
+        style={{
+          gridColumn: item.span === 2 ? '1 / -1' : undefined,
+          backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
+          border: `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
+          borderRadius: 12,
+          padding: '10px 14px',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: isDarkMode ? '#94a3b8' : '#64748b',
+            marginBottom: 4,
+          }}
+        >
+          {item.label}
+        </div>
+        <div
+          style={{
+            fontSize: 13.5,
+            fontWeight: 600,
+            color: isDarkMode ? '#f1f5f9' : '#0f172a',
+            lineHeight: 1.45,
+          }}
+        >
+          {item.value || '—'}
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 export const MedicalRecordsPage: React.FC = () => {
   const { isDarkMode } = useThemeStore();
 
-  // State quản lý danh sách bệnh nhân & tìm kiếm
+  const cardBg = isDarkMode ? '#1e293b' : '#ffffff';
+  const borderCol = isDarkMode ? '#334155' : '#bae6fd';
+  const textMain = isDarkMode ? '#f1f5f9' : '#0f172a';
+  const textSub = isDarkMode ? '#cbd5e1' : '#334155';
+  const textMuted = isDarkMode ? '#94a3b8' : '#64748b';
+  const softBg = isDarkMode ? '#0f172a' : '#f0f9ff';
+
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [rawExams, setRawExams] = useState<ExaminationItem[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [searchText, setSearchText] = useState('');
+  const [drawerSearchText, setDrawerSearchText] = useState('');
   const [isPatientDrawerOpen, setIsPatientDrawerOpen] = useState(false);
 
-  // State quản lý lượt khám & EMR của bệnh nhân đang chọn
   const [patientExams, setPatientExams] = useState<ExaminationItem[]>([]);
   const [selectedExamIndex, setSelectedExamIndex] = useState<number>(0);
 
-  // State Modal In & Xuất PDF
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
 
-  // Load danh sách bệnh nhân và lượt khám ban đầu
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -78,9 +173,9 @@ export const MedicalRecordsPage: React.FC = () => {
 
       const patientList = patientRes.items || [];
       setPatients(patientList);
+      setRawExams(examRes || []);
 
       if (patientList.length > 0) {
-        // Mặc định chọn bệnh nhân đầu tiên (hoặc bệnh nhân Nguyễn Văn An nếu có)
         const defaultPatient =
           patientList.find((p) => p.maBenhNhan === 'BN20260001' || p.hoTen.includes('Nguyễn Văn An')) ||
           patientList[0];
@@ -92,30 +187,25 @@ export const MedicalRecordsPage: React.FC = () => {
     }
   };
 
-  // Hàm chọn bệnh nhân
   const handleSelectPatient = (patient: Patient, existingRawExams?: ExaminationItem[]) => {
     setSelectedPatient(patient);
     setSelectedExamIndex(0);
-
-    // Xây dựng danh sách đợt khám chuẩn y tế 100% cho bệnh nhân này
-    const emrList = buildPatientComprehensiveEMR(patient, existingRawExams);
+    const emrList = buildPatientComprehensiveEMR(patient, existingRawExams ?? rawExams);
     setPatientExams(emrList);
   };
 
-  // Lọc danh sách bệnh nhân theo từ khóa tìm kiếm
-  const filteredPatients = useMemo(() => {
-    if (!searchText.trim()) return patients;
-    const q = searchText.toLowerCase().trim();
+  const filteredDrawerPatients = useMemo(() => {
+    if (!drawerSearchText.trim()) return patients;
+    const q = drawerSearchText.toLowerCase().trim();
     return patients.filter(
       (p) =>
         p.hoTen.toLowerCase().includes(q) ||
         p.maBenhNhan.toLowerCase().includes(q) ||
-        p.soCCCD.includes(q) ||
-        p.soDienThoai.includes(q)
+        (p.soCCCD || '').includes(q) ||
+        (p.soDienThoai || '').includes(q)
     );
-  }, [patients, searchText]);
+  }, [patients, drawerSearchText]);
 
-  // Lượt khám hiện tại đang được xem chi tiết
   const currentExam = patientExams[selectedExamIndex] || patientExams[0];
 
   const handleOpenPdf = (exam?: ExaminationItem) => {
@@ -157,774 +247,629 @@ export const MedicalRecordsPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* ─────────────────────────────────────────────────────────────────────────
-          1. BỘ TÌM KIẾM & CHỌN BỆNH NHÂN (PATIENT SELECTOR & SEARCH TOOLBAR)
-          ───────────────────────────────────────────────────────────────────────── */}
-      <Card
-        bordered={false}
-        className="rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-sky-100 dark:border-slate-700"
-        bodyStyle={{ padding: '16px 20px' }}
-      >
-        <Row gutter={[16, 16]} align="bottom">
-          {/* Cột 1: Tìm kiếm */}
-          <Col xs={24} md={8} lg={7}>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
-                <SearchOutlined /> Tra cứu bệnh nhân
-              </span>
-              <Input
-                placeholder="Tìm theo Họ tên, Mã BN, CCCD, SĐT..."
-                prefix={<SearchOutlined className="text-slate-400" />}
-                allowClear
-                size="large"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="rounded-xl h-11"
-              />
-            </div>
-          </Col>
+  const totalPrescriptionAmount = useMemo(() => {
+    return (currentExam?.prescriptionDetails || []).reduce(
+      (sum, item) => sum + (item.unitPrice || 0) * (item.quantity || 1),
+      0
+    );
+  }, [currentExam]);
 
-          {/* Cột 2: Chọn bệnh nhân với labelRender 1 dòng cực gọn gàng, không tràn viền */}
-          <Col xs={24} md={10} lg={10}>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
-                <UserOutlined /> Hồ sơ bệnh nhân đang xem ({filteredPatients.length} người)
+  const hasAllergyAlert =
+    Boolean(selectedPatient?.diUngThuoc) &&
+    !selectedPatient!.diUngThuoc!.toLowerCase().includes('không');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {/* 1. THANH CHỌN & TÌM NHANH BỆNH NHÂN GỌN GÀNG */}
+      <Card
+        variant="borderless"
+        styles={{ body: { padding: '14px 18px' } }}
+        style={{
+          backgroundColor: cardBg,
+          borderRadius: 16,
+          border: `1px solid ${borderCol}`,
+          boxShadow: isDarkMode ? 'none' : '0 10px 30px rgba(2, 132, 199, 0.08)',
+        }}
+      >
+        <Row gutter={[14, 12]} align="middle" justify="space-between">
+          <Col xs={24} lg={15}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <SearchOutlined style={{ color: '#0284c7' }} />
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+                CHỌN HOẶC TÌM NHANH BỆNH NHÂN ({patients.length} hồ sơ)
               </span>
-              <Select
-                showSearch
-                size="large"
-                value={selectedPatient?.id}
-                placeholder="-- Chọn người bệnh để xem EMR --"
-                className="w-full rounded-xl"
-                style={{ height: 44 }}
-                onChange={(val) => {
-                  const found = patients.find((p) => p.id === val);
-                  if (found) handleSelectPatient(found);
-                }}
-                filterOption={false}
-                dropdownMatchSelectWidth={false}
-                labelRender={({ value }) => {
-                  const p = patients.find((item) => item.id === value);
-                  if (!p) return <span className="text-slate-400">-- Chọn người bệnh để xem EMR --</span>;
-                  return (
-                    <div className="flex items-center gap-2 h-full text-sm leading-normal overflow-hidden py-1">
-                      <Avatar
-                        size={24}
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.hoTen}`}
-                        icon={<UserOutlined />}
-                        className="bg-sky-500 flex-shrink-0"
-                      />
-                      <strong className="text-slate-900 dark:text-white font-bold truncate">
-                        {p.hoTen.toUpperCase()}
-                      </strong>
-                      <Tag color="cyan" className="font-mono text-xs m-0 px-1.5 py-0">
-                        {p.maBenhNhan}
-                      </Tag>
-                      <span className="text-xs text-slate-400 hidden sm:inline">
-                        ({p.tuoi} tuổi - {p.gioiTinh})
-                      </span>
-                    </div>
-                  );
-                }}
-              >
-                {filteredPatients.map((p) => (
-                  <Select.Option key={p.id} value={p.id}>
-                    <div className="flex items-center gap-2.5 py-1.5">
-                      <Avatar
-                        size="small"
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.hoTen}`}
-                        icon={<UserOutlined />}
-                        className="bg-sky-500 flex-shrink-0"
-                      />
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                            {p.hoTen.toUpperCase()}
-                          </span>
-                          <Tag color="cyan" className="m-0 text-[10px] font-mono">{p.maBenhNhan}</Tag>
-                          {p.maTheBHYT && <Tag color="green" className="m-0 text-[10px]">BHYT</Tag>}
-                        </div>
-                        <span className="text-xs text-slate-400 mt-0.5">
-                          CCCD: <span className="font-mono">{p.soCCCD}</span> • {p.tuoi || 'N/A'} tuổi ({p.gioiTinh}) • SĐT: {p.soDienThoai}
-                        </span>
+            </div>
+            <Select
+              showSearch
+              size="large"
+              value={selectedPatient?.id}
+              placeholder="Nhập tên, mã BN, số CCCD hoặc số điện thoại để tìm..."
+              style={{ width: '100%' }}
+              popupMatchSelectWidth={false}
+              filterOption={(input, option) => {
+                const searchVal = String((option as { 'data-search'?: string } | undefined)?.['data-search'] || '').toLowerCase();
+                return searchVal.includes(input.toLowerCase().trim());
+              }}
+              onChange={(val) => {
+                const found = patients.find((p) => p.id === val);
+                if (found) handleSelectPatient(found);
+              }}
+              optionLabelProp="label"
+            >
+              {patients.map((p) => (
+                <Select.Option
+                  key={p.id}
+                  value={p.id}
+                  label={`${p.hoTen} (${p.maBenhNhan}) — ${p.soDienThoai || p.soCCCD}`}
+                  data-search={`${p.hoTen} ${p.maBenhNhan} ${p.soCCCD} ${p.soDienThoai}`}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
+                    <Avatar
+                      size={28}
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.hoTen)}`}
+                      icon={<UserOutlined />}
+                      style={{ backgroundColor: '#0284c7', flexShrink: 0 }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <strong style={{ color: '#0f172a', fontSize: 13.5 }}>{p.hoTen}</strong>
+                        <Tag color="blue" style={{ margin: 0, fontFamily: 'monospace', fontSize: 11 }}>
+                          {p.maBenhNhan}
+                        </Tag>
+                        {p.maTheBHYT && (
+                          <Tag color="green" style={{ margin: 0, fontSize: 11 }}>
+                            BHYT
+                          </Tag>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                        {p.tuoi || 'N/A'} tuổi ({p.gioiTinh}) • CCCD: {p.soCCCD || '—'} • SĐT: {p.soDienThoai || '—'}
                       </div>
                     </div>
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
+                  </div>
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
 
-          {/* Cột 3: Nút chức năng */}
-          <Col xs={24} md={6} lg={7}>
-            <div className="flex flex-col gap-1.5 justify-end">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 hidden md:block">
-                Thao tác hồ sơ
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  icon={<TeamOutlined />}
-                  size="large"
-                  onClick={() => setIsPatientDrawerOpen(true)}
-                  className="rounded-xl border-sky-300 text-sky-700 hover:text-sky-800 hover:border-sky-500 font-medium h-11 flex-1 sm:flex-initial"
-                >
-                  Danh sách ({patients.length})
-                </Button>
-
-                <Button
-                  type="primary"
-                  icon={<FilePdfOutlined />}
-                  size="large"
-                  onClick={() => handleOpenPdf()}
-                  className="rounded-xl bg-sky-600 hover:bg-sky-700 font-semibold shadow-md flex items-center justify-center gap-1.5 h-11 flex-1 sm:flex-initial"
-                >
-                  Xuất EMR (PDF)
-                </Button>
-              </div>
+          <Col xs={24} lg={9}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', paddingTop: 18 }}>
+              <Button
+                icon={<TeamOutlined />}
+                size="large"
+                style={{
+                  borderRadius: 10,
+                  borderColor: borderCol,
+                  color: isDarkMode ? '#38bdf8' : '#0369a1',
+                  backgroundColor: softBg,
+                  fontWeight: 600,
+                }}
+                onClick={() => setIsPatientDrawerOpen(true)}
+              >
+                Danh sách ({patients.length})
+              </Button>
+              <Button
+                type="primary"
+                icon={<FilePdfOutlined />}
+                size="large"
+                style={{
+                  borderRadius: 10,
+                  backgroundColor: '#0284c7',
+                  borderColor: '#0284c7',
+                  fontWeight: 700,
+                }}
+                onClick={() => handleOpenPdf()}
+              >
+                Xem &amp; In Bệnh Án A4
+              </Button>
             </div>
           </Col>
         </Row>
       </Card>
 
-      {/* ─────────────────────────────────────────────────────────────────────────
-          2. MEDICAL HERO BANNER: THÔNG TIN TỔNG QUÁT CỦA BỆNH NHÂN ĐANG CHỌN
-          ───────────────────────────────────────────────────────────────────────── */}
-      {selectedPatient ? (
-        <div className="medical-hero-banner relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="z-10">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30 backdrop-blur-md">
-                <span className="status-dot-active bg-emerald-400" /> Bệnh án Điện tử EMR Chuẩn Bộ Y Tế
-              </span>
-              <Tag color="cyan" className="m-0 font-mono text-xs bg-white/20 text-white border-white/30 px-2.5 py-0.5">
-                MÃ BN: {selectedPatient.maBenhNhan}
-              </Tag>
-              <Tag color="blue" className="m-0 font-mono text-xs bg-white/20 text-white border-white/30 px-2.5 py-0.5">
-                SỐ LƯU TRỮ: {currentExam?.emrFileNumber || `BA-${selectedPatient.maBenhNhan}/2026`}
-              </Tag>
-            </div>
+      {/* 2. THẺ TÓM TẮT NGƯỜI BỆNH SÁNG SẠCH, DỄ ĐỌC */}
+      {selectedPatient && (
+        <Card
+          variant="borderless"
+          styles={{ body: { padding: 0 } }}
+          style={{
+            backgroundColor: cardBg,
+            borderRadius: 18,
+            border: `1px solid ${borderCol}`,
+            boxShadow: isDarkMode ? 'none' : '0 10px 30px rgba(2, 132, 199, 0.1)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Thanh nhấn trên cùng theo hệ màu Y tế Số */}
+          <div
+            style={{
+              height: 5,
+              background: 'linear-gradient(90deg, #0284c7 0%, #0369a1 60%, #14b8a6 100%)',
+            }}
+          />
 
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight m-0">
-              HỒ SƠ BỆNH ÁN ĐIỆN TỬ - {selectedPatient.hoTen.toUpperCase()}
-            </h1>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sky-100 text-xs md:text-sm mt-2">
-              <span>
-                CCCD: <strong className="text-white font-mono">{selectedPatient.soCCCD}</strong>
-              </span>
-              <span>•</span>
-              <span>
-                Ngày sinh: <strong className="text-white">{selectedPatient.ngaySinh}</strong> ({selectedPatient.tuoi} tuổi, {selectedPatient.gioiTinh})
-              </span>
-              <span>•</span>
-              <span>
-                Nhóm máu: <Tag color="red" className="m-0 font-bold px-2 py-0 text-xs">{selectedPatient.nhomMau || 'O+'}</Tag>
-              </span>
-              <span>•</span>
-              <span>
-                BHYT: <strong className="text-white font-mono">{selectedPatient.maTheBHYT || 'Chưa đăng ký'}</strong>{' '}
-                {selectedPatient.maTheBHYT && <Tag color="green" className="m-0 text-[11px]">Hưởng 80%</Tag>}
-              </span>
-              <span>•</span>
-              <span>
-                Nghề nghiệp: <strong className="text-white">{currentExam?.profession || 'Kỹ sư'}</strong>
-              </span>
-            </div>
-          </div>
-
-          <div className="z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            {/* Bộ chọn Đợt khám (Visit Selector) */}
-            <div className="bg-white/10 backdrop-blur-md p-2 rounded-xl border border-white/20 flex flex-col gap-1">
-              <span className="text-[11px] text-sky-100 font-medium">Chọn đợt khám / Lần điều trị:</span>
-              <Select
-                value={selectedExamIndex}
-                onChange={(idx) => setSelectedExamIndex(idx)}
-                className="w-full min-w-[240px]"
-                dropdownMatchSelectWidth={false}
-              >
-                {patientExams.map((exam, idx) => (
-                  <Select.Option key={exam.id} value={idx}>
-                    <div className="flex items-center justify-between gap-3 text-xs">
-                      <span className="font-semibold text-slate-800">
-                        {formatDate(exam.examinationDate)} • {exam.departmentName}
-                      </span>
-                      <Tag color="purple" className="m-0 text-[10px]">{exam.icd10Code}</Tag>
+          <div style={{ padding: '18px 22px' }}>
+            <Row gutter={[20, 16]} align="middle" justify="space-between">
+              <Col xs={24} xl={15}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  <Avatar
+                    size={58}
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedPatient.hoTen)}`}
+                    icon={<UserOutlined />}
+                    style={{
+                      backgroundColor: '#0284c7',
+                      border: `2px solid ${borderCol}`,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 240 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                      <h1
+                        style={{
+                          margin: 0,
+                          fontSize: 21,
+                          fontWeight: 800,
+                          color: textMain,
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {selectedPatient.hoTen.toUpperCase()}
+                      </h1>
+                      <Tag
+                        style={{
+                          margin: 0,
+                          backgroundColor: softBg,
+                          borderColor: borderCol,
+                          color: isDarkMode ? '#38bdf8' : '#0369a1',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {selectedPatient.maBenhNhan}
+                      </Tag>
+                      <Tag color="red" style={{ margin: 0, fontWeight: 700 }}>
+                        Nhóm máu: {selectedPatient.nhomMau || 'O+'}
+                      </Tag>
+                      {selectedPatient.maTheBHYT ? (
+                        <Tag color="green" style={{ margin: 0, fontWeight: 600 }}>
+                          BHYT: {selectedPatient.maTheBHYT}
+                        </Tag>
+                      ) : (
+                        <Tag style={{ margin: 0 }}>Viện phí</Tag>
+                      )}
                     </div>
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
 
-            <Button
-              type="primary"
-              icon={<PrinterOutlined />}
-              size="large"
-              className="bg-white text-sky-700 hover:bg-sky-50 font-bold rounded-xl shadow-lg border-none flex items-center justify-center gap-1.5 px-5 h-12"
-              onClick={() => handleOpenPdf()}
-            >
-              In Phiếu Bệnh Án
-            </Button>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px 16px',
+                        fontSize: 13,
+                        color: textSub,
+                      }}
+                    >
+                      <span>
+                        <strong>{selectedPatient.gioiTinh}</strong> • {selectedPatient.tuoi || '—'} tuổi ({selectedPatient.ngaySinh || '—'})
+                      </span>
+                      <span>
+                        CCCD: <strong style={{ fontFamily: 'monospace' }}>{selectedPatient.soCCCD || '—'}</strong>
+                      </span>
+                      <span>
+                        SĐT: <strong style={{ fontFamily: 'monospace', color: '#0284c7' }}>{selectedPatient.soDienThoai || '—'}</strong>
+                      </span>
+                      <span>
+                        Lưu trữ: <strong style={{ fontFamily: 'monospace' }}>{currentExam?.emrFileNumber || `BA-${selectedPatient.maBenhNhan}/2026`}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+
+              <Col xs={24} xl={9}>
+                <div
+                  style={{
+                    backgroundColor: softBg,
+                    border: `1px solid ${borderCol}`,
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+                      ĐỢT KHÁM ĐANG XEM ({selectedExamIndex + 1}/{patientExams.length})
+                    </span>
+                    {currentExam?.isDigitallySigned ? (
+                      <Tag color="green" style={{ margin: 0, fontWeight: 700 }}>
+                        <SafetyCertificateOutlined /> Đã ký số
+                      </Tag>
+                    ) : (
+                      <Tag color="orange" style={{ margin: 0, fontWeight: 600 }}>
+                        Chờ ký số
+                      </Tag>
+                    )}
+                  </div>
+                  <Select
+                    value={selectedExamIndex}
+                    onChange={(idx) => setSelectedExamIndex(idx)}
+                    style={{ width: '100%' }}
+                    popupMatchSelectWidth={false}
+                  >
+                    {patientExams.map((exam, idx) => (
+                      <Select.Option key={exam.id} value={idx}>
+                        <span style={{ fontWeight: 600 }}>
+                          {formatDate(exam.examinationDate)} • {exam.departmentName} ({exam.icd10Code})
+                        </span>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
+              </Col>
+            </Row>
           </div>
-        </div>
-      ) : null}
+        </Card>
+      )}
 
-      {/* ─────────────────────────────────────────────────────────────────────────
-          3. NỘI DUNG CHI TIẾT BỆNH ÁN EMR ĐẦY ĐỦ 2 PHẦN THEO TIÊU CHUẨN BỘ Y TẾ
-          ───────────────────────────────────────────────────────────────────────── */}
-      {currentExam && selectedPatient && (
-        <Row gutter={[20, 20]}>
-          {/* CỘT CHÍNH: 5 TABS NỘI DUNG EMR CHUẨN BỘ Y TẾ */}
-          <Col xs={24} xl={17}>
+      {/* 3. BỐ CỤC CHÍNH 2 CỘT: BÊN TRÁI DANH SÁCH ĐỢT KHÁM + CẢNH BÁO | BÊN PHẢI NỘI DUNG EMR THOÁNG RÕ */}
+      {currentExam && selectedPatient ? (
+        <Row gutter={[18, 18]}>
+          {/* CỘT TRÁI: DÒNG THỜI GIAN ĐỢT KHÁM & LƯU Ý LÂM SÀNG */}
+          <Col xs={24} xl={6}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Card
+                variant="borderless"
+                styles={{ body: { padding: '14px 16px' } }}
+                style={{
+                  backgroundColor: cardBg,
+                  borderRadius: 16,
+                  border: `1px solid ${borderCol}`,
+                  boxShadow: isDarkMode ? 'none' : '0 10px 30px rgba(2, 132, 199, 0.08)',
+                }}
+                title={
+                  <Space size={8}>
+                    <HistoryOutlined style={{ color: '#0284c7' }} />
+                    <span style={{ fontWeight: 800, fontSize: 14, color: textMain }}>
+                      Lịch sử Khám ({patientExams.length} đợt)
+                    </span>
+                  </Space>
+                }
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {patientExams.map((exam, idx) => {
+                    const isActive = idx === selectedExamIndex;
+                    return (
+                      <button
+                        type="button"
+                        key={exam.id}
+                        onClick={() => setSelectedExamIndex(idx)}
+                        style={{
+                          textAlign: 'left',
+                          width: '100%',
+                          cursor: 'pointer',
+                          padding: '12px 14px',
+                          borderRadius: 12,
+                          backgroundColor: isActive ? softBg : cardBg,
+                          border: isActive ? '1.5px solid #0284c7' : `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
+                          boxShadow: isActive ? '0 4px 14px rgba(2, 132, 199, 0.12)' : 'none',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: isActive ? '#0284c7' : textSub }}>
+                            {formatDate(exam.examinationDate)}
+                          </span>
+                          <Tag color="blue" style={{ margin: 0, fontFamily: 'monospace', fontSize: 11 }}>
+                            {exam.icd10Code}
+                          </Tag>
+                        </div>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: textMain, marginBottom: 3 }}>
+                          {exam.departmentName}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12.5,
+                            color: textMuted,
+                            lineHeight: 1.4,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            marginBottom: 6,
+                          }}
+                        >
+                          {exam.assessment || exam.icd10Name}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: textMuted }}>
+                          BS: <strong style={{ color: textSub }}>{exam.doctorName}</strong>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Card>
+
+              <Card
+                variant="borderless"
+                styles={{ body: { padding: '14px 16px' } }}
+                style={{
+                  backgroundColor: cardBg,
+                  borderRadius: 16,
+                  border: `1px solid ${borderCol}`,
+                  boxShadow: isDarkMode ? 'none' : '0 10px 30px rgba(2, 132, 199, 0.08)',
+                }}
+                title={
+                  <Space size={8}>
+                    <AlertOutlined style={{ color: hasAllergyAlert ? '#dc2626' : '#0284c7' }} />
+                    <span style={{ fontWeight: 800, fontSize: 14, color: textMain }}>
+                      Cảnh báo Lâm sàng
+                    </span>
+                  </Space>
+                }
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      backgroundColor: hasAllergyAlert ? (isDarkMode ? '#450a0a' : '#fef2f2') : softBg,
+                      border: `1px solid ${hasAllergyAlert ? '#fca5a5' : borderCol}`,
+                    }}
+                  >
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: hasAllergyAlert ? '#dc2626' : '#0369a1', marginBottom: 2 }}>
+                      Tiền sử Dị ứng thuốc
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: hasAllergyAlert ? '#991b1b' : textMain }}>
+                      {selectedPatient.diUngThuoc || 'Không ghi nhận dị ứng'}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      backgroundColor: isDarkMode ? '#0f172a' : '#fffbeb',
+                      border: `1px solid ${isDarkMode ? '#334155' : '#fde68a'}`,
+                    }}
+                  >
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#b45309', marginBottom: 2 }}>
+                      Bệnh nền mạn tính
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: isDarkMode ? '#fef3c7' : '#78350f' }}>
+                      {selectedPatient.tienSuBenh || 'Không có bệnh mạn tính'}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 12,
+                      backgroundColor: softBg,
+                      border: `1px solid ${borderCol}`,
+                    }}
+                  >
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#0369a1', marginBottom: 2 }}>
+                      Liên hệ người thân khẩn cấp
+                    </div>
+                    <div style={{ fontSize: 13, color: textMain, fontWeight: 600 }}>
+                      {selectedPatient.tenNguoiThan || 'Chưa cập nhật'} ({selectedPatient.quanHeNguoiThan || 'Người thân'})
+                    </div>
+                    {selectedPatient.soDienThoaiNguoiThan && (
+                      <div style={{ fontSize: 12.5, color: '#0284c7', fontFamily: 'monospace', fontWeight: 700, marginTop: 2 }}>
+                        <PhoneOutlined /> {selectedPatient.soDienThoaiNguoiThan}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </Col>
+
+          {/* CỘT PHẢI: CHI TIẾT BỆNH ÁN VỚI 5 TAB NGẮN GỌN, DỄ ĐỌC */}
+          <Col xs={24} xl={18}>
             <Card
-              bordered={false}
-              className="rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-sky-100 dark:border-slate-700"
-              bodyStyle={{ padding: '20px 24px' }}
+              variant="borderless"
+              styles={{ body: { padding: '18px 24px 24px' } }}
+              style={{
+                backgroundColor: cardBg,
+                borderRadius: 18,
+                border: `1px solid ${borderCol}`,
+                boxShadow: isDarkMode ? 'none' : '0 10px 30px rgba(2, 132, 199, 0.1)',
+              }}
             >
               <Tabs
-                defaultActiveKey="tab-administrative"
-                type="card"
+                defaultActiveKey="tab-clinical"
                 className="medical-emr-tabs"
                 items={[
-                  // ──────────────────────────────────────────────────────────────
-                  // TAB 1: THÔNG TIN HÀNH CHÍNH & QUẢN LÝ NGƯỜI BỆNH
-                  // ──────────────────────────────────────────────────────────────
-                  {
-                    key: 'tab-administrative',
-                    label: (
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <IdcardOutlined /> I. Thông tin Hành chính & Quản lý
-                      </span>
-                    ),
-                    children: (
-                      <div className="flex flex-col gap-6 pt-2">
-                        {/* 1.1 Thông tin cá nhân & nhân thân */}
-                        <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            1. THÔNG TIN CÁ NHÂN & NHÂN THÂN NGƯỜI BỆNH
-                          </h3>
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={{ xs: 1, sm: 2, md: 3 }}
-                            className="bg-sky-50/40 dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Họ và tên (chữ in hoa)">
-                              <strong className="text-slate-900 dark:text-white font-bold text-sm">
-                                {currentExam.patientName}
-                              </strong>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Giới tính">
-                              <Tag color={currentExam.patientGender === 'Nam' ? 'blue' : 'magenta'}>
-                                {currentExam.patientGender}
-                              </Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Ngày sinh / Tuổi">
-                              {currentExam.patientDateOfBirth} ({currentExam.patientAge} tuổi)
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Số CCCD / Định danh">
-                              <span className="font-mono font-semibold">{currentExam.identityCardNumber}</span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Số điện thoại liên hệ">
-                              <span className="font-mono text-sky-600">{selectedPatient.soDienThoai}</span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Nghề nghiệp">
-                              <strong className="text-slate-800 dark:text-slate-200">
-                                {currentExam.profession}
-                              </strong>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Nơi cư trú hiện tại" span={3}>
-                              <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                                <HomeOutlined className="text-sky-500" /> {currentExam.address}
-                              </span>
-                            </Descriptions.Item>
-                          </Descriptions>
-                        </div>
-
-                        {/* 1.2 Thông tin người nhà / Báo tin khi cần thiết */}
-                        <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            2. THÔNG TIN LIÊN HỆ NGƯỜI NHÀ / BÁO TIN KHẨN CẤP
-                          </h3>
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={{ xs: 1, sm: 2, md: 3 }}
-                            className="bg-sky-50/40 dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Họ tên người nhà">
-                              <strong className="text-slate-900 dark:text-white">
-                                {currentExam.emergencyContactName}
-                              </strong>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Mối quan hệ">
-                              <Tag color="cyan">{currentExam.emergencyContactRelation}</Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Điện thoại báo tin">
-                              <span className="font-mono font-semibold text-rose-600">
-                                <PhoneOutlined /> {currentExam.emergencyContactPhone}
-                              </span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Địa chỉ người nhà" span={3}>
-                              {currentExam.emergencyContactAddress}
-                            </Descriptions.Item>
-                          </Descriptions>
-                        </div>
-
-                        {/* 1.3 Thông tin bảo hiểm y tế (BHYT) */}
-                        <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            3. THÔNG TIN BẢO HIỂM Y TẾ (BHYT)
-                          </h3>
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={{ xs: 1, sm: 2, md: 3 }}
-                            className="bg-sky-50/40 dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Mã số thẻ BHYT">
-                              <strong className="font-mono text-emerald-600 text-sm">
-                                {currentExam.healthInsuranceNumber || 'Không có'}
-                              </strong>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Mức quyền lợi hưởng">
-                              <Tag color="green" className="font-bold">
-                                {currentExam.insuranceBenefitRate || '80%'}
-                              </Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Hạn sử dụng thẻ">
-                              {currentExam.insuranceExpiryDate || '31/12/2026'}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Nơi ĐKKCB ban đầu" span={3}>
-                              {currentExam.insurancePlace}
-                            </Descriptions.Item>
-                          </Descriptions>
-                        </div>
-
-                        {/* 1.4 Dữ liệu quản lý viện */}
-                        <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            4. DỮ LIỆU QUẢN LÝ VIỆN & THỦ TỤC VÀO - RA VIỆN
-                          </h3>
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={{ xs: 1, sm: 2, md: 3 }}
-                            className="bg-sky-50/40 dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Số hồ sơ lưu trữ EMR">
-                              <span className="font-mono font-bold text-sky-700">{currentExam.emrFileNumber}</span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Mã lượt khám">
-                              <span className="font-mono text-slate-700">{currentExam.examinationCode}</span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Hình thức vào viện">
-                              <Tag color="processing">{currentExam.admissionType}</Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Ngày giờ tiếp nhận/vào">
-                              <CalendarOutlined className="mr-1 text-sky-500" />
-                              {currentExam.admissionDate}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Ngày giờ kết thúc/ra">
-                              <CalendarOutlined className="mr-1 text-emerald-500" />
-                              {currentExam.dischargeDate}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Khoa điều trị & Bác sĩ">
-                              <span className="font-semibold text-slate-800 dark:text-slate-100">
-                                {currentExam.departmentName} - {currentExam.doctorName}
-                              </span>
-                            </Descriptions.Item>
-                          </Descriptions>
-                        </div>
-                      </div>
-                    ),
-                  },
-
-                  // ──────────────────────────────────────────────────────────────
-                  // TAB 2: THÔNG TIN CHUYÊN MÔN: BỆNH SỬ & KHÁM LÂM SÀNG (SOAP)
-                  // ──────────────────────────────────────────────────────────────
+                  // TAB 1: KHÁM BỆNH & CHẨN ĐOÁN (MỞ MẶC ĐỊNH ĐỂ DỄ ĐỌC NGAY)
                   {
                     key: 'tab-clinical',
                     label: (
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <MedicineBoxOutlined /> II. Bệnh sử & Khám Lâm sàng (SOAP)
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <MedicineBoxOutlined /> Khám &amp; Chẩn đoán
                       </span>
                     ),
                     children: (
-                      <div className="flex flex-col gap-6 pt-2">
-                        {/* 2.1 Lý do vào viện & Quá trình bệnh lý */}
-                        <div className="p-4 rounded-xl bg-sky-50/60 dark:bg-slate-900/60 border border-sky-100 dark:border-slate-700">
-                          <h3 className="text-base font-bold text-sky-800 dark:text-sky-300 mb-2">
-                            1. LÝ DO VÀO VIỆN (CHIEF COMPLAINT)
-                          </h3>
-                          <Paragraph className="text-sm font-medium text-slate-800 dark:text-slate-200 m-0">
-                            {currentExam.reasonForAdmission || currentExam.subjective}
-                          </Paragraph>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
-                          <h3 className="text-base font-bold text-sky-800 dark:text-sky-300 mb-2">
-                            2. QUÁ TRÌNH BỆNH LÝ (BỆNH SỬ HIỆN TẠI - HPI)
-                          </h3>
-                          <Paragraph className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed m-0">
-                            {currentExam.pathologicalProcess}
-                          </Paragraph>
-                        </div>
-
-                        {/* 2.2 Tiền sử bệnh */}
-                        <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            3. TIỀN SỬ BỆNH TẬT & DỊ ỨNG
-                          </h3>
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={{ xs: 1, sm: 2 }}
-                            className="bg-white dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Tiền sử bản thân (bệnh nền)">
-                              <strong className="text-slate-800 dark:text-slate-200">
-                                {currentExam.medicalHistoryPersonal}
-                              </strong>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Dị ứng thuốc & thức ăn">
-                              <Tag color={currentExam.drugAllergies?.includes('Không') ? 'default' : 'red'}>
-                                {currentExam.drugAllergies}
-                              </Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Tiền sử gia đình">
-                              {currentExam.medicalHistoryFamily}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Thói quen sinh hoạt">
-                              Không hút thuốc lá, không lạm dụng rượu bia, tập thể thao nhẹ.
-                            </Descriptions.Item>
-                          </Descriptions>
-                        </div>
-
-                        {/* 2.3 Khám lâm sàng ban đầu & Bộ chỉ số sinh hiệu */}
-                        <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            4. KẾT QUẢ THĂM KHÁM BAN ĐẦU & CHỈ SỐ SINH HIỆU (VITALS)
-                          </h3>
-
-                          {/* Bộ thẻ sinh hiệu đẹp mắt */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 mb-4">
-                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-slate-900 border border-sky-200 text-center">
-                              <span className="text-[11px] text-slate-500 block">Mạch (Heart Rate)</span>
-                              <strong className="text-lg text-sky-700 dark:text-sky-400 font-mono">
-                                {currentExam.pulseRate}
-                              </strong>
-                              <span className="text-[10px] text-slate-400 block">lần/phút</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+                        {/* Khối nổi bật: Chẩn đoán chính + Bác sĩ + Lý do vào viện */}
+                        <div
+                          style={{
+                            padding: '16px 18px',
+                            borderRadius: 14,
+                            backgroundColor: softBg,
+                            border: `1.5px solid ${borderCol}`,
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10, marginBottom: 8 }}>
+                            <div>
+                              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', marginBottom: 4 }}>
+                                Chẩn đoán xác định • {currentExam.departmentName}
+                              </div>
+                              <div style={{ fontSize: 17, fontWeight: 800, color: textMain }}>
+                                <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 13, marginRight: 8 }}>
+                                  {currentExam.icd10Code}
+                                </Tag>
+                                {currentExam.icd10Name}
+                              </div>
                             </div>
-
-                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-slate-900 border border-sky-200 text-center">
-                              <span className="text-[11px] text-slate-500 block">Huyết áp (BP)</span>
-                              <strong className="text-lg text-sky-700 dark:text-sky-400 font-mono">
-                                {currentExam.bloodPressure}
-                              </strong>
-                              <span className="text-[10px] text-slate-400 block">mmHg</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-slate-900 border border-sky-200 text-center">
-                              <span className="text-[11px] text-slate-500 block">Thân nhiệt</span>
-                              <strong className="text-lg text-sky-700 dark:text-sky-400 font-mono">
-                                {currentExam.temperature}°C
-                              </strong>
-                              <span className="text-[10px] text-slate-400 block">Độ C</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-slate-900 border border-sky-200 text-center">
-                              <span className="text-[11px] text-slate-500 block">Nhịp thở</span>
-                              <strong className="text-lg text-sky-700 dark:text-sky-400 font-mono">
-                                {currentExam.respiratoryRate}
-                              </strong>
-                              <span className="text-[10px] text-slate-400 block">lần/phút</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-slate-900 border border-sky-200 text-center">
-                              <span className="text-[11px] text-slate-500 block">SpO2</span>
-                              <strong className="text-lg text-emerald-600 dark:text-emerald-400 font-mono">
-                                {currentExam.spO2 || 98}%
-                              </strong>
-                              <span className="text-[10px] text-slate-400 block">Oxy máu</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-slate-900 border border-sky-200 text-center">
-                              <span className="text-[11px] text-slate-500 block">Cân nặng / Cao</span>
-                              <strong className="text-sm text-slate-800 dark:text-slate-200 font-semibold block mt-1">
-                                {currentExam.weight}kg / {currentExam.height}cm
-                              </strong>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-slate-900 border border-sky-200 text-center">
-                              <span className="text-[11px] text-slate-500 block">Chỉ số BMI</span>
-                              <strong className="text-lg text-sky-700 dark:text-sky-400 font-mono">
-                                {currentExam.bmi}
-                              </strong>
-                              <Tag color="cyan" className="m-0 text-[10px] px-1">Bình thường</Tag>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: 12, color: textMuted }}>Bác sĩ khám</div>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: isDarkMode ? '#38bdf8' : '#0369a1' }}>
+                                {currentExam.doctorName}
+                              </div>
                             </div>
                           </div>
-
-                          {/* Khám toàn thân và các cơ quan */}
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={1}
-                            className="bg-white dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Khám Toàn thân">
-                              {currentExam.generalExamination}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Tuần hoàn / Tim mạch">
-                              {currentExam.circulatoryExam}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Hô hấp / Lồng ngực">
-                              {currentExam.respiratoryExam}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Tiêu hóa / Ổ bụng">
-                              {currentExam.digestiveExam}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Thần kinh & Tri giác">
-                              {currentExam.nervousExam}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Cơ - Xương - Khớp">
-                              {currentExam.musculoskeletalExam}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Tai Mũi Họng / RHM">
-                              {currentExam.entExam}
-                            </Descriptions.Item>
-                          </Descriptions>
+                          <div style={{ fontSize: 13.5, color: textSub, lineHeight: 1.55, borderTop: `1px solid ${borderCol}`, paddingTop: 8 }}>
+                            <strong>Lý do vào viện:</strong> {currentExam.reasonForAdmission || currentExam.subjective}
+                          </div>
                         </div>
-                      </div>
-                    ),
-                  },
 
-                  // ──────────────────────────────────────────────────────────────
-                  // TAB 3: KẾT QUẢ CẬN LÂM SÀNG & THĂM DÒ CHỨC NĂNG (CLS)
-                  // ──────────────────────────────────────────────────────────────
-                  {
-                    key: 'tab-cls',
-                    label: (
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <ExperimentOutlined /> III. Cận lâm sàng & Thăm dò chức năng
-                      </span>
-                    ),
-                    children: (
-                      <div className="flex flex-col gap-6 pt-2">
-                        {/* 3.1 Phiếu xét nghiệm */}
+                        {/* Chỉ số sinh hiệu — Lưới 4 cột thoáng mắt */}
                         <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center justify-between">
-                            <span className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-sky-500" />
-                              1. KẾT QUẢ XÉT NGHIỆM HUYẾT HỌC, SINH HÓA & NƯỚC TIỂU
-                            </span>
-                            <Tag color="blue">{currentExam.labTests?.length || 0} chỉ số</Tag>
-                          </h3>
-                          <Table
-                            dataSource={currentExam.labTests || []}
-                            rowKey="testName"
-                            pagination={false}
-                            size="small"
-                            bordered
-                            className="rounded-xl overflow-hidden border border-sky-100"
-                            columns={[
-                              {
-                                title: 'STT',
-                                width: 55,
-                                align: 'center',
-                                render: (_, __, i) => i + 1,
-                              },
-                              {
-                                title: 'Tên xét nghiệm',
-                                dataIndex: 'testName',
-                                key: 'testName',
-                                render: (text, r) => (
-                                  <div>
-                                    <strong className="text-slate-800 dark:text-slate-200">{text}</strong>
-                                    <span className="text-xs text-slate-400 block">Nhóm: {r.category}</span>
-                                  </div>
-                                ),
-                              },
-                              {
-                                title: 'Kết quả',
-                                dataIndex: 'result',
-                                key: 'result',
-                                width: 140,
-                                render: (val) => (
-                                  <strong className="font-mono text-sky-700 dark:text-sky-300 text-sm">{val}</strong>
-                                ),
-                              },
-                              {
-                                title: 'Đơn vị',
-                                dataIndex: 'unit',
-                                key: 'unit',
-                                width: 90,
-                                align: 'center',
-                              },
-                              {
-                                title: 'Trị số tham chiếu',
-                                dataIndex: 'referenceRange',
-                                key: 'referenceRange',
-                                width: 160,
-                                align: 'center',
-                              },
-                              {
-                                title: 'Đánh giá',
-                                dataIndex: 'evaluation',
-                                key: 'evaluation',
-                                width: 130,
-                                align: 'center',
-                                render: (evalVal: string) => {
-                                  const color =
-                                    evalVal === 'Bình thường'
-                                      ? 'green'
-                                      : evalVal === 'Tăng nhẹ'
-                                      ? 'orange'
-                                      : 'red';
-                                  return <Tag color={color}>{evalVal}</Tag>;
-                                },
-                              },
+                          <SectionTitle
+                            icon={<HeartOutlined />}
+                            title="CHỈ SỐ SINH HIỆU ĐO ĐƯỢC"
+                            isDarkMode={isDarkMode}
+                          />
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                              gap: 10,
+                            }}
+                          >
+                            {[
+                              { label: 'Mạch', value: currentExam.pulseRate, unit: 'lần/phút' },
+                              { label: 'Huyết áp', value: currentExam.bloodPressure, unit: 'mmHg' },
+                              { label: 'Thân nhiệt', value: `${currentExam.temperature}°C`, unit: 'Độ C' },
+                              { label: 'Nhịp thở', value: currentExam.respiratoryRate, unit: 'lần/phút' },
+                              { label: 'SpO2', value: `${currentExam.spO2 || 98}%`, unit: 'Oxy máu', highlight: '#059669' },
+                              { label: 'Cân nặng / Cao', value: `${currentExam.weight}kg / ${currentExam.height}cm`, unit: 'Thể trạng' },
+                              { label: 'Chỉ số BMI', value: currentExam.bmi, unit: 'Bình thường' },
+                            ].map((v, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  padding: '12px 14px',
+                                  borderRadius: 12,
+                                  backgroundColor: softBg,
+                                  border: `1px solid ${borderCol}`,
+                                }}
+                              >
+                                <div style={{ fontSize: 12, fontWeight: 600, color: textMuted, marginBottom: 4 }}>
+                                  {v.label}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 18,
+                                    fontWeight: 800,
+                                    color: v.highlight || (isDarkMode ? '#38bdf8' : '#0369a1'),
+                                    fontFamily: 'monospace',
+                                    lineHeight: 1.2,
+                                  }}
+                                >
+                                  {v.value}
+                                </div>
+                                <div style={{ fontSize: 11.5, color: textMuted, marginTop: 2 }}>{v.unit}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Quá trình bệnh lý & Tiền sử */}
+                        <div>
+                          <SectionTitle title="BỆNH SỬ & TIỀN SỬ BỆNH LÝ" isDarkMode={isDarkMode} />
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Quá trình bệnh lý (HPI)', value: currentExam.pathologicalProcess, span: 2 },
+                              { label: 'Tiền sử bản thân', value: currentExam.medicalHistoryPersonal },
+                              { label: 'Tiền sử gia đình', value: currentExam.medicalHistoryFamily },
                             ]}
                           />
                         </div>
 
-                        {/* 3.2 Chẩn đoán hình ảnh */}
+                        {/* Khám toàn thân và các cơ quan */}
                         <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            2. KẾT QUẢ CHẨN ĐOÁN HÌNH ẢNH (X-QUANG, SIÊU ÂM, CT-SCAN)
-                          </h3>
-                          <Row gutter={[16, 16]}>
-                            {currentExam.imagingStudies?.map((img, i) => (
-                              <Col xs={24} md={12} key={i}>
-                                <div className="p-4 rounded-xl border border-sky-200 dark:border-slate-700 bg-sky-50/40 dark:bg-slate-900/40 h-full flex flex-col justify-between">
-                                  <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                      <Tag color="geekblue" className="font-bold">{img.modality}</Tag>
-                                      <span className="text-xs text-slate-400">{img.doctorName}</span>
-                                    </div>
-                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1.5">
-                                      {img.title}
-                                    </h4>
-                                    <p className="text-xs text-slate-600 dark:text-slate-300 mb-2 leading-relaxed">
-                                      <strong>Mô tả:</strong> {img.findings}
-                                    </p>
-                                  </div>
-                                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-sky-100 dark:border-slate-700">
-                                    <span className="text-xs font-semibold text-sky-700 dark:text-sky-400 block mb-0.5">
-                                      Kết luận:
-                                    </span>
-                                    <span className="text-xs font-bold text-slate-800 dark:text-white">
-                                      {img.conclusion}
-                                    </span>
-                                  </div>
-                                </div>
-                              </Col>
-                            ))}
-                          </Row>
-                        </div>
-
-                        {/* 3.3 Thăm dò chức năng */}
-                        <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-2 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            3. KẾT QUẢ THĂM DÒ CHỨC NĂNG (ĐIỆN TÂM ĐỒ ECG, ĐIỆN NÃO ĐỒ)
-                          </h3>
-                          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                            <Text className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                              {currentExam.functionalStudies}
-                            </Text>
-                          </div>
+                          <SectionTitle title="KẾT QUẢ KHÁM LÂM SÀNG CÁC CƠ QUAN" isDarkMode={isDarkMode} />
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Khám toàn thân', value: currentExam.generalExamination, span: 2 },
+                              { label: 'Tuần hoàn / Tim mạch', value: currentExam.circulatoryExam },
+                              { label: 'Hô hấp / Lồng ngực', value: currentExam.respiratoryExam },
+                              { label: 'Tiêu hóa / Ổ bụng', value: currentExam.digestiveExam },
+                              { label: 'Thần kinh & Tri giác', value: currentExam.nervousExam },
+                              { label: 'Cơ - Xương - Khớp', value: currentExam.musculoskeletalExam },
+                              { label: 'Tai Mũi Họng / RHM', value: currentExam.entExam },
+                            ]}
+                          />
                         </div>
                       </div>
                     ),
                   },
 
-                  // ──────────────────────────────────────────────────────────────
-                  // TAB 4: CHẨN ĐOÁN & QUÁ TRÌNH ĐIỀU TRỊ / ĐƠN THUỐC
-                  // ──────────────────────────────────────────────────────────────
+                  // TAB 2: ĐƠN THUỐC & ĐIỀU TRỊ
                   {
                     key: 'tab-treatment',
                     label: (
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <FileDoneOutlined /> IV. Chẩn đoán & Quá trình Điều trị
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <FileDoneOutlined /> Đơn thuốc &amp; Điều trị
                       </span>
                     ),
                     children: (
-                      <div className="flex flex-col gap-6 pt-2">
-                        {/* 4.1 Bốn cấp độ chẩn đoán */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
                         <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            1. CHẨN ĐOÁN Y KHOA (4 CẤP ĐỘ CHUẨN BỘ Y TẾ)
-                          </h3>
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={{ xs: 1, sm: 2 }}
-                            className="bg-white dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Chẩn đoán khi vào viện">
-                              {currentExam.initialDiagnosis}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Chẩn đoán sơ bộ">
-                              {currentExam.preliminaryDiagnosis}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Chẩn đoán xác định" span={2}>
-                              <div className="flex items-center gap-2">
-                                <Tag color="purple" className="text-sm font-bold font-mono px-2 py-0.5">
-                                  ICD-10: {currentExam.icd10Code}
-                                </Tag>
-                                <strong className="text-sky-700 dark:text-sky-400 text-sm">
-                                  {currentExam.icd10Name}
-                                </strong>
-                              </div>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Chẩn đoán phân biệt / Kèm theo" span={2}>
-                              <span className="text-slate-600 dark:text-slate-400">
-                                {currentExam.differentialDiagnosis}
-                              </span>
-                            </Descriptions.Item>
-                          </Descriptions>
+                          <SectionTitle title="CHẨN ĐOÁN Y KHOA (4 CẤP ĐỘ)" isDarkMode={isDarkMode} />
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Chẩn đoán khi vào viện', value: currentExam.initialDiagnosis },
+                              { label: 'Chẩn đoán sơ bộ', value: currentExam.preliminaryDiagnosis },
+                              {
+                                label: 'Chẩn đoán xác định (ICD-10)',
+                                value: (
+                                  <span>
+                                    <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                                      {currentExam.icd10Code}
+                                    </Tag>
+                                    {currentExam.icd10Name}
+                                  </span>
+                                ),
+                              },
+                              { label: 'Chẩn đoán phân biệt / Kèm theo', value: currentExam.differentialDiagnosis },
+                            ]}
+                          />
                         </div>
 
-                        {/* 4.2 Y lệnh dùng thuốc / Đơn thuốc điện tử */}
                         <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center justify-between">
-                            <span className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-sky-500" />
-                              2. Y LỆNH DÙNG THUỐC ĐIỆN TỬ (PRESCRIPTION)
-                            </span>
-                            <span className="text-xs text-slate-500">
-                              Tổng cộng: {currentExam.prescriptionDetails?.length || 0} loại thuốc
-                            </span>
-                          </h3>
+                          <SectionTitle
+                            title="ĐƠN THUỐC ĐIỆN TỬ"
+                            isDarkMode={isDarkMode}
+                            rightExtra={
+                              <Tag color="blue" style={{ margin: 0, fontWeight: 700 }}>
+                                {currentExam.prescriptionDetails?.length || 0} loại • Tổng: {formatCurrency(totalPrescriptionAmount)}
+                              </Tag>
+                            }
+                          />
                           <Table
                             dataSource={currentExam.prescriptionDetails || []}
                             rowKey="medicineName"
                             pagination={false}
-                            size="small"
-                            bordered
-                            className="rounded-xl overflow-hidden border border-sky-100"
+                            size="middle"
+                            className="medical-emr-table"
+                            locale={{ emptyText: <Empty description="Không có đơn thuốc trong đợt khám này" /> }}
                             columns={[
-                              { title: 'STT', width: 50, align: 'center', render: (_, __, i) => i + 1 },
+                              { title: 'STT', width: 55, align: 'center', render: (_, __, i) => i + 1 },
                               {
                                 title: 'Tên thuốc & Hoạt chất',
                                 dataIndex: 'medicineName',
                                 render: (name, r) => (
                                   <div>
-                                    <strong className="text-slate-800 dark:text-slate-100">{name}</strong>
+                                    <strong style={{ color: textMain, fontSize: 13.5 }}>{name}</strong>
                                     {r.activeIngredient && (
-                                      <span className="text-xs text-slate-400 block">
-                                        Hoạt chất: {r.activeIngredient}
-                                      </span>
+                                      <div style={{ fontSize: 12, color: textMuted }}>Hoạt chất: {r.activeIngredient}</div>
                                     )}
                                   </div>
                                 ),
@@ -932,43 +877,34 @@ export const MedicalRecordsPage: React.FC = () => {
                               {
                                 title: 'Số lượng',
                                 dataIndex: 'quantity',
-                                width: 100,
+                                width: 105,
                                 align: 'center',
                                 render: (qty, r) => (
-                                  <Tag color="blue" className="font-mono font-bold">
+                                  <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 700, margin: 0 }}>
                                     {qty} {r.unit}
                                   </Tag>
                                 ),
                               },
                               {
-                                title: 'Hướng dẫn liều dùng & Thời điểm uống',
+                                title: 'Hướng dẫn liều dùng',
                                 dataIndex: 'dosageInstruction',
                                 render: (text, r) => (
                                   <div>
-                                    <span className="text-slate-700 dark:text-slate-200 font-medium block">
-                                      {text}
-                                    </span>
+                                    <div style={{ color: textSub, fontWeight: 500 }}>{text}</div>
                                     {r.usageTime && (
-                                      <span className="text-[11px] text-sky-600 font-semibold block mt-0.5">
-                                        ⏱ {r.usageTime}
-                                      </span>
+                                      <div style={{ fontSize: 12, color: '#0284c7', fontWeight: 600, marginTop: 2 }}>
+                                        {r.usageTime}
+                                      </div>
                                     )}
                                   </div>
                                 ),
                               },
                               {
-                                title: 'Đơn giá',
-                                dataIndex: 'unitPrice',
-                                width: 110,
-                                align: 'right',
-                                render: (p) => formatCurrency(p),
-                              },
-                              {
                                 title: 'Thành tiền',
-                                width: 120,
+                                width: 125,
                                 align: 'right',
                                 render: (_, r) => (
-                                  <strong className="text-slate-900 dark:text-white">
+                                  <strong style={{ color: textMain }}>
                                     {formatCurrency((r.unitPrice || 0) * (r.quantity || 1))}
                                   </strong>
                                 ),
@@ -977,144 +913,361 @@ export const MedicalRecordsPage: React.FC = () => {
                           />
                         </div>
 
-                        {/* 4.3 Phiếu theo dõi chức năng sống & y tế */}
                         <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            3. PHIẾU CHĂM SÓC & THEO DÕI CHỨC NĂNG SỐNG (Y TẾ)
-                          </h3>
+                          <SectionTitle title="PHIẾU CHĂM SÓC & THEO DÕI" isDarkMode={isDarkMode} />
                           <Timeline
-                            mode="left"
                             items={currentExam.dailyCareNotes?.map((note) => ({
-                              color: 'blue',
+                              color: '#0284c7',
                               children: (
-                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 mb-2">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="font-semibold text-xs text-sky-600">{note.date}</span>
-                                    <Tag color="cyan">{note.caregiver}</Tag>
+                                <div
+                                  style={{
+                                    padding: '12px 14px',
+                                    borderRadius: 12,
+                                    backgroundColor: softBg,
+                                    border: `1px solid ${borderCol}`,
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <strong style={{ fontSize: 12.5, color: '#0284c7' }}>{note.date}</strong>
+                                    <Tag color="cyan" style={{ margin: 0 }}>{note.caregiver}</Tag>
                                   </div>
-                                  <span className="text-xs text-slate-500 block mb-1 font-mono">
+                                  <div style={{ fontSize: 12, color: textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
                                     {note.vitals}
-                                  </span>
-                                  <p className="text-xs text-slate-700 dark:text-slate-300 m-0">
-                                    {note.nurseNote}
-                                  </p>
+                                  </div>
+                                  <div style={{ fontSize: 13, color: textSub }}>{note.nurseNote}</div>
                                 </div>
                               ),
                             }))}
                           />
+
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Biên bản hội chẩn chuyên môn', value: currentExam.consultationMinutes },
+                              { label: 'Cam kết chấp thuận thủ thuật', value: currentExam.surgicalConsentNote },
+                            ]}
+                          />
+                        </div>
+                      </div>
+                    ),
+                  },
+
+                  // TAB 3: CẬN LÂM SÀNG (CLS)
+                  {
+                    key: 'tab-cls',
+                    label: (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <ExperimentOutlined /> Cận lâm sàng
+                      </span>
+                    ),
+                    children: (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+                        <div>
+                          <SectionTitle
+                            title="KẾT QUẢ XÉT NGHIỆM"
+                            isDarkMode={isDarkMode}
+                            rightExtra={<Tag color="blue" style={{ margin: 0 }}>{currentExam.labTests?.length || 0} chỉ số</Tag>}
+                          />
+                          <Table
+                            dataSource={currentExam.labTests || []}
+                            rowKey="testName"
+                            pagination={false}
+                            size="middle"
+                            className="medical-emr-table"
+                            columns={[
+                              { title: 'STT', width: 55, align: 'center', render: (_, __, i) => i + 1 },
+                              {
+                                title: 'Tên xét nghiệm',
+                                dataIndex: 'testName',
+                                render: (text, r) => (
+                                  <div>
+                                    <strong style={{ color: textMain }}>{text}</strong>
+                                    <div style={{ fontSize: 12, color: textMuted }}>Nhóm: {r.category}</div>
+                                  </div>
+                                ),
+                              },
+                              {
+                                title: 'Kết quả',
+                                dataIndex: 'result',
+                                width: 130,
+                                render: (val) => (
+                                  <strong style={{ fontFamily: 'monospace', color: '#0284c7', fontSize: 14 }}>{val}</strong>
+                                ),
+                              },
+                              { title: 'Đơn vị', dataIndex: 'unit', width: 85, align: 'center' },
+                              { title: 'Tham chiếu', dataIndex: 'referenceRange', width: 145, align: 'center' },
+                              {
+                                title: 'Đánh giá',
+                                dataIndex: 'evaluation',
+                                width: 125,
+                                align: 'center',
+                                render: (evalVal: string) => {
+                                  const color = evalVal === 'Bình thường' ? 'green' : evalVal === 'Tăng nhẹ' ? 'orange' : 'red';
+                                  return <Tag color={color} style={{ margin: 0, fontWeight: 600 }}>{evalVal}</Tag>;
+                                },
+                              },
+                            ]}
+                          />
                         </div>
 
-                        {/* 4.4 Biên bản hội chẩn & Cam kết thủ thuật */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="p-3.5 rounded-xl bg-sky-50/50 dark:bg-slate-900/50 border border-sky-100">
-                            <span className="text-xs font-bold text-sky-700 uppercase block mb-1">
-                              Biên bản Hội chẩn Chuyên môn:
-                            </span>
-                            <p className="text-xs text-slate-700 dark:text-slate-300 m-0">
-                              {currentExam.consultationMinutes}
-                            </p>
-                          </div>
-                          <div className="p-3.5 rounded-xl bg-sky-50/50 dark:bg-slate-900/50 border border-sky-100">
-                            <span className="text-xs font-bold text-sky-700 uppercase block mb-1">
-                              Giấy cam kết chấp thuận thủ thuật:
-                            </span>
-                            <p className="text-xs text-slate-700 dark:text-slate-300 m-0">
-                              {currentExam.surgicalConsentNote}
-                            </p>
+                        <div>
+                          <SectionTitle title="CHẨN ĐOÁN HÌNH ẢNH (X-QUANG, SIÊU ÂM, CT)" isDarkMode={isDarkMode} />
+                          <Row gutter={[14, 14]}>
+                            {currentExam.imagingStudies?.map((img, i) => (
+                              <Col xs={24} md={12} key={i}>
+                                <div
+                                  style={{
+                                    padding: '14px 16px',
+                                    borderRadius: 14,
+                                    border: `1px solid ${borderCol}`,
+                                    backgroundColor: softBg,
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    gap: 10,
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                      <Tag color="blue" style={{ fontWeight: 700, margin: 0 }}>{img.modality}</Tag>
+                                      <span style={{ fontSize: 12, color: textMuted }}>{img.doctorName}</span>
+                                    </div>
+                                    <div style={{ fontWeight: 700, fontSize: 14, color: textMain, marginBottom: 6 }}>
+                                      {img.title}
+                                    </div>
+                                    <div style={{ fontSize: 13, color: textSub, lineHeight: 1.5 }}>
+                                      <strong>Mô tả:</strong> {img.findings}
+                                    </div>
+                                  </div>
+                                  <div
+                                    style={{
+                                      padding: '10px 12px',
+                                      borderRadius: 10,
+                                      backgroundColor: cardBg,
+                                      border: `1px solid ${borderCol}`,
+                                    }}
+                                  >
+                                    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#0284c7' }}>Kết luận:</div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: textMain }}>{img.conclusion}</div>
+                                  </div>
+                                </div>
+                              </Col>
+                            ))}
+                          </Row>
+                        </div>
+
+                        <div>
+                          <SectionTitle title="THĂM DÒ CHỨC NĂNG (ECG / ĐIỆN NÃO ĐỒ)" isDarkMode={isDarkMode} />
+                          <div
+                            style={{
+                              padding: '14px 16px',
+                              borderRadius: 12,
+                              backgroundColor: softBg,
+                              border: `1px solid ${borderCol}`,
+                              fontSize: 13.5,
+                              fontWeight: 600,
+                              color: textMain,
+                            }}
+                          >
+                            {currentExam.functionalStudies}
                           </div>
                         </div>
                       </div>
                     ),
                   },
 
-                  // ──────────────────────────────────────────────────────────────
-                  // TAB 5: TỔNG KẾT BỆNH ÁN & RA VIỆN
-                  // ──────────────────────────────────────────────────────────────
+                  // TAB 4: HÀNH CHÍNH & BHYT
                   {
-                    key: 'tab-discharge',
+                    key: 'tab-administrative',
                     label: (
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <SolutionOutlined /> V. Tổng kết Bệnh án & Ra viện
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <IdcardOutlined /> Hành chính &amp; BHYT
                       </span>
                     ),
                     children: (
-                      <div className="flex flex-col gap-6 pt-2">
-                        {/* 5.1 Tình trạng người bệnh lúc ra viện */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
                         <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            1. TÌNH TRẠNG NGƯỜI BỆNH LÚC RA VIỆN / KẾT THÚC KHÁM
-                          </h3>
-                          <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
-                            <div className="flex items-center gap-2 mb-2">
-                              <CheckCircleOutlined className="text-emerald-600 text-lg" />
-                              <strong className="text-emerald-800 dark:text-emerald-300 text-sm">
-                                Đánh giá kết quả điều trị: {currentExam.dischargeStatus?.split(',')[0] || 'Ổn định'}
-                              </strong>
-                            </div>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed m-0">
-                              {currentExam.dischargeStatus}
-                            </p>
+                          <SectionTitle title="1. THÔNG TIN CÁ NHÂN NGƯỜI BỆNH" isDarkMode={isDarkMode} />
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Họ và tên (Chữ in hoa)', value: currentExam.patientName },
+                              {
+                                label: 'Giới tính',
+                                value: (
+                                  <Tag color={currentExam.patientGender === 'Nam' ? 'blue' : 'magenta'} style={{ margin: 0 }}>
+                                    {currentExam.patientGender}
+                                  </Tag>
+                                ),
+                              },
+                              { label: 'Ngày sinh & Tuổi', value: `${currentExam.patientDateOfBirth} (${currentExam.patientAge} tuổi)` },
+                              { label: 'Số CCCD / Định danh', value: <span style={{ fontFamily: 'monospace' }}>{currentExam.identityCardNumber}</span> },
+                              { label: 'Số điện thoại', value: <span style={{ fontFamily: 'monospace', color: '#0284c7' }}>{selectedPatient.soDienThoai}</span> },
+                              { label: 'Nghề nghiệp', value: currentExam.profession },
+                              {
+                                label: 'Nơi cư trú hiện tại',
+                                span: 2,
+                                value: (
+                                  <span>
+                                    <HomeOutlined style={{ color: '#0284c7', marginRight: 6 }} />
+                                    {currentExam.address}
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
+                        </div>
+
+                        <div>
+                          <SectionTitle title="2. NGƯỜI NHÀ / BÁO TIN KHẨN CẤP" isDarkMode={isDarkMode} />
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Họ tên người nhà', value: currentExam.emergencyContactName },
+                              { label: 'Mối quan hệ', value: <Tag color="cyan" style={{ margin: 0 }}>{currentExam.emergencyContactRelation}</Tag> },
+                              {
+                                label: 'Điện thoại báo tin',
+                                value: (
+                                  <span style={{ fontFamily: 'monospace', color: '#dc2626' }}>
+                                    <PhoneOutlined /> {currentExam.emergencyContactPhone}
+                                  </span>
+                                ),
+                              },
+                              { label: 'Địa chỉ người nhà', value: currentExam.emergencyContactAddress },
+                            ]}
+                          />
+                        </div>
+
+                        <div>
+                          <SectionTitle title="3. BẢO HIỂM Y TẾ (BHYT) & QUẢN LÝ VIỆN" isDarkMode={isDarkMode} />
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Mã số thẻ BHYT', value: <span style={{ fontFamily: 'monospace', color: '#059669' }}>{currentExam.healthInsuranceNumber || 'Không có'}</span> },
+                              { label: 'Mức hưởng & Hạn thẻ', value: `${currentExam.insuranceBenefitRate || '80%'} (HSD: ${currentExam.insuranceExpiryDate || '31/12/2026'})` },
+                              { label: 'Nơi ĐKKCB ban đầu', value: currentExam.insurancePlace, span: 2 },
+                              { label: 'Số lưu trữ EMR', value: <span style={{ fontFamily: 'monospace', color: '#0369a1' }}>{currentExam.emrFileNumber}</span> },
+                              { label: 'Mã lượt khám', value: <span style={{ fontFamily: 'monospace' }}>{currentExam.examinationCode}</span> },
+                              { label: 'Tiếp nhận / Ra viện', value: `${currentExam.admissionDate} → ${currentExam.dischargeDate}` },
+                              { label: 'Khoa & Bác sĩ phụ trách', value: `${currentExam.departmentName} • ${currentExam.doctorName}` },
+                            ]}
+                          />
+                        </div>
+                      </div>
+                    ),
+                  },
+
+                  // TAB 5: TỔNG KẾT & KÝ SỐ
+                  {
+                    key: 'tab-discharge',
+                    label: (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <SolutionOutlined /> Tổng kết &amp; Ký số
+                      </span>
+                    ),
+                    children: (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+                        <div
+                          style={{
+                            padding: '16px 18px',
+                            borderRadius: 14,
+                            backgroundColor: isDarkMode ? '#064e3b' : '#ecfdf5',
+                            border: `1px solid ${isDarkMode ? '#059669' : '#a7f3d0'}`,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                            <CheckCircleOutlined style={{ color: '#059669', fontSize: 18 }} />
+                            <strong style={{ fontSize: 14.5, color: isDarkMode ? '#6ee7b7' : '#065f46' }}>
+                              Tình trạng ra viện: {currentExam.dischargeStatus?.split(',')[0] || 'Ổn định'}
+                            </strong>
+                          </div>
+                          <div style={{ fontSize: 13.5, color: isDarkMode ? '#d1fae5' : '#065f46', lineHeight: 1.55 }}>
+                            {currentExam.dischargeStatus}
                           </div>
                         </div>
 
-                        {/* 5.2 Hướng điều trị tiếp theo & Lời dặn */}
                         <div>
-                          <h3 className="text-base font-bold text-sky-700 dark:text-sky-400 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-500" />
-                            2. HƯỚNG ĐIỀU TRỊ TIẾP THEO & CHẾ ĐỘ SINH HOẠT
-                          </h3>
-                          <Descriptions
-                            bordered
-                            size="small"
-                            column={1}
-                            className="bg-white dark:bg-slate-900/40 rounded-xl overflow-hidden"
-                          >
-                            <Descriptions.Item label="Hướng điều trị tiếp theo">
-                              <strong className="text-slate-800 dark:text-slate-200">
-                                {currentExam.nextTreatmentPlan}
-                              </strong>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Chế độ ăn uống & Dinh dưỡng">
-                              {currentExam.dietaryAndLivingAdvice}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Lịch hẹn tái khám">
-                              <div className="p-2.5 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 font-semibold text-sm">
-                                📅 {currentExam.followUpAppointment}
-                              </div>
-                            </Descriptions.Item>
-                          </Descriptions>
+                          <SectionTitle title="HƯỚNG ĐIỀU TRỊ & HẸN TÁI KHÁM" isDarkMode={isDarkMode} />
+                          <CleanInfoGrid
+                            isDarkMode={isDarkMode}
+                            items={[
+                              { label: 'Hướng điều trị tiếp theo', value: currentExam.nextTreatmentPlan, span: 2 },
+                              { label: 'Chế độ ăn uống & Dinh dưỡng', value: currentExam.dietaryAndLivingAdvice, span: 2 },
+                              {
+                                label: 'Lịch hẹn tái khám',
+                                span: 2,
+                                value: (
+                                  <span style={{ color: '#0369a1' }}>
+                                    <CalendarOutlined style={{ marginRight: 6 }} />
+                                    {currentExam.followUpAppointment}
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
                         </div>
 
-                        {/* 5.3 Chữ ký số xác thực */}
-                        <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-white p-2 rounded-lg border border-sky-200 shadow-sm">
+                        <div
+                          style={{
+                            padding: '18px 20px',
+                            borderRadius: 14,
+                            backgroundColor: softBg,
+                            border: `1px solid ${borderCol}`,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 16,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div
+                              style={{
+                                backgroundColor: '#ffffff',
+                                padding: 8,
+                                borderRadius: 10,
+                                border: `1px solid ${borderCol}`,
+                              }}
+                            >
                               <QRCodeSVG
                                 value={`https://hospital-ai.vn/emr/${currentExam.examinationCode}`}
-                                size={70}
+                                size={72}
                               />
                             </div>
                             <div>
-                              <span className="text-xs text-slate-500 block">Xác thực Bệnh án Điện tử EMR</span>
-                              <strong className="text-slate-800 dark:text-slate-100 text-sm block">
-                                Mã tra cứu: {currentExam.examinationCode}
-                              </strong>
-                              <span className="text-xs text-emerald-600 flex items-center gap-1 mt-0.5">
+                              <div style={{ fontSize: 12, color: textMuted }}>Xác thực Bệnh án Điện tử EMR</div>
+                              <div style={{ fontSize: 14, fontWeight: 800, color: textMain }}>
+                                Mã tra cứu: <span style={{ fontFamily: 'monospace' }}>{currentExam.examinationCode}</span>
+                              </div>
+                              <div style={{ fontSize: 12.5, color: '#059669', fontWeight: 600, marginTop: 2 }}>
                                 <SafetyCertificateOutlined /> Chữ ký số hợp lệ theo Luật Giao dịch điện tử
-                              </span>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="text-center sm:text-right">
-                            <span className="text-xs text-slate-400 block">Bác sĩ Điều trị phụ trách</span>
-                            <Tag color="green" className="my-1 font-bold">
-                              <SafetyCertificateOutlined /> Đã ký số SHA-256
-                            </Tag>
-                            <strong className="text-sm text-sky-700 dark:text-sky-300 block">
-                              {currentExam.doctorName}
-                            </strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <Button
+                              type="primary"
+                              icon={<SafetyCertificateOutlined />}
+                              loading={isSigning}
+                              style={{
+                                backgroundColor: currentExam.isDigitallySigned ? '#059669' : '#0284c7',
+                                borderColor: currentExam.isDigitallySigned ? '#059669' : '#0284c7',
+                                fontWeight: 700,
+                                borderRadius: 10,
+                              }}
+                              onClick={() => handleSignExam(currentExam.id)}
+                            >
+                              {currentExam.isDigitallySigned ? '✓ Đã Ký Số SmartCA' : 'Ký Số Bệnh Án'}
+                            </Button>
+                            <Button
+                              icon={<PrinterOutlined />}
+                              style={{ borderRadius: 10, fontWeight: 600 }}
+                              onClick={() => handleOpenPdf()}
+                            >
+                              In Phiếu A4
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -1124,128 +1277,34 @@ export const MedicalRecordsPage: React.FC = () => {
               />
             </Card>
           </Col>
-
-          {/* CỘT PHỤ (BÊN PHẢI): DÒNG THỜI GIAN LỊCH SỬ CÁC ĐỢT KHÁM & TỔNG KẾT NHANH */}
-          <Col xs={24} xl={7}>
-            <div className="flex flex-col gap-5">
-              {/* Thẻ Dòng thời gian các lần khám */}
-              <Card
-                bordered={false}
-                className="rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-sky-100 dark:border-slate-700"
-                title={
-                  <Space>
-                    <HistoryOutlined className="text-sky-600" />
-                    <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                      Dòng thời gian Khám bệnh ({patientExams.length} đợt)
-                    </span>
-                  </Space>
-                }
-              >
-                <Timeline
-                  mode="left"
-                  items={patientExams.map((exam, idx) => ({
-                    color: idx === selectedExamIndex ? '#0284c7' : '#94a3b8',
-                    children: (
-                      <div
-                        onClick={() => setSelectedExamIndex(idx)}
-                        className={`p-3 rounded-xl cursor-pointer transition-all border ${
-                          idx === selectedExamIndex
-                            ? 'bg-sky-50 dark:bg-slate-900 border-sky-400 shadow-sm'
-                            : 'bg-white dark:bg-slate-800/40 border-slate-200 hover:border-sky-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <strong className="text-xs text-sky-700 dark:text-sky-400">
-                            {formatDate(exam.examinationDate)}
-                          </strong>
-                          <Tag color="purple" className="m-0 text-[10px]">{exam.icd10Code}</Tag>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block mb-1">
-                          {exam.departmentName}
-                        </span>
-                        <p className="text-[11px] text-slate-500 line-clamp-2 m-0">
-                          {exam.assessment || exam.icd10Name}
-                        </p>
-                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100 dark:border-slate-700">
-                          <span className="text-[10px] text-slate-400">BS: {exam.doctorName}</span>
-                          <span className="text-[11px] font-semibold text-sky-600">
-                            {idx === selectedExamIndex ? '● Đang xem' : 'Xem đợt này ➔'}
-                          </span>
-                        </div>
-                      </div>
-                    ),
-                  }))}
-                />
-              </Card>
-
-              {/* Thẻ Cảnh báo Y tế & Tiền sử */}
-              <Card
-                bordered={false}
-                className="rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-sky-100 dark:border-slate-700"
-                title={
-                  <Space>
-                    <AlertOutlined className="text-rose-500" />
-                    <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                      Lưu ý Lâm sàng & Cảnh báo
-                    </span>
-                  </Space>
-                }
-              >
-                <div className="flex flex-col gap-3">
-                  <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200">
-                    <span className="text-xs font-bold text-rose-700 block mb-0.5">Tiền sử Dị ứng:</span>
-                    <strong className="text-xs text-rose-900 dark:text-rose-200">
-                      {selectedPatient.diUngThuoc || 'Không ghi nhận dị ứng'}
-                    </strong>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200">
-                    <span className="text-xs font-bold text-amber-700 block mb-0.5">Bệnh nền mạn tính:</span>
-                    <strong className="text-xs text-amber-900 dark:text-amber-200">
-                      {selectedPatient.tienSuBenh || 'Không có bệnh mạn tính'}
-                    </strong>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200">
-                    <span className="text-xs font-bold text-sky-700 block mb-0.5">Người liên hệ khẩn:</span>
-                    <span className="text-xs text-slate-700 dark:text-slate-300 block">
-                      {selectedPatient.tenNguoiThan || 'Chưa cập nhật'} (
-                      {selectedPatient.quanHeNguoiThan || 'Người thân'}) - {selectedPatient.soDienThoaiNguoiThan}
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </Col>
         </Row>
-      )}
+      ) : null}
 
-      {/* ─────────────────────────────────────────────────────────────────────────
-          4. DRAWER DANH SÁCH TOÀN BỘ BỆNH NHÂN (NÂNG CAO)
-          ───────────────────────────────────────────────────────────────────────── */}
+      {/* 4. DRAWER DANH SÁCH TOÀN BỘ BỆNH NHÂN */}
       <Drawer
         title={
-          <div className="flex items-center gap-2">
-            <TeamOutlined className="text-sky-600" />
-            <span className="font-bold text-base">Danh Sách Bệnh Nhân Quản Lý EMR</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0369a1' }}>
+            <TeamOutlined />
+            <span style={{ fontWeight: 800, fontSize: 16 }}>Danh Sách Bệnh Nhân EMR ({patients.length})</span>
           </div>
         }
         placement="right"
-        width={520}
+        width={480}
         onClose={() => setIsPatientDrawerOpen(false)}
         open={isPatientDrawerOpen}
       >
-        <div className="flex flex-col gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <Input
-            placeholder="Tìm kiếm bệnh nhân..."
-            prefix={<SearchOutlined />}
+            placeholder="Tìm theo họ tên, mã BN, CCCD, SĐT..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            size="large"
+            value={drawerSearchText}
+            onChange={(e) => setDrawerSearchText(e.target.value)}
           />
 
-          <div className="flex flex-col gap-2">
-            {filteredPatients.map((p) => {
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filteredDrawerPatients.map((p) => {
               const isSelected = selectedPatient?.id === p.id;
               return (
                 <div
@@ -1255,34 +1314,43 @@ export const MedicalRecordsPage: React.FC = () => {
                     setIsPatientDrawerOpen(false);
                     showToast(`Đã chuyển sang hồ sơ: ${p.hoTen.toUpperCase()}`, 'success');
                   }}
-                  className={`p-3 rounded-xl cursor-pointer transition-all border flex items-center justify-between ${
-                    isSelected
-                      ? 'bg-sky-50 border-sky-500 shadow-sm'
-                      : 'bg-white hover:bg-slate-50 border-slate-200'
-                  }`}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    cursor: 'pointer',
+                    backgroundColor: isSelected ? '#f0f9ff' : '#ffffff',
+                    border: isSelected ? '1.5px solid #0284c7' : '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    transition: 'all 0.18s ease',
+                  }}
                 >
-                  <div className="flex items-center gap-3">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                     <Avatar
-                      size="large"
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.hoTen}`}
+                      size={40}
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.hoTen)}`}
                       icon={<UserOutlined />}
-                      className="bg-sky-500"
+                      style={{ backgroundColor: '#0284c7', flexShrink: 0 }}
                     />
-                    <div>
-                      <strong className="text-sm text-slate-900 block">{p.hoTen.toUpperCase()}</strong>
-                      <span className="text-xs text-slate-500">
-                        Mã: <strong className="font-mono text-sky-700">{p.maBenhNhan}</strong> • {p.tuoi} tuổi ({p.gioiTinh})
-                      </span>
-                      <span className="text-xs text-slate-400 block font-mono">CCCD: {p.soCCCD}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <strong style={{ fontSize: 14, color: '#0f172a', display: 'block' }}>{p.hoTen.toUpperCase()}</strong>
+                      <div style={{ fontSize: 12.5, color: '#334155' }}>
+                        Mã: <strong style={{ fontFamily: 'monospace', color: '#0369a1' }}>{p.maBenhNhan}</strong> • {p.tuoi || '—'} tuổi ({p.gioiTinh})
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>
+                        CCCD: {p.soCCCD || '—'} • SĐT: {p.soDienThoai || '—'}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <Tag color={p.maTheBHYT ? 'green' : 'default'} className="m-0 text-[11px]">
-                      {p.maTheBHYT ? 'Có BHYT' : 'Viện phí'}
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <Tag color={p.maTheBHYT ? 'green' : 'default'} style={{ margin: 0 }}>
+                      {p.maTheBHYT ? 'BHYT' : 'Viện phí'}
                     </Tag>
                     {isSelected && (
-                      <span className="text-xs text-sky-600 font-bold block mt-1">✓ Đang chọn</span>
+                      <div style={{ fontSize: 12, color: '#0284c7', fontWeight: 700, marginTop: 4 }}>✓ Đang xem</div>
                     )}
                   </div>
                 </div>
@@ -1292,9 +1360,7 @@ export const MedicalRecordsPage: React.FC = () => {
         </div>
       </Drawer>
 
-      {/* ─────────────────────────────────────────────────────────────────────────
-          5. MODAL XEM TRƯỚC VÀ IN HỒ SƠ BỆNH ÁN EMR A4 CHUẨN BỘ Y TẾ (PDF PREVIEW)
-          ───────────────────────────────────────────────────────────────────────── */}
+      {/* 5. MODAL XEM TRƯỚC VÀ IN HỒ SƠ BỆNH ÁN EMR A4 CHUẨN BỘ Y TẾ */}
       <Modal
         title={
           <Space>
@@ -1316,7 +1382,10 @@ export const MedicalRecordsPage: React.FC = () => {
             type="primary"
             icon={<SafetyCertificateOutlined />}
             loading={isSigning}
-            style={{ backgroundColor: currentExam?.isDigitallySigned ? '#059669' : '#dc2626', borderColor: currentExam?.isDigitallySigned ? '#059669' : '#dc2626' }}
+            style={{
+              backgroundColor: currentExam?.isDigitallySigned ? '#059669' : '#dc2626',
+              borderColor: currentExam?.isDigitallySigned ? '#059669' : '#dc2626',
+            }}
             onClick={() => handleSignExam(currentExam?.id)}
           >
             {currentExam?.isDigitallySigned ? '✓ Đã Ký Số SmartCA' : 'Ký Số Bệnh Án (SmartCA)'}
@@ -1521,7 +1590,7 @@ export const MedicalRecordsPage: React.FC = () => {
                     margin: '4px auto',
                     background: 'rgba(254, 242, 242, 0.45)',
                     boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.2)',
-                    userSelect: 'none'
+                    userSelect: 'none',
                   }}
                 >
                   <div style={{ fontSize: 7, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, lineHeight: 1.1 }}>

@@ -606,19 +606,21 @@
 /* Card Icon Wrap Elevation & Bounce */
 .medpro-card-icon-wrap  { 
   position: relative;
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 8px 18px rgba(2, 132, 199, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.32s ease;
  }
 
 .medpro-service-card:hover .medpro-card-icon-wrap  { 
-  transform: scale(1.15) translateY(-3px);
-  
+  transform: scale(1.1) translateY(-4px);
+  box-shadow: 0 12px 24px rgba(2, 132, 199, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
 
 .medpro-service-card:hover .medpro-card-title  { 
@@ -2735,13 +2737,19 @@ html, body, #root, .booking-page-container {
   }
 
   .medpro-card-icon-wrap {
-    width: 40px !important;
-    height: 40px !important;
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 14px !important;
     margin-bottom: 6px !important;
   }
 
   .medpro-card-icon-wrap .anticon {
     font-size: 20px !important;
+  }
+
+  .medpro-card-icon-wrap svg {
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .medpro-card-title {
@@ -3912,4 +3920,262 @@ html, body, #root, .booking-page-container {
   color: #475569;
   line-height: 1.45;
 }
+
+/* =========================================================
+   8B. MOBILE APP SHOWCASE ANIMATIONS (STRICT MEDICAL THEME)
+   ========================================================= */
+@keyframes dmedicalPhoneFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes dmedicalPulseRing {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.32;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 0.08;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@keyframes dmedicalBadgeBob {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+@keyframes dmedicalDotPing {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(2, 132, 199, 0);
+  }
+}
+
+@keyframes dmedicalSheenSweep {
+  0%, 72% {
+    transform: translateX(-140%) skewX(-18deg);
+    opacity: 0;
+  }
+  80% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(240%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+.dmedical-reveal-col {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dmedical-app-showcase.is-visible .dmedical-reveal-col {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dmedical-app-feature-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #bae6fd;
+  padding: 14px 16px;
+  height: 100%;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.06);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.dmedical-app-showcase.is-visible .dmedical-app-feature-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dmedical-app-showcase.is-visible .dmedical-app-feature-card:hover {
+  transform: translateY(-4px);
+  border-color: #0284c7;
+  box-shadow: 0 12px 26px rgba(2, 132, 199, 0.14);
+  transition-delay: 0s;
+}
+
+.dmedical-app-showcase.is-visible .dmedical-feat-delay-0 { transition-delay: 0.05s; }
+.dmedical-app-showcase.is-visible .dmedical-feat-delay-1 { transition-delay: 0.14s; }
+.dmedical-app-showcase.is-visible .dmedical-feat-delay-2 { transition-delay: 0.23s; }
+.dmedical-app-showcase.is-visible .dmedical-feat-delay-3 { transition-delay: 0.32s; }
+
+.dmedical-phone-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 400px;
+  width: 100%;
+  padding: 14px;
+  opacity: 0;
+  transform: translateY(24px) scale(0.96);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s,
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.dmedical-app-showcase.is-visible .dmedical-phone-stage {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.dmedical-phone-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 36px;
+  border: 2px solid rgba(2, 132, 199, 0.22);
+  pointer-events: none;
+  animation: dmedicalPulseRing 3.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.dmedical-phone-ring.ring-secondary {
+  animation-delay: 1.9s;
+}
+
+.dmedical-phone-card {
+  position: relative;
+  overflow: hidden;
+  background-color: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #bae6fd;
+  padding: 12px;
+  box-shadow: 0 14px 34px rgba(2, 132, 199, 0.14);
+  width: 100%;
+  animation: dmedicalPhoneFloat 4.8s ease-in-out infinite;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.dmedical-phone-stage:hover .dmedical-phone-card {
+  border-color: #0284c7;
+  box-shadow: 0 20px 44px rgba(2, 132, 199, 0.22);
+}
+
+.dmedical-phone-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  animation: dmedicalSheenSweep 6.5s ease-in-out infinite;
+}
+
+.dmedical-phone-float-pill {
+  position: absolute;
+  bottom: 22px;
+  left: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background-color: #ffffff;
+  border: 1px solid #bae6fd;
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.16);
+  color: #0369a1;
+  font-size: 12.5px;
+  font-weight: 700;
+  animation: dmedicalBadgeBob 4.2s ease-in-out infinite;
+}
+
+.dmedical-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #0284c7;
+  animation: dmedicalDotPing 2s ease-out infinite;
+}
+
+.dmedical-apk-box {
+  background-color: #ffffff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 26px rgba(2, 132, 199, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.dmedical-apk-box:hover {
+  border-color: #0284c7;
+  box-shadow: 0 12px 30px rgba(2, 132, 199, 0.14);
+}
+
+.dmedical-apk-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #0284c7;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.24);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.22s ease,
+              box-shadow 0.22s ease;
+}
+
+.dmedical-apk-download-btn:hover {
+  background-color: #0369a1;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(3, 105, 161, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dmedical-phone-card,
+  .dmedical-phone-ring,
+  .dmedical-phone-float-pill,
+  .dmedical-live-dot,
+  .dmedical-phone-card::after {
+    animation: none !important;
+  }
+  .dmedical-reveal-col,
+  .dmedical-app-feature-card,
+  .dmedical-phone-stage {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
 

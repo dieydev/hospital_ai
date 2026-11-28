@@ -25,24 +25,22 @@ import {
   CheckCircleOutlined,
   CheckCircleFilled,
   PhoneFilled,
-  ShopOutlined,
   ScanOutlined,
   SwapOutlined,
   CloseCircleOutlined,
   SoundOutlined,
   CalendarOutlined,
   VideoCameraOutlined,
-  ExperimentOutlined,
-  CustomerServiceOutlined,
-  AuditOutlined,
-  TeamOutlined,
-  HomeOutlined,
   HeartOutlined,
   EnvironmentOutlined,
   PlayCircleFilled,
   PlayCircleOutlined,
   ReloadOutlined,
   LoginOutlined,
+  MobileOutlined,
+  AndroidOutlined,
+  DownloadOutlined,
+  QrcodeOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
@@ -56,6 +54,7 @@ import { PatientPortalHeader } from '../components/PatientPortalHeader';
 import { PatientPortalFooter } from '../components/PatientPortalFooter';
 import { AIChatDrawer } from '../components/AIChatDrawer';
 import { DepartmentIcon } from '../components/DepartmentIcon';
+import { ServiceCardIcon, ServiceCardIconId } from '../components/ServiceCardIcon';
 import {
   DEPARTMENTS_CATALOG,
   DOCTORS_CATALOG,
@@ -275,6 +274,33 @@ export const PatientHomePage: React.FC = () => {
     updateCardScrollButtons();
     window.addEventListener('resize', updateCardScrollButtons);
     return () => window.removeEventListener('resize', updateCardScrollButtons);
+  }, []);
+
+  // Scroll-reveal cho khối giới thiệu Ứng dụng Di động
+  const mobileShowcaseRef = useRef<HTMLDivElement | null>(null);
+  const [mobileShowcaseVisible, setMobileShowcaseVisible] = useState(false);
+  const [apkModalOpen, setApkModalOpen] = useState(false);
+  const apkDownloadPath = '/downloads/D-Medical-Patient.apk';
+  const apkDownloadFullUrl =
+    typeof window !== 'undefined' ? `${window.location.origin}${apkDownloadPath}` : apkDownloadPath;
+
+  useEffect(() => {
+    const el = mobileShowcaseRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setMobileShowcaseVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setMobileShowcaseVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   // Doctor & Package Detail Modal States
@@ -801,195 +827,139 @@ export const PatientHomePage: React.FC = () => {
             ref={cardsScrollRef}
             onScroll={updateCardScrollButtons}
           >
-            {/* --- PAGE 1: 7 Dịch vụ cốt lõi --- */}
-
-            {/* Card 1: Khám tại viện */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 1 } as React.CSSProperties}
-              onClick={() => navigate('/booking?mode=byDept')}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-                <CalendarOutlined style={{ fontSize: 26 }} />
+            {/* 14 Dịch vụ Y tế Cốt lõi & Mở rộng — Bộ Icon Minh Họa Đa Sắc */}
+            {(
+              [
+                {
+                  iconId: 'hospital-booking',
+                  title: 'Khám tại viện',
+                  background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+                  borderColor: '#7dd3fc',
+                  onClick: () => navigate('/booking?mode=byDept'),
+                },
+                {
+                  iconId: 'specialty',
+                  title: 'Khám chuyên khoa',
+                  background: 'linear-gradient(135deg, #e0f2fe 0%, #cffafe 100%)',
+                  borderColor: '#7dd3fc',
+                  onClick: () => navigate('/booking?mode=byDept'),
+                },
+                {
+                  iconId: 'video-consult',
+                  title: 'Tư vấn video từ xa',
+                  background: 'linear-gradient(135deg, #dbeafe 0%, #ccfbf1 100%)',
+                  borderColor: '#93c5fd',
+                  onClick: () => {
+                    showToast('Chế độ tư vấn video từ xa với bác sĩ D-Medical', 'info');
+                    navigate('/booking?mode=byDoctor');
+                  },
+                },
+                {
+                  iconId: 'lab-test',
+                  title: 'Xét nghiệm',
+                  background: 'linear-gradient(135deg, #cffafe 0%, #ccfbf1 100%)',
+                  borderColor: '#67e8f9',
+                  onClick: () => navigate('/booking?mode=byDept&search=xét nghiệm'),
+                },
+                {
+                  iconId: 'after-hours',
+                  title: 'Khám ngoài giờ',
+                  background: 'linear-gradient(135deg, #e0e7ff 0%, #e0f2fe 100%)',
+                  borderColor: '#a5b4fc',
+                  onClick: () => {
+                    showToast('Khám ngoài giờ: 17:00 - 21:00 & Thứ 7, Chủ Nhật hàng tuần', 'info');
+                    navigate('/booking?mode=byDoctor');
+                  },
+                },
+                {
+                  iconId: 'personal-care',
+                  title: 'Giúp việc cá nhân',
+                  background: 'linear-gradient(135deg, #ffe4e6 0%, #ffedd5 100%)',
+                  borderColor: '#fda4af',
+                  onClick: () => setAiDrawerOpen(true),
+                },
+                {
+                  iconId: 'health-cert',
+                  title: 'Khám sức khỏe thông tư',
+                  background: 'linear-gradient(135deg, #d1fae5 0%, #dcfce7 100%)',
+                  borderColor: '#6ee7b7',
+                  onClick: () => navigate('/booking?mode=byPackage'),
+                },
+                {
+                  iconId: 'doctor-booking',
+                  title: 'Đặt khám theo bác sĩ',
+                  background: 'linear-gradient(135deg, #e0f2fe 0%, #fef3c7 100%)',
+                  borderColor: '#7dd3fc',
+                  onClick: () => navigate('/booking?mode=byDoctor'),
+                },
+                {
+                  iconId: 'health-package',
+                  title: 'Gói khám sức khỏe',
+                  background: 'linear-gradient(135deg, #dbeafe 0%, #ffe4e6 100%)',
+                  borderColor: '#93c5fd',
+                  onClick: () => navigate('/booking?mode=byPackage'),
+                },
+                {
+                  iconId: 'home-care',
+                  title: 'Y tế tại nhà',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #ffedd5 100%)',
+                  borderColor: '#fcd34d',
+                  onClick: () => navigate('/booking?mode=byPackage&search=tại nhà'),
+                },
+                {
+                  iconId: 'vaccine',
+                  title: 'Đặt lịch tiêm chủng',
+                  background: 'linear-gradient(135deg, #fce7f3 0%, #cffafe 100%)',
+                  borderColor: '#f9a8d4',
+                  onClick: () => navigate('/booking?mode=byDept&search=tiêm chủng'),
+                },
+                {
+                  iconId: 'pharmacy',
+                  title: 'Mua thuốc tại An Khang',
+                  background: 'linear-gradient(135deg, #d1fae5 0%, #fef3c7 100%)',
+                  borderColor: '#6ee7b7',
+                  onClick: () => navigate('/huong-dan'),
+                },
+                {
+                  iconId: 'corporate',
+                  title: 'Khám doanh nghiệp',
+                  background: 'linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%)',
+                  borderColor: '#7dd3fc',
+                  isNew: true,
+                  onClick: () => navigate('/booking?mode=byPackage&search=doanh nghiệp'),
+                },
+                {
+                  iconId: 'imaging',
+                  title: 'Đặt lịch Chụp phim & Nội soi',
+                  background: 'linear-gradient(135deg, #e0e7ff 0%, #cffafe 100%)',
+                  borderColor: '#a5b4fc',
+                  onClick: () => navigate('/booking?mode=byDept&search=nội soi'),
+                },
+              ] as Array<{
+                iconId: ServiceCardIconId;
+                title: string;
+                background: string;
+                borderColor: string;
+                isNew?: boolean;
+                onClick: () => void;
+              }>
+            ).map((card, idx) => (
+              <div
+                key={card.iconId}
+                className="medpro-service-card"
+                style={{ '--card-index': idx + 1 } as React.CSSProperties}
+                onClick={card.onClick}
+              >
+                <div
+                  className="medpro-card-icon-wrap"
+                  style={{ background: card.background, border: `1px solid ${card.borderColor}` }}
+                >
+                  <ServiceCardIcon id={card.iconId} size={38} />
+                  {card.isNew && <span className="medpro-card-moi-badge">Mới</span>}
+                </div>
+                <div className="medpro-card-title">{card.title}</div>
               </div>
-              <div className="medpro-card-title">Khám tại viện</div>
-            </div>
-
-            {/* Card 2: Khám chuyên khoa */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 2 } as React.CSSProperties}
-              onClick={() => navigate('/booking?mode=byDept')}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0369a1' }}>
-                <MedicineBoxOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Khám chuyên khoa</div>
-            </div>
-
-            {/* Card 3: Tư vấn video từ xa */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 3 } as React.CSSProperties}
-              onClick={() => {
-                showToast('Chế độ tư vấn video từ xa với bác sĩ D-Medical', 'info');
-                navigate('/booking?mode=byDoctor');
-              }}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-                <VideoCameraOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Tư vấn video từ xa</div>
-            </div>
-
-            {/* Card 4: Xét nghiệm */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 4 } as React.CSSProperties}
-              onClick={() => navigate('/booking?mode=byDept&search=xét nghiệm')}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#ecfeff', color: '#0891b2' }}>
-                <ExperimentOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Xét nghiệm</div>
-            </div>
-
-            {/* Card 5: Khám ngoài giờ */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 5 } as React.CSSProperties}
-              onClick={() => {
-                showToast('Khám ngoài giờ: 17:00 - 21:00 & Thứ 7, Chủ Nhật hàng tuần', 'info');
-                navigate('/booking?mode=byDoctor');
-              }}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0369a1' }}>
-                <ClockCircleOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Khám ngoài giờ</div>
-            </div>
-
-            {/* Card 6: Giúp việc cá nhân & AI */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 6 } as React.CSSProperties}
-              onClick={() => setAiDrawerOpen(true)}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#fef2f2', color: '#ef4444' }}>
-                <CustomerServiceOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Giúp việc cá nhân</div>
-            </div>
-
-            {/* Card 7: Khám sức khỏe thông tư */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 7 } as React.CSSProperties}
-              onClick={() => navigate('/booking?mode=byPackage')}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#f0fdf4', color: '#16a34a' }}>
-                <AuditOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Khám sức khỏe thông tư</div>
-            </div>
-
-            {/* --- PAGE 2: 7 Dịch vụ mở rộng --- */}
-
-            {/* Card 8: Đặt khám theo bác sĩ */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 8 } as React.CSSProperties}
-              onClick={() => navigate('/booking?mode=byDoctor')}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-                <UserOutlined style={{ fontSize: 26 }} />
-                <span className="medpro-icon-star-badge">
-                  <CheckCircleFilled />
-                </span>
-              </div>
-              <div className="medpro-card-title">Đặt khám theo bác sĩ</div>
-            </div>
-
-            {/* Card 9: Gói khám sức khỏe */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 9 } as React.CSSProperties}
-              onClick={() => navigate('/booking?mode=byPackage')}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#eff6ff', color: '#2563eb' }}>
-                <SafetyCertificateOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Gói khám sức khỏe</div>
-            </div>
-
-            {/* Card 10: Y tế tại nhà */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 10 } as React.CSSProperties}
-              onClick={() => {
-                navigate('/booking?mode=byPackage&search=tại nhà');
-              }}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-                <HomeOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Y tế tại nhà</div>
-            </div>
-
-            {/* Card 11: Đặt lịch tiêm chủng */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 11 } as React.CSSProperties}
-              onClick={() => navigate('/booking?mode=byDept&search=tiêm chủng')}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#fdf2f8', color: '#db2777' }}>
-                <HeartOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Đặt lịch tiêm chủng</div>
-            </div>
-
-            {/* Card 12: Mua thuốc tại An Khang */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 12 } as React.CSSProperties}
-              onClick={() => {
-                navigate('/huong-dan');
-              }}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
-                <ShopOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Mua thuốc tại An Khang</div>
-            </div>
-
-            {/* Card 13: Khám doanh nghiệp */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 13 } as React.CSSProperties}
-              onClick={() => {
-                navigate('/booking?mode=byPackage&search=doanh nghiệp');
-              }}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#f0f9ff', color: '#0284c7' }}>
-                <TeamOutlined style={{ fontSize: 26 }} />
-                <span className="medpro-card-moi-badge">Mới</span>
-              </div>
-              <div className="medpro-card-title">Khám doanh nghiệp</div>
-            </div>
-
-            {/* Card 14: Đặt lịch Chụp phim & Nội soi */}
-            <div
-              className="medpro-service-card"
-              style={{ '--card-index': 14 } as React.CSSProperties}
-              onClick={() => {
-                navigate('/booking?mode=byDept&search=nội soi');
-              }}
-            >
-              <div className="medpro-card-icon-wrap" style={{ background: '#ecfeff', color: '#0284c7' }}>
-                <ScanOutlined style={{ fontSize: 26 }} />
-              </div>
-              <div className="medpro-card-title">Đặt lịch Chụp phim & Nội soi</div>
-            </div>
+            ))}
           </div>
 
           {/* Right Arrow Button */}
@@ -1960,6 +1930,237 @@ export const PatientHomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* 8B. Giới Thiệu Ứng Dụng Bệnh Nhân Di Động D-Medical */}
+      <section style={{ maxWidth: 1520, width: '95%', margin: '0 auto 48px', padding: '0 20px' }}>
+        <div
+          ref={mobileShowcaseRef}
+          className={`dmedical-app-showcase${mobileShowcaseVisible ? ' is-visible' : ''}`}
+          style={{
+            background: 'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 55%, #e2e8f0 100%)',
+            borderRadius: 24,
+            border: '1px solid #bae6fd',
+            boxShadow: '0 10px 30px rgba(2, 132, 199, 0.1)',
+            padding: '36px 32px',
+          }}
+        >
+          <Row gutter={[36, 32]} align="middle">
+            <Col xs={24} lg={13} className="dmedical-reveal-col">
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 14px',
+                  borderRadius: 999,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #bae6fd',
+                  color: '#0369a1',
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  marginBottom: 14,
+                }}
+              >
+                <MobileOutlined style={{ color: '#0284c7', fontSize: 15 }} />
+                <span>Ứng dụng Bệnh nhân Di động • iOS &amp; Android</span>
+              </div>
+
+              <Title
+                level={2}
+                style={{
+                  color: '#0f172a',
+                  fontWeight: 800,
+                  margin: '0 0 12px',
+                  lineHeight: 1.25,
+                }}
+              >
+                Trợ lý Y tế D-Medical ngay trên điện thoại của bạn
+              </Title>
+
+              <Paragraph
+                style={{
+                  color: '#334155',
+                  fontSize: 15,
+                  lineHeight: 1.65,
+                  marginBottom: 24,
+                  maxWidth: 640,
+                }}
+              >
+                Đồng bộ hoàn toàn với hệ thống bệnh viện: đặt khám nhanh, theo dõi hàng chờ trực tuyến,
+                lưu giữ hồ sơ sức khỏe điện tử và tái khám 1 chạm mọi lúc, mọi nơi.
+              </Paragraph>
+
+              <Row gutter={[14, 14]} style={{ marginBottom: 26 }}>
+                {[
+                  {
+                    icon: <CalendarOutlined style={{ color: '#0284c7', fontSize: 18 }} />,
+                    title: 'Đặt khám & Tái khám 1 chạm',
+                    desc: 'Chọn chuyên khoa, giờ khám và nhận mã QR check-in ngay trên điện thoại.',
+                  },
+                  {
+                    icon: <ClockCircleOutlined style={{ color: '#0284c7', fontSize: 18 }} />,
+                    title: 'Theo dõi hàng chờ trực tiếp',
+                    desc: 'Xem số thứ tự phòng khám theo thời gian thực, giảm thời gian chờ tại sảnh.',
+                  },
+                  {
+                    icon: <HeartOutlined style={{ color: '#0284c7', fontSize: 18 }} />,
+                    title: 'Hồ sơ y tế & Kết quả CLS',
+                    desc: 'Tra cứu đơn thuốc, lịch sử khám và kết quả xét nghiệm cận lâm sàng tức thì.',
+                  },
+                  {
+                    icon: <SafetyCertificateOutlined style={{ color: '#0284c7', fontSize: 18 }} />,
+                    title: 'Viện phí & Trợ lý AI 24/7',
+                    desc: 'Thanh toán VietQR minh bạch, nhắc lịch uống thuốc và hỏi đáp y tế AI.',
+                  },
+                ].map((feat, idx) => (
+                  <Col xs={24} sm={12} key={idx}>
+                    <div className={`dmedical-app-feature-card dmedical-feat-delay-${idx}`}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <div
+                          style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            backgroundColor: '#f0f9ff',
+                            border: '1px solid #bae6fd',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {feat.icon}
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: '#0369a1' }}>{feat.title}</div>
+                      </div>
+                      <div style={{ fontSize: 12.8, color: '#64748b', lineHeight: 1.5 }}>{feat.desc}</div>
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+
+              {/* Khối tải trực tiếp file cài đặt Android (.APK) */}
+              <div className="dmedical-apk-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor: '#f0f9ff',
+                      border: '1px solid #bae6fd',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <AndroidOutlined style={{ fontSize: 22, color: '#0284c7' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14.5, color: '#0f172a' }}>
+                      Tải App D-Medical cho Android (.APK)
+                    </div>
+                    <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>
+                      Phiên bản v1.0.0 • 56.4 MB • Android 8.0 trở lên
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <a
+                    href={apkDownloadPath}
+                    download="D-Medical-Patient-v1.0.0.apk"
+                    className="dmedical-apk-download-btn"
+                    onClick={() => {
+                      showToast('Đang tải bộ cài D-Medical-Patient-v1.0.0.apk (56.4 MB)...', 'success');
+                    }}
+                  >
+                    <DownloadOutlined />
+                    <span>Tải File APK</span>
+                  </a>
+                  <Button
+                    size="large"
+                    icon={<QrcodeOutlined />}
+                    style={{
+                      backgroundColor: '#f0f9ff',
+                      borderColor: '#bae6fd',
+                      color: '#0369a1',
+                      fontWeight: 700,
+                      height: 42,
+                      borderRadius: 10,
+                    }}
+                    onClick={() => setApkModalOpen(true)}
+                  >
+                    Quét QR tải về máy
+                  </Button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<ArrowRightOutlined />}
+                  style={{
+                    backgroundColor: '#0284c7',
+                    borderColor: '#0284c7',
+                    fontWeight: 700,
+                    height: 46,
+                    borderRadius: 10,
+                    padding: '0 24px',
+                  }}
+                  onClick={() => navigate('/booking')}
+                >
+                  Đặt Lịch Khám Ngay
+                </Button>
+                <Button
+                  size="large"
+                  icon={<SearchOutlined />}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    borderColor: '#bae6fd',
+                    color: '#0369a1',
+                    fontWeight: 700,
+                    height: 46,
+                    borderRadius: 10,
+                    padding: '0 20px',
+                  }}
+                  onClick={openLookupModal}
+                >
+                  Xem Lịch &amp; Mã QR
+                </Button>
+              </div>
+            </Col>
+
+            <Col xs={24} lg={11} style={{ display: 'flex', justifyContent: 'center' }}>
+              <div className="dmedical-phone-stage">
+                <span className="dmedical-phone-ring" aria-hidden="true" />
+                <span className="dmedical-phone-ring ring-secondary" aria-hidden="true" />
+
+                <div className="dmedical-phone-card">
+                  <img
+                    src="/dmedical_mobile_app_mockup.jpg"
+                    alt="Giao diện Ứng dụng Bệnh nhân D-Medical trên điện thoại"
+                    loading="lazy"
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      display: 'block',
+                      borderRadius: 16,
+                    }}
+                  />
+                </div>
+
+                <div className="dmedical-phone-float-pill">
+                  <span className="dmedical-live-dot" aria-hidden="true" />
+                  <span>Đồng bộ QR &amp; Hàng chờ Realtime</span>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </div>
+      </section>
+
       {/* 9. FAQ & Testimonials */}
       <section style={{ maxWidth: 1520, width: '95%', margin: '0 auto 48px', padding: '0 20px' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -2641,6 +2842,77 @@ export const PatientHomePage: React.FC = () => {
               Đặt Lịch Khám Ngay
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* MODAL TẢI & QUÉT QR CÀI ĐẶT FILE APK ANDROID */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#0369a1' }}>
+            <AndroidOutlined style={{ fontSize: 20, color: '#0284c7' }} />
+            <span>Tải Ứng Dụng D-Medical Cho Android (.APK)</span>
+          </div>
+        }
+        open={apkModalOpen}
+        onCancel={() => setApkModalOpen(false)}
+        footer={null}
+        width={480}
+        centered
+      >
+        <div style={{ textAlign: 'center', padding: '10px 4px 6px' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              padding: 16,
+              borderRadius: 18,
+              backgroundColor: '#f0f9ff',
+              border: '1.5px solid #bae6fd',
+              marginBottom: 14,
+            }}
+          >
+            <QRCodeSVG value={apkDownloadFullUrl} size={184} level="M" includeMargin />
+          </div>
+
+          <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a', marginBottom: 4 }}>
+            Quét mã QR bằng Camera điện thoại để tải trực tiếp
+          </div>
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+            File cài đặt: <strong>D-Medical-Patient-v1.0.0.apk</strong> (56.4 MB)
+          </div>
+
+          <div
+            style={{
+              textAlign: 'left',
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 18,
+              fontSize: 13,
+              color: '#334155',
+              lineHeight: 1.65,
+            }}
+          >
+            <div style={{ fontWeight: 700, color: '#0369a1', marginBottom: 4 }}>
+              Hướng dẫn cài đặt nhanh:
+            </div>
+            <div>1. Nhấn tải file <strong>.APK</strong> hoặc quét mã QR phía trên.</div>
+            <div>2. Mở file vừa tải và chọn <strong>Cài đặt</strong> (bật cho phép cài đặt từ trình duyệt nếu máy hỏi).</div>
+            <div>3. Mở ứng dụng <strong>D-Medical</strong> để đặt lịch khám và theo dõi hàng chờ.</div>
+          </div>
+
+          <a
+            href={apkDownloadPath}
+            download="D-Medical-Patient-v1.0.0.apk"
+            className="dmedical-apk-download-btn"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={() => {
+              showToast('Đang tải file D-Medical-Patient-v1.0.0.apk (56.4 MB)...', 'success');
+            }}
+          >
+            <DownloadOutlined />
+            <span>Tải Trực Tiếp File APK Về Máy</span>
+          </a>
         </div>
       </Modal>
 
